@@ -1409,6 +1409,193 @@ describe("fines", () => {
             },
             500_000,
         );
+
+        integrationTest(
+            "botsjef can edit reason, amount and paragraph",
+            async ({ ctx }) => {
+                const botsjef = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(botsjef);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "botsjef-edits",
+                    finesActivated: true,
+                });
+                await ctx.db
+                    .update(schema.group)
+                    .set({ finesAdminId: botsjef.id })
+                    .where(eq(schema.group.slug, group.slug));
+
+                const fined = await ctx.utils.createTestUser();
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: fined.id,
+                    groupSlug: group.slug,
+                });
+
+                const [law] = await ctx.db
+                    .insert(schema.groupLaw)
+                    .values({
+                        groupSlug: group.slug,
+                        paragraph: "2.1",
+                        title: "Kom for sent",
+                        amount: 3,
+                    })
+                    .returning();
+
+                const [fine] = await ctx.db
+                    .insert(schema.fine)
+                    .values({
+                        userId: fined.id,
+                        groupSlug: group.slug,
+                        reason: "Skrivefeil",
+                        amount: 10,
+                        status: "approved",
+                    })
+                    .returning();
+
+                const response = await client.api.groups[":groupSlug"].fines[
+                    ":fineId"
+                ].$patch({
+                    param: { groupSlug: group.slug, fineId: fine!.id },
+                    json: {
+                        reason: "Kom 20 minutter for sent",
+                        amount: 3,
+                        lawId: law!.id,
+                    },
+                });
+                expect(response.status).toBe(200);
+
+                const [after] = await ctx.db
+                    .select()
+                    .from(schema.fine)
+                    .where(eq(schema.fine.id, fine!.id));
+                expect(after?.reason).toBe("Kom 20 minutter for sent");
+                expect(after?.amount).toBe(3);
+                expect(after?.lawId).toBe(law!.id);
+                // Editing the fine is not a ruling on it.
+                expect(after?.status).toBe("approved");
+
+                const unlinked = await client.api.groups[":groupSlug"].fines[
+                    ":fineId"
+                ].$patch({
+                    param: { groupSlug: group.slug, fineId: fine!.id },
+                    json: { lawId: null },
+                });
+                expect(unlinked.status).toBe(200);
+
+                const [cleared] = await ctx.db
+                    .select()
+                    .from(schema.fine)
+                    .where(eq(schema.fine.id, fine!.id));
+                expect(cleared?.lawId).toBeNull();
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "neither the giver nor the fined member can edit a fine",
+            async ({ ctx }) => {
+                const giver = await ctx.utils.createTestUser();
+                const giverClient = await ctx.utils.clientForUser(giver);
+                const fined = await ctx.utils.createTestUser();
+                const finedClient = await ctx.utils.clientForUser(fined);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "no-self-edit",
+                    finesActivated: true,
+                });
+                await ctx.db.insert(schema.groupMembership).values([
+                    { userId: giver.id, groupSlug: group.slug },
+                    { userId: fined.id, groupSlug: group.slug },
+                ]);
+
+                const [fine] = await ctx.db
+                    .insert(schema.fine)
+                    .values({
+                        userId: fined.id,
+                        groupSlug: group.slug,
+                        reason: "Glemte kaffen",
+                        amount: 2,
+                        createdByUserId: giver.id,
+                        status: "pending",
+                    })
+                    .returning();
+
+                const byGiver = await giverClient.api.groups[
+                    ":groupSlug"
+                ].fines[":fineId"].$patch({
+                    param: { groupSlug: group.slug, fineId: fine!.id },
+                    json: { amount: 20 },
+                });
+                expect(byGiver.status).toBe(403);
+
+                const byFined = await finedClient.api.groups[
+                    ":groupSlug"
+                ].fines[":fineId"].$patch({
+                    param: { groupSlug: group.slug, fineId: fine!.id },
+                    json: { amount: 0, reason: "Ingenting skjedde" },
+                });
+                expect(byFined.status).toBe(403);
+
+                const [after] = await ctx.db
+                    .select()
+                    .from(schema.fine)
+                    .where(eq(schema.fine.id, fine!.id));
+                expect(after?.amount).toBe(2);
+                expect(after?.reason).toBe("Glemte kaffen");
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "refuses a paragraph from another group's lovverk",
+            async ({ ctx }) => {
+                const botsjef = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(botsjef);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "edit-own-law",
+                    finesActivated: true,
+                });
+                await ctx.db
+                    .update(schema.group)
+                    .set({ finesAdminId: botsjef.id })
+                    .where(eq(schema.group.slug, group.slug));
+                const other = await ctx.utils.createTestGroup({
+                    slug: "edit-other-law",
+                    finesActivated: true,
+                });
+
+                const [foreignLaw] = await ctx.db
+                    .insert(schema.groupLaw)
+                    .values({
+                        groupSlug: other.slug,
+                        paragraph: "1.1",
+                        title: "Fremmed paragraf",
+                        amount: 1,
+                    })
+                    .returning();
+
+                const [fine] = await ctx.db
+                    .insert(schema.fine)
+                    .values({
+                        userId: botsjef.id,
+                        groupSlug: group.slug,
+                        reason: "Noe",
+                        amount: 1,
+                        status: "pending",
+                    })
+                    .returning();
+
+                const response = await client.api.groups[":groupSlug"].fines[
+                    ":fineId"
+                ].$patch({
+                    param: { groupSlug: group.slug, fineId: fine!.id },
+                    json: { lawId: foreignLaw!.id },
+                });
+                expect(response.status).toBe(404);
+            },
+            500_000,
+        );
     });
 
     describe("fine ↔ paragraph", () => {

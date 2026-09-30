@@ -71,6 +71,10 @@ import {
     GroupGiveFineDialog,
     type GiveFineValues,
 } from "#/components/group-give-fine-dialog";
+import {
+    GroupEditFineDialog,
+    type EditFineValues,
+} from "#/components/group-edit-fine-dialog";
 import { GroupLawsTab } from "#/components/group-laws-tab";
 import {
     NewFormDialog,
@@ -81,6 +85,7 @@ import { GROUP_NAV_ITEMS, type GroupNavKey } from "#/components/group-nav";
 import { GroupOmTab } from "#/components/group-om-tab";
 import { mapFormQuestions, toFormFieldsPayload } from "#/lib/form";
 import {
+    type Fine,
     type Form,
     allowsNonMemberLeader,
     mapFine,
@@ -177,6 +182,8 @@ function GroupDetail() {
     const navigate = Route.useNavigate();
     const [fineDialogOpen, setFineDialogOpen] = useState(false);
     const [fineError, setFineError] = useState<string | null>(null);
+    const [editingFine, setEditingFine] = useState<Fine | null>(null);
+    const [editFineError, setEditFineError] = useState<string | null>(null);
     const [groupError, setGroupError] = useState<string | null>(null);
     const [formDialogOpen, setFormDialogOpen] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
@@ -672,6 +679,25 @@ function GroupDetail() {
         }
     }
 
+    function openEditFine(fine: Fine) {
+        setEditFineError(null);
+        setEditingFine(fine);
+    }
+
+    async function handleEditFine(fine: Fine, values: EditFineValues) {
+        setEditFineError(null);
+        try {
+            await updateFine.mutateAsync({
+                groupSlug: slug,
+                fineId: fine.id,
+                data: values,
+            });
+            setEditingFine(null);
+        } catch (error) {
+            setEditFineError(await extractErrorMessage(error));
+        }
+    }
+
     return (
         <>
             <DetailLayout
@@ -876,6 +902,7 @@ function GroupDetail() {
                                     data: { status: "paid" },
                                 })
                             }
+                            onEdit={openEditFine}
                             onDelete={(fine) =>
                                 deleteFine.mutate({
                                     groupSlug: slug,
@@ -946,6 +973,17 @@ function GroupDetail() {
                 onSubmit={handleGiveFine}
                 isSubmitting={createFine.isPending || isUploading}
                 error={fineError}
+            />
+
+            <GroupEditFineDialog
+                fine={editingFine}
+                onOpenChange={(open) => {
+                    if (!open) setEditingFine(null);
+                }}
+                laws={laws}
+                onSubmit={handleEditFine}
+                isSubmitting={updateFine.isPending}
+                error={editFineError}
             />
 
             <NewFormDialog

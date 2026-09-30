@@ -1752,7 +1752,7 @@ export interface paths {
         head?: never;
         /**
          * Partially update fine
-         * @description Partially update a fine. Only provided fields will be updated. Current members can add a defense to their own fines; someone who has left the group can read their fines but no longer write to them. Fines admins can update status and approve/reject fines.
+         * @description Partially update a fine. Only provided fields will be updated. Current members can add a defense to their own fines; someone who has left the group can read their fines but no longer write to them. Fines admins (botsjef) and group leaders can update status, approve/reject fines, and edit the reason, amount, paragraph and picture.
          */
         patch: operations["updateFine"];
         trace?: never;
@@ -5198,6 +5198,12 @@ export interface components {
              * @enum {string}
              */
             status?: "pending" | "approved" | "paid" | "rejected";
+            /** @description Reason for the fine. Only the fines admin or the group's leader may change it. */
+            reason?: string;
+            /** @description Number of fines given (may be negative). Only the fines admin or the group's leader may change it. */
+            amount?: number;
+            /** @description Paragraph in the group's lovverk the fine is given under. Null removes the link. Only the fines admin or the group's leader may change it. */
+            lawId?: string | null;
         };
         Law: {
             /** @description Law ID */
