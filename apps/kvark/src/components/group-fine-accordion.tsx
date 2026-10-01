@@ -348,7 +348,7 @@ function GroupFineAccordionItem({
                     onApprove={onApprove}
                     onMarkPaid={onMarkPaid}
                     onEdit={onEdit}
-                    onDelete={onDelete}
+                    onDelete={() => setConfirmDelete(true)}
                     onSaveDefense={onSaveDefense}
                 />
             </AccordionContent>
