@@ -76,6 +76,7 @@ export type EventFormValues = {
     instituteSlug: string;
     isPaidEvent: boolean;
     canCauseStrikes: boolean;
+    reactionsAllowed: boolean;
     price: string;
     image: File | null;
     imageAlt: string;
@@ -775,6 +776,24 @@ export function EventForm({
                                     </FieldLabel>
                                 </Field>
                             ) : null}
+                            <Field
+                                orientation="horizontal"
+                                className="w-fit gap-3"
+                            >
+                                <Checkbox
+                                    id="event-reactions"
+                                    checked={values.reactionsAllowed}
+                                    onCheckedChange={(checked) =>
+                                        onChange({
+                                            reactionsAllowed: Boolean(checked),
+                                        })
+                                    }
+                                />
+                                <FieldLabel htmlFor="event-reactions">
+                                    Reaksjoner: la brukere reagere på
+                                    arrangementet med emojis
+                                </FieldLabel>
+                            </Field>
                             <Field>
                                 <FieldLabel>Beskrivelse</FieldLabel>
                                 {/* Editoren er en contenteditable, og den bryr

@@ -47,7 +47,7 @@ export const getRoute = route().get(
                 },
                 reactions: {
                     columns: { userId: true, emoji: true },
-                    with: { user: { columns: { name: true } } },
+                    with: { user: { columns: { name: true, image: true } } },
                 },
                 restrictedToInstitute: {
                     columns: { slug: true, shortName: true, name: true },
@@ -211,6 +211,7 @@ export const getRoute = route().get(
             user: {
                 id: r.userId,
                 name: r.user.name,
+                image: r.user.image,
             },
         }));
 
@@ -306,6 +307,7 @@ export const getRoute = route().get(
             createdAt: event.createdAt.toISOString(),
             updatedAt: event.updatedAt.toISOString(),
             reactions,
+            reactionsAllowed: event.reactionsAllowed,
             isPaidEvent: event.isPaidEvent,
             payInfo,
             enforcesPreviousStrikes: event.enforcesPreviousStrikes,

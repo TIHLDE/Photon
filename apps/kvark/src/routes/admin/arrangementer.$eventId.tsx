@@ -358,6 +358,7 @@ function valuesFromEvent(
         instituteSlug: event.restrictedToInstitute?.slug ?? ALL_INSTITUTES,
         isPaidEvent: event.isPaidEvent,
         canCauseStrikes: event.canCauseStrikes,
+        reactionsAllowed: event.reactionsAllowed,
         // payInfo.price er i øre, mens skjemaet redigerer kroner.
         price: event.payInfo ? String(event.payInfo.price / 100) : "",
         image: null,
@@ -555,7 +556,7 @@ function DetailsTab({ eventId }: { eventId: string }) {
                     ? Number(values.price)
                     : null,
             contactPersonUserId: values.contactPersonUserId || null,
-            reactionsAllowed: false,
+            reactionsAllowed: values.reactionsAllowed,
         };
 
         updateEvent.mutate({ eventId, data });

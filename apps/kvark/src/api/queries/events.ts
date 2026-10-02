@@ -13,6 +13,7 @@ import type {
     CreateEventForm,
     CreateStrike,
     UpdateFavoriteEvent,
+    CreateEventReaction,
 } from "@tihlde/sdk";
 
 export const EventQueryKeys = {
@@ -249,6 +250,35 @@ export const updateFavoriteEventMutation = mutationOptions({
             queryKey: [...EventQueryKeys.favorites],
             exact: false,
         });
+    },
+});
+
+// -- Reactions --
+
+export const createEventReactionMutation = mutationOptions({
+    mutationFn: ({
+        eventId,
+        data,
+    }: {
+        eventId: string;
+        data: CreateEventReaction;
+    }) =>
+        apiClient.post("/api/event/{eventId}/reactions", {
+            params: { eventId },
+            json: data,
+        }),
+    onSuccess(_, __, ___, ctx) {
+        invalidateEventDetails(ctx.client);
+    },
+});
+
+export const deleteEventReactionMutation = mutationOptions({
+    mutationFn: ({ eventId }: { eventId: string }) =>
+        apiClient.delete("/api/event/{eventId}/reactions", {
+            params: { eventId },
+        }),
+    onSuccess(_, __, ___, ctx) {
+        invalidateEventDetails(ctx.client);
     },
 });
 
