@@ -1089,6 +1089,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/event/{eventId}/reactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add reaction to event
+         * @description Add or update emoji reaction to an event. Each user has at most one reaction per event, so reacting again replaces it. Requires authentication.
+         */
+        post: operations["createEventReaction"];
+        /**
+         * Remove reaction from event
+         * @description Remove your emoji reaction from an event.
+         */
+        delete: operations["deleteEventReaction"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/feedback": {
         parameters: {
             query?: never;
@@ -3951,10 +3975,14 @@ export interface components {
                     id: string;
                     /** @description User name */
                     name: string;
+                    /** @description Profile picture (nullable) */
+                    image: string | null;
                 };
                 /** @description Reaction emoji */
                 emoji: string;
             }[];
+            /** @description May users react to the event with an emoji? */
+            reactionsAllowed: boolean;
             /** @description Is this a paid event */
             isPaidEvent: boolean;
             /** @description Payment info */
@@ -4331,6 +4359,26 @@ export interface components {
                     order: number;
                 }[];
             }[];
+        };
+        EventReaction: {
+            /** @description User ID */
+            userId: string;
+            /**
+             * Format: uuid
+             * @description Event ID
+             */
+            eventId: string;
+            /** @description Emoji reaction */
+            emoji: string;
+            /** @description Reaction creation time (ISO 8601) */
+            createdAt: string;
+        };
+        CreateEventReaction: {
+            /** @description Emoji reaction (e.g., 👍, ❤️, 😂) */
+            emoji: string;
+        };
+        DeleteEventReactionResponse: {
+            message: string;
         };
         FeedbackItem: {
             /**
@@ -9024,6 +9072,104 @@ export interface operations {
                 };
             };
             /** @description Not Found - Form not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createEventReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEventReaction"];
+            };
+        };
+        responses: {
+            /** @description Reaction added successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventReaction"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteEventReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reaction removed successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteEventReactionResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event or reaction not found */
             404: {
                 headers: {
                     [name: string]: unknown;
