@@ -97,7 +97,7 @@ describe("event reactions", () => {
                 param: { eventId: event.id },
                 json: { emoji: "❤️" },
             });
-            expect(replaceResponse.status).toBe(200);
+            expect(replaceResponse.status).toBe(201);
             expect((await replaceResponse.json()).emoji).toBe("❤️");
 
             const afterReplace = await client.api.event[":eventId"].$get({

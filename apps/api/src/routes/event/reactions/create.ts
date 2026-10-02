@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
@@ -67,40 +67,20 @@ export const createEventReactionRoute = route().post(
             });
         }
 
-        // Check if user already has a reaction
-        const existingReaction = await db.query.eventReaction.findFirst({
-            where: and(
-                eq(schema.eventReaction.userId, userId),
-                eq(schema.eventReaction.eventId, eventId),
-            ),
-        });
-
-        if (existingReaction) {
-            // Update existing reaction
-            const [updatedReaction] = await db
-                .update(schema.eventReaction)
-                .set({ emoji: body.emoji })
-                .where(
-                    and(
-                        eq(schema.eventReaction.userId, userId),
-                        eq(schema.eventReaction.eventId, eventId),
-                    ),
-                )
-                .returning();
-
-            return c.json(updatedReaction);
-        }
-
-        // Create new reaction
-        const [newReaction] = await db
+        // One reaction per user per event: (user_id, event_id) is the primary
+        // key, so reacting again replaces the emoji in the same statement.
+        const [reaction] = await db
             .insert(schema.eventReaction)
-            .values({
-                userId,
-                eventId,
-                emoji: body.emoji,
+            .values({ userId, eventId, emoji: body.emoji })
+            .onConflictDoUpdate({
+                target: [
+                    schema.eventReaction.userId,
+                    schema.eventReaction.eventId,
+                ],
+                set: { emoji: body.emoji },
             })
             .returning();
 
-        return c.json(newReaction, 201);
+        return c.json(reaction, 201);
     },
 );
