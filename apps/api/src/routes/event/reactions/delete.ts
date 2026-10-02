@@ -34,40 +34,21 @@ export const deleteEventReactionRoute = route().delete(
         const { db } = c.get("ctx");
         const { eventId } = c.req.valid("param");
 
-        // Check if event exists
-        const event = await db.query.event.findFirst({
-            where: eq(schema.event.id, eventId),
-        });
-
-        if (!event) {
-            throw new HTTPException(404, {
-                message: "Event not found",
-            });
-        }
-
-        // Check if reaction exists
-        const reaction = await db.query.eventReaction.findFirst({
-            where: and(
-                eq(schema.eventReaction.userId, userId),
-                eq(schema.eventReaction.eventId, eventId),
-            ),
-        });
-
-        if (!reaction) {
-            throw new HTTPException(404, {
-                message: "Reaction not found",
-            });
-        }
-
-        // Delete the reaction
-        await db
+        // A reaction can only exist on an existing event, so one delete answers
+        // both "no such event" and "no reaction" with the same 404.
+        const [deleted] = await db
             .delete(schema.eventReaction)
             .where(
                 and(
                     eq(schema.eventReaction.userId, userId),
                     eq(schema.eventReaction.eventId, eventId),
                 ),
-            );
+            )
+            .returning();
+
+        if (!deleted) {
+            throw new HTTPException(404, { message: "Reaction not found" });
+        }
 
         return c.json({ message: "Reaction removed successfully" });
     },
