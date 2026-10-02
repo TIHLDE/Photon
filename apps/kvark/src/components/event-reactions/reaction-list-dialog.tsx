@@ -57,7 +57,10 @@ export function ReactionListDialog({
                                     key={group.emoji}
                                     value={group.emoji}
                                 >
-                                    {group.emoji} ({group.reactions.length})
+                                    <span className="text-xl leading-none">
+                                        {group.emoji}
+                                    </span>{" "}
+                                    ({group.reactions.length})
                                 </TabsTrigger>
                             ))}
                         </TabsList>
@@ -106,7 +109,9 @@ function ReactorList({ reactions }: { reactions: EventReactionItem[] }) {
                         <span className="min-w-0 flex-1 truncate">
                             {reaction.user.name}
                         </span>
-                        <span>{reaction.emoji}</span>
+                        <span className="text-xl leading-none">
+                            {reaction.emoji}
+                        </span>
                     </Button>
                 ))}
             </div>

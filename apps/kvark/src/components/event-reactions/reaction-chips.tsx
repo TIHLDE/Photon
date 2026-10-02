@@ -39,7 +39,7 @@ export function ReactionChips({
                     aria-pressed={group.emoji === ownEmoji}
                     onClick={() => onSelect(group.emoji)}
                 >
-                    <span>{group.emoji}</span>
+                    <span className="text-xl leading-none">{group.emoji}</span>
                     <span>{group.reactions.length}</span>
                 </Button>
             ))}
