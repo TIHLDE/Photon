@@ -33,7 +33,7 @@ export function ReactionChips({
             {shown.map((group) => (
                 <Button
                     key={group.emoji}
-                    variant={group.emoji === ownEmoji ? "secondary" : "ghost"}
+                    variant={group.emoji === ownEmoji ? "outline" : "ghost"}
                     size="sm"
                     disabled={disabled}
                     aria-pressed={group.emoji === ownEmoji}

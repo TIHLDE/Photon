@@ -10,6 +10,7 @@ import {
 } from "@tihlde/ui/ui/dialog";
 import { ScrollArea } from "@tihlde/ui/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@tihlde/ui/ui/tooltip";
 import { List } from "lucide-react";
 
 import { avatarImageUrl } from "#/lib/assets";
@@ -31,17 +32,24 @@ export function ReactionListDialog({
 }: ReactionListDialogProps) {
     return (
         <Dialog>
-            <DialogTrigger
-                render={
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        aria-label="Vis alle reaksjoner"
-                    />
-                }
-            >
-                <List />
-            </DialogTrigger>
+            <Tooltip>
+                <TooltipTrigger
+                    render={
+                        <DialogTrigger
+                            render={
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    aria-label="Vis alle reaksjoner"
+                                />
+                            }
+                        />
+                    }
+                >
+                    <List />
+                </TooltipTrigger>
+                <TooltipContent>Vis alle reaksjoner</TooltipContent>
+            </Tooltip>
             <DialogContent className="max-w-md">
                 <DialogHeader>
                     <DialogTitle>Reaksjoner</DialogTitle>

@@ -7,6 +7,7 @@ import {
     DialogTrigger,
 } from "@tihlde/ui/ui/dialog";
 import { Spinner } from "@tihlde/ui/ui/spinner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@tihlde/ui/ui/tooltip";
 import { SmilePlus } from "lucide-react";
 import { Suspense, lazy } from "react";
 
@@ -31,18 +32,25 @@ export function ReactionPickerDialog({
 }: ReactionPickerDialogProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogTrigger
-                render={
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        aria-label="Reager"
-                        disabled={disabled}
-                    />
-                }
-            >
-                <SmilePlus />
-            </DialogTrigger>
+            <Tooltip>
+                <TooltipTrigger
+                    render={
+                        <DialogTrigger
+                            render={
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    aria-label="Reager"
+                                    disabled={disabled}
+                                />
+                            }
+                        />
+                    }
+                >
+                    <SmilePlus />
+                </TooltipTrigger>
+                <TooltipContent>Reager</TooltipContent>
+            </Tooltip>
             <DialogContent className="max-w-sm">
                 <DialogHeader>
                     <DialogTitle>Reager</DialogTitle>
