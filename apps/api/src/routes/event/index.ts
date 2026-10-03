@@ -15,6 +15,8 @@ import { createPaymentRoute } from "./payment/create";
 import { listEventPaymentsRoute } from "./payment/list";
 import { refundEventPaymentRoute } from "./payment/refund";
 import { paymentWebhookRoute } from "./payment/webhook";
+import { createEventReactionRoute } from "./reactions/create";
+import { deleteEventReactionRoute } from "./reactions/delete";
 import { adminCreateRegistrationRoute } from "./registration/admin-create";
 import { setAttendanceRoute } from "./registration/attendance";
 import { getMyEventHistoryRoute } from "./registration/history";
@@ -74,4 +76,8 @@ export const eventRoutes = route()
     // Forms
     .route("/", createEventFormRoute)
     .route("/", listEventFormsRoute)
-    .route("/", getEventFormRoute);
+    .route("/", getEventFormRoute)
+
+    // Reactions
+    .route("/", createEventReactionRoute)
+    .route("/", deleteEventReactionRoute);

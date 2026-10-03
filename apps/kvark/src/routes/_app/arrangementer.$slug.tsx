@@ -58,6 +58,7 @@ import { EventRegistrantsDialog } from "#/components/event-registrants-dialog";
 import { AllergyNudge } from "#/components/allergy-nudge";
 import { FeideRefreshNudge } from "#/components/feide-refresh-nudge";
 import { EventEvaluationNotice } from "#/components/event-evaluation-notice";
+import { EventReactions } from "#/components/event-reactions";
 import { EventRegistrationCard } from "#/components/event-registration-card";
 import { EventRulesConsent } from "#/components/event-rules-consent";
 import { IconActionButton } from "#/components/icon-action-button";
@@ -514,6 +515,9 @@ function EventDetailPage() {
                                         })
                                     }
                                 />
+                            ) : null}
+                            {event.reactionsAllowed && session?.user ? (
+                                <EventReactions event={event} />
                             ) : null}
                             <ShareButton label="Del arrangement" />
                             {isAdmin ? (

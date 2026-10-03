@@ -42,6 +42,7 @@
         "date-fns": "catalog:",
         "date-fns-tz": "catalog:",
         "dictionary-nb": "^3.0.0",
+        "emoji-picker-react": "^4.22.3",
         "es-toolkit": "catalog:",
         "jsqr": "^1.4.0",
         "ky": "^2.0.2",

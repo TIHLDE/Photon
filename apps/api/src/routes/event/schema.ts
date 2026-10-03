@@ -700,10 +700,17 @@ export const eventDetailSchema = Schema(
                 user: z.object({
                     id: z.string().meta({ description: "User ID" }),
                     name: z.string().meta({ description: "User name" }),
+                    image: z
+                        .string()
+                        .nullable()
+                        .meta({ description: "Profile picture (nullable)" }),
                 }),
                 emoji: z.string().meta({ description: "Reaction emoji" }),
             }),
         ),
+        reactionsAllowed: z.boolean().meta({
+            description: "May users react to the event with an emoji?",
+        }),
         isPaidEvent: z.boolean().meta({ description: "Is this a paid event" }),
         payInfo: z
             .object({
@@ -911,6 +918,36 @@ export const updateEventResponseSchema = Schema(
 
 export const deleteEventResponseSchema = Schema(
     "DeleteEventResponse",
+    z.object({
+        message: z.string(),
+    }),
+);
+
+export const createEventReactionSchema = Schema(
+    "CreateEventReaction",
+    z.object({
+        emoji: z
+            .string()
+            .min(1)
+            .max(32)
+            .meta({ description: "Emoji reaction (e.g., 👍, ❤️, 😂)" }),
+    }),
+);
+
+export const eventReactionSchema = Schema(
+    "EventReaction",
+    z.object({
+        userId: z.string().meta({ description: "User ID" }),
+        eventId: z.uuid().meta({ description: "Event ID" }),
+        emoji: z.string().meta({ description: "Emoji reaction" }),
+        createdAt: z
+            .string()
+            .meta({ description: "Reaction creation time (ISO 8601)" }),
+    }),
+);
+
+export const deleteEventReactionResponseSchema = Schema(
+    "DeleteEventReactionResponse",
     z.object({
         message: z.string(),
     }),
