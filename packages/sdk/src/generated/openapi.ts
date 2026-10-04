@@ -7905,6 +7905,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description The user was promoted from the waitlist after the event started */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     getMyEventHistory: {

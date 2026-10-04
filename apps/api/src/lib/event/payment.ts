@@ -480,7 +480,11 @@ async function promoteFromWaitlistWithLock(
      */
     const [claimed] = await ctx.db
         .update(schema.eventRegistration)
-        .set({ status: "registered", waitlistPosition: null })
+        .set({
+            status: "registered",
+            waitlistPosition: null,
+            promotedFromWaitlistAt: new Date(),
+        })
         .where(
             and(
                 eq(schema.eventRegistration.eventId, event.id),

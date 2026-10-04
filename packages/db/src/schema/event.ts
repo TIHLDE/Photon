@@ -235,6 +235,7 @@ export const eventRegistration = pgTable(
         status: registrationStatus("status").notNull().default("registered"),
         waitlistPosition: integer("waitlist_position"),
         attendedAt: timestamp("attended_at"),
+        promotedFromWaitlistAt: timestamp("promoted_from_waitlist_at"),
         /**
          * Photo consent for THIS event, overriding the account-level
          * `allowsPhotosByDefault`. Carried over from Lepton, where members

@@ -166,4 +166,41 @@ describe("No-show strikes", () => {
         },
         500_000,
     );
+
+    integrationTest(
+        "no strike for a no-show who was promoted from the waitlist after the start",
+        async ({ ctx }) => {
+            await ctx.utils.setupEventCategories();
+            const event = await endedEvent(ctx, true);
+            const attendee = await ctx.utils.createTestUser();
+            const latePromoted = await ctx.utils.createTestUser();
+            const earlyPromoted = await ctx.utils.createTestUser();
+            await register(ctx, event.id, attendee.id, "attended");
+            await ctx.db.insert(schema.eventRegistration).values([
+                {
+                    eventId: event.id,
+                    userId: latePromoted.id,
+                    status: "registered",
+                    promotedFromWaitlistAt: new Date(
+                        event.start.getTime() + HOUR,
+                    ),
+                },
+                {
+                    eventId: event.id,
+                    userId: earlyPromoted.id,
+                    status: "registered",
+                    promotedFromWaitlistAt: new Date(
+                        event.start.getTime() - HOUR,
+                    ),
+                },
+            ]);
+
+            const result = await processEventNoShows(event.id, ctx);
+
+            expect(result.struck).toBe(1);
+            expect(await strikeTotal(ctx, event.id, latePromoted.id)).toBe(0);
+            expect(await strikeTotal(ctx, event.id, earlyPromoted.id)).toBe(2);
+        },
+        500_000,
+    );
 });

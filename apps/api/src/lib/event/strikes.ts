@@ -130,6 +130,15 @@ export async function getStrikeCountsForUsers(
     return new Map(rows.map((row) => [row.userId, row.count]));
 }
 
+export function wasPromotedAfterStart(
+    promotedFromWaitlistAt: Date | null,
+    eventStart: Date,
+): boolean {
+    return (
+        promotedFromWaitlistAt != null && promotedFromWaitlistAt >= eventStart
+    );
+}
+
 /**
  * Issue a strike to a user for an event, idempotently. If the user already has
  * any strike tied to this event, nothing is inserted — this prevents duplicate

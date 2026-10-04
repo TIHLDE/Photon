@@ -183,4 +183,53 @@ describe("prikker follow the event's arrangør", () => {
         },
         500_000,
     );
+
+    integrationTest(
+        "nobody may give a prikk to a member promoted from the waitlist after the start",
+        async ({ ctx }) => {
+            const leader = await ctx.utils.createTestUser();
+            const target = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(leader);
+
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+
+            const group = await ctx.utils.createTestGroup({
+                slug: "arrangorgruppa",
+            });
+            await ctx.db
+                .update(schema.group)
+                .set({ leaderPermissions: ["events:update", "events:create"] })
+                .where(eq(schema.group.slug, group.slug));
+            await ctx.db.insert(schema.groupMembership).values({
+                userId: leader.id,
+                groupSlug: group.slug,
+                role: "leader",
+            });
+
+            const start = new Date(Date.now() - 60 * 60 * 1000);
+            const event = await ctx.utils.createTestEvent({
+                organizerGroupSlug: group.slug,
+                start,
+                end: new Date(Date.now() + 60 * 60 * 1000),
+            });
+            await ctx.db.insert(schema.eventRegistration).values({
+                eventId: event.id,
+                userId: target.id,
+                status: "registered",
+                promotedFromWaitlistAt: new Date(start.getTime() + 60_000),
+            });
+
+            const created = await client.api.event.strikes.$post({
+                json: {
+                    userId: target.id,
+                    eventId: event.id,
+                    count: 2,
+                    reason: "Møtte ikke opp",
+                },
+            });
+            expect(created.status).toBe(409);
+        },
+        500_000,
+    );
 });
