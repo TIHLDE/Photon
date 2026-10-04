@@ -1,9 +1,10 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import type z from "zod";
 import { canActOnEvent, strikePermissions } from "~/lib/event/access";
+import { wasPromotedAfterStart } from "~/lib/event/strikes";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -29,6 +30,11 @@ export const createStrikeRoute = route().post(
                 "Requires events:strikes:create, or the right to arrange the event",
         })
         .notFound({ description: "User or event not found" })
+        .response({
+            statusCode: 409,
+            description:
+                "The user was promoted from the waitlist after the event started",
+        })
         .build(),
     requireAuth,
     // Coarse gate: the event — and with it the scope — is named in the body,
@@ -54,7 +60,7 @@ export const createStrikeRoute = route().post(
         }
 
         const targetEvent = await db.query.event.findFirst({
-            columns: { id: true, title: true, slug: true },
+            columns: { id: true, title: true, slug: true, start: true },
             where: eq(schema.event.id, body.eventId),
         });
 
@@ -75,6 +81,27 @@ export const createStrikeRoute = route().post(
             throw new HTTPException(403, {
                 message:
                     "Forbidden - requires events:strikes:create, or the right to arrange events for the group behind this event",
+            });
+        }
+
+        const registration = await db.query.eventRegistration.findFirst({
+            columns: { promotedFromWaitlistAt: true },
+            where: and(
+                eq(schema.eventRegistration.userId, body.userId),
+                eq(schema.eventRegistration.eventId, body.eventId),
+            ),
+        });
+
+        if (
+            registration &&
+            wasPromotedAfterStart(
+                registration.promotedFromWaitlistAt,
+                targetEvent.start,
+            )
+        ) {
+            throw new HTTPException(409, {
+                message:
+                    "Medlemmet rykket opp fra ventelisten etter at arrangementet startet, og kan ikke få prikk for det.",
             });
         }
 
@@ -103,7 +130,11 @@ export const createStrikeRoute = route().post(
                 reason: newStrike.reason,
                 createdAt: newStrike.createdAt.toISOString(),
                 user: targetUser,
-                event: targetEvent,
+                event: {
+                    id: targetEvent.id,
+                    title: targetEvent.title,
+                    slug: targetEvent.slug,
+                },
             } satisfies z.infer<typeof strikeSchema>,
             201,
         );

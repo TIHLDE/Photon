@@ -1,0 +1,1 @@
+ALTER TABLE "event_registration" ADD COLUMN "promoted_from_waitlist_at" timestamp;

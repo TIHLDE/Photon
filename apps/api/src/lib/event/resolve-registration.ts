@@ -279,6 +279,7 @@ export async function resolveRegistrationsForEvent(
                             .set({
                                 status: "registered",
                                 waitlistPosition: null,
+                                promotedFromWaitlistAt: new Date(),
                             })
                             .where(
                                 and(
@@ -490,6 +491,7 @@ export async function resolveRegistrationsForEvent(
                     updatedAt: new Date(),
                     attendedAt: null,
                     evaluationReminderSentAt: null,
+                    promotedFromWaitlistAt: null,
                     allowPhoto: registration.allowPhoto,
                 });
             }
@@ -510,6 +512,8 @@ export async function resolveRegistrationsForEvent(
                             attendedAt: existing.attendedAt,
                             evaluationReminderSentAt:
                                 existing.evaluationReminderSentAt,
+                            promotedFromWaitlistAt:
+                                existing.promotedFromWaitlistAt,
                             allowPhoto: existing.allowPhoto,
                         };
                     }

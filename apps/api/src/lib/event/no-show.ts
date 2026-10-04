@@ -1,7 +1,7 @@
 import { schema } from "@photon/db";
 import { and, eq, gt, isNull, lt } from "drizzle-orm";
 import type { AppContext } from "../ctx";
-import { issueStrike } from "./strikes";
+import { issueStrike, wasPromotedAfterStart } from "./strikes";
 
 /** Strikes given to a user who did not show up to an event. */
 export const NO_SHOW_STRIKE_COUNT = 2;
@@ -35,7 +35,7 @@ export async function processEventNoShows(
         // kombinasjonen, men arrangementer opprettet før regelen kan fortsatt
         // ha begge deler satt i databasen.
         const event = await tx.query.event.findFirst({
-            columns: { isPaidEvent: true },
+            columns: { isPaidEvent: true, start: true },
             where: eq(schema.event.id, eventId),
         });
 
@@ -44,7 +44,11 @@ export async function processEventNoShows(
         }
 
         const registrations = await tx.query.eventRegistration.findMany({
-            columns: { userId: true, status: true },
+            columns: {
+                userId: true,
+                status: true,
+                promotedFromWaitlistAt: true,
+            },
             where: eq(schema.eventRegistration.eventId, eventId),
         });
 
@@ -74,6 +78,13 @@ export async function processEventNoShows(
                             eq(schema.eventRegistration.eventId, eventId),
                         ),
                     );
+            }
+
+            if (
+                event &&
+                wasPromotedAfterStart(reg.promotedFromWaitlistAt, event.start)
+            ) {
+                continue;
             }
 
             const created = await issueStrike(tx, {

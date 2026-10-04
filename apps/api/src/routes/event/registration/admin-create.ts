@@ -121,6 +121,7 @@ export const adminCreateRegistrationRoute = route().post(
                         allowPhoto,
                         waitlistPosition: null,
                         attendedAt: null,
+                        promotedFromWaitlistAt: null,
                         createdAt: sql`now()`,
                         updatedAt: sql`now()`,
                     },

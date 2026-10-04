@@ -286,6 +286,7 @@ export const registerToEventRoute = route().post(
                     allowPhoto,
                     waitlistPosition: null,
                     attendedAt: null,
+                    promotedFromWaitlistAt: null,
                     // Samme klokke som kolonnedefaulten, ikke en JS-Date:
                     // resolveren køordner på `createdAt`, og to tidskilder
                     // ville gitt den nye påmeldingen feil plass i køen.

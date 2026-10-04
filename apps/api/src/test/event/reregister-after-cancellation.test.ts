@@ -26,6 +26,7 @@ async function seedCancelledRegistration(ctx: IntegrationTestContext) {
         userId: user.id,
         status: "cancelled",
         waitlistPosition: 3,
+        promotedFromWaitlistAt: new Date(),
     });
 
     return { event, user };
@@ -56,6 +57,7 @@ describe("melde seg på igjen etter en kansellert plass", () => {
             expect(reg?.status).toBe("registered");
             // Ventelisteplassen hørte til runden som tok slutt.
             expect(reg?.waitlistPosition).toBeNull();
+            expect(reg?.promotedFromWaitlistAt).toBeNull();
         },
         500_000,
     );

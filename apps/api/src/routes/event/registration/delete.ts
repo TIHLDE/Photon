@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { promoteFromWaitlist } from "~/lib/event/payment";
 import { cancelPayment, getPaymentDetails } from "~/lib/vipps";
-import { issueStrike } from "~/lib/event/strikes";
+import { issueStrike, wasPromotedAfterStart } from "~/lib/event/strikes";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "../../../lib/route";
 import { requireAuth } from "../../../middleware/auth";
@@ -38,6 +38,7 @@ export const deleteEventRegistrationRoute = route().delete(
                 capacity: true,
                 canCauseStrikes: true,
                 cancellationDeadline: true,
+                start: true,
                 isPaidEvent: true,
                 priceMinor: true,
                 enforcesPreviousStrikes: true,
@@ -181,7 +182,8 @@ export const deleteEventRegistrationRoute = route().delete(
             !event.isPaidEvent &&
             event.cancellationDeadline != null &&
             deleted.status === "registered" &&
-            new Date() > event.cancellationDeadline;
+            new Date() > event.cancellationDeadline &&
+            !wasPromotedAfterStart(deleted.promotedFromWaitlistAt, event.start);
 
         if (isLateCancellation) {
             await issueStrike(db, {

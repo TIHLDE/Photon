@@ -610,6 +610,13 @@
       "when": 1790169878429,
       "tag": "0086_group_position_global_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1791112633615,
+      "tag": "0087_registration_promoted_from_waitlist_at",
+      "breakpoints": true
     }
   ]
 }
