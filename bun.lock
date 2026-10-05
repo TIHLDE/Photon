@@ -204,6 +204,20 @@
         "typescript": "catalog:",
       },
     },
+    "packages/fetch-client": {
+      "name": "@photon/fetch-client",
+      "version": "0.0.0",
+      "dependencies": {
+        "ky": "^2.0.2",
+        "openapi-typescript-helpers": "^0.1.0",
+      },
+      "devDependencies": {
+        "@photon/tsconfig": "workspace:*",
+        "@types/bun": "catalog:",
+        "@types/node": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/lepton-migration": {
       "name": "@photon/lepton-migration",
       "version": "0.0.0",
@@ -929,6 +943,8 @@
     "@photon/docker": ["@photon/docker@workspace:infra/docker"],
 
     "@photon/email": ["@photon/email@workspace:packages/email"],
+
+    "@photon/fetch-client": ["@photon/fetch-client@workspace:packages/fetch-client"],
 
     "@photon/lepton-migration": ["@photon/lepton-migration@workspace:packages/lepton-migration"],
 

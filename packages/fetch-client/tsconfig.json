@@ -1,0 +1,12 @@
+{
+    "extends": "@photon/tsconfig/node/bundler.json",
+    "compilerOptions": {
+        "outDir": "./dist",
+        "rootDir": "../..",
+        "strict": true,
+        "lib": ["ES2022", "DOM", "DOM.Iterable"],
+        "types": ["node", "bun"]
+    },
+    "include": ["src", "test.test.ts"],
+    "exclude": ["node_modules", "dist"]
+}
