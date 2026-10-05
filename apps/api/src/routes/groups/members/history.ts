@@ -4,6 +4,7 @@ import { HTTPException } from "hono/http-exception";
 import { assertGroupVisible } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImageExtra } from "~/lib/user/avatar";
 import { captureAuth } from "~/middleware/auth";
 import { formerMemberListSchema } from "../schema";
 
@@ -56,8 +57,8 @@ export const listFormerMembersRoute = route().get(
                         id: true,
                         name: true,
                         username: true,
-                        image: true,
                     },
+                    extras: userImageExtra,
                 },
             },
         });

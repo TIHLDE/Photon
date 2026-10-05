@@ -8,6 +8,7 @@ import { DEFAULT_STATUSES, canActOnEvent } from "~/lib/event/access";
 import { computeClassStanding } from "~/lib/event/priority";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImageExtra } from "~/lib/user/avatar";
 import {
     type StudyGroupRow,
     deriveStudyFromGroups,
@@ -123,9 +124,9 @@ export const getAllRegistrationsForEventsRoute = route().get(
                     columns: {
                         id: true,
                         name: true,
-                        image: true,
                         email: true,
                     },
+                    extras: userImageExtra,
                 },
             },
         });

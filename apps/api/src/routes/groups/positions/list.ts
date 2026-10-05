@@ -5,6 +5,7 @@ import { assertGroupVisible } from "~/lib/group";
 import { readLinkedPositionPermissionsBatch } from "~/lib/group/linked-leader";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImageExtra } from "~/lib/user/avatar";
 import { requireAuth } from "~/middleware/auth";
 import { positionListSchema } from "./schema";
 
@@ -53,7 +54,8 @@ export const listPositionsRoute = route().get(
                 holders: {
                     with: {
                         user: {
-                            columns: { id: true, name: true, image: true },
+                            columns: { id: true, name: true },
+                            extras: userImageExtra,
                         },
                     },
                     orderBy: (holder, { asc }) => [asc(holder.createdAt)],

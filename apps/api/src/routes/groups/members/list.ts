@@ -5,6 +5,7 @@ import { type ClassStanding, computeClassStanding } from "~/lib/event/priority";
 import { assertGroupVisible } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImageExtra } from "~/lib/user/avatar";
 import {
     type UserStudy,
     deriveStudyFromGroups,
@@ -62,8 +63,8 @@ export const listMembersRoute = route().get(
                         id: true,
                         name: true,
                         username: true,
-                        image: true,
                     },
+                    extras: userImageExtra,
                 },
             },
         });

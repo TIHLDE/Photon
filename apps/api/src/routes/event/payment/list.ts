@@ -6,6 +6,7 @@ import { requireEventAccess } from "~/lib/event/access";
 import { isEventOwner } from "~/lib/event/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImageExtra } from "~/lib/user/avatar";
 import { requireAuth } from "~/middleware/auth";
 import {
     PaginationSchema,
@@ -74,9 +75,9 @@ export const listEventPaymentsRoute = route().get(
                     columns: {
                         id: true,
                         name: true,
-                        image: true,
                         email: true,
                     },
+                    extras: userImageExtra,
                 },
             },
         });

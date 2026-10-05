@@ -5,6 +5,7 @@ import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImageExtra } from "~/lib/user/avatar";
 import { requireAuth } from "~/middleware/auth";
 import {
     PaginationSchema,
@@ -122,15 +123,15 @@ export const listFinesRoute = route().get(
                     columns: {
                         id: true,
                         name: true,
-                        image: true,
                     },
+                    extras: userImageExtra,
                 },
                 createdByUser: {
                     columns: {
                         id: true,
                         name: true,
-                        image: true,
                     },
+                    extras: userImageExtra,
                 },
                 // The paragraph the fine cites, so the list can show
                 // "3.10 - Møtte ikke opp" instead of the bare reason.
