@@ -624,15 +624,11 @@ describe("cohortGroupsByProgramme", () => {
             },
         ]);
 
-        /**
-         * Poenget med hele diagnostikken: parseren tar det første, altså det
-         * utløpte 2024-kullet, selv om bare 2025 er aktivt. Endres denne
-         * linja til 2025, er parseren fikset og loggingen kan fjernes.
-         */
+        // Kullet Feide kaller aktivt vinner, ikke det parseren så først.
         assert.deepEqual(
             parseValidStudyPrograms(groups).find((p) => p.code === "BDIGSEC")
                 ?.startYear,
-            2024,
+            2025,
         );
     });
 
@@ -656,6 +652,67 @@ describe("cohortGroupsByProgramme", () => {
         assert.deepEqual(
             byCode.get("BIDATA")?.map((c) => c.year),
             [null, 2023],
+        );
+    });
+});
+
+describe("velger kull når Feide sender flere", () => {
+    const cohort = (code: string, term: string, active: boolean) => ({
+        id: `fc:fs:fs:kull:ntnu.no:${code}:${term}`,
+        type: "fc:fs:kull",
+        displayName: `Kull ${code} ${term}`,
+        membership: { basic: "member", active, fsroles: ["STUDENT"] },
+        parent: "fc:org:ntnu.no",
+    });
+
+    const yearFor = (groups: Parameters<typeof parseValidStudyPrograms>[0]) =>
+        parseValidStudyPrograms(groups).find((p) => p.code === "BIDATA")
+            ?.startYear;
+
+    test("tar det aktive kullet, uansett rekkefølge i svaret", () => {
+        assert.equal(
+            yearFor([
+                cohort("BIDATA", "2024H", false),
+                cohort("BIDATA", "2025H", true),
+            ]),
+            2025,
+        );
+        assert.equal(
+            yearFor([
+                cohort("BIDATA", "2025H", true),
+                cohort("BIDATA", "2024H", false),
+            ]),
+            2025,
+        );
+    });
+
+    test("tar det aktive selv når det er det eldste året", () => {
+        assert.equal(
+            yearFor([
+                cohort("BIDATA", "2026H", false),
+                cohort("BIDATA", "2023H", true),
+            ]),
+            2023,
+        );
+    });
+
+    test("faller tilbake på nyeste år når ingen kull er aktive", () => {
+        assert.equal(
+            yearFor([
+                cohort("BIDATA", "2022H", false),
+                cohort("BIDATA", "2024H", false),
+            ]),
+            2024,
+        );
+    });
+
+    test("velger nyeste blant flere aktive", () => {
+        assert.equal(
+            yearFor([
+                cohort("BIDATA", "2024H", true),
+                cohort("BIDATA", "2026H", true),
+            ]),
+            2026,
         );
     });
 });
