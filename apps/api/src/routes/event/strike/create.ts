@@ -7,6 +7,7 @@ import { canActOnEvent, strikePermissions } from "~/lib/event/access";
 import { wasPromotedAfterStart } from "~/lib/event/strikes";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImageExtra } from "~/lib/user/avatar";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 import { createStrikeSchema, strikeSchema } from "./schema";
@@ -49,7 +50,8 @@ export const createStrikeRoute = route().post(
         const { db } = c.get("ctx");
 
         const targetUser = await db.query.user.findFirst({
-            columns: { id: true, name: true, image: true },
+            columns: { id: true, name: true },
+            extras: userImageExtra,
             where: eq(schema.user.id, body.userId),
         });
 

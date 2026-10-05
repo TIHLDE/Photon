@@ -2,6 +2,7 @@ import { schema } from "@photon/db";
 import { desc, eq } from "drizzle-orm";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImage } from "~/lib/user/avatar";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 import { roleListSchema } from "./schema";
@@ -37,7 +38,7 @@ export const listRolesRoute = route().get(
                 roleId: schema.userRole.roleId,
                 userId: schema.user.id,
                 name: schema.user.name,
-                image: schema.user.image,
+                image: userImage(schema.user),
             })
             .from(schema.userRole)
             .innerJoin(schema.user, eq(schema.userRole.userId, schema.user.id));

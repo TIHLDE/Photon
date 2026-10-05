@@ -5,6 +5,7 @@ import { hasPermission, hasScopedPermission } from "@photon/auth/rbac";
 import { isMemberAudience } from "~/lib/auth";
 import { DEFAULT_PAYMENT_GRACE_MINUTES } from "~/lib/event/payment";
 import { describeRoute } from "~/lib/openapi";
+import { userImageExtra } from "~/lib/user/avatar";
 import { route } from "../../lib/route";
 import { captureAuth } from "../../middleware/auth";
 import { eventDetailSchema } from "./schema";
@@ -47,7 +48,12 @@ export const getRoute = route().get(
                 },
                 reactions: {
                     columns: { userId: true, emoji: true },
-                    with: { user: { columns: { name: true, image: true } } },
+                    with: {
+                        user: {
+                            columns: { name: true },
+                            extras: userImageExtra,
+                        },
+                    },
                 },
                 restrictedToInstitute: {
                     columns: { slug: true, shortName: true, name: true },
@@ -60,8 +66,8 @@ export const getRoute = route().get(
                                 id: true,
                                 name: true,
                                 username: true,
-                                image: true,
                             },
+                            extras: userImageExtra,
                         },
                     },
                 },

@@ -13,6 +13,7 @@ import type { AppContext } from "~/lib/ctx";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { Schema, describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImage } from "~/lib/user/avatar";
 import { requireAuth } from "~/middleware/auth";
 
 export const userSearchResultSchema = Schema(
@@ -136,7 +137,7 @@ export const searchUsersRoute = route().get(
                 id: schema.user.id,
                 name: schema.user.name,
                 username: schema.user.username,
-                image: schema.user.image,
+                image: userImage(schema.user),
             })
             .from(schema.user)
             .where(

@@ -4,6 +4,7 @@ import { and, desc, gte, inArray, sql } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImageExtra } from "~/lib/user/avatar";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 import {
@@ -119,7 +120,8 @@ export const listStrikesByUserRoute = route().get(
                       orderBy: (s) => [desc(s.createdAt)],
                       with: {
                           user: {
-                              columns: { id: true, name: true, image: true },
+                              columns: { id: true, name: true },
+                              extras: userImageExtra,
                           },
                           event: {
                               columns: { id: true, title: true, slug: true },

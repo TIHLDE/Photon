@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImageExtra } from "~/lib/user/avatar";
 import { isValidUUID } from "~/lib/validation/uuid";
 import { requireAuth } from "~/middleware/auth";
 import { canViewFines, requireFinesGroup } from "./permissions";
@@ -51,15 +52,15 @@ export const getFineRoute = route().get(
                     columns: {
                         id: true,
                         name: true,
-                        image: true,
                     },
+                    extras: userImageExtra,
                 },
                 createdByUser: {
                     columns: {
                         id: true,
                         name: true,
-                        image: true,
                     },
+                    extras: userImageExtra,
                 },
                 law: {
                     columns: {

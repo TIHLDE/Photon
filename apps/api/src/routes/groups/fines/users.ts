@@ -4,6 +4,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImage } from "~/lib/user/avatar";
 import { requireAuth } from "~/middleware/auth";
 import {
     PaginationSchema,
@@ -91,7 +92,7 @@ export const listFineUsersRoute = route().get(
             .select({
                 id: schema.user.id,
                 name: schema.user.name,
-                image: schema.user.image,
+                image: userImage(schema.user),
                 finesAmount,
                 finesCount,
             })

@@ -17,6 +17,7 @@ import {
 } from "~/lib/group/positions";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImageExtra } from "~/lib/user/avatar";
 import { requireAuth } from "~/middleware/auth";
 import {
     GLOBAL_LIST_ON_GLOBAL_VERV,
@@ -195,7 +196,10 @@ export const updatePositionRoute = route().patch(
         const holders = await db.query.groupPositionHolder.findMany({
             where: eq(schema.groupPositionHolder.positionId, positionId),
             with: {
-                user: { columns: { id: true, name: true, image: true } },
+                user: {
+                    columns: { id: true, name: true },
+                    extras: userImageExtra,
+                },
             },
             orderBy: (holder, { asc }) => [asc(holder.createdAt)],
         });
