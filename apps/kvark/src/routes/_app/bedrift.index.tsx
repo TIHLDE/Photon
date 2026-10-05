@@ -217,7 +217,7 @@ function JobPreview() {
 
     return (
         <>
-            <ul className="flex flex-col gap-4 sm:gap-1">
+            <ul className="flex flex-col">
                 {data.items.map((job) => (
                     <li key={job.id}>
                         <JobCard

@@ -236,7 +236,7 @@ function EventsSection() {
     if (events.length === 0) return null;
 
     return (
-        <Stagger render={<ul className="mt-4 grid gap-8 lg:grid-cols-2" />}>
+        <Stagger render={<ul className="mt-4 grid gap-x-8 lg:grid-cols-2" />}>
             {events.map((event) => (
                 <li key={event.id}>
                     <EventCard
@@ -289,7 +289,7 @@ function ActivitiesSection() {
     if (activities.length === 0) return null;
 
     return (
-        <Stagger render={<ul className="mt-4 grid gap-8 lg:grid-cols-2" />}>
+        <Stagger render={<ul className="mt-4 grid gap-x-8 lg:grid-cols-2" />}>
             {activities.map((activity) => (
                 <li key={activity.id}>
                     <EventCard
