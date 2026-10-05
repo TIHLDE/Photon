@@ -178,6 +178,20 @@ describe("Feedback", () => {
             ).json();
             expect(inProgress.totalCount).toBe(1);
 
+            // Resolved items sink below open ones, even when newer.
+            await moderatorClient.api.feedback[":id"].$patch({
+                param: { id: bug.id },
+                json: { status: "closed" },
+            });
+
+            const sorted = await (
+                await otherClient.api.feedback.$get({ query: {} })
+            ).json();
+            expect(sorted.items.map((item) => item.id)).toEqual([
+                idea.id,
+                bug.id,
+            ]);
+
             // === DELETE ===
 
             // Not yours, and no permission.

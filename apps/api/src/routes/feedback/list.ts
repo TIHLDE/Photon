@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
@@ -17,6 +17,8 @@ import {
     listFeedbackQuerySchema,
 } from "./schema";
 
+const RESOLVED_FEEDBACK_STATUSES = ["closed", "rejected"] as const;
+
 export const listRoute = route().get(
     "/",
     describeRoute({
@@ -24,7 +26,7 @@ export const listRoute = route().get(
         summary: "List feedback",
         operationId: "listFeedback",
         description:
-            "Paginated list of ideas and bug reports, newest first. Requires authentication.",
+            "Paginated list of ideas and bug reports. Unresolved items come first, closed and rejected ones last; newest first within each. Requires authentication.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -93,7 +95,13 @@ export const listRoute = route().get(
             )
             .where(where)
             .groupBy(schema.feedback.id)
-            .orderBy(desc(schema.feedback.createdAt))
+            .orderBy(
+                asc(
+                    inArray(schema.feedback.status, RESOLVED_FEEDBACK_STATUSES),
+                ),
+                desc(schema.feedback.createdAt),
+                desc(schema.feedback.id),
+            )
             .limit(pageSize)
             .offset(getPageOffset(page, pageSize));
 
