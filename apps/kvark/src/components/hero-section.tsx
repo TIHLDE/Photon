@@ -216,7 +216,7 @@ export function HeroSectionBackground({ className }: { className?: string }) {
             <div className="absolute inset-0 opacity-40 dark:opacity-[0.28]">
                 <div
                     data-slot="hero-waves-drift"
-                    className="absolute inset-y-0 left-0"
+                    className="absolute inset-y-0 left-0 min-w-[1800px]"
                     style={{ width: `${scrollLayerWidthPercent}%` }}
                 >
                     <WaveStrip
