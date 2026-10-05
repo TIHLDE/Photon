@@ -117,7 +117,7 @@ function JobsPage() {
                 </aside>
 
                 <section className="flex min-w-0 flex-col gap-3">
-                    <Stagger render={<ul className="flex flex-col gap-3" />}>
+                    <Stagger render={<ul className="flex flex-col" />}>
                         {jobs.map((job) => (
                             <li key={job.id}>
                                 <JobCard

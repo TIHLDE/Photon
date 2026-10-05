@@ -253,9 +253,7 @@ function EventsPage() {
                             }))}
                         />
                     ) : (
-                        <Stagger
-                            render={<ul className="flex flex-col gap-3" />}
-                        >
+                        <Stagger render={<ul className="flex flex-col" />}>
                             {events.map((event) => (
                                 <li key={event.id}>
                                     <EventCard

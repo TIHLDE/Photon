@@ -286,7 +286,7 @@
    `@media (hover: hover)` is mandatory on hand-written rules. Tailwind wraps
    its own `hover:` utilities in this guard, but plain CSS gets no such help,
    and on a touch device an unguarded `:hover` sticks after a tap until the
-   user taps somewhere else.*/
+   user taps somewhere else. */
 :is(a, button)[data-slot="card"] {
     transition:
         translate 0.2s var(--ease-out),
@@ -309,34 +309,6 @@
 :is(a, button)[data-slot="card"]:active {
     translate: 0 0;
     transition-duration: 0.1s;
-}
-
-/* ── List rows ────────────────────────────────────────────────────────────
-   `list-card` rows (events, jobs) are flat at rest — no surface, no dividers —
-   and a light card surface appears behind the row on hover. The padding gives
-   that surface room around the content, and the negative inline margin lets it
-   bleed outwards so the image and text still line up with the page.
-
-   Stacked rows touch, so the pointer never falls into a dead gap between two
-   of them. The list's own `gap` is zeroed here rather than in every list in
-   the app, and the rows' vertical padding carries that spacing instead: 0.875rem
-   is the 0.5rem inset plus half of the `gap-3` the lists used. Unlayered, so it
-   wins over the `gap-*` utility on the list. */
-:has(> [data-slot="list-card"], > li > [data-slot="list-card"]) {
-    row-gap: 0;
-}
-
-[data-slot="list-card"] {
-    margin-inline: -0.5rem;
-    padding: 0.875rem 0.5rem;
-    border-radius: var(--radius-xl);
-    transition: background-color 0.15s var(--ease-out);
-}
-
-@media (hover: hover) {
-    [data-slot="list-card"]:hover {
-        background-color: var(--color-muted);
-    }
 }
 
 @layer base {

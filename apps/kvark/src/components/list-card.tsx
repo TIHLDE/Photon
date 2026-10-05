@@ -36,10 +36,13 @@ export function ListCard({
         render: render ?? <div />,
         props: {
             "data-slot": "list-card",
-            // A flat row, not a card: no surface or outline. Stacked rows are
-            // separated by a hairline drawn in @tihlde/ui's styles.css, keyed
-            // off this slot.
-            className: "flex flex-col gap-3 sm:flex-row",
+            // A flat row, not a card: a muted surface appears behind it on
+            // hover. The negative margin lets that surface bleed outwards so
+            // the content still lines up with the page. Lists of these rows
+            // use no gap, so the vertical padding carries the spacing and the
+            // pointer never falls into a dead gap between two rows.
+            className:
+                "-mx-2 flex flex-col gap-3 rounded-xl px-2 py-3.5 transition-colors hover:bg-muted sm:flex-row",
             children: (
                 <>
                     {/*
