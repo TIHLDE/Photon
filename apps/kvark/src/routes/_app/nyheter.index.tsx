@@ -55,7 +55,7 @@ function NewsPage() {
 
             <Stagger
                 render={
-                    <ul className="grid gap-x-4 sm:grid-cols-2 lg:grid-cols-3" />
+                    <ul className="grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3" />
                 }
             >
                 {news.map((item) => (
