@@ -1122,7 +1122,7 @@ export interface paths {
         };
         /**
          * List feedback
-         * @description Paginated list of ideas and bug reports, newest first. Requires authentication.
+         * @description Paginated list of ideas and bug reports. Unresolved items come first, closed and rejected ones last; newest first within each. Requires authentication.
          */
         get: operations["listFeedback"];
         put?: never;
