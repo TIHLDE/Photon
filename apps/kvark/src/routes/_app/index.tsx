@@ -25,40 +25,24 @@ import { SectionError } from "#/components/section-error";
 import { TihldeLogo } from "#/components/icons/tihlde";
 import { HeroSectionBackground } from "#/components/hero-section";
 import { formatEventDateTime } from "#/lib/event";
-import {
-    ACTIVITY_CATEGORIES,
-    BEDPRES_CATEGORIES,
-    EVENT_CATEGORIES,
-} from "#/lib/event-categories";
+import { ACTIVITY_CATEGORIES, EVENT_CATEGORIES } from "#/lib/event-categories";
 import { formatNewsDateRelative } from "#/lib/news";
 
 /**
- * Hver type har sin egen liste på forsida. Bedpressene er trukket ut av
- * «Arrangementer», og aktiviteter vises i seksjonen under i stedet.
- * Kalenderen viser arrangementer og bedpresser sammen, men ikke aktiviteter.
+ * Arrangementer og bedpresser deler én liste på forsida, og aktiviteter vises
+ * i seksjonen under i stedet. Kalenderen viser det samme utvalget.
  */
 const ACTIVITY_SLUGS = ACTIVITY_CATEGORIES.map((category) => category.value);
-const BEDPRES_SLUGS = BEDPRES_CATEGORIES.map((category) => category.value);
-const CALENDAR_SLUGS = EVENT_CATEGORIES.map((category) => category.value);
-const EVENT_SLUGS = CALENDAR_SLUGS.filter(
-    (slug) => !BEDPRES_SLUGS.includes(slug),
-);
+const EVENT_SLUGS = EVENT_CATEGORIES.map((category) => category.value);
 
-/** Tre i hver spalte — resten ligger på arrangementssida. */
-const LIST_PREVIEW_COUNT = 3;
+/** Seks arrangementer, fordelt på to spalter — resten ligger på arrangementssida. */
+const LIST_PREVIEW_COUNT = 6;
 
 /** Upcoming events, ordered by start time by the API. */
 const upcomingEventsQuery = () =>
     getEventsQuery(
         0,
         { expired: false, category: EVENT_SLUGS },
-        LIST_PREVIEW_COUNT,
-    );
-
-const upcomingBedpresQuery = () =>
-    getEventsQuery(
-        0,
-        { expired: false, category: BEDPRES_SLUGS },
         LIST_PREVIEW_COUNT,
     );
 
@@ -72,7 +56,7 @@ const CALENDAR_PAGE_SIZE = 50;
 const calendarEventsQuery = () =>
     getEventsQuery(
         0,
-        { expired: false, category: CALENDAR_SLUGS },
+        { expired: false, category: EVENT_SLUGS },
         CALENDAR_PAGE_SIZE,
     );
 
@@ -95,10 +79,7 @@ export const Route = createFileRoute("/_app/")({
     // Bannere og nyheter henter seg selv bak hver sin Suspense- og feilgrense,
     // så et feilende kall der koster oss den seksjonen og ikke hele sida.
     loader: ({ context }) =>
-        Promise.all([
-            context.queryClient.ensureQueryData(upcomingBedpresQuery()),
-            context.queryClient.ensureQueryData(upcomingEventsQuery()),
-        ]),
+        context.queryClient.ensureQueryData(upcomingEventsQuery()),
 });
 
 function Home() {
@@ -131,9 +112,7 @@ function Home() {
             />
 
             {/* Én komponent: overskrifta står på linje med fanene og «Nytt
-             * arrangement», og de styrer begge spaltene. Lista er to spalter
-             * — arrangementer til venstre, bedpres til høyre — og kalenderen
-             * ett bilde av alt sammen. */}
+             * arrangement», og de styrer både lista og kalenderen. */}
             <section className="container mx-auto w-full px-4 py-8">
                 <Tabs defaultValue="list">
                     <Reveal
@@ -165,32 +144,13 @@ function Home() {
                     </Reveal>
 
                     <TabsContent value="list">
-                        <div className="mt-4 grid gap-8 lg:grid-cols-2">
-                            <Suspense
-                                fallback={
-                                    <EventListSkeleton
-                                        count={LIST_PREVIEW_COUNT}
-                                    />
-                                }
-                            >
-                                <EventsSection />
-                            </Suspense>
-
-                            <CatchBoundary
-                                getResetKey={() => "bedpres"}
-                                errorComponent={BedpresUnavailable}
-                            >
-                                <Suspense
-                                    fallback={
-                                        <EventListSkeleton
-                                            count={LIST_PREVIEW_COUNT}
-                                        />
-                                    }
-                                >
-                                    <BedpresSection />
-                                </Suspense>
-                            </CatchBoundary>
-                        </div>
+                        <Suspense
+                            fallback={
+                                <EventGridSkeleton count={LIST_PREVIEW_COUNT} />
+                            }
+                        >
+                            <EventsSection />
+                        </Suspense>
                     </TabsContent>
 
                     <TabsContent value="calendar">
@@ -216,7 +176,13 @@ function Home() {
                     getResetKey={() => "activities"}
                     errorComponent={ActivitiesUnavailable}
                 >
-                    <Suspense fallback={<ActivitiesSkeleton />}>
+                    <Suspense
+                        fallback={
+                            <EventGridSkeleton
+                                count={ACTIVITIES_PREVIEW_COUNT}
+                            />
+                        }
+                    >
                         <ActivitiesSection />
                     </Suspense>
                 </CatchBoundary>
@@ -263,38 +229,6 @@ function BannersSection() {
     );
 }
 
-function BedpresSection() {
-    const { data } = useSuspenseQuery(upcomingBedpresQuery());
-    const bedpres = data.items;
-
-    if (bedpres.length === 0) return null;
-
-    return (
-        <Stagger render={<div className="flex flex-col gap-4" />}>
-            {bedpres.map((event) => (
-                <EventCard
-                    key={event.id}
-                    slug={event.slug}
-                    title={event.title}
-                    startsAt={formatEventDateTime(event.startTime)}
-                    location={event.location ?? ""}
-                    organizer={event.organizer?.name ?? ""}
-                    category={event.category?.label}
-                    imageUrl={event.image || undefined}
-                    imageAlt={event.imageAlt || undefined}
-                />
-            ))}
-        </Stagger>
-    );
-}
-
-/** Bedpressene er ikke verdt en feilside — resten av forsida står. */
-function BedpresUnavailable() {
-    return (
-        <SectionError message="Vi fikk ikke lastet bedriftsarrangementene." />
-    );
-}
-
 function EventsSection() {
     const { data } = useSuspenseQuery(upcomingEventsQuery());
     const events = data.items;
@@ -302,19 +236,20 @@ function EventsSection() {
     if (events.length === 0) return null;
 
     return (
-        <Stagger render={<div className="flex flex-col gap-4" />}>
+        <Stagger render={<ul className="mt-4 grid gap-8 lg:grid-cols-2" />}>
             {events.map((event) => (
-                <EventCard
-                    key={event.id}
-                    slug={event.slug}
-                    title={event.title}
-                    startsAt={formatEventDateTime(event.startTime)}
-                    location={event.location ?? ""}
-                    organizer={event.organizer?.name ?? ""}
-                    category={event.category?.label}
-                    imageUrl={event.image || undefined}
-                    imageAlt={event.imageAlt || undefined}
-                />
+                <li key={event.id}>
+                    <EventCard
+                        slug={event.slug}
+                        title={event.title}
+                        startsAt={formatEventDateTime(event.startTime)}
+                        location={event.location ?? ""}
+                        organizer={event.organizer?.name ?? ""}
+                        category={event.category?.label}
+                        imageUrl={event.image || undefined}
+                        imageAlt={event.imageAlt || undefined}
+                    />
+                </li>
             ))}
         </Stagger>
     );
@@ -377,16 +312,6 @@ function ActivitiesUnavailable() {
     return <SectionError message="Vi fikk ikke lastet aktivitetene." />;
 }
 
-function ActivitiesSkeleton() {
-    return (
-        <div className="mt-4 grid gap-8 lg:grid-cols-2">
-            {Array.from({ length: ACTIVITIES_PREVIEW_COUNT }, (_, i) => (
-                <Skeleton key={i} className="h-32 w-full" />
-            ))}
-        </div>
-    );
-}
-
 function NewsSection() {
     const { data } = useSuspenseQuery(latestNewsQuery());
     const news = data.items;
@@ -429,9 +354,9 @@ function NewsSkeleton() {
     );
 }
 
-function EventListSkeleton({ count }: { count: number }) {
+function EventGridSkeleton({ count }: { count: number }) {
     return (
-        <div className="flex flex-col gap-4">
+        <div className="mt-4 grid gap-8 lg:grid-cols-2">
             {Array.from({ length: count }, (_, i) => (
                 <Skeleton key={i} className="h-32 w-full" />
             ))}
