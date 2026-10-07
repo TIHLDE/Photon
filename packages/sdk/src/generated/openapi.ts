@@ -5682,7 +5682,6 @@ export interface components {
             creator: {
                 id: string;
                 name: string;
-                email: string;
             } | null;
             reactions: {
                 userId: string;
@@ -5931,7 +5930,6 @@ export interface components {
             creator: {
                 id: string;
                 name: string;
-                email: string;
             } | null;
             /** @description Whether the job posting has expired */
             expired: boolean;

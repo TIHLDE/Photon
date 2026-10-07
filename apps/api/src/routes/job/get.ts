@@ -31,7 +31,6 @@ export const getRoute = route().get(
                     columns: {
                         id: true,
                         name: true,
-                        email: true,
                     },
                 },
             },
