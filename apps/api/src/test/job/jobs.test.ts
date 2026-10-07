@@ -315,6 +315,7 @@ describe("Job Postings System", () => {
             expect(fetchedJob.expired).toBe(false);
             expect(fetchedJob.creator).toBeDefined();
             expect(fetchedJob.creator?.id).toBe(poster.id);
+            expect(fetchedJob.creator).not.toHaveProperty("email");
 
             // 12. 404 for non-existent job
             const notFoundResponse = await userClient.api.jobs[":id"].$get({

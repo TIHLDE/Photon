@@ -236,7 +236,6 @@ export const jobDetailSchema = Schema(
             .object({
                 id: z.string(),
                 name: z.string(),
-                email: z.string(),
             })
             .nullable()
             .meta({ description: "Creator user info" }),
