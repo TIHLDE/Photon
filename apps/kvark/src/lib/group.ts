@@ -374,6 +374,82 @@ export function sortMembersByName<T extends { name: string }>(
 }
 
 /**
+ * Rekkefølgen typene vises i på profilens medlemskapsfane. Bevisst ulik
+ * {@link GROUP_HIERARCHY_ORDER}: undergruppene er der det skjer mest, så de
+ * står øverst, og Styre havner bakerst. Idrettslag og Styre var ikke med i
+ * ønsket fra brukerne og står etter de tre som var det.
+ */
+const MEMBERSHIP_TYPE_ORDER = [
+    "SUBGROUP",
+    "COMMITTEE",
+    "INTERESTGROUP",
+    "SPORTSTEAM",
+    "BOARD",
+] as const;
+
+export type MembershipSection<T> = { key: string; label: string; groups: T[] };
+
+function compareMembershipType(a: string, b: string): number {
+    const rank = (type: string): number => {
+        const index = (MEMBERSHIP_TYPE_ORDER as readonly string[]).indexOf(
+            type.toUpperCase(),
+        );
+        return index === -1 ? MEMBERSHIP_TYPE_ORDER.length : index;
+    };
+    return (
+        rank(a) - rank(b) ||
+        memberNameCollator.compare(groupTypeLabel(a), groupTypeLabel(b))
+    );
+}
+
+/**
+ * Deler en brukers medlemskap i seksjoner for profilens medlemskapsfane:
+ * gruppene brukeren leder øverst, så én seksjon per type i
+ * {@link MEMBERSHIP_TYPE_ORDER}, og ukjente typer bakerst etter navn.
+ *
+ * Lista brukes for å komme seg til riktig gruppe (f.eks. for å gi en bot), og
+ * API-et har ingen `orderBy`, så uten dette kommer radene i tilfeldig
+ * rekkefølge. En gruppe man leder vises bare under «Leder», ikke igjen under
+ * typen sin — kortet viser uansett typen. Innenfor hver seksjon sorteres det
+ * på navn med norsk kollasjon, av samme grunn som {@link sortMembersByName}.
+ * Tomme seksjoner tas ikke med.
+ */
+export function groupMembershipsForProfile<
+    T extends { name: string; type: string; role: string },
+>(memberships: T[]): MembershipSection<T>[] {
+    const byName = (a: T, b: T): number =>
+        memberNameCollator.compare(a.name, b.name);
+
+    const leading = memberships
+        .filter((group) => group.role === "leader")
+        .sort((a, b) => compareMembershipType(a.type, b.type) || byName(a, b));
+
+    const byType = new Map<string, MembershipSection<T>>();
+    for (const group of memberships) {
+        if (group.role === "leader") continue;
+        const key = group.type.toUpperCase();
+        const section = byType.get(key) ?? {
+            key,
+            label: groupTypeLabel(group.type),
+            groups: [],
+        };
+        section.groups.push(group);
+        byType.set(key, section);
+    }
+
+    const typeSections = [...byType.values()]
+        .sort((a, b) => compareMembershipType(a.key, b.key))
+        .map((section) => ({
+            ...section,
+            groups: section.groups.sort(byName),
+        }));
+
+    return leading.length > 0
+        ? [{ key: "leader", label: "Leder", groups: leading }, ...typeSections]
+        : typeSections;
+}
+
+/**
  * Norske navn på rollene et avsluttet medlemskap kan ha hatt. Både Photon og
  * Lepton-historikken kjenner bare member/leader — kolonnen er fritekst, så en
  * ukjent verdi vises som den er i stedet for å bli borte.
