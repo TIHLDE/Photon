@@ -399,14 +399,18 @@ export const updateFineMutation = mutationOptions({
             params: { groupSlug, fineId },
             json: data,
         }),
+    // Returnert, så `mutateAsync` først løses når listene er hentet på nytt:
+    // forsvarsfeltet bytter til visning og skal da vise den nye teksten.
     onSuccess(_, vars, __, ctx) {
-        ctx.client.invalidateQueries(
-            getGroupFineByIdQuery(vars.groupSlug, vars.fineId),
-        );
-        ctx.client.invalidateQueries({
-            queryKey: [...GroupQueryKeys.fines, vars.groupSlug],
-            exact: false,
-        });
+        return Promise.all([
+            ctx.client.invalidateQueries(
+                getGroupFineByIdQuery(vars.groupSlug, vars.fineId),
+            ),
+            ctx.client.invalidateQueries({
+                queryKey: [...GroupQueryKeys.fines, vars.groupSlug],
+                exact: false,
+            }),
+        ]);
     },
 });
 

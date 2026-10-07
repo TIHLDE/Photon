@@ -910,7 +910,7 @@ function GroupDetail() {
                                 })
                             }
                             onSaveDefense={(fine, defense) =>
-                                updateFine.mutate({
+                                updateFine.mutateAsync({
                                     groupSlug: slug,
                                     fineId: fine.id,
                                     data: { defense },

@@ -77,7 +77,7 @@ type GroupFinesTabProps = {
     onMarkPaid: (fine: Fine) => void;
     onEdit: (fine: Fine) => void;
     onDelete: (fine: Fine) => void;
-    onSaveDefense: (fine: Fine, defense: string) => void;
+    onSaveDefense: (fine: Fine, defense: string) => Promise<unknown>;
     onSettleAllForUser: (userId: string, status: "approved" | "paid") => void;
 };
 
@@ -306,7 +306,7 @@ type FineListProps = {
     onMarkPaid: (fine: Fine) => void;
     onEdit: (fine: Fine) => void;
     onDelete: (fine: Fine) => void;
-    onSaveDefense: (fine: Fine, defense: string) => void;
+    onSaveDefense: (fine: Fine, defense: string) => Promise<unknown>;
     hasMore: boolean;
     isLoadingMore: boolean;
     onLoadMore: () => void;
