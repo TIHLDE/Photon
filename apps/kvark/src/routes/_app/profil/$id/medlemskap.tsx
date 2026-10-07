@@ -1,7 +1,12 @@
 import { authQueryOptions, sessionHasScopedPermission } from "#/api/auth";
 import { getUserProfileQuery } from "#/api/queries/user";
 import { ProfileMembershipCard } from "#/components/profile-membership-card";
-import { groupTypeLabel, isPrivateGroupType } from "#/lib/group";
+import {
+    groupMembershipsForProfile,
+    groupTypeLabel,
+    isPrivateGroupType,
+    isRealMembership,
+} from "#/lib/group";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -11,13 +16,13 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from "@tihlde/ui/ui/empty";
+import { Separator } from "@tihlde/ui/ui/separator";
 import { UserCircle2 } from "lucide-react";
+import { Fragment } from "react";
 
 export const Route = createFileRoute("/_app/profil/$id/medlemskap")({
     component: RouteComponent,
 });
-
-import { isRealMembership } from "#/lib/group";
 
 /** Perioden et avsluttet medlemskap varte, som årstall: «2023–2025», eller
  * bare «2024» når det både startet og sluttet samme år.
@@ -57,6 +62,7 @@ function RouteComponent() {
     // Samme filter på historikken: et kullbytte legger igjen en rad i
     // STUDYYEAR-gruppa man forlot, og «Tidligere: 2023-kullet» er ikke et verv.
     const formerMemberships = profile.formerGroups.filter(isRealMembership);
+    const sections = groupMembershipsForProfile(memberships);
 
     if (memberships.length === 0 && formerMemberships.length === 0) {
         return (
@@ -78,22 +84,30 @@ function RouteComponent() {
 
     return (
         <div className="flex flex-col gap-6">
-            {memberships.length > 0 ? (
-                <ul className="flex flex-col gap-3">
-                    {memberships.map((group) => (
-                        <li key={group.slug}>
-                            <ProfileMembershipCard
-                                slug={group.slug}
-                                name={group.name}
-                                typeLabel={groupTypeLabel(group.type)}
-                                logoUrl={group.logoUrl}
-                                role={group.role}
-                                canOpen={canOpenGroup(group)}
-                            />
-                        </li>
-                    ))}
-                </ul>
-            ) : null}
+            {sections.map((section, index) => (
+                <Fragment key={section.key}>
+                    {index > 0 ? <Separator variant="subtle" /> : null}
+                    <section className="flex flex-col gap-3">
+                        <h2 className="text-sm text-muted-foreground">
+                            {section.label}
+                        </h2>
+                        <ul className="flex flex-col gap-3">
+                            {section.groups.map((group) => (
+                                <li key={group.slug}>
+                                    <ProfileMembershipCard
+                                        slug={group.slug}
+                                        name={group.name}
+                                        typeLabel={groupTypeLabel(group.type)}
+                                        logoUrl={group.logoUrl}
+                                        role={group.role}
+                                        canOpen={canOpenGroup(group)}
+                                    />
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+                </Fragment>
+            ))}
 
             {formerMemberships.length > 0 ? (
                 <section className="flex flex-col gap-3">
