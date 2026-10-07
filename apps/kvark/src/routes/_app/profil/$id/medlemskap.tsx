@@ -84,30 +84,36 @@ function RouteComponent() {
 
     return (
         <div className="flex flex-col gap-6">
-            {sections.map((section, index) => (
-                <Fragment key={section.key}>
-                    {index > 0 ? <Separator variant="subtle" /> : null}
-                    <section className="flex flex-col gap-3">
-                        <h2 className="text-sm text-muted-foreground">
-                            {section.label}
-                        </h2>
-                        <ul className="flex flex-col gap-3">
-                            {section.groups.map((group) => (
-                                <li key={group.slug}>
-                                    <ProfileMembershipCard
-                                        slug={group.slug}
-                                        name={group.name}
-                                        typeLabel={groupTypeLabel(group.type)}
-                                        logoUrl={group.logoUrl}
-                                        role={group.role}
-                                        canOpen={canOpenGroup(group)}
-                                    />
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-                </Fragment>
-            ))}
+            {sections.length > 0 ? (
+                <div className="flex flex-col gap-5">
+                    {sections.map((section, index) => (
+                        <Fragment key={section.key}>
+                            {index > 0 ? <Separator /> : null}
+                            <section className="flex flex-col gap-2">
+                                <h2 className="text-sm text-muted-foreground">
+                                    {section.label}
+                                </h2>
+                                <ul className="flex flex-col gap-3">
+                                    {section.groups.map((group) => (
+                                        <li key={group.slug}>
+                                            <ProfileMembershipCard
+                                                slug={group.slug}
+                                                name={group.name}
+                                                typeLabel={groupTypeLabel(
+                                                    group.type,
+                                                )}
+                                                logoUrl={group.logoUrl}
+                                                role={group.role}
+                                                canOpen={canOpenGroup(group)}
+                                            />
+                                        </li>
+                                    ))}
+                                </ul>
+                            </section>
+                        </Fragment>
+                    ))}
+                </div>
+            ) : null}
 
             {formerMemberships.length > 0 ? (
                 <section className="flex flex-col gap-3">
