@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { type SQL, and, desc, eq, or } from "drizzle-orm";
+import { type SQL, and, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
@@ -28,7 +28,7 @@ export const listFinesRoute = route().get(
         summary: "List fines for a group",
         operationId: "listFines",
         description:
-            "Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and root. A former member sees only the fines they are party to: the ones they received and the ones they handed out. Anyone who never belonged to the group is refused. Filter with 'status' and 'userId'.",
+            "Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and root. A former member sees only the fines they are party to: the ones they received and the ones they handed out. Anyone who never belonged to the group is refused. Filter with 'status' and 'userId'. Use 'aroundFineId' as a jump hint within the visible, filtered list; it takes precedence over 'page'. A missing or nonmatching target returns the first page without changing the filters.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -39,7 +39,7 @@ export const listFinesRoute = route().get(
             description: "Never belonged to this group",
         })
         .notFound({
-            description: "Group not found, or fines not activated for it",
+            description: "Group not found, or fines not activated",
         })
         .build(),
     requireAuth,
@@ -47,12 +47,21 @@ export const listFinesRoute = route().get(
         "query",
         PaginationSchema.extend({
             status: fineStatusSchema
+                .or(z.literal("active"))
                 .optional()
-                .describe("Only return fines with this status"),
+                .describe(
+                    "Only return fines with this status; 'active' includes pending and approved",
+                ),
             userId: z
                 .string()
                 .optional()
                 .describe("Only return fines given to this user"),
+            aroundFineId: z
+                .uuid()
+                .optional()
+                .describe(
+                    "Jump to this fine within the authorized, filtered list, or return the first page if it does not match",
+                ),
         }),
     ),
     async (c) => {
@@ -60,7 +69,8 @@ export const listFinesRoute = route().get(
         const { db } = ctx;
         const groupSlug = c.req.param("groupSlug");
         const user = c.get("user");
-        const { page, pageSize, status, userId } = c.req.valid("query");
+        const { page, pageSize, status, userId, aroundFineId } =
+            c.req.valid("query");
 
         const group = await requireFinesGroup(ctx, groupSlug);
 
@@ -105,19 +115,43 @@ export const listFinesRoute = route().get(
         }
 
         if (status) {
-            conditions.push(eq(schema.fine.status, status));
+            conditions.push(
+                status === "active"
+                    ? inArray(schema.fine.status, ["pending", "approved"])
+                    : eq(schema.fine.status, status),
+            );
         }
 
         const filters = and(...conditions);
+        let resolvedPage = page;
+        if (aroundFineId) {
+            // Keep the tuple comparison in PostgreSQL: JS Date would lose
+            // microseconds and could put a boundary fine on the wrong page.
+            // An invisible/nonmatching target yields no tuple, so the count
+            // is zero and we fall back to the filtered first page.
+            const precedingCount = await db.$count(
+                schema.fine,
+                and(
+                    filters,
+                    sql`(${schema.fine.createdAt}, ${schema.fine.id}) > (
+                        SELECT ${schema.fine.createdAt}, ${schema.fine.id}
+                        FROM ${schema.fine}
+                        WHERE ${schema.fine.id} = ${aroundFineId} AND ${filters}
+                    )`,
+                ),
+            );
+            resolvedPage = Math.floor(precedingCount / pageSize);
+        }
         const totalCount = await db.$count(schema.fine, filters);
 
         // Include public user info (name/image) so the UI can display names
         // instead of user IDs
         const fines = await db.query.fine.findMany({
             where: filters,
-            orderBy: desc(schema.fine.createdAt),
+            // The ID breaks timestamp ties, including bulk-created fines.
+            orderBy: [desc(schema.fine.createdAt), desc(schema.fine.id)],
             limit: pageSize,
-            offset: getPageOffset(page, pageSize),
+            offset: getPageOffset(resolvedPage, pageSize),
             with: {
                 user: {
                     columns: {
@@ -150,7 +184,8 @@ export const listFinesRoute = route().get(
         return c.json({
             totalCount,
             pages: totalPages,
-            nextPage: getNextPage(page, totalPages),
+            page: resolvedPage,
+            nextPage: getNextPage(resolvedPage, totalPages),
             fines: fines.map(serializeFineLaw),
         });
     },
