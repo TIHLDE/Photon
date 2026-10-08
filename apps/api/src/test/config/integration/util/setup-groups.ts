@@ -380,7 +380,8 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
                 "Index jobber smidig med utviklingen av linjeforeningens løsninger, blant annet nettsiden du er inne på akkurat nå.",
             contact_email: "teknologiminister@tihlde.org",
             type: "SUBGROUP",
-            fine_info: "Skyldig til motsatt bevist.\n\nForeldring på 1 uke",
+            fine_info:
+                "Skyldig til det motsattet er bevist.\n\nForeldring på 1 uke",
             fines_activated: 1,
             fines_admin_id: "iverli",
         },
