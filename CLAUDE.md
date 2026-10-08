@@ -207,7 +207,9 @@ The repo has **one long-lived branch: `main`**. There is no `dev` branch.
 - **Integration tests**: Run against an in-memory PGlite database; cache, queue,
   storage and email are in-memory fakes. No Docker required.
 - **Test location**: `apps/api/src/test/`
-- **Config**: `maxWorkers: 1` by default (configurable via `MAX_TEST_WORKERS` env)
+- **Config**: `maxWorkers` defaults to half the CPU cores (override with `MAX_TEST_WORKERS`)
+- **Isolation**: each test file gets its own worker and PGlite; the database is
+  reset (truncate + re-seed) before every test
 
 ### Time & Timezones
 

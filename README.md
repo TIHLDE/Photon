@@ -287,7 +287,7 @@ bun run test
 
 Testene trenger ikke Docker. De kjører mot en PGlite-database i minnet, og cache, kø, lagring og e-post er erstattet med varianter i minnet. Docker trengs til `bun dev` og til `db:*`-kommandoene (`db:push`, `db:migrate`, `db:studio`), som alle går mot de ekte dev-tjenestene.
 
-Om du ønsker å kjøre flere tester parallellt, kan du justere `MAX_TEST_WORKERS` miljøvariabelen.
+Testene kjører som standard parallelt på halvparten av CPU-kjernene. Vil du styre antallet selv, setter du miljøvariabelen `MAX_TEST_WORKERS`.
 
 ## 🐳 Docker
 
