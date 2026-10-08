@@ -51,6 +51,9 @@ type GroupFinesTabProps = {
     onFineRevealed: () => void;
     isLoadingFines?: boolean;
     finesError?: string;
+    hasPreviousFines: boolean;
+    isLoadingPreviousFines: boolean;
+    onLoadPreviousFines: () => void;
     onShowNewestFines: () => void;
     /** Gruppens medlemmer med bøtesummen sin, for «Per medlem». */
     fineUsers: FineUser[];
@@ -116,6 +119,9 @@ export function GroupFinesTab({
     onFineRevealed,
     isLoadingFines,
     finesError,
+    hasPreviousFines,
+    isLoadingPreviousFines,
+    onLoadPreviousFines,
     onShowNewestFines,
     fineUsers,
     statistics,
@@ -266,6 +272,27 @@ export function GroupFinesTab({
                     </div>
                 ) : null}
 
+                {showFineList && hasPreviousFines ? (
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={onLoadPreviousFines}
+                            disabled={isLoadingPreviousFines || isLoadingMore}
+                        >
+                            {isLoadingPreviousFines
+                                ? "Laster …"
+                                : "Last inn nyere bøter"}
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            onClick={onShowNewestFines}
+                            disabled={isLoadingPreviousFines || isLoadingMore}
+                        >
+                            Til nyeste bøter
+                        </Button>
+                    </div>
+                ) : null}
+
                 {showFineList && isLoadingFines ? (
                     <Skeleton className="h-40 w-full" />
                 ) : showFineList && finesError ? (
@@ -291,7 +318,7 @@ export function GroupFinesTab({
                         onDelete={onDelete}
                         onSaveDefense={onSaveDefense}
                         hasMore={hasMore}
-                        isLoadingMore={isLoadingMore}
+                        isLoadingMore={isLoadingMore || isLoadingPreviousFines}
                         onLoadMore={onLoadMore}
                     />
                 ) : (

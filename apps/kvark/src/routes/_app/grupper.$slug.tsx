@@ -3,6 +3,7 @@ import {
     useInfiniteQuery,
     useMutation,
     useQuery,
+    useQueryClient,
     useSuspenseQuery,
 } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
@@ -165,6 +166,7 @@ function GroupDetail() {
         botId,
     } = Route.useSearch();
     const navigate = Route.useNavigate();
+    const queryClient = useQueryClient();
     // Keep this window only while browsing the page, never in URL/storage.
     const [fineAnchor, setFineAnchor] = useState<string>();
     const fineAnchorId = botId ?? fineAnchor;
@@ -305,6 +307,9 @@ function GroupDetail() {
         hasNextPage: hasMoreFines,
         isFetchingNextPage: isLoadingMoreFines,
         fetchNextPage: fetchMoreFines,
+        hasPreviousPage: hasPreviousFines,
+        isFetchingPreviousPage: isLoadingPreviousFines,
+        fetchPreviousPage: fetchPreviousFines,
         isPending: isLoadingFines,
         isFetching: isFetchingFines,
         error: finesError,
@@ -317,6 +322,9 @@ function GroupDetail() {
         // `botVisning` skulle stå til fra en gammel URL.
         enabled: finesTabVisible && showFineList,
     });
+    const needsJumpLookup = Boolean(
+        botId && typeof apiFinePages?.pageParams[0] === "number",
+    );
     const finishFineJump = useCallback(
         (matched = true) => {
             if (!botId) return;
@@ -338,14 +346,34 @@ function GroupDetail() {
     useEffect(() => {
         const firstPage = apiFinePages?.pages[0];
         if (!botId || !firstPage || isFetchingFines || finesError) return;
-        if (
+        if (needsJumpLookup) {
+            // Loading newer pages changes the cached initial page parameter
+            // to a number. A new jump must locate the ID again, not that page.
+            void queryClient.resetQueries({
+                queryKey: getGroupFinesInfiniteQuery(slug, {
+                    ...fineFilters,
+                    aroundFineId: botId,
+                }).queryKey,
+                exact: true,
+            });
+        } else if (
             !apiFinePages.pages.some((page) =>
                 page.fines.some((fine) => fine.id === botId),
             )
         ) {
             finishFineJump(false);
         }
-    }, [botId, apiFinePages, isFetchingFines, finesError, finishFineJump]);
+    }, [
+        botId,
+        apiFinePages,
+        isFetchingFines,
+        finesError,
+        needsJumpLookup,
+        queryClient,
+        slug,
+        fineFilters,
+        finishFineJump,
+    ]);
 
     const finesErrorMessage = finesError
         ? errorStatus(finesError) === 404
@@ -356,6 +384,10 @@ function GroupDetail() {
         : undefined;
 
     function showNewestFines() {
+        void queryClient.resetQueries({
+            queryKey: getGroupFinesInfiniteQuery(slug, fineFilters).queryKey,
+            exact: true,
+        });
         setFineSearch({}, { replace: true, resetScroll: true });
     }
 
@@ -881,9 +913,15 @@ function GroupDetail() {
                             onFineRevealed={finishFineJump}
                             isLoadingFines={
                                 isLoadingFines ||
+                                needsJumpLookup ||
                                 Boolean(botId && isFetchingFines)
                             }
                             finesError={finesErrorMessage}
+                            hasPreviousFines={hasPreviousFines}
+                            isLoadingPreviousFines={isLoadingPreviousFines}
+                            onLoadPreviousFines={() =>
+                                void fetchPreviousFines()
+                            }
                             onShowNewestFines={showNewestFines}
                             fineUsers={fineUsers}
                             statistics={apiFineStatistics}

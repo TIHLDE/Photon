@@ -296,6 +296,8 @@ export const getGroupFinesInfiniteQuery = (
             }),
         initialPageParam,
         getNextPageParam: (lastPage) => lastPage.nextPage ?? undefined,
+        getPreviousPageParam: (firstPage) =>
+            firstPage.page > 0 ? firstPage.page - 1 : undefined,
     });
 };
 
