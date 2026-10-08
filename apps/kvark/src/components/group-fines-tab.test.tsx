@@ -137,6 +137,30 @@ describe("fine list jump", () => {
         expect(html).not.toContain("Til medlemsoversikten");
     });
 
+    test.each([
+        [1, "bot"],
+        [-1, "bot"],
+        [0, "bøter"],
+        [2, "bøter"],
+        [-2, "bøter"],
+    ] as const)(
+        "uses the correct unit for a member total of %i",
+        (amount, unit) => {
+            const html = render({
+                grouping: "per-medlem",
+                fineUsers: [
+                    {
+                        id: "member",
+                        name: "Member",
+                        finesAmount: amount,
+                        finesCount: 1,
+                    },
+                ],
+            });
+            expect(html).toContain(`${amount} ${unit} fordelt på`);
+        },
+    );
+
     test("opens the requested row inside the ordinary list", () => {
         const html = render({
             revealFineId: linkedFine.id,

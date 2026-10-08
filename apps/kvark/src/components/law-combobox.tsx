@@ -44,7 +44,10 @@ export function LawCombobox({ items, value, onValueChange }: LawComboboxProps) {
                                         bøter». */}
                                     {item.amount !== 0 ? (
                                         <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
-                                            {item.amount} bøter
+                                            {item.amount}{" "}
+                                            {Math.abs(item.amount) === 1
+                                                ? "bot"
+                                                : "bøter"}
                                         </span>
                                     ) : null}
                                 </span>

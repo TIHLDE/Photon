@@ -11,9 +11,9 @@ import { integrationTest } from "~/test/config/integration";
 
 describe("fines", () => {
     describe("create fine", () => {
-        integrationTest(
-            "successfully creates a fine as group leader",
-            async ({ ctx }) => {
+        integrationTest.for([1, 50])(
+            "successfully creates a fine of %i as group leader",
+            async (amount, { ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
@@ -44,7 +44,7 @@ describe("fines", () => {
                         userId: targetUser.id,
                         groupSlug: group.slug,
                         reason: "Late to meeting",
-                        amount: 50,
+                        amount,
                     },
                 });
 
@@ -54,7 +54,7 @@ describe("fines", () => {
                 expect(json.userId).toBe(targetUser.id);
                 expect(json.groupSlug).toBe(group.slug);
                 expect(json.reason).toBe("Late to meeting");
-                expect(json.amount).toBe(50);
+                expect(json.amount).toBe(amount);
                 expect(json.status).toBe("pending");
 
                 const notifications = await ctx.db.query.notification.findMany({
@@ -65,7 +65,7 @@ describe("fines", () => {
                     `Du har fått en bot i "${group.name}"`,
                 );
                 expect(notifications[0]?.description).toBe(
-                    `${user.name} har gitt deg 50 bøter for å ha brutt "Late to meeting" i gruppen ${group.name}`,
+                    `${user.name} har gitt deg ${amount} ${amount === 1 ? "bot" : "bøter"} for å ha brutt "Late to meeting" i gruppen ${group.name}`,
                 );
                 expect(notifications[0]?.link).toBe(
                     `/grupper/${group.slug}?tab=boter&botId=${json.id}`,
@@ -90,7 +90,6 @@ describe("fines", () => {
                     json.id,
                 );
             },
-            500_000,
         );
 
         integrationTest(
@@ -151,9 +150,9 @@ describe("fines", () => {
             500_000,
         );
 
-        integrationTest(
-            "accepts a fine with a negative amount",
-            async ({ ctx }) => {
+        integrationTest.for([-1, -2])(
+            "accepts a fine with a negative amount of %i",
+            async (amount, { ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
@@ -190,13 +189,13 @@ describe("fines", () => {
                         userId: targetUser.user.id,
                         groupSlug: group.slug,
                         reason: "Motpost",
-                        amount: -2,
+                        amount,
                     },
                 });
 
                 expect(response.status).toBe(201);
                 const json = await response.json();
-                expect(json.amount).toBe(-2);
+                expect(json.amount).toBe(amount);
 
                 const notification = await ctx.db.query.notification.findFirst({
                     where: eq(schema.notification.userId, targetUser.user.id),
@@ -205,13 +204,12 @@ describe("fines", () => {
                     `/grupper/${group.slug}?tab=boter&botId=${json.id}`,
                 );
                 expect(notification?.title).toBe(
-                    `Du har fått bøter trukket fra i "${group.name}"`,
+                    `Du har fått ${amount === -1 ? "en bot" : "bøter"} trukket fra i "${group.name}"`,
                 );
                 expect(notification?.description).toBe(
-                    `${user.name} har trukket fra 2 bøter med "Motpost" i gruppen ${group.name}`,
+                    `${user.name} har trukket fra ${Math.abs(amount)} ${amount === -1 ? "bot" : "bøter"} med "Motpost" i gruppen ${group.name}`,
                 );
             },
-            500_000,
         );
 
         integrationTest(

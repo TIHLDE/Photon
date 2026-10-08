@@ -483,8 +483,11 @@ function FineUserList({
                                     {user.name}
                                 </span>
                                 <span className="truncate text-sm text-muted-foreground">
-                                    {user.finesAmount} bøter fordelt på{" "}
-                                    {user.finesCount}{" "}
+                                    {user.finesAmount}{" "}
+                                    {Math.abs(user.finesAmount) === 1
+                                        ? "bot"
+                                        : "bøter"}{" "}
+                                    fordelt på {user.finesCount}{" "}
                                     {user.finesCount === 1
                                         ? "hendelse"
                                         : "hendelser"}

@@ -203,15 +203,16 @@ export const createFineRoute = route().post(
         // En negativ bot er en motpost, ikke en straff: «har gitt deg -2
         // bøter for å ha brutt ...» leser som en ny bot.
         const giver = newFine.createdByUser?.name ?? "Noen";
+        const unit = Math.abs(newFine.amount) === 1 ? "bot" : "bøter";
         const notification =
             newFine.amount < 0
                 ? {
-                      title: `Du har fått bøter trukket fra i "${group.name}"`,
-                      description: `${giver} har trukket fra ${Math.abs(newFine.amount)} bøter med ${offence} i gruppen ${group.name}`,
+                      title: `Du har fått ${unit === "bot" ? "en bot" : "bøter"} trukket fra i "${group.name}"`,
+                      description: `${giver} har trukket fra ${Math.abs(newFine.amount)} ${unit} med ${offence} i gruppen ${group.name}`,
                   }
                 : {
                       title: `Du har fått en bot i "${group.name}"`,
-                      description: `${giver} har gitt deg ${newFine.amount} bøter for å ha brutt ${offence} i gruppen ${group.name}`,
+                      description: `${giver} har gitt deg ${newFine.amount} ${unit} for å ha brutt ${offence} i gruppen ${group.name}`,
                   };
 
         try {
