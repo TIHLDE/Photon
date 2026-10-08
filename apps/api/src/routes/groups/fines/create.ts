@@ -219,7 +219,7 @@ export const createFineRoute = route().post(
                 {
                     userId: newFine.userId,
                     ...notification,
-                    link: `/grupper/${groupSlug}?tab=boter`,
+                    link: `/grupper/${encodeURIComponent(groupSlug)}?tab=boter&botId=${newFine.id}`,
                 },
                 ctx,
             );
