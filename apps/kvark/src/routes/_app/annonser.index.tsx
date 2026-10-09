@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
+import { Empty, EmptyDescription, EmptyTitle } from "@tihlde/ui/ui/empty";
 import { Stagger } from "@tihlde/ui/ui/motion";
 import { PlusIcon } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
@@ -117,27 +118,37 @@ function JobsPage() {
                 </aside>
 
                 <section className="flex min-w-0 flex-col gap-3">
-                    <Stagger render={<ul className="flex flex-col" />}>
-                        {jobs.map((job) => (
-                            <li key={job.id}>
-                                <JobCard
-                                    slug={job.id}
-                                    title={job.title}
-                                    jobType={formatJobType(job.jobType)}
-                                    classLevels={formatClassRange(
-                                        job.classStart,
-                                        job.classEnd,
-                                    )}
-                                    location={job.location}
-                                    deadline={formatJobDeadline(
-                                        job.deadline,
-                                        job.isContinuouslyHiring,
-                                    )}
-                                    imageUrl={job.imageUrl || undefined}
-                                />
-                            </li>
-                        ))}
-                    </Stagger>
+                    {jobs.length === 0 ? (
+                        <Empty>
+                            <EmptyTitle>Fant ingen stillinger</EmptyTitle>
+                            <EmptyDescription>
+                                Du finner kanskje stillinger med en annen
+                                filtrering.
+                            </EmptyDescription>
+                        </Empty>
+                    ) : (
+                        <Stagger render={<ul className="flex flex-col" />}>
+                            {jobs.map((job) => (
+                                <li key={job.id}>
+                                    <JobCard
+                                        slug={job.id}
+                                        title={job.title}
+                                        jobType={formatJobType(job.jobType)}
+                                        classLevels={formatClassRange(
+                                            job.classStart,
+                                            job.classEnd,
+                                        )}
+                                        location={job.location}
+                                        deadline={formatJobDeadline(
+                                            job.deadline,
+                                            job.isContinuouslyHiring,
+                                        )}
+                                        imageUrl={job.imageUrl || undefined}
+                                    />
+                                </li>
+                            ))}
+                        </Stagger>
+                    )}
                 </section>
             </div>
         </div>

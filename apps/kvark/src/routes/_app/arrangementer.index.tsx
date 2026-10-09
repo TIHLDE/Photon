@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
+import { Empty, EmptyDescription, EmptyTitle } from "@tihlde/ui/ui/empty";
 import { Stagger } from "@tihlde/ui/ui/motion";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { PlusIcon } from "lucide-react";
@@ -252,6 +253,14 @@ function EventsPage() {
                                 category: event.category?.label,
                             }))}
                         />
+                    ) : events.length === 0 ? (
+                        <Empty>
+                            <EmptyTitle>Fant ingen arrangementer</EmptyTitle>
+                            <EmptyDescription>
+                                Du finner kanskje arrangementer med en annen
+                                filtrering.
+                            </EmptyDescription>
+                        </Empty>
                     ) : (
                         <Stagger render={<ul className="flex flex-col" />}>
                             {events.map((event) => (
