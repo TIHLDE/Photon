@@ -1,6 +1,4 @@
 import { Input } from "@tihlde/ui/ui/input";
-import { Label } from "@tihlde/ui/ui/label";
-import { RadioGroup, RadioGroupItem } from "@tihlde/ui/ui/radio-group";
 import { useMemo } from "react";
 
 import { FilterCheckboxOption } from "#/components/filter-checkbox-option";
@@ -111,26 +109,21 @@ export function JobFilters({
 
                     <div className="flex flex-col gap-2">
                         <span className="text-sm">Jobbtype</span>
-                        <RadioGroup
-                            value={value.jobType ?? ""}
-                            onValueChange={(v) =>
-                                onChange({
-                                    ...value,
-                                    jobType: (v as JobType) || null,
-                                })
-                            }
-                            className="flex flex-col gap-2"
-                        >
+                        <div className="flex flex-col gap-2">
                             {jobTypeOptions.map((opt) => (
-                                <Label
+                                <FilterCheckboxOption
                                     key={opt.value}
-                                    className="flex items-center gap-2"
-                                >
-                                    <RadioGroupItem value={opt.value} />
-                                    {opt.label}
-                                </Label>
+                                    title={opt.label}
+                                    checked={value.jobType === opt.value}
+                                    onCheckedChange={(checked) =>
+                                        onChange({
+                                            ...value,
+                                            jobType: checked ? opt.value : null,
+                                        })
+                                    }
+                                />
                             ))}
-                        </RadioGroup>
+                        </div>
                     </div>
                 </div>
             }
