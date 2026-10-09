@@ -21,7 +21,7 @@ import { FieldError } from "@tihlde/ui/ui/field";
 import { Label } from "@tihlde/ui/ui/label";
 import { Textarea } from "@tihlde/ui/ui/textarea";
 import { Pencil, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
 
 import { HandCoins, ShieldCheck } from "lucide-react";
@@ -327,6 +327,9 @@ function GroupFineDetails({
 type GroupFineAccordionProps = {
     groupSlug: string;
     fines: Fine[];
+    /** One-time request to expand and scroll to a fine in the list. */
+    revealFineId?: string;
+    onFineRevealed?: () => void;
     /** Whether the viewer may approve, settle or delete the group's fines. */
     canManage: boolean;
     /** Satt for den som har forlatt gruppen: ingenting kan endres. */
@@ -342,6 +345,8 @@ type GroupFineAccordionProps = {
 export function GroupFineAccordion({
     groupSlug,
     fines,
+    revealFineId,
+    onFineRevealed,
     canManage,
     readOnly,
     currentUserId,
@@ -351,10 +356,40 @@ export function GroupFineAccordion({
     onDelete,
     onSaveDefense,
 }: GroupFineAccordionProps) {
+    const rootRef = useRef<HTMLDivElement>(null);
+    const [expandedIds, setExpandedIds] = useState<string[]>(
+        revealFineId ? [revealFineId] : [],
+    );
+
+    useEffect(() => {
+        if (!revealFineId) return;
+        const row = rootRef.current?.querySelector<HTMLElement>(
+            `[data-fine-id="${revealFineId}"]`,
+        );
+        if (!row) return;
+        setExpandedIds((ids) =>
+            ids.includes(revealFineId) ? ids : [...ids, revealFineId],
+        );
+        // Scroll after React has expanded the row.
+        const frame = requestAnimationFrame(() => {
+            row.querySelector<HTMLButtonElement>("button")?.focus({
+                preventScroll: true,
+            });
+            row.scrollIntoView({ block: "start", behavior: "instant" });
+            onFineRevealed?.();
+        });
+        return () => cancelAnimationFrame(frame);
+    }, [revealFineId, fines, onFineRevealed]);
+
     return (
         <Card size="sm">
             <CardContent className="p-0">
-                <Accordion multiple>
+                <Accordion
+                    ref={rootRef}
+                    multiple
+                    value={expandedIds}
+                    onValueChange={setExpandedIds}
+                >
                     {fines.map((fine) => (
                         <GroupFineAccordionItem
                             key={fine.id}
@@ -392,7 +427,11 @@ function GroupFineAccordionItem({
     const [defenseDraft, setDefenseDraft] = useState<string | null>(null);
 
     return (
-        <AccordionItem value={fine.id} className="px-3">
+        <AccordionItem
+            value={fine.id}
+            data-fine-id={fine.id}
+            className="scroll-mt-24 px-3"
+        >
             <AccordionTrigger className="items-center py-2 hover:no-underline">
                 <GroupFineRow fine={fine} />
             </AccordionTrigger>

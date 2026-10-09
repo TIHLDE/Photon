@@ -1630,7 +1630,7 @@ export interface paths {
         };
         /**
          * List fines for a group
-         * @description Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and root. A former member sees only the fines they are party to: the ones they received and the ones they handed out. Anyone who never belonged to the group is refused. Filter with 'status' and 'userId'.
+         * @description Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and root. A former member sees only the fines they are party to: the ones they received and the ones they handed out. Anyone who never belonged to the group is refused. Filter with 'status' and 'userId'. Use 'aroundFineId' as a jump hint within the visible, filtered list; it takes precedence over 'page'. A missing or nonmatching target returns the first page without changing the filters.
          */
         get: operations["listFines"];
         put?: never;
@@ -5154,6 +5154,8 @@ export interface components {
             } | null;
         };
         FineList: {
+            /** @description Resolved zero-based page number */
+            page: number;
             /** @description Total number of fines */
             totalCount: number;
             /** @description Total number of pages */
@@ -11015,10 +11017,12 @@ export interface operations {
                 pageSize?: number;
                 /** @description Number of items to skip */
                 page?: number;
-                /** @description Only return fines with this status */
-                status?: "pending" | "approved" | "paid" | "rejected";
+                /** @description Only return fines with this status; 'active' includes pending and approved */
+                status?: ("pending" | "approved" | "paid" | "rejected") | "active";
                 /** @description Only return fines given to this user */
                 userId?: string;
+                /** @description Jump to this fine within the authorized, filtered list, or return the first page if it does not match */
+                aroundFineId?: string;
             };
             header?: never;
             path: {
@@ -11055,7 +11059,7 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Not Found - Group not found, or fines not activated for it */
+            /** @description Not Found - Group not found, or fines not activated */
             404: {
                 headers: {
                     [name: string]: unknown;

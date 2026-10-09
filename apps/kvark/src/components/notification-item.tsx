@@ -59,7 +59,7 @@ export function NotificationItem({
                     {body}
                 </a>
             ) : href ? (
-                <Link to={href} onClick={onOpen} className="flex-1">
+                <Link from="/" href={href} onClick={onOpen} className="flex-1">
                     {body}
                 </Link>
             ) : (

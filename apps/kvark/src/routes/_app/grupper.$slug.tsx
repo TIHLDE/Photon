@@ -3,6 +3,7 @@ import {
     useInfiniteQuery,
     useMutation,
     useQuery,
+    useQueryClient,
     useSuspenseQuery,
 } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
@@ -14,8 +15,7 @@ import {
     EmptyTitle,
 } from "@tihlde/ui/ui/empty";
 import { LockIcon } from "lucide-react";
-import { useMemo, useState } from "react";
-import { z } from "zod";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { authQueryOptions } from "#/api/auth";
 import { searchUsersQuery } from "#/api/queries/roles";
@@ -100,6 +100,7 @@ import {
 import { extractErrorMessage } from "#/lib/api-error";
 import { useDebounced } from "#/lib/use-debounced";
 import { errorStatus } from "#/lib/utils";
+import { groupFineFilters, groupSearchSchema } from "#/lib/group-search";
 
 /** Module-level so the permission lookup keeps a stable identity. */
 const EVENT_CREATE_PERMISSIONS = ["events:create", "events:manage"] as const;
@@ -110,31 +111,9 @@ const EVENT_CREATE_PERMISSIONS = ["events:create", "events:manage"] as const;
  */
 const SEARCH_FAILED_MESSAGE = "Søket feilet. Prøv igjen.";
 
-const searchSchema = z.object({
-    tab: z
-        .enum([
-            "om",
-            "medlemmer",
-            "arrangementer",
-            "boter",
-            "lovverk",
-            "sporreskjema",
-        ])
-        .default("om")
-        .catch("om"),
-    // Botfiltrene ligger i URL-en, ikke i komponenttilstand: da overlever de
-    // en refresh, og en botsjef kan sende «ubetalte bøter for X» som lenke.
-    botStatus: z
-        .enum(["alle", "pending", "approved", "paid", "rejected"])
-        .default("alle")
-        .catch("alle"),
-    botVisning: z.enum(["alle", "per-medlem"]).default("alle").catch("alle"),
-    botBruker: z.string().optional().catch(undefined),
-});
-
 export const Route = createFileRoute("/_app/grupper/$slug")({
     component: GroupDetailPage,
-    validateSearch: searchSchema,
+    validateSearch: groupSearchSchema,
     loader: async ({ context, params }) => {
         try {
             await context.queryClient.ensureQueryData(
@@ -171,15 +150,26 @@ function GroupRestricted() {
 
 function GroupDetailPage() {
     const { restricted } = Route.useLoaderData();
+    const { slug } = Route.useParams();
     // Egen komponent: den henter gruppa med useSuspenseQuery, som ville kastet
     // den samme 403-en på nytt hvis den ble montert her.
-    return restricted ? <GroupRestricted /> : <GroupDetail />;
+    return restricted ? <GroupRestricted /> : <GroupDetail key={slug} />;
 }
 
 function GroupDetail() {
     const { slug } = Route.useParams();
-    const { tab: active, botStatus, botVisning, botBruker } = Route.useSearch();
+    const {
+        tab: active,
+        botStatus,
+        botVisning,
+        botBruker,
+        botId,
+    } = Route.useSearch();
     const navigate = Route.useNavigate();
+    const queryClient = useQueryClient();
+    // Keep this window only while browsing the page, never in URL/storage.
+    const [fineAnchor, setFineAnchor] = useState<string>();
+    const fineAnchorId = botId ?? fineAnchor;
     const [fineDialogOpen, setFineDialogOpen] = useState(false);
     const [fineError, setFineError] = useState<string | null>(null);
     const [editingFine, setEditingFine] = useState<Fine | null>(null);
@@ -191,8 +181,20 @@ function GroupDetail() {
     const [editFormError, setEditFormError] = useState<string | null>(null);
     const [deleteFormError, setDeleteFormError] = useState<string | null>(null);
 
+    function setFineSearch(
+        search: Partial<ReturnType<typeof Route.useSearch>>,
+        options: { resetScroll?: boolean; replace?: boolean } = {},
+    ) {
+        setFineAnchor(undefined);
+        void navigate({
+            search: (prev) => ({ ...prev, ...search, botId: undefined }),
+            resetScroll: false,
+            ...options,
+        });
+    }
+
     function setActive(tab: GroupNavKey) {
-        navigate({ search: (prev) => ({ ...prev, tab }) });
+        setFineSearch({ tab }, { resetScroll: true });
     }
 
     const { data: apiGroup } = useSuspenseQuery(getGroupBySlugQuery(slug));
@@ -288,24 +290,106 @@ function GroupDetail() {
     // Filtrene går til serveren, ikke gjennom en ferdiglastet liste: en gruppe
     // med noen tusen bøter skal ikke lastes ned i sin helhet for å vise 25.
     const fineFilters = useMemo(
-        () => ({
-            ...(botStatus === "alle" ? {} : { status: botStatus }),
-            ...(botBruker ? { userId: botBruker } : {}),
-        }),
-        [botStatus, botBruker],
+        () =>
+            groupFineFilters(
+                { botStatus, botVisning, botBruker },
+                canSeeOwnFines,
+            ),
+        [botStatus, botVisning, botBruker, canSeeOwnFines],
     );
+    const showFineList =
+        canSeeOwnFines ||
+        botVisning === "alle" ||
+        Boolean(botBruker || fineAnchorId);
 
     const {
         data: apiFinePages,
         hasNextPage: hasMoreFines,
         isFetchingNextPage: isLoadingMoreFines,
         fetchNextPage: fetchMoreFines,
+        hasPreviousPage: hasPreviousFines,
+        isFetchingPreviousPage: isLoadingPreviousFines,
+        fetchPreviousPage: fetchPreviousFines,
+        isPending: isLoadingFines,
+        isFetching: isFetchingFines,
+        error: finesError,
     } = useInfiniteQuery({
-        ...getGroupFinesInfiniteQuery(slug, fineFilters),
+        ...getGroupFinesInfiniteQuery(slug, {
+            ...fineFilters,
+            aroundFineId: fineAnchorId,
+        }),
         // Egen-visningen har bare den flate lista, så den henter uansett hva
         // `botVisning` skulle stå til fra en gammel URL.
-        enabled: canSeeOwnFines || (canViewFines && botVisning === "alle"),
+        enabled: finesTabVisible && showFineList,
     });
+    const needsJumpLookup = Boolean(
+        botId && typeof apiFinePages?.pageParams[0] === "number",
+    );
+    const finishFineJump = useCallback(
+        (matched = true) => {
+            if (!botId) return;
+            // Keep the loaded page (including a first-page fallback), unless
+            // «Per medlem» should return to the ordinary member overview.
+            setFineAnchor(
+                matched || canSeeOwnFines || botVisning === "alle" || botBruker
+                    ? botId
+                    : undefined,
+            );
+            void navigate({
+                search: (prev) => ({ ...prev, botId: undefined }),
+                replace: true,
+                resetScroll: !matched,
+            });
+        },
+        [botId, canSeeOwnFines, botVisning, botBruker, navigate],
+    );
+    useEffect(() => {
+        const firstPage = apiFinePages?.pages[0];
+        if (!botId || !firstPage || isFetchingFines || finesError) return;
+        if (needsJumpLookup) {
+            // Loading newer pages changes the cached initial page parameter
+            // to a number. A new jump must locate the ID again, not that page.
+            void queryClient.resetQueries({
+                queryKey: getGroupFinesInfiniteQuery(slug, {
+                    ...fineFilters,
+                    aroundFineId: botId,
+                }).queryKey,
+                exact: true,
+            });
+        } else if (
+            !apiFinePages.pages.some((page) =>
+                page.fines.some((fine) => fine.id === botId),
+            )
+        ) {
+            finishFineJump(false);
+        }
+    }, [
+        botId,
+        apiFinePages,
+        isFetchingFines,
+        finesError,
+        needsJumpLookup,
+        queryClient,
+        slug,
+        fineFilters,
+        finishFineJump,
+    ]);
+
+    const finesErrorMessage = finesError
+        ? errorStatus(finesError) === 404
+            ? "Gruppen finnes ikke, eller botsystemet er deaktivert."
+            : errorStatus(finesError) === 403
+              ? "Du har ikke tilgang til disse bøtene."
+              : "Kunne ikke hente bøtene. Prøv å laste siden på nytt."
+        : undefined;
+
+    function showNewestFines() {
+        void queryClient.resetQueries({
+            queryKey: getGroupFinesInfiniteQuery(slug, fineFilters).queryKey,
+            exact: true,
+        });
+        setFineSearch({}, { replace: true, resetScroll: true });
+    }
 
     const {
         data: apiFineUserPages,
@@ -317,7 +401,7 @@ function GroupDetail() {
             slug,
             botStatus === "alle" ? {} : { status: botStatus },
         ),
-        enabled: canViewFines && botVisning === "per-medlem",
+        enabled: canViewFines && !showFineList,
     });
 
     const { data: apiFineStatistics } = useQuery({
@@ -825,61 +909,51 @@ function GroupDetail() {
                         <GroupFinesTab
                             groupSlug={slug}
                             fines={fines}
+                            revealFineId={botId}
+                            onFineRevealed={finishFineJump}
+                            isLoadingFines={
+                                isLoadingFines ||
+                                needsJumpLookup ||
+                                Boolean(botId && isFetchingFines)
+                            }
+                            finesError={finesErrorMessage}
+                            hasPreviousFines={hasPreviousFines}
+                            isLoadingPreviousFines={isLoadingPreviousFines}
+                            onLoadPreviousFines={() =>
+                                void fetchPreviousFines()
+                            }
+                            onShowNewestFines={showNewestFines}
                             fineUsers={fineUsers}
                             statistics={apiFineStatistics}
                             memberCount={members.length}
                             finesInfo={group.finesInfo}
                             grouping={canSeeOwnFines ? "alle" : botVisning}
+                            showFineList={showFineList}
                             onGroupingChange={(botVisning) =>
-                                navigate({
-                                    search: (prev) => ({
-                                        ...prev,
-                                        botVisning,
-                                        // Personfilteret hører til den flate
-                                        // listen; det gir ingen mening i
-                                        // medlemsoversikten.
-                                        botBruker: undefined,
-                                    }),
-                                    // Filtrene ligger i URL-en, men å bytte
-                                    // fane er ikke å gå til en ny side: uten
-                                    // dette kastet ruteren deg til toppen midt
-                                    // i botlista.
-                                    resetScroll: false,
+                                setFineSearch({
+                                    botVisning,
+                                    botBruker: undefined,
                                 })
                             }
                             status={botStatus}
                             onStatusChange={(botStatus) =>
-                                navigate({
-                                    search: (prev) => ({ ...prev, botStatus }),
-                                    resetScroll: false,
-                                })
+                                setFineSearch({ botStatus })
                             }
                             selectedUserId={botBruker}
                             selectedUserName={selectedFineUserName}
                             onSelectUser={(botBruker) =>
-                                navigate({
-                                    search: (prev) => ({
-                                        ...prev,
-                                        botBruker,
-                                        botVisning: botBruker
-                                            ? "alle"
-                                            : prev.botVisning,
-                                    }),
-                                    resetScroll: false,
-                                })
+                                setFineSearch({ botBruker })
                             }
                             hasMore={
-                                botVisning === "alle"
-                                    ? hasMoreFines
-                                    : hasMoreFineUsers
+                                showFineList ? hasMoreFines : hasMoreFineUsers
                             }
                             isLoadingMore={
-                                botVisning === "alle"
+                                showFineList
                                     ? isLoadingMoreFines
                                     : isLoadingMoreFineUsers
                             }
                             onLoadMore={() => {
-                                if (botVisning === "alle") {
+                                if (showFineList) {
                                     void fetchMoreFines();
                                 } else {
                                     void fetchMoreFineUsers();
@@ -903,12 +977,14 @@ function GroupDetail() {
                                 })
                             }
                             onEdit={openEditFine}
-                            onDelete={(fine) =>
+                            onDelete={(fine) => {
+                                if (fine.id === fineAnchorId)
+                                    setFineAnchor(undefined);
                                 deleteFine.mutate({
                                     groupSlug: slug,
                                     fineId: fine.id,
-                                })
-                            }
+                                });
+                            }}
                             onSaveDefense={(fine, defense) =>
                                 updateFine.mutateAsync({
                                     groupSlug: slug,

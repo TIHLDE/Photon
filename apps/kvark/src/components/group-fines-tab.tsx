@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card } from "@tihlde/ui/ui/card";
+import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Empty, EmptyDescription, EmptyTitle } from "@tihlde/ui/ui/empty";
 import {
     Select,
@@ -46,6 +47,14 @@ type GroupFinesTabProps = {
     groupSlug: string;
     /** Botene som er lastet inn så langt for gjeldende filter. */
     fines: Fine[];
+    revealFineId?: string;
+    onFineRevealed: () => void;
+    isLoadingFines?: boolean;
+    finesError?: string;
+    hasPreviousFines: boolean;
+    isLoadingPreviousFines: boolean;
+    onLoadPreviousFines: () => void;
+    onShowNewestFines: () => void;
     /** Gruppens medlemmer med bøtesummen sin, for «Per medlem». */
     fineUsers: FineUser[];
     statistics?: FineStatistics;
@@ -53,6 +62,8 @@ type GroupFinesTabProps = {
     /** Markdown om hvordan botsystemet praktiseres i gruppa. */
     finesInfo?: string;
     grouping: FineGrouping;
+    /** Drill-down in «Per medlem» uses the same paginated fine list. */
+    showFineList?: boolean;
     onGroupingChange: (grouping: FineGrouping) => void;
     status: FineStatusFilter;
     onStatusChange: (status: FineStatusFilter) => void;
@@ -104,11 +115,20 @@ function perMember(value: number, memberCount: number): string {
 export function GroupFinesTab({
     groupSlug,
     fines,
+    revealFineId,
+    onFineRevealed,
+    isLoadingFines,
+    finesError,
+    hasPreviousFines,
+    isLoadingPreviousFines,
+    onLoadPreviousFines,
+    onShowNewestFines,
     fineUsers,
     statistics,
     memberCount,
     finesInfo,
     grouping,
+    showFineList = grouping === "alle",
     onGroupingChange,
     status,
     onStatusChange,
@@ -226,7 +246,17 @@ export function GroupFinesTab({
                     </div>
                 </Tabs>
 
-                {selectedUserId && grouping === "alle" ? (
+                {grouping === "per-medlem" && showFineList ? (
+                    <Button
+                        variant="ghost"
+                        className="self-start"
+                        onClick={() => onGroupingChange("per-medlem")}
+                    >
+                        Til medlemsoversikten
+                    </Button>
+                ) : null}
+
+                {selectedUserId && showFineList ? (
                     <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">
                             Viser bøter for {selectedUserName ?? "medlem"}
@@ -242,10 +272,43 @@ export function GroupFinesTab({
                     </div>
                 ) : null}
 
-                {grouping === "alle" ? (
+                {showFineList && hasPreviousFines ? (
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={onLoadPreviousFines}
+                            disabled={isLoadingPreviousFines || isLoadingMore}
+                        >
+                            {isLoadingPreviousFines
+                                ? "Laster …"
+                                : "Last inn nyere bøter"}
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            onClick={onShowNewestFines}
+                            disabled={isLoadingPreviousFines || isLoadingMore}
+                        >
+                            Til nyeste bøter
+                        </Button>
+                    </div>
+                ) : null}
+
+                {showFineList && isLoadingFines ? (
+                    <Skeleton className="h-40 w-full" />
+                ) : showFineList && finesError ? (
+                    <Empty>
+                        <EmptyTitle>Kunne ikke hente bøtene</EmptyTitle>
+                        <EmptyDescription>{finesError}</EmptyDescription>
+                        <Button variant="outline" onClick={onShowNewestFines}>
+                            Vis nyeste bøter
+                        </Button>
+                    </Empty>
+                ) : showFineList ? (
                     <FineList
                         groupSlug={groupSlug}
                         fines={fines}
+                        revealFineId={revealFineId}
+                        onFineRevealed={onFineRevealed}
                         canManage={canManage && !ownFinesOnly}
                         readOnly={ownFinesOnly}
                         currentUserId={currentUserId}
@@ -255,7 +318,7 @@ export function GroupFinesTab({
                         onDelete={onDelete}
                         onSaveDefense={onSaveDefense}
                         hasMore={hasMore}
-                        isLoadingMore={isLoadingMore}
+                        isLoadingMore={isLoadingMore || isLoadingPreviousFines}
                         onLoadMore={onLoadMore}
                     />
                 ) : (
@@ -299,6 +362,8 @@ function LoadMore({
 type FineListProps = {
     groupSlug: string;
     fines: Fine[];
+    revealFineId?: string;
+    onFineRevealed: () => void;
     canManage: boolean;
     readOnly: boolean;
     currentUserId?: string;
@@ -315,6 +380,8 @@ type FineListProps = {
 function FineList({
     groupSlug,
     fines,
+    revealFineId,
+    onFineRevealed,
     canManage,
     readOnly,
     currentUserId,
@@ -343,6 +410,8 @@ function FineList({
             <GroupFineAccordion
                 groupSlug={groupSlug}
                 fines={fines}
+                revealFineId={revealFineId}
+                onFineRevealed={onFineRevealed}
                 canManage={canManage}
                 readOnly={readOnly}
                 currentUserId={currentUserId}
@@ -414,8 +483,11 @@ function FineUserList({
                                     {user.name}
                                 </span>
                                 <span className="truncate text-sm text-muted-foreground">
-                                    {user.finesAmount} bøter fordelt på{" "}
-                                    {user.finesCount}{" "}
+                                    {user.finesAmount}{" "}
+                                    {Math.abs(user.finesAmount) === 1
+                                        ? "bot"
+                                        : "bøter"}{" "}
+                                    fordelt på {user.finesCount}{" "}
                                     {user.finesCount === 1
                                         ? "hendelse"
                                         : "hendelser"}
