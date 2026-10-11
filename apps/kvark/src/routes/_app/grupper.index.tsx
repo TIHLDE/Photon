@@ -271,7 +271,13 @@ function GroupsPage() {
                 </>
             ) : null}
 
-            <ArchivedGroups groups={itemsFrom(archivedGroups ?? [])} />
+            {/* Et API fra før arkivering kjenner ikke `archived=true` og
+                svarer med alle gruppene. */}
+            <ArchivedGroups
+                groups={itemsFrom(
+                    (archivedGroups ?? []).filter((group) => group.archivedAt),
+                )}
+            />
         </div>
     );
 }
