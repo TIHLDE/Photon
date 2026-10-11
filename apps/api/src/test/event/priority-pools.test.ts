@@ -131,8 +131,24 @@ describe("priority pool validation", () => {
             expect(await isPrioritized()).toEqual([false, false]);
 
             await setArchived(null);
-            expect((await create()).status).toBe(201);
+            const created = await create();
+            expect(created.status).toBe(201);
             expect(await isPrioritized()).toEqual([true, true]);
+
+            const { eventId } = await created.json();
+            const shownPools = async () => {
+                const response = await client.api.event[":eventId"].$get({
+                    param: { eventId },
+                });
+                const body = await response.json();
+                return typeof body === "string"
+                    ? null
+                    : body.priorityPools.length;
+            };
+
+            expect(await shownPools()).toBe(1);
+            await setArchived(new Date());
+            expect(await shownPools()).toBe(0);
         },
         500_000,
     );
