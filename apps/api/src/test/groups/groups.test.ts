@@ -647,6 +647,69 @@ describe("groups", () => {
         );
 
         integrationTest(
+            "Hovedstyret and groups Feide maintains cannot be archived",
+            async ({ ctx }) => {
+                const admin = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(admin);
+                await ctx.utils.giveUserPermissions(admin, ["groups:manage"]);
+
+                const [program] = await ctx.db
+                    .insert(schema.studyProgram)
+                    .values({
+                        slug: "archive-program",
+                        feideCode: "ARCHIVEPROG",
+                        displayName: "Archive Program",
+                        type: "bachelor",
+                    })
+                    .returning();
+
+                await ctx.utils.createTestGroup({ slug: "hs" });
+                await ctx.utils.createTestGroup({
+                    slug: "archive-study",
+                    type: "STUDY",
+                });
+                await ctx.utils.createTestGroup({
+                    slug: "archive-cohort",
+                    type: "STUDYYEAR",
+                });
+                await ctx.utils.createTestGroup({
+                    slug: "archive-program-group",
+                    type: "PRIVATE",
+                });
+                await ctx.db
+                    .update(schema.group)
+                    .set({ studyProgramId: program!.id })
+                    .where(eq(schema.group.slug, "archive-program-group"));
+                await ctx.utils.createTestGroup({ slug: "archive-ordinary" });
+
+                for (const slug of [
+                    "hs",
+                    "archive-study",
+                    "archive-cohort",
+                    "archive-program-group",
+                ]) {
+                    const archive = await client.api.groups[
+                        ":slug"
+                    ].archive.$post({ param: { slug } });
+                    expect(archive.status, slug).toBe(400);
+
+                    const detail = await client.api.groups[":slug"].$get({
+                        param: { slug },
+                    });
+                    const body = await detail.json();
+                    expect(body.archivable, slug).toBe(false);
+                    expect(body.archivedAt, slug).toBeNull();
+                }
+
+                const ordinary = await client.api.groups[":slug"].$get({
+                    param: { slug: "archive-ordinary" },
+                });
+                expect((await ordinary.json()).archivable).toBe(true);
+            },
+            500_000,
+        );
+
+        integrationTest(
             "an archived group can still be deleted",
             async ({ ctx }) => {
                 const leader = await ctx.utils.createTestUser();

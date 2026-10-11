@@ -53,6 +53,8 @@ export function GroupDetailHeader({
 }: GroupDetailHeaderProps) {
     const [confirmArchive, setConfirmArchive] = useState(false);
     const isArchived = Boolean(group.archivedAt);
+    const showRestore = canArchive && isArchived;
+    const showArchive = canArchive && !isArchived && Boolean(group.archivable);
 
     return (
         <DetailHeader
@@ -120,7 +122,7 @@ export function GroupDetailHeader({
                 </div>
             }
             actions={
-                canGiveFine || isAdmin || canArchive ? (
+                canGiveFine || isAdmin || showArchive || showRestore ? (
                     <>
                         {canGiveFine ? (
                             <Button onClick={onGiveFine}>
@@ -137,7 +139,7 @@ export function GroupDetailHeader({
                                 error={saveGroupError}
                             />
                         ) : null}
-                        {canArchive && isArchived ? (
+                        {showRestore ? (
                             <Button
                                 onClick={onUnarchive}
                                 disabled={isArchivePending}
@@ -146,7 +148,7 @@ export function GroupDetailHeader({
                                 Gjenopprett
                             </Button>
                         ) : null}
-                        {canArchive && !isArchived ? (
+                        {showArchive ? (
                             <>
                                 <Button
                                     variant="outline"

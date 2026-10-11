@@ -5,6 +5,7 @@ import {
     useQuery,
     useSuspenseQuery,
 } from "@tanstack/react-query";
+import { Alert, AlertDescription } from "@tihlde/ui/ui/alert";
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Empty,
@@ -187,6 +188,7 @@ function GroupDetail() {
     const [editingFine, setEditingFine] = useState<Fine | null>(null);
     const [editFineError, setEditFineError] = useState<string | null>(null);
     const [groupError, setGroupError] = useState<string | null>(null);
+    const [archiveError, setArchiveError] = useState<string | null>(null);
     const [formDialogOpen, setFormDialogOpen] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
     const [editingForm, setEditingForm] = useState<Form | null>(null);
@@ -707,6 +709,17 @@ function GroupDetail() {
         }
     }
 
+    async function changeArchived(
+        mutation: typeof archiveGroup | typeof unarchiveGroup,
+    ) {
+        setArchiveError(null);
+        try {
+            await mutation.mutateAsync({ slug });
+        } catch (error) {
+            setArchiveError(await extractErrorMessage(error));
+        }
+    }
+
     return (
         <>
             <DetailLayout
@@ -715,8 +728,8 @@ function GroupDetail() {
                         group={group}
                         isAdmin={canManage}
                         canArchive={canArchive}
-                        onArchive={() => archiveGroup.mutate({ slug })}
-                        onUnarchive={() => unarchiveGroup.mutate({ slug })}
+                        onArchive={() => changeArchived(archiveGroup)}
+                        onUnarchive={() => changeArchived(unarchiveGroup)}
                         isArchivePending={
                             archiveGroup.isPending || unarchiveGroup.isPending
                         }
@@ -736,6 +749,11 @@ function GroupDetail() {
                 />
 
                 <DetailLayoutContent>
+                    {archiveError ? (
+                        <Alert variant="destructive">
+                            <AlertDescription>{archiveError}</AlertDescription>
+                        </Alert>
+                    ) : null}
                     {activeTab === "om" ? <GroupOmTab group={group} /> : null}
                     {activeTab === "medlemmer" ? (
                         <GroupMembersTab

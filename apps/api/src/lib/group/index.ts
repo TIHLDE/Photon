@@ -471,6 +471,26 @@ export function allowsMultipleLeaders(type: string): boolean {
 }
 
 /**
+ * Whether a group may be archived at all.
+ *
+ * Hovedstyret may not: its members run TIHLDE through what the group grants,
+ * and an archived group grants nothing. Nor may a group whose roster Feide
+ * maintains — the study and cohort groups, and a programme's own group — since
+ * the sync would keep enrolling people into a group nobody is meant to see.
+ */
+export function isArchivableGroup(group: {
+    slug: string;
+    type: string;
+    studyProgramId: number | null;
+}): boolean {
+    return (
+        group.slug !== HS_GROUP_SLUG &&
+        !isDerivedGroupType(group.type) &&
+        group.studyProgramId === null
+    );
+}
+
+/**
  * True for groups whose next leader may be someone who is not a member yet.
  *
  * HS is the exception: presidenten velges på generalforsamlingen og sitter

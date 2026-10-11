@@ -1,6 +1,8 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { HTTPAppException } from "~/lib/errors";
+import { isArchivableGroup } from "~/lib/group";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -29,6 +31,10 @@ export const archiveRoute = route()
                 schema: updateGroupResponseSchema,
                 description: "Group archived",
             })
+            .badRequest({
+                description:
+                    "Hovedstyret and groups whose roster follows Feide cannot be archived",
+            })
             .forbidden({
                 description:
                     "Not a group leader or missing groups:manage permission",
@@ -41,18 +47,28 @@ export const archiveRoute = route()
         access,
         async (c) => {
             const slug = c.req.param("slug");
-            const [archived] = await c
-                .get("ctx")
-                .db.update(schema.group)
-                .set({ archivedAt: new Date() })
-                .where(eq(schema.group.slug, slug))
-                .returning({ slug: schema.group.slug });
+            const { db } = c.get("ctx");
 
-            if (!archived) {
+            const group = await db.query.group.findFirst({
+                where: eq(schema.group.slug, slug),
+            });
+
+            if (!group) {
                 throw new HTTPException(404, {
                     message: `Group with slug "${slug}" not found`,
                 });
             }
+
+            if (!isArchivableGroup(group)) {
+                throw HTTPAppException.BadRequest(
+                    "Denne gruppen kan ikke arkiveres.",
+                );
+            }
+
+            await db
+                .update(schema.group)
+                .set({ archivedAt: new Date() })
+                .where(eq(schema.group.slug, slug));
 
             return c.json({ message: "Group archived" }, 200);
         },

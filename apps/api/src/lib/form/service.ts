@@ -648,7 +648,12 @@ export async function validateAndCreateSubmission(
         if (groupForm) {
             // Check if form is open — either stengt for godt, eller ennå ikke
             // åpnet fordi det er planlagt fram i tid.
-            if (!isGroupFormOpen(groupForm)) {
+            const group = await db.query.group.findFirst({
+                where: eq(schema.group.slug, options.groupSlug),
+                columns: { archivedAt: true },
+            });
+
+            if (!isGroupFormOpen(groupForm) || group?.archivedAt) {
                 throw new FormNotOpenForSubmissionException();
             }
 

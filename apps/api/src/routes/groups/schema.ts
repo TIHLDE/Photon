@@ -192,6 +192,10 @@ export const groupDetailSchema = Schema(
             description:
                 "What this group calls its leader, e.g. «President» or «Innovasjonsminister». Reconciled with the linked Hovedstyret verv, so both pages name the leader the same. Null means the plain «Leder».",
         }),
+        archivable: z.boolean().meta({
+            description:
+                "Whether this group may be archived at all. False for Hovedstyret and for groups whose roster follows Feide.",
+        }),
         viewerCanUseFines: z.boolean().meta({
             description:
                 "Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student.",

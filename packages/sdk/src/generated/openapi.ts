@@ -5137,6 +5137,8 @@ export interface components {
             updatedAt: string;
             /** @description What this group calls its leader, e.g. «President» or «Innovasjonsminister». Reconciled with the linked Hovedstyret verv, so both pages name the leader the same. Null means the plain «Leder». */
             leaderTitle: string | null;
+            /** @description Whether this group may be archived at all. False for Hovedstyret and for groups whose roster follows Feide. */
+            archivable: boolean;
             /** @description Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student. */
             viewerCanUseFines: boolean;
             /** @description Whether the caller may read the fines they are party to here without taking part in the group's fine system: true for someone who has left the group but was once a member. Never true together with 'viewerCanUseFines'. */
@@ -10933,6 +10935,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["UpdateGroupResponse"];
                 };
+            };
+            /** @description Bad Request - Hovedstyret and groups whose roster follows Feide cannot be archived */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Authentication required */
             401: {
