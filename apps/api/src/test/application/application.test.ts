@@ -91,6 +91,42 @@ describe("Søknader", () => {
     );
 
     integrationTest(
+        "expense: an archived group takes no new applications",
+        async ({ ctx }) => {
+            const group = await setupGroup(ctx);
+            const member = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(member);
+
+            const submit = async () =>
+                client.api.applications.expense.$post({
+                    json: {
+                        contactName: "Test Testesen",
+                        contactEmail: "test@tihlde.org",
+                        amountNok: 100,
+                        expenseDate: "2026-07-20",
+                        groupSlug: group.slug,
+                        budgetType: "group_budget",
+                        description: "Kaffe",
+                        accountNumber: "1234.56.78901",
+                        attachmentKeys: [await stageAttachment(ctx, member.id)],
+                    },
+                });
+            const setArchived = (archivedAt: Date | null) =>
+                ctx.db
+                    .update(schema.group)
+                    .set({ archivedAt })
+                    .where(eq(schema.group.slug, group.slug));
+
+            await setArchived(new Date());
+            expect((await submit()).status).toBe(400);
+
+            await setArchived(null);
+            expect((await submit()).status).toBe(201);
+        },
+        500_000,
+    );
+
+    integrationTest(
         "expense: keeps øre exactly and rejects more than two decimals",
         async ({ ctx }) => {
             const group = await setupGroup(ctx);

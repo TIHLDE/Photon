@@ -80,6 +80,11 @@ export const createRoute = route().post(
                     message: `Group with slug "${body.organizerGroupSlug}" does not exist`,
                 });
             }
+            if (group[0]?.archivedAt) {
+                throw new HTTPException(400, {
+                    message: `Gruppen "${body.organizerGroupSlug}" er arkivert og kan ikke arrangere`,
+                });
+            }
 
             // The real permission check: events:create for THIS group. Runs
             // after the group lookup so an unknown slug still answers 400
