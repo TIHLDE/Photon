@@ -16,7 +16,7 @@ import { createStorageClient } from "~/lib/storage";
 const FILES: [sourceUrl: string, key: string][] = [
     [
         "https://tihldestorage.blob.core.windows.net/applicationzip/775a2919-8770-47ec-a17f-afe847de69caExamenProg1.zip",
-        "cookbook/examenprog1.zip",
+        "cookbook/examenprog1-zip",
     ],
     [
         "https://tihldestorage.blob.core.windows.net/applicationpdf/233002ba-5c00-4cbc-8065-9b610488813cNotater-innføringsemne.pdf",
@@ -44,11 +44,11 @@ const FILES: [sourceUrl: string, key: string][] = [
     ],
     [
         "https://tihldestorage.blob.core.windows.net/applicationxzipcompressed/e841f682-3144-442d-9e37-59f376133d7adatabaser_lf.zip",
-        "cookbook/databaser-lf.zip",
+        "cookbook/databaser-lf-zip",
     ],
     [
         "https://tihldestorage.blob.core.windows.net/applicationxzipcompressed/f389d986-ceb5-43a9-819d-e146d25175afLF.zip",
-        "cookbook/lf.zip",
+        "cookbook/lf-zip",
     ],
     [
         "https://tihldestorage.blob.core.windows.net/applicationpdf/cdb9393e-004c-4324-947b-389c4e0a23fbcheatsheet_algdat.pdf",
@@ -60,11 +60,11 @@ const FILES: [sourceUrl: string, key: string][] = [
     ],
     [
         "https://tihldestorage.blob.core.windows.net/applicationxzipcompressed/ed190afe-ccc0-46a5-9f87-5b2dc3455b32OS-solution.zip",
-        "cookbook/os-solution.zip",
+        "cookbook/os-solution-zip",
     ],
     [
         "https://tihldestorage.blob.core.windows.net/applicationzip/2f187a63-440b-4421-a77e-290042e889f1algdat_eksamner.zip",
-        "cookbook/algdat-eksamner.zip",
+        "cookbook/algdat-eksamner-zip",
     ],
     [
         "https://tihldestorage.blob.core.windows.net/applicationpdf/4dfe7059-33be-43ee-963c-328c72b332acEksamensark.pdf",
@@ -84,7 +84,7 @@ const FILES: [sourceUrl: string, key: string][] = [
     ],
     [
         "https://tihldestorage.blob.core.windows.net/applicationzip/e3ed0b0b-5b0e-4c68-b99e-97aa08e324c7LF-INFT1004.zip",
-        "cookbook/lf-inft1004.zip",
+        "cookbook/lf-inft1004-zip",
     ],
     [
         "https://tihldestorage.blob.core.windows.net/applicationpdf/6c015f9d-fb6a-4b23-918c-e6b339d08a93Samlingsnotat%20DIFT1003.pdf",
@@ -104,11 +104,11 @@ const FILES: [sourceUrl: string, key: string][] = [
     ],
     [
         "https://tihldestorage.blob.core.windows.net/applicationxzipcompressed/5fc9edf2-1ef8-45b6-8645-13eeab6468abObjektorientert%20programmering%20kok.zip",
-        "cookbook/objektorientert-programmering-kok.zip",
+        "cookbook/objektorientert-programmering-kok-zip",
     ],
     [
         "https://tihldestorage.blob.core.windows.net/applicationxzipcompressed/75793380-53cd-4b91-950e-dc6663dfa31cDCST2002%20Webutvikling.zip",
-        "cookbook/dcst2002-webutvikling.zip",
+        "cookbook/dcst2002-webutvikling-zip",
     ],
 ];
 
@@ -137,7 +137,11 @@ async function main() {
             }
 
             const buffer = Buffer.from(await response.arrayBuffer());
-            const filename = key.slice(key.lastIndexOf("/") + 1);
+            // The proxy in front of the API answers 403 for any path ending
+            // in an archive extension, so those keys carry it as a suffix.
+            const filename = key
+                .slice(key.lastIndexOf("/") + 1)
+                .replace(/-zip$/, ".zip");
             const extension = filename.slice(filename.lastIndexOf(".") + 1);
 
             await bucket.upload(key, buffer, {

@@ -122,7 +122,7 @@ export const StudyCookbook = {
     dataing: {
         "1": [
             file("Tidligere eksamensoppgaver", "idatt1001", "NTNU", true)
-                .url(assetPublicUrl("cookbook/examenprog1.zip"))
+                .url(assetPublicUrl("cookbook/examenprog1-zip"))
                 .build(),
             file("Sammendrag av Boken", "ingt1001", "Hermann Elton")
                 .url(assetPublicUrl("cookbook/notater-innforingsemne.pdf"))
@@ -169,10 +169,10 @@ export const StudyCookbook = {
                 .build(),
             file("Løsningsforslag Øvinger", "idatt2103", "NTNU")
                 .isOfficial(true)
-                .url(assetPublicUrl("cookbook/databaser-lf.zip"))
+                .url(assetPublicUrl("cookbook/databaser-lf-zip"))
                 .build(),
             file("Løsningsforslag Øvinger 2022", "ifyt1001", "NTNU", true)
-                .url(assetPublicUrl("cookbook/lf.zip"))
+                .url(assetPublicUrl("cookbook/lf-zip"))
                 .build(),
             file(
                 "Eksamen Hjelpeark v2",
@@ -186,7 +186,7 @@ export const StudyCookbook = {
                 .build(),
             file("Alle øvinger (1-4)", "idatt2202", "NTNU")
                 .isOfficial(true)
-                .url(assetPublicUrl("cookbook/os-solution.zip"))
+                .url(assetPublicUrl("cookbook/os-solution-zip"))
                 .build(),
             file(
                 "Eksamen Hjelpeark v3",
@@ -199,7 +199,7 @@ export const StudyCookbook = {
                 .url("https://sites.google.com/view/tdat2004-datakom/")
                 .build(),
             file("Tidligere eksamensoppgaver", "idatt2101", "NTNU", true)
-                .url(assetPublicUrl("cookbook/algdat-eksamner.zip"))
+                .url(assetPublicUrl("cookbook/algdat-eksamner-zip"))
                 .build(),
             github("Github øvinger v1", "idatt2101", "Hermann Elton")
                 .url(
@@ -259,7 +259,7 @@ export const StudyCookbook = {
                 .url("https://github.com/diderikk/INFT2503-Cpp")
                 .build(),
             file("Løsningsforslag øvinger", "inft1004", "NTNU", true)
-                .url(assetPublicUrl("cookbook/lf-inft1004.zip"))
+                .url(assetPublicUrl("cookbook/lf-inft1004-zip"))
                 .build(),
         ],
     },
@@ -288,17 +288,17 @@ export const StudyCookbook = {
             file("Alle øvinger (1-11)", "dcst1007", "NTNU")
                 .url(
                     assetPublicUrl(
-                        "cookbook/objektorientert-programmering-kok.zip",
+                        "cookbook/objektorientert-programmering-kok-zip",
                     ),
                 )
                 .build(),
         ],
         "2": [
             file("Alle øvinger (1-4)", "idatt2202", "NTNU", true)
-                .url(assetPublicUrl("cookbook/os-solution.zip"))
+                .url(assetPublicUrl("cookbook/os-solution-zip"))
                 .build(),
             file("Løsningsforslag", "dcst2002", "NTNU", true)
-                .url(assetPublicUrl("cookbook/dcst2002-webutvikling.zip"))
+                .url(assetPublicUrl("cookbook/dcst2002-webutvikling-zip"))
                 .build(),
         ],
         "3": [],
