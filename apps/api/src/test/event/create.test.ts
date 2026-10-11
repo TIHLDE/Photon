@@ -113,6 +113,7 @@ describe("create event", () => {
                 json: { organizerGroupSlug: archived.slug },
             });
             expect(moved.status).toBe(400);
+            expect(JSON.stringify(await moved.json())).toContain("arkivert");
         },
         500_000,
     );
