@@ -1,4 +1,4 @@
-import { hasPermission } from "@photon/auth/rbac";
+import { getUserPermissions, hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
@@ -36,6 +36,41 @@ describe("groups", () => {
                 const json = await response.json();
                 expect(json.slug).toBe("new-committee");
                 expect(json.name).toBe("New Committee");
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "the leader of a newly created group can arrange its events",
+            async ({ ctx }) => {
+                const admin = await ctx.utils.createTestUser();
+                const leader = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(admin);
+
+                await ctx.utils.giveUserPermissions(admin, ["groups:create"]);
+
+                const response = await client.api.groups.$post({
+                    json: {
+                        slug: "new-interest-group",
+                        name: "New Interest Group",
+                        type: "interestgroup",
+                        finesInfo: "",
+                        finesActivated: false,
+                    },
+                });
+                expect(response.status).toBe(201);
+
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: leader.id,
+                    groupSlug: "new-interest-group",
+                    role: "leader",
+                });
+
+                const permissions = await getUserPermissions(ctx, leader.id);
+                expect(permissions).toContain(
+                    "events:create@group:new-interest-group",
+                );
+                expect(permissions).not.toContain("events:create");
             },
             500_000,
         );
