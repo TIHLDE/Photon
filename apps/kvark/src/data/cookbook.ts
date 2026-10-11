@@ -1,3 +1,5 @@
+import { assetPublicUrl } from "#/lib/assets";
+
 export interface CookbookEntry {
     type: "file" | "github" | "link";
     title: string;
@@ -120,14 +122,10 @@ export const StudyCookbook = {
     dataing: {
         "1": [
             file("Tidligere eksamensoppgaver", "idatt1001", "NTNU", true)
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationzip/775a2919-8770-47ec-a17f-afe847de69caExamenProg1.zip",
-                )
+                .url(assetPublicUrl("cookbook/examenprog1.zip"))
                 .build(),
             file("Sammendrag av Boken", "ingt1001", "Hermann Elton")
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationpdf/233002ba-5c00-4cbc-8065-9b610488813cNotater-innføringsemne.pdf",
-                )
+                .url(assetPublicUrl("cookbook/notater-innforingsemne.pdf"))
                 .build(),
             github("LF øvinger", "idatt2001", "Olaf Rosendahl")
                 .url(
@@ -140,26 +138,18 @@ export const StudyCookbook = {
                 )
                 .build(),
             file("Matte 1 kompendium", "imat1001", "NTNU", true)
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationpdf/9e8e9a44-6f87-42fa-8400-181bd6a97ceeMatematikk1kompendium.pdf",
-                )
+                .url(assetPublicUrl("cookbook/matematikk1kompendium.pdf"))
                 .build(),
             file("Krasjkurs i MM1", "imat1001", "NITO")
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationpdf/9595b889-b9a8-4188-b87f-6295963e2cd4KOKEBOK_MATTE_METODER_1.pdf",
-                )
+                .url(assetPublicUrl("cookbook/kokebok-matte-metoder-1.pdf"))
                 .build(),
             file("Sammendrag", "idatt1002", "Hermann Elton")
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationpdf/69b8c785-d714-4ac5-b203-c38607165a98Systemutvikling.pdf",
-                )
+                .url(assetPublicUrl("cookbook/systemutvikling.pdf"))
                 .build(),
         ],
         "2": [
             file("Sammendrag av pensum (Engelsk)", "idatt2202", "Simon Vetter")
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationpdf/1e4b5000-ba1b-4cb1-a357-9c2861672418Operativsystemer-Pensum.pdf",
-                )
+                .url(assetPublicUrl("cookbook/operativsystemer-pensum.pdf"))
                 .build(),
             file(
                 "Building RESTful Web Services with Spring 5",
@@ -167,7 +157,9 @@ export const StudyCookbook = {
                 "Raja CSP Raman, Ludovic Dewailly",
             )
                 .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationpdf/2e0aadf6-beef-4d62-9f5a-2811c2c2e303RamanRajaCSPDewailly_2018_BuildingRESTfulWebServiceswithSpring5Lev.pdf",
+                    assetPublicUrl(
+                        "cookbook/ramanrajacspdewailly-2018-buildingrestfulwebserviceswithspring5lev.pdf",
+                    ),
                 )
                 .build(),
             github("Github øvinger v2", "idatt2101", "Zaim Imran")
@@ -177,34 +169,24 @@ export const StudyCookbook = {
                 .build(),
             file("Løsningsforslag Øvinger", "idatt2103", "NTNU")
                 .isOfficial(true)
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationxzipcompressed/e841f682-3144-442d-9e37-59f376133d7adatabaser_lf.zip",
-                )
+                .url(assetPublicUrl("cookbook/databaser-lf.zip"))
                 .build(),
             file("Løsningsforslag Øvinger 2022", "ifyt1001", "NTNU", true)
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationxzipcompressed/f389d986-ceb5-43a9-819d-e146d25175afLF.zip",
-                )
+                .url(assetPublicUrl("cookbook/lf.zip"))
                 .build(),
             file(
                 "Eksamen Hjelpeark v2",
                 "idatt2101",
                 "B. Kvamme, C. Gran, C. Gützkow, E. Hansen, N. Brand, T. Beránek, T. Gudvangen",
             )
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationpdf/cdb9393e-004c-4324-947b-389c4e0a23fbcheatsheet_algdat.pdf",
-                )
+                .url(assetPublicUrl("cookbook/cheatsheet-algdat.pdf"))
                 .build(),
             file("Sammendrag av pensum (Engelsk)", "idatt2202", "Hermann Elton")
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationpdf/9d9aa112-c62f-4984-84d2-95ed63d3547eOperating%20Systems.pdf",
-                )
+                .url(assetPublicUrl("cookbook/operating-systems.pdf"))
                 .build(),
             file("Alle øvinger (1-4)", "idatt2202", "NTNU")
                 .isOfficial(true)
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationxzipcompressed/ed190afe-ccc0-46a5-9f87-5b2dc3455b32OS-solution.zip",
-                )
+                .url(assetPublicUrl("cookbook/os-solution.zip"))
                 .build(),
             file(
                 "Eksamen Hjelpeark v3",
@@ -217,9 +199,7 @@ export const StudyCookbook = {
                 .url("https://sites.google.com/view/tdat2004-datakom/")
                 .build(),
             file("Tidligere eksamensoppgaver", "idatt2101", "NTNU", true)
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationzip/2f187a63-440b-4421-a77e-290042e889f1algdat_eksamner.zip",
-                )
+                .url(assetPublicUrl("cookbook/algdat-eksamner.zip"))
                 .build(),
             github("Github øvinger v1", "idatt2101", "Hermann Elton")
                 .url(
@@ -227,9 +207,7 @@ export const StudyCookbook = {
                 )
                 .build(),
             file("Eksamen hjelpeark", "idatt2101", "Tobias Rødahl Thingnes")
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationpdf/4dfe7059-33be-43ee-963c-328c72b332acEksamensark.pdf",
-                )
+                .url(assetPublicUrl("cookbook/eksamensark.pdf"))
                 .build(),
             github("GitHub Øvinger", "idatt2104", "Olaf Rosendahl")
                 .url(
@@ -245,14 +223,10 @@ export const StudyCookbook = {
                 .url("https://github.com/diderikk/IDATT2105-FullStack")
                 .build(),
             file("Sammendrag av pensum", "idatt2104", "Simon Vetter")
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationpdf/015053de-f56d-4244-8fa5-e16426686df5Datakom.pdf",
-                )
+                .url(assetPublicUrl("cookbook/datakom.pdf"))
                 .build(),
             file("Sammendrag av pensum", "idatt2101", "Hermann Elton")
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationpdf/ad6c4b3a-5037-4cd7-862c-8e95fdb035bdAlgdat%20sammendrag.pdf",
-                )
+                .url(assetPublicUrl("cookbook/algdat-sammendrag.pdf"))
                 .build(),
         ],
         "3": [
@@ -279,43 +253,31 @@ export const StudyCookbook = {
                 )
                 .build(),
             file("Sammendrag", "ingt2300", "Hermann Elton")
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationpdf/7dd6ba1d-8c6c-4860-90cb-7b3ed53594ebINGT%20Summary.pdf",
-                )
+                .url(assetPublicUrl("cookbook/ingt-summary.pdf"))
                 .build(),
             github("Github øvinger", "inft2503", "Diderik Kramer")
                 .url("https://github.com/diderikk/INFT2503-Cpp")
                 .build(),
             file("Løsningsforslag øvinger", "inft1004", "NTNU", true)
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationzip/e3ed0b0b-5b0e-4c68-b99e-97aa08e324c7LF-INFT1004.zip",
-                )
+                .url(assetPublicUrl("cookbook/lf-inft1004.zip"))
                 .build(),
         ],
     },
     digfor: {
         "1": [
             file("Samlingsnotat", "dift1003", "Victor Høgheim")
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationpdf/6c015f9d-fb6a-4b23-918c-e6b339d08a93Samlingsnotat%20DIFT1003.pdf",
-                )
+                .url(assetPublicUrl("cookbook/samlingsnotat-dift1003.pdf"))
                 .build(),
             file("Eksamensnotater", "dcst1003", "Oskar Nygren")
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationpdf/3a6a3c1a-f287-486c-89f4-7f31caeaffb6Eksamensnotater%20DCST1003.pdf",
-                )
+                .url(assetPublicUrl("cookbook/eksamensnotater-dcst1003.pdf"))
                 .build(),
         ],
         "2": [
             file("A-besvarelse", "exph0300", "Victor Høgheim")
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationpdf/9605176c-d69c-4784-9f78-d1161d961e50EXPH0300%20Besvarelse.pdf",
-                )
+                .url(assetPublicUrl("cookbook/exph0300-besvarelse.pdf"))
                 .build(),
             file("Generelle tips til oppgaven", "exph0300", "Victor Høgheim")
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationpdf/e2b8f3a8-70dc-4792-a414-cd71ce84daf3Generelle%20tips%20EXPHIL.pdf",
-                )
+                .url(assetPublicUrl("cookbook/generelle-tips-exphil.pdf"))
                 .build(),
         ],
         "3": [],
@@ -325,20 +287,18 @@ export const StudyCookbook = {
         "1": [
             file("Alle øvinger (1-11)", "dcst1007", "NTNU")
                 .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationxzipcompressed/5fc9edf2-1ef8-45b6-8645-13eeab6468abObjektorientert%20programmering%20kok.zip",
+                    assetPublicUrl(
+                        "cookbook/objektorientert-programmering-kok.zip",
+                    ),
                 )
                 .build(),
         ],
         "2": [
             file("Alle øvinger (1-4)", "idatt2202", "NTNU", true)
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationxzipcompressed/ed190afe-ccc0-46a5-9f87-5b2dc3455b32OS-solution.zip",
-                )
+                .url(assetPublicUrl("cookbook/os-solution.zip"))
                 .build(),
             file("Løsningsforslag", "dcst2002", "NTNU", true)
-                .url(
-                    "https://tihldestorage.blob.core.windows.net/applicationxzipcompressed/75793380-53cd-4b91-950e-dc6663dfa31cDCST2002%20Webutvikling.zip",
-                )
+                .url(assetPublicUrl("cookbook/dcst2002-webutvikling.zip"))
                 .build(),
         ],
         "3": [],
