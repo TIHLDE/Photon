@@ -56,8 +56,15 @@ export function isPrivateGroupType(type: string): boolean {
     return PRIVATE_GROUP_TYPES.has(type.toLowerCase());
 }
 
+type VisibilityGroup = {
+    slug: string;
+    type: string;
+    archivedAt: Date | null;
+};
+
 /**
- * Whether `userId` may read a private group's page, roster and verv.
+ * Whether `userId` may read a private or archived group's page, roster and
+ * verv.
  *
  * Members always may. `groups:manage` — globally or scoped to this group — is
  * the only way in from the outside, and it exists so the admin panel keeps
@@ -65,10 +72,10 @@ export function isPrivateGroupType(type: string): boolean {
  */
 export async function canViewGroup(
     ctx: AppContext,
-    group: { slug: string; type: string },
+    group: VisibilityGroup,
     userId: string | null | undefined,
 ): Promise<boolean> {
-    if (!isPrivateGroupType(group.type)) return true;
+    if (!isPrivateGroupType(group.type) && !group.archivedAt) return true;
     if (!userId) return false;
     if (await isGroupMember(ctx, userId, group.slug)) return true;
 
@@ -83,13 +90,15 @@ export async function canViewGroup(
 /** {@link canViewGroup}, as a guard: throws 403 instead of returning false. */
 export async function assertGroupVisible(
     ctx: AppContext,
-    group: { slug: string; type: string },
+    group: VisibilityGroup,
     userId: string | null | undefined,
 ): Promise<void> {
     if (await canViewGroup(ctx, group, userId)) return;
 
     throw HTTPAppException.Forbidden(
-        "Denne gruppen er privat — bare medlemmene har tilgang.",
+        group.archivedAt
+            ? "Denne gruppen er arkivert — bare medlemmene har tilgang."
+            : "Denne gruppen er privat — bare medlemmene har tilgang.",
     );
 }
 

@@ -5,7 +5,7 @@
  * both globally and within specific scopes.
  */
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { unionAll } from "drizzle-orm/pg-core";
 import {
@@ -53,6 +53,11 @@ type DbCtx = { db: NodePgDatabase<DbSchema> };
 function permissionRows(ctx: DbCtx, userId: string) {
     const db = ctx.db;
     const globalScope = sql<string>`cast(${GLOBAL_SCOPE} as text)`;
+    /**
+     * An archived group grants nothing — not to its members, its leader or
+     * its verv. The rows stay, so restoring the group restores every grant.
+     */
+    const notArchived = isNull(group.archivedAt);
 
     /** Roles: the permission strings are stored ready-formatted. */
     const fromRoles = db
@@ -93,7 +98,8 @@ function permissionRows(ctx: DbCtx, userId: string) {
             groupPosition,
             eq(groupPositionHolder.positionId, groupPosition.id),
         )
-        .where(eq(groupPositionHolder.userId, userId));
+        .innerJoin(group, eq(groupPosition.groupSlug, group.slug))
+        .where(and(eq(groupPositionHolder.userId, userId), notArchived));
 
     const fromPositionsGlobal = db
         .select({
@@ -105,7 +111,8 @@ function permissionRows(ctx: DbCtx, userId: string) {
             groupPosition,
             eq(groupPositionHolder.positionId, groupPosition.id),
         )
-        .where(eq(groupPositionHolder.userId, userId));
+        .innerJoin(group, eq(groupPosition.groupSlug, group.slug))
+        .where(and(eq(groupPositionHolder.userId, userId), notArchived));
 
     /**
      * Held by every member, scoped to the group, so nothing reaches another
@@ -118,7 +125,7 @@ function permissionRows(ctx: DbCtx, userId: string) {
         })
         .from(groupMembership)
         .innerJoin(group, eq(groupMembership.groupSlug, group.slug))
-        .where(eq(groupMembership.userId, userId));
+        .where(and(eq(groupMembership.userId, userId), notArchived));
 
     /**
      * Held by the leader only, scoped to the group. The leader is a member
@@ -135,6 +142,7 @@ function permissionRows(ctx: DbCtx, userId: string) {
             and(
                 eq(groupMembership.userId, userId),
                 eq(groupMembership.role, "leader"),
+                notArchived,
             ),
         );
 
@@ -154,6 +162,7 @@ function permissionRows(ctx: DbCtx, userId: string) {
             and(
                 eq(groupMembership.userId, userId),
                 eq(groupMembership.role, "leader"),
+                notArchived,
             ),
         );
 
@@ -169,7 +178,7 @@ function permissionRows(ctx: DbCtx, userId: string) {
         })
         .from(groupMembership)
         .innerJoin(group, eq(groupMembership.groupSlug, group.slug))
-        .where(eq(groupMembership.userId, userId));
+        .where(and(eq(groupMembership.userId, userId), notArchived));
 
     return unionAll(
         fromRoles,

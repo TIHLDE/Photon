@@ -35,7 +35,11 @@ export const listPositionsRoute = route().get(
         const groupSlug = c.req.param("groupSlug");
 
         const [group] = await db
-            .select({ slug: schema.group.slug, type: schema.group.type })
+            .select({
+                slug: schema.group.slug,
+                type: schema.group.type,
+                archivedAt: schema.group.archivedAt,
+            })
             .from(schema.group)
             .where(eq(schema.group.slug, groupSlug))
             .limit(1);

@@ -71,6 +71,7 @@ type GroupFinesTabProps = {
      * hører ikke hjemme her, og ingenting kan endres.
      */
     ownFinesOnly?: boolean;
+    readOnly?: boolean;
     /** Den innloggede brukeren, som er den eneste som kan skrive forsvar. */
     currentUserId?: string;
     onApprove: (fine: Fine) => void;
@@ -120,6 +121,7 @@ export function GroupFinesTab({
     onLoadMore,
     canManage,
     ownFinesOnly = false,
+    readOnly = false,
     currentUserId,
     onApprove,
     onMarkPaid,
@@ -247,7 +249,7 @@ export function GroupFinesTab({
                         groupSlug={groupSlug}
                         fines={fines}
                         canManage={canManage && !ownFinesOnly}
-                        readOnly={ownFinesOnly}
+                        readOnly={ownFinesOnly || readOnly}
                         currentUserId={currentUserId}
                         onApprove={onApprove}
                         onMarkPaid={onMarkPaid}

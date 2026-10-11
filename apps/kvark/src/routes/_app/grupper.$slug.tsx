@@ -51,6 +51,8 @@ import {
     updateFineMutation,
     updateGroupMemberRoleMutation,
     updateGroupMutation,
+    archiveGroupMutation,
+    unarchiveGroupMutation,
     updateLawMutation,
 } from "#/api/queries/groups";
 import {
@@ -206,6 +208,8 @@ function GroupDetail() {
     const removeMember = useMutation(removeGroupMemberMutation);
     const addMember = useMutation(addGroupMemberMutation);
     const updateGroup = useMutation(updateGroupMutation);
+    const archiveGroup = useMutation(archiveGroupMutation);
+    const unarchiveGroup = useMutation(unarchiveGroupMutation);
     const createFine = useMutation(createFineMutation);
     const { uploadImage, isUploading } = useImageUploader();
     const updateFine = useMutation(updateFineMutation);
@@ -225,7 +229,8 @@ function GroupDetail() {
         `group:${slug}`,
     );
     const isLeader = useIsGroupLeaderOf(slug);
-    const canManage = canEditGroup || isLeader;
+    const isArchived = Boolean(apiGroup.archivedAt);
+    const canManage = (canEditGroup || isLeader) && !isArchived;
     // Roster changes: `groups:manage` for this group, or being its leader.
     // Det samme gjelder å gi ledervervet videre — men «Legg til medlem»-veien
     // legger fortsatt bare til vanlige medlemmer, slik API-et krever.
@@ -233,7 +238,8 @@ function GroupDetail() {
         "groups:manage",
         `group:${slug}`,
     );
-    const canManageMembers = hasGroupsManage || isLeader;
+    const canArchive = hasGroupsManage || isLeader;
+    const canManageMembers = canArchive && !isArchived;
     // Skjemaene til gruppen er scopet hit, akkurat som resten av siden: et
     // grant for denne gruppen teller, et grant for en annen gruppe gjør ikke.
     // Det var en global sjekk her, og den er strengere enn API-et — «Spørre-
@@ -246,22 +252,25 @@ function GroupDetail() {
     // forms:update. Slått sammen ville et grant på den ene vist knappene for
     // den andre, og de knappene svarer 403.
     const canCreateForms =
-        useScopedPermission(
+        (useScopedPermission(
             ["forms:create", "forms:manage"],
             `group:${slug}`,
-        ) || isLeader;
+        ) ||
+            isLeader) &&
+        !isArchived;
     const canManageForms =
-        useScopedPermission(
+        (useScopedPermission(
             ["forms:update", "forms:manage"],
             `group:${slug}`,
-        ) || isLeader;
+        ) ||
+            isLeader) &&
+        !isArchived;
     // Arrangementer er scopet på samme måte: lederskap alene gir ikke
     // events:create — det avhenger av gruppens leaderPermissions — så vi
     // spør om selve tilgangen for nettopp denne gruppen.
-    const canCreateEvent = useScopedPermission(
-        EVENT_CREATE_PERMISSIONS,
-        `group:${slug}`,
-    );
+    const canCreateEvent =
+        useScopedPermission(EVENT_CREATE_PERMISSIONS, `group:${slug}`) &&
+        !isArchived;
     const isRoot = usePermission("root");
 
     const isFinesAdmin = Boolean(
@@ -452,13 +461,13 @@ function GroupDetail() {
 
     // Lovverk: the fines admin (botsjef) or the leader — same as
     // `canManageLaws` server-side.
-    const canManageLaws = isLeader || isFinesAdmin || isRoot;
+    const canManageLaws = (isLeader || isFinesAdmin || isRoot) && !isArchived;
     // Å avgjøre en bot — godkjenne, avvise, slette — er botsjefens og lederens
     // jobb. Å gi en er noe alle i gruppen kan.
-    const canManageFines = isFinesAdmin || isLeader || isRoot;
+    const canManageFines = (isFinesAdmin || isLeader || isRoot) && !isArchived;
     // Å gi en bot krever nøyaktig det samme som å lese dem — serveren avviser
     // ellers POST-en med 403 etter at skjemaet er fylt ut.
-    const canGiveFine = canViewFines;
+    const canGiveFine = canViewFines && !isArchived;
 
     const navItems = useMemo(
         () =>
@@ -705,6 +714,12 @@ function GroupDetail() {
                     <GroupDetailHeader
                         group={group}
                         isAdmin={canManage}
+                        canArchive={canArchive}
+                        onArchive={() => archiveGroup.mutate({ slug })}
+                        onUnarchive={() => unarchiveGroup.mutate({ slug })}
+                        isArchivePending={
+                            archiveGroup.isPending || unarchiveGroup.isPending
+                        }
                         canGiveFine={canGiveFine}
                         onGiveFine={openGiveFine}
                         members={members}
@@ -887,6 +902,7 @@ function GroupDetail() {
                             }}
                             canManage={canManageFines}
                             ownFinesOnly={canSeeOwnFines}
+                            readOnly={isArchived}
                             currentUserId={session?.user?.id}
                             onApprove={(fine) =>
                                 updateFine.mutate({
