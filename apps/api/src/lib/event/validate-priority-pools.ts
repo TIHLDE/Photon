@@ -66,10 +66,15 @@ export async function validatePriorityPools(
               .select({
                   slug: schema.group.slug,
                   type: schema.group.type,
+                  archivedAt: schema.group.archivedAt,
               })
               .from(schema.group)
               .where(inArray(schema.group.slug, slugs))
         : [];
+
+    const archivedSlugs = new Set(
+        groups.filter((group) => group.archivedAt).map((group) => group.slug),
+    );
 
     const typeBySlug = new Map(
         groups.map((group) => [group.slug, group.type.toUpperCase()]),
@@ -99,6 +104,12 @@ export async function validatePriorityPools(
         if (type === undefined) {
             reject(`Group with slug "${pool.groupSlug}" does not exist`);
             continue;
+        }
+
+        if (archivedSlugs.has(pool.groupSlug)) {
+            reject(
+                `Group "${pool.groupSlug}" is archived and cannot be prioritized`,
+            );
         }
 
         if (type === INTEREST_GROUP_TYPE) {

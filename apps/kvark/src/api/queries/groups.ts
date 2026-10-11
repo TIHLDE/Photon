@@ -4,6 +4,7 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
+import { authQueryOptions } from "#/api/auth";
 import { fetchPrivateObjectUrl } from "#/lib/assets";
 import type { QueryParamsHelper } from "@tihlde/sdk/types";
 import type {
@@ -24,6 +25,7 @@ import type {
 export const GroupQueryKeys = {
     listInfinite: ["groups", "list-infinite"] as const,
     list: ["groups", "list-paged"] as const,
+    archived: ["groups", "archived"] as const,
     mine: ["groups", "mine"] as const,
     detail: ["groups", "detail"] as const,
     members: ["groups", "members"] as const,
@@ -63,6 +65,17 @@ export const getGroupsInfiniteQuery = (
         queryFn: () => apiClient.get("/api/groups"),
         initialPageParam: 0,
         getNextPageParam: () => undefined,
+    });
+
+export const getArchivedGroupsQuery = (userId: string | undefined) =>
+    queryOptions({
+        // Svaret avhenger av hvem som spør, og utlogging tømmer ikke cachen.
+        queryKey: [...GroupQueryKeys.archived, userId],
+        enabled: Boolean(userId),
+        queryFn: () =>
+            apiClient.get("/api/groups", {
+                searchParams: { archived: "true" },
+            }),
     });
 
 export const getMyGroupsQuery = () =>
@@ -140,6 +153,39 @@ export const deleteGroupMutation = mutationOptions({
             queryKey: [...GroupQueryKeys.mine],
             exact: false,
         });
+    },
+});
+
+function invalidateAfterArchiveChange(
+    slug: string,
+    client: { invalidateQueries: (filters: object) => unknown },
+) {
+    client.invalidateQueries(getGroupBySlugQuery(slug));
+    // Tilgangene gruppen deler ut følger arkiveringen, og de ligger i sesjonen.
+    client.invalidateQueries({ queryKey: authQueryOptions.queryKey });
+    for (const queryKey of [
+        GroupQueryKeys.list,
+        GroupQueryKeys.listInfinite,
+        GroupQueryKeys.archived,
+        GroupQueryKeys.mine,
+    ]) {
+        client.invalidateQueries({ queryKey: [...queryKey], exact: false });
+    }
+}
+
+export const archiveGroupMutation = mutationOptions({
+    mutationFn: ({ slug }: { slug: string }) =>
+        apiClient.post("/api/groups/{slug}/archive", { params: { slug } }),
+    onSuccess(_, vars, __, ctx) {
+        invalidateAfterArchiveChange(vars.slug, ctx.client);
+    },
+});
+
+export const unarchiveGroupMutation = mutationOptions({
+    mutationFn: ({ slug }: { slug: string }) =>
+        apiClient.post("/api/groups/{slug}/unarchive", { params: { slug } }),
+    onSuccess(_, vars, __, ctx) {
+        invalidateAfterArchiveChange(vars.slug, ctx.client);
     },
 });
 

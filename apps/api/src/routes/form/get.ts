@@ -102,7 +102,7 @@ export const getRoute = route().get(
             // og et skjema med en utgått svarfrist som stengt igjen.
             // `opens_at` og `closes_at` lar siden si når det åpner og stengte.
             is_open_for_submissions: groupForm
-                ? isGroupFormOpen(groupForm)
+                ? isGroupFormOpen(groupForm) && !groupForm.group.archivedAt
                 : null,
             opens_at: groupForm?.opensAt?.toISOString() ?? null,
             closes_at: groupForm?.closesAt?.toISOString() ?? null,

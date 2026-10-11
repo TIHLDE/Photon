@@ -91,7 +91,7 @@ export const listGroupFormsRoute = route().get(
             // Den som forvalter skjemaene ser alle
             if (canManageForms) return true;
 
-            const isOpenNow = isGroupFormOpen(gf);
+            const isOpenNow = isGroupFormOpen(gf) && !group.archivedAt;
 
             // Members see open forms
             if (isMember && isOpenNow) return true;
@@ -119,7 +119,8 @@ export const listGroupFormsRoute = route().get(
                     is_open_for_submissions: groupForm.isOpenForSubmissions,
                     opens_at: groupForm.opensAt?.toISOString() ?? null,
                     closes_at: groupForm.closesAt?.toISOString() ?? null,
-                    is_open_now: isGroupFormOpen(groupForm),
+                    is_open_now:
+                        isGroupFormOpen(groupForm) && !group.archivedAt,
                     only_for_group_members: groupForm.onlyForGroupMembers,
                     resource_type: "GroupForm",
                     viewer_has_answered: hasAnswered,

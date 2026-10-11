@@ -617,6 +617,13 @@
       "when": 1791112633615,
       "tag": "0087_registration_promoted_from_waitlist_at",
       "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1791643920286,
+      "tag": "0088_group_archived_at",
+      "breakpoints": true
     }
   ]
 }

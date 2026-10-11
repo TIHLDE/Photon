@@ -1,7 +1,10 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
-import { Crown, HandCoins, Mail } from "lucide-react";
+import { Archive, ArchiveRestore, Crown, HandCoins, Mail } from "lucide-react";
+import { useState } from "react";
+
+import { ConfirmDeleteDialog } from "#/components/confirm-delete-dialog";
 
 import { DetailHeader } from "#/components/detail-layout";
 import {
@@ -17,6 +20,10 @@ import { avatarImageUrl } from "#/lib/assets";
 type GroupDetailHeaderProps = {
     group: Group;
     isAdmin: boolean;
+    canArchive: boolean;
+    onArchive: () => void;
+    onUnarchive: () => void;
+    isArchivePending?: boolean;
     /**
      * Om den innloggede kan gi bot. Lepton lot ethvert gruppemedlem bøtelegge
      * et annet, og det er regelen igjen: medlemskap er tilgangen.
@@ -33,6 +40,10 @@ type GroupDetailHeaderProps = {
 export function GroupDetailHeader({
     group,
     isAdmin,
+    canArchive,
+    onArchive,
+    onUnarchive,
+    isArchivePending,
     canGiveFine,
     onGiveFine,
     members,
@@ -40,6 +51,11 @@ export function GroupDetailHeader({
     isSavingGroup,
     saveGroupError,
 }: GroupDetailHeaderProps) {
+    const [confirmArchive, setConfirmArchive] = useState(false);
+    const isArchived = Boolean(group.archivedAt);
+    const showRestore = canArchive && isArchived;
+    const showArchive = canArchive && !isArchived && Boolean(group.archivable);
+
     return (
         <DetailHeader
             // Fast størrelse, ikke `h-full`: bildet har en egen høyde som
@@ -75,6 +91,12 @@ export function GroupDetailHeader({
                    om side: begge er lange nok til at de sammen presset seg
                    forbi tittelen og så ut som én ordløs rad (issue #670). */
                 <div className="flex flex-col items-start gap-2">
+                    {isArchived ? (
+                        <Badge variant="outline" className="gap-1.5">
+                            <Archive />
+                            Arkivert
+                        </Badge>
+                    ) : null}
                     {group.leader ? (
                         <Badge
                             variant="secondary"
@@ -100,7 +122,7 @@ export function GroupDetailHeader({
                 </div>
             }
             actions={
-                canGiveFine || isAdmin ? (
+                canGiveFine || isAdmin || showArchive || showRestore ? (
                     <>
                         {canGiveFine ? (
                             <Button onClick={onGiveFine}>
@@ -116,6 +138,39 @@ export function GroupDetailHeader({
                                 isSubmitting={isSavingGroup}
                                 error={saveGroupError}
                             />
+                        ) : null}
+                        {showRestore ? (
+                            <Button
+                                onClick={onUnarchive}
+                                disabled={isArchivePending}
+                            >
+                                <ArchiveRestore />
+                                Gjenopprett
+                            </Button>
+                        ) : null}
+                        {showArchive ? (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setConfirmArchive(true)}
+                                    disabled={isArchivePending}
+                                >
+                                    <Archive />
+                                    Arkiver
+                                </Button>
+                                <ConfirmDeleteDialog
+                                    open={confirmArchive}
+                                    onOpenChange={setConfirmArchive}
+                                    title={`Arkivere «${group.name}»?`}
+                                    description="Gruppen skjules for alle andre enn medlemmene og kan ikke endres. Den kan gjenopprettes senere."
+                                    confirmLabel="Arkiver gruppe"
+                                    onConfirm={() => {
+                                        setConfirmArchive(false);
+                                        onArchive();
+                                    }}
+                                    isPending={isArchivePending}
+                                />
+                            </>
                         ) : null}
                     </>
                 ) : null

@@ -36,11 +36,15 @@ import {
 async function requireGroup(ctx: AppContext, slug: string) {
     const group = await ctx.db.query.group.findFirst({
         where: eq(schema.group.slug, slug),
-        columns: { slug: true, name: true, type: true },
+        columns: { slug: true, name: true, type: true, archivedAt: true },
     });
 
     if (!group || !isSelectableGroupType(group.type)) {
         throw HTTPAppException.BadRequest(`Ukjent gruppe: ${slug}`);
+    }
+
+    if (group.archivedAt) {
+        throw HTTPAppException.BadRequest(`Gruppen er arkivert: ${slug}`);
     }
 
     return group;

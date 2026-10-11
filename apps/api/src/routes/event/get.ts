@@ -79,6 +79,7 @@ export const getRoute = route().get(
                                 name: true,
                                 slug: true,
                                 logoUrl: true,
+                                archivedAt: true,
                             },
                         },
                     },
@@ -272,16 +273,19 @@ export const getRoute = route().get(
               }))
             : [];
 
-        const priorityPools = event.pools.map((pool) => ({
-            classYear: pool.classYear,
-            group: pool.group
-                ? {
-                      name: pool.group.name,
-                      slug: pool.group.slug,
-                      logoUrl: pool.group.logoUrl,
-                  }
-                : null,
-        }));
+        // En pulje for en arkivert gruppe treffer ingen, så den vises ikke.
+        const priorityPools = event.pools
+            .filter((pool) => !pool.group?.archivedAt)
+            .map((pool) => ({
+                classYear: pool.classYear,
+                group: pool.group
+                    ? {
+                          name: pool.group.name,
+                          slug: pool.group.slug,
+                          logoUrl: pool.group.logoUrl,
+                      }
+                    : null,
+            }));
 
         const returnEvent: z.infer<typeof eventDetailSchema> = {
             id: event.id,

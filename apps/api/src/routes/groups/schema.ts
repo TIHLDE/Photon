@@ -166,6 +166,10 @@ export const groupSchema = Schema(
         contractSigningRequired: z.boolean().meta({
             description: "Whether contract signing is required",
         }),
+        archivedAt: z.string().nullable().meta({
+            description:
+                "When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions.",
+        }),
         createdAt: z.string().meta({ description: "Creation timestamp" }),
         updatedAt: z.string().meta({ description: "Last update timestamp" }),
     }),
@@ -188,6 +192,10 @@ export const groupDetailSchema = Schema(
             description:
                 "What this group calls its leader, e.g. «President» or «Innovasjonsminister». Reconciled with the linked Hovedstyret verv, so both pages name the leader the same. Null means the plain «Leder».",
         }),
+        archivable: z.boolean().meta({
+            description:
+                "Whether this group may be archived at all. False for Hovedstyret and for groups whose roster follows Feide.",
+        }),
         viewerCanUseFines: z.boolean().meta({
             description:
                 "Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student.",
@@ -207,6 +215,17 @@ export const groupWithMemberCountSchema = Schema(
             .meta({ description: "Number of members in the group" }),
     }),
 );
+
+export const listGroupsQuerySchema = z.object({
+    search: z.string().optional().meta({
+        description: "Match against the group's name or description",
+    }),
+    type: z.string().optional().meta({ description: "Only this group type" }),
+    archived: z.enum(["true", "false"]).default("false").meta({
+        description:
+            "'true' lists the archived groups the caller may open — the ones they are a member of, or all of them with 'groups:manage' — instead of the active ones.",
+    }),
+});
 
 export const groupListSchema = Schema(
     "GroupList",

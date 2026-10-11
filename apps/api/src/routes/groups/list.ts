@@ -1,8 +1,21 @@
 import { schema } from "@photon/db";
-import { asc, count, eq, ilike, or } from "drizzle-orm";
+import { hasPermission } from "@photon/auth/rbac";
+import {
+    and,
+    asc,
+    count,
+    eq,
+    ilike,
+    inArray,
+    isNotNull,
+    isNull,
+    or,
+} from "drizzle-orm";
+import { validator } from "hono-openapi";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { groupListSchema } from "./schema";
+import { captureAuth } from "~/middleware/auth";
+import { groupListSchema, listGroupsQuerySchema } from "./schema";
 
 export const listRoute = route().get(
     "/",
@@ -11,7 +24,7 @@ export const listRoute = route().get(
         summary: "List groups",
         operationId: "listGroups",
         description:
-            "Retrieve a list of all groups. Supports optional filtering by type and search query.",
+            "Retrieve the active groups, or with `archived=true` the archived groups the caller may open. Supports optional filtering by type and search query.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -19,12 +32,38 @@ export const listRoute = route().get(
             description: "List of groups retrieved successfully",
         })
         .build(),
+    captureAuth,
+    validator("query", listGroupsQuerySchema),
     async (c) => {
-        const { db } = c.get("ctx");
-        const searchQuery = c.req.query("search");
-        const typeFilter = c.req.query("type");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
+        const {
+            search: searchQuery,
+            type: typeFilter,
+            archived,
+        } = c.req.valid("query");
 
         const conditions = [];
+
+        if (archived === "true") {
+            const userId = c.get("user")?.id;
+            if (!userId) return c.json([]);
+
+            conditions.push(isNotNull(schema.group.archivedAt));
+            if (!(await hasPermission(ctx, userId, "groups:manage"))) {
+                conditions.push(
+                    inArray(
+                        schema.group.slug,
+                        db
+                            .select({ slug: schema.groupMembership.groupSlug })
+                            .from(schema.groupMembership)
+                            .where(eq(schema.groupMembership.userId, userId)),
+                    ),
+                );
+            }
+        } else {
+            conditions.push(isNull(schema.group.archivedAt));
+        }
 
         // Add search filter if provided
         if (searchQuery) {
@@ -42,7 +81,7 @@ export const listRoute = route().get(
         }
 
         const groups = await db.query.group.findMany({
-            where: conditions.length > 0 ? conditions[0] : undefined,
+            where: and(...conditions),
             orderBy: [asc(schema.group.name)],
         });
 

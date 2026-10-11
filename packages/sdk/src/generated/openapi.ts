@@ -1558,7 +1558,7 @@ export interface paths {
         };
         /**
          * List groups
-         * @description Retrieve a list of all groups. Supports optional filtering by type and search query.
+         * @description Retrieve the active groups, or with `archived=true` the archived groups the caller may open. Supports optional filtering by type and search query.
          */
         get: operations["listGroups"];
         put?: never;
@@ -1587,6 +1587,46 @@ export interface paths {
         get: operations["listMyGroups"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{slug}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive a group
+         * @description Archive a group. It leaves the group list, only its members can open it, nothing in it can be changed and it grants no permissions — but nothing is deleted, and unarchiving brings it all back. Requires being the group's leader OR holding 'groups:manage'.
+         */
+        post: operations["archiveGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{slug}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore an archived group
+         * @description Bring an archived group back: it returns to the group list, becomes editable again, and its members, leader and verv regain the permissions the group grants. Requires being the group's leader OR holding 'groups:manage'.
+         */
+        post: operations["unarchiveGroup"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4911,6 +4951,8 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
+            /** @description When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions. */
+            archivedAt: string | null;
             /** @description Creation timestamp */
             createdAt: string;
             /** @description Last update timestamp */
@@ -4944,6 +4986,8 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
+            /** @description When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions. */
+            archivedAt: string | null;
             /** @description Creation timestamp */
             createdAt: string;
             /** @description Last update timestamp */
@@ -4956,6 +5000,9 @@ export interface components {
             };
         };
         MyGroupList: components["schemas"]["MyGroup"][];
+        UpdateGroupResponse: {
+            message: string;
+        };
         Group: {
             /** @description Group slug */
             slug: string;
@@ -4981,6 +5028,8 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
+            /** @description When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions. */
+            archivedAt: string | null;
             /** @description Creation timestamp */
             createdAt: string;
             /** @description Last update timestamp */
@@ -5024,9 +5073,6 @@ export interface components {
             finesActivated: boolean;
             /** @description User ID of the fines administrator */
             finesAdminId?: string;
-        };
-        UpdateGroupResponse: {
-            message: string;
         };
         UpdateGroup: {
             /**
@@ -5083,12 +5129,16 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
+            /** @description When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions. */
+            archivedAt: string | null;
             /** @description Creation timestamp */
             createdAt: string;
             /** @description Last update timestamp */
             updatedAt: string;
             /** @description What this group calls its leader, e.g. «President» or «Innovasjonsminister». Reconciled with the linked Hovedstyret verv, so both pages name the leader the same. Null means the plain «Leder». */
             leaderTitle: string | null;
+            /** @description Whether this group may be archived at all. False for Hovedstyret and for groups whose roster follows Feide. */
+            archivable: boolean;
             /** @description Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student. */
             viewerCanUseFines: boolean;
             /** @description Whether the caller may read the fines they are party to here without taking part in the group's fine system: true for someone who has left the group but was once a member. Never true together with 'viewerCanUseFines'. */
@@ -10754,7 +10804,14 @@ export interface operations {
     };
     listGroups: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Match against the group's name or description */
+                search?: string;
+                /** @description Only this group type */
+                type?: string;
+                /** @description 'true' lists the archived groups the caller may open — the ones they are a member of, or all of them with 'groups:manage' — instead of the active ones. */
+                archived?: "true" | "false";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -10856,6 +10913,107 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
+            };
+        };
+    };
+    archiveGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Group archived */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateGroupResponse"];
+                };
+            };
+            /** @description Bad Request - Hovedstyret and groups whose roster follows Feide cannot be archived */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Group with the specified slug does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    unarchiveGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Group restored */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateGroupResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Group with the specified slug does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

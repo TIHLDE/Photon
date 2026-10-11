@@ -338,6 +338,15 @@ export const group = pgTable("group", {
     instituteId: integer("institute_id").references(() => institute.id, {
         onDelete: "set null",
     }),
+    /**
+     * Set while the group is archived, null otherwise.
+     *
+     * Archiving is the reversible alternative to deleting: the row, roster,
+     * verv, bøter and laws all stay, but the group leaves the organisation
+     * chart, only its members can open it, nothing in it can be changed, and
+     * it grants no permissions. Clearing the column brings all of that back.
+     */
+    archivedAt: timestamp("archived_at"),
     ...timestamps,
 });
 

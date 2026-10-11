@@ -32,6 +32,8 @@ export type Group = {
     finesActivated?: boolean;
     /** Botsjefen. Null når gruppen ikke har utpekt noen. */
     finesAdminId?: string | null;
+    archivedAt?: string | null;
+    archivable?: boolean;
 };
 
 export const HS_GROUP_SLUG = "hs";
@@ -334,6 +336,8 @@ export function mapGroup(group: ApiGroup, leader?: string): Group {
         finesInfo: group.finesInfo,
         finesActivated: group.finesActivated,
         finesAdminId: group.finesAdminId ?? null,
+        archivedAt: group.archivedAt,
+        archivable: group.archivable,
     };
 }
 

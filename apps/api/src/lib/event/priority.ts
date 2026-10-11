@@ -9,7 +9,7 @@ import {
 import type { DbSchema } from "@photon/db";
 import { schema } from "@photon/db";
 import { uniq } from "es-toolkit";
-import { and, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { HTTPException } from "hono/http-exception";
 import { getStrikeActiveCutoff } from "./strikes";
@@ -301,6 +301,12 @@ function toMembershipRow(row: {
 }
 
 /**
+ * Membership of an archived group earns no priority: a pool an event still
+ * carries for it matches nobody until the group is restored.
+ */
+const activeGroupsOnly = isNull(schema.group.archivedAt);
+
+/**
  * Load everything prioritization needs to know about one member.
  *
  * Prefer {@link loadPrioritization} for more than one member — this issues its
@@ -343,7 +349,9 @@ export async function getUserPriorityFacts(
                 ),
             ),
         )
-        .where(eq(schema.groupMembership.userId, userId));
+        .where(
+            and(eq(schema.groupMembership.userId, userId), activeGroupsOnly),
+        );
 
     const membershipRows = rows.map(toMembershipRow);
 
@@ -519,7 +527,12 @@ export async function loadPrioritization(
                     ),
                 ),
             )
-            .where(inArray(schema.groupMembership.userId, ids)),
+            .where(
+                and(
+                    inArray(schema.groupMembership.userId, ids),
+                    activeGroupsOnly,
+                ),
+            ),
         db
             .select({
                 userId: schema.eventStrike.userId,
