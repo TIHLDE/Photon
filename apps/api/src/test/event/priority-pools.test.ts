@@ -1,4 +1,7 @@
+import { schema } from "@photon/db";
+import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
+import { getUserPriorityFacts, loadPrioritization } from "~/lib/event/priority";
 import {
     type IntegrationTestContext,
     integrationTest,
@@ -78,6 +81,58 @@ describe("priority pool validation", () => {
             });
 
             expect(response.status).toBe(400);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "rejects a pool naming an archived group, and that group earns no priority",
+        async ({ ctx }) => {
+            const client = await adminClient(ctx);
+            const member = await ctx.utils.createTestUser();
+
+            const group = await ctx.utils.createTestGroup({
+                slug: "archived-pool",
+                type: "COMMITTEE",
+            });
+            await ctx.db.insert(schema.groupMembership).values({
+                userId: member.id,
+                groupSlug: group.slug,
+                role: "member",
+            });
+
+            const pools = [{ groupSlug: group.slug, classYear: null }];
+            const create = () =>
+                client.api.event.$post({
+                    json: { ...baseEventBody, priorityPools: pools },
+                });
+            const isPrioritized = async () => {
+                const lookup = await loadPrioritization(
+                    [member.id],
+                    { pools, priorityUsers: [] },
+                    false,
+                    ctx.db,
+                );
+                const facts = await getUserPriorityFacts(member.id, ctx.db);
+                return [lookup(member.id), facts.groupSlugs.has(group.slug)];
+            };
+            const setArchived = (archivedAt: Date | null) =>
+                ctx.db
+                    .update(schema.group)
+                    .set({ archivedAt })
+                    .where(eq(schema.group.slug, group.slug));
+
+            expect(await isPrioritized()).toEqual([true, true]);
+
+            await setArchived(new Date());
+            const refused = await create();
+            expect(refused.status).toBe(400);
+            expect(JSON.stringify(await refused.json())).toContain("archived");
+            expect(await isPrioritized()).toEqual([false, false]);
+
+            await setArchived(null);
+            expect((await create()).status).toBe(201);
+            expect(await isPrioritized()).toEqual([true, true]);
         },
         500_000,
     );
