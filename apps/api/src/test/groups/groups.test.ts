@@ -1,4 +1,4 @@
-import { getUserPermissions, hasPermission } from "@photon/auth/rbac";
+import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
@@ -41,15 +41,20 @@ describe("groups", () => {
         );
 
         integrationTest(
-            "the leader of a newly created group can arrange its events",
+            "the leader of a newly created group can arrange its events, and nobody else can",
             async ({ ctx }) => {
                 const admin = await ctx.utils.createTestUser();
                 const leader = await ctx.utils.createTestUser();
-                const client = await ctx.utils.clientForUser(admin);
+                const member = await ctx.utils.createTestUser();
+                const adminClient = await ctx.utils.clientForUser(admin);
+                const leaderClient = await ctx.utils.clientForUser(leader);
+                const memberClient = await ctx.utils.clientForUser(member);
 
+                await ctx.utils.setupGroups();
+                await ctx.utils.setupEventCategories();
                 await ctx.utils.giveUserPermissions(admin, ["groups:create"]);
 
-                const response = await client.api.groups.$post({
+                const created = await adminClient.api.groups.$post({
                     json: {
                         slug: "new-interest-group",
                         name: "New Interest Group",
@@ -58,19 +63,66 @@ describe("groups", () => {
                         finesActivated: false,
                     },
                 });
-                expect(response.status).toBe(201);
+                expect(created.status).toBe(201);
 
-                await ctx.db.insert(schema.groupMembership).values({
-                    userId: leader.id,
-                    groupSlug: "new-interest-group",
-                    role: "leader",
+                await ctx.db.insert(schema.groupMembership).values([
+                    {
+                        userId: leader.id,
+                        groupSlug: "new-interest-group",
+                        role: "leader",
+                    },
+                    {
+                        userId: member.id,
+                        groupSlug: "new-interest-group",
+                        role: "member",
+                    },
+                ]);
+
+                const activityFor = (organizerGroupSlug: string) => ({
+                    title: "Quizkveld",
+                    description: "En aktivitet",
+                    categorySlug: "aktivitet",
+                    organizerGroupSlug,
+                    location: "Trondheim",
+                    imageUrl: null,
+                    start: "2025-12-01T18:00:00Z",
+                    end: "2025-12-01T20:00:00Z",
+                    registrationStart: null,
+                    registrationEnd: "2025-11-30T23:59:59Z",
+                    cancellationDeadline: null,
+                    capacity: 50,
+                    isRegistrationClosed: false,
+                    requiresSigningUp: true,
+                    allowWaitlist: true,
+                    priorityPools: null,
+                    onlyAllowPrioritized: false,
+                    canCauseStrikes: false,
+                    enforcesPreviousStrikes: false,
+                    isPaidEvent: false,
+                    price: null,
+                    contactPersonUserId: null,
+                    reactionsAllowed: true,
                 });
 
-                const permissions = await getUserPermissions(ctx, leader.id);
-                expect(permissions).toContain(
-                    "events:create@group:new-interest-group",
-                );
-                expect(permissions).not.toContain("events:create");
+                const ownGroup = await leaderClient.api.event.$post({
+                    json: activityFor("new-interest-group"),
+                });
+                expect(ownGroup.status).toBe(201);
+
+                const otherGroup = await leaderClient.api.event.$post({
+                    json: activityFor("index"),
+                });
+                expect(otherGroup.status).toBe(403);
+
+                const asMember = await memberClient.api.event.$post({
+                    json: activityFor("new-interest-group"),
+                });
+                expect(asMember.status).toBe(403);
+
+                const asCreator = await adminClient.api.event.$post({
+                    json: activityFor("new-interest-group"),
+                });
+                expect(asCreator.status).toBe(403);
             },
             500_000,
         );
