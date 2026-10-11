@@ -85,7 +85,7 @@ async function main() {
         })),
         ...fineReasons.map((row) => ({
             label: `fine ${row.id} reason`,
-            prefix: "fine-images",
+            prefix: "fine-text-images",
             text: row.text,
             save: async (text: string) => {
                 await db
@@ -96,7 +96,7 @@ async function main() {
         })),
         ...fineDefenses.map((row) => ({
             label: `fine ${row.id} defense`,
-            prefix: "fine-images",
+            prefix: "fine-text-images",
             text: row.text ?? "",
             save: async (text: string) => {
                 await db
