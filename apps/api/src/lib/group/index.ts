@@ -445,6 +445,17 @@ export async function updateGroupMemberRole(
 
 export const HS_GROUP_SLUG = "hs";
 
+// Without these a new group's leader cannot arrange its events until someone ticks them off by hand.
+export const DEFAULT_LEADER_PERMISSIONS = [
+    "events:create",
+    "events:update",
+    "events:delete",
+    "events:manage",
+    "events:registrations:view",
+    "events:registrations:create",
+    "events:payments:view",
+];
+
 /** True for groups whose leader belongs in HS. Column is freeform varchar
  *  (Lepton rows are upper case), so compare case-insensitively. */
 export function isSubgroupType(type: string): boolean {
