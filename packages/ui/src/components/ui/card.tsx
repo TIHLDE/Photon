@@ -5,20 +5,29 @@ import { cn } from "#/lib/utils";
 
 type CardProps = React.ComponentProps<"div"> & {
     size?: "default" | "sm";
+    /** Toned down, for something that is still there but no longer active. */
+    muted?: boolean;
     render?: useRender.RenderProp;
 };
 
-function Card({ className, size = "default", render, ...props }: CardProps) {
+function Card({
+    className,
+    size = "default",
+    muted = false,
+    render,
+    ...props
+}: CardProps) {
     return useRender({
         render: render ?? <div />,
         props: {
             "data-slot": "card",
             "data-size": size,
+            "data-muted": muted ? "" : undefined,
             className: cn(
                 // `card-media` gets the same flush-to-the-edge treatment as a
                 // bare `img`, so a cover and its placeholder line up instead of
                 // the placeholder sitting inset below a strip of card.
-                "group/card flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-4 text-sm text-card-foreground ring-1 ring-card-border has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 has-[>[data-slot=card-media]:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl *:[[data-slot=card-media]:first-child]:rounded-t-xl *:[[data-slot=card-media]:last-child]:rounded-b-xl",
+                "group/card flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-4 text-sm text-card-foreground ring-1 ring-card-border has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 has-[>[data-slot=card-media]:first-child]:pt-0 data-muted:bg-muted/40 data-muted:*:opacity-70 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-muted:[&_img]:grayscale data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl *:[[data-slot=card-media]:first-child]:rounded-t-xl *:[[data-slot=card-media]:last-child]:rounded-b-xl",
                 className,
             ),
             ...props,

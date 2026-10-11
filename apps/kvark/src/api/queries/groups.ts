@@ -67,9 +67,11 @@ export const getGroupsInfiniteQuery = (
         getNextPageParam: () => undefined,
     });
 
-export const getArchivedGroupsQuery = () =>
+export const getArchivedGroupsQuery = (userId: string | undefined) =>
     queryOptions({
-        queryKey: [...GroupQueryKeys.archived],
+        // Svaret avhenger av hvem som spør, og utlogging tømmer ikke cachen.
+        queryKey: [...GroupQueryKeys.archived, userId],
+        enabled: Boolean(userId),
         queryFn: () =>
             apiClient.get("/api/groups", {
                 searchParams: { archived: "true" },

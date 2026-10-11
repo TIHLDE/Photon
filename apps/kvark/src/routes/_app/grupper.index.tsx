@@ -6,6 +6,7 @@ import "@xyflow/react/dist/style.css";
 import { useCallback, useMemo } from "react";
 import z from "zod";
 
+import { authQueryOptions } from "#/api/auth";
 import { getArchivedGroupsQuery, getGroupsQuery } from "#/api/queries/groups";
 import { ArchivedGroups } from "#/components/archived-groups";
 import { GroupListView } from "#/components/group-list-view";
@@ -170,7 +171,10 @@ function GroupsPage() {
     const { visning } = Route.useSearch();
 
     const { data: groups } = useSuspenseQuery(getGroupsQuery(0));
-    const { data: archivedGroups } = useQuery(getArchivedGroupsQuery());
+    const { data: session } = useQuery(authQueryOptions);
+    const { data: archivedGroups } = useQuery(
+        getArchivedGroupsQuery(session?.user?.id),
+    );
 
     const tree = useMemo(() => buildTreeInput(groups as ApiGroup[]), [groups]);
     const { nodes, edges, width, height } = useMemo(

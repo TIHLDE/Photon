@@ -45,10 +45,7 @@ export function ArchivedGroups({ groups }: { groups: SimpleSection["items"] }) {
                         to="/grupper/$slug"
                         params={{ slug: group.slug }}
                     >
-                        <Card
-                            size="sm"
-                            className="h-full cursor-pointer bg-muted/40 *:opacity-70 [&_img]:grayscale"
-                        >
+                        <Card size="sm" muted className="h-full cursor-pointer">
                             <CardContent className="flex items-center gap-3">
                                 <GroupIdentity {...group} />
                             </CardContent>
