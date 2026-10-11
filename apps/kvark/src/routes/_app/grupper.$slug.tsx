@@ -188,7 +188,13 @@ function GroupDetail() {
     const [editingFine, setEditingFine] = useState<Fine | null>(null);
     const [editFineError, setEditFineError] = useState<string | null>(null);
     const [groupError, setGroupError] = useState<string | null>(null);
-    const [archiveError, setArchiveError] = useState<string | null>(null);
+    const [archiveFailure, setArchiveFailure] = useState<{
+        slug: string;
+        message: string;
+    } | null>(null);
+    // Siden monteres ikke på nytt når man går til en annen gruppe.
+    const archiveError =
+        archiveFailure?.slug === slug ? archiveFailure.message : null;
     const [formDialogOpen, setFormDialogOpen] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
     const [editingForm, setEditingForm] = useState<Form | null>(null);
@@ -712,11 +718,14 @@ function GroupDetail() {
     async function changeArchived(
         mutation: typeof archiveGroup | typeof unarchiveGroup,
     ) {
-        setArchiveError(null);
+        setArchiveFailure(null);
         try {
             await mutation.mutateAsync({ slug });
         } catch (error) {
-            setArchiveError(await extractErrorMessage(error));
+            setArchiveFailure({
+                slug,
+                message: await extractErrorMessage(error),
+            });
         }
     }
 
