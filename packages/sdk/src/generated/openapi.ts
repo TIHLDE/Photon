@@ -1113,6 +1113,36 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/event/{eventId}/wrapped/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a photo taken with the event's camera
+         * @description Upload one photo to the event's disposable camera. The caller must hold a spot on the event, the camera must be on and inside its window, and the caller must have photos left.
+         *
+         *     The photo is stored hidden: the response carries the new counts and never a URL, and nothing serves the image until the organizer publishes it.
+         *
+         *     **Usage:**
+         *     Send the file as multipart/form-data with a field named "file". JPEG, PNG and WebP only, at most 50MB. The image is re-encoded to WebP, scaled to fit within 2560x2560 px and stripped of metadata.
+         *
+         *     A photo is spent only by a 201.
+         *
+         *     **Retrying:**
+         *     Pass `idempotencyKey`, a UUID the client makes up per photo. If an upload's answer is lost and the same photo is sent again under the same key, the first one is found and answered with a 200 and the current counts — nothing is stored twice and no second photo is spent.
+         */
+        post: operations["uploadWrappedPhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/feedback": {
         parameters: {
             query?: never;
@@ -4389,6 +4419,15 @@ export interface components {
             enabled: boolean;
             /** @description Photos per member. Omit to keep the current value (5 on a camera that was never configured). */
             shotsPerPerson?: number;
+        };
+        WrappedPhotoUploaded: {
+            /**
+             * Format: uuid
+             * @description Photo ID
+             */
+            id: string;
+            shotsUsed: number;
+            shotsLeft: number;
         };
         FeedbackItem: {
             /**
@@ -9177,6 +9216,80 @@ export interface operations {
             };
             /** @description Not Found - Event not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    uploadWrappedPhoto: {
+        parameters: {
+            query?: {
+                /** @description An id the client makes up for this photo (a UUID). Sending the same photo again under the same key never costs a second photo, so a retry after a lost answer is safe. */
+                idempotencyKey?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description This photo was already stored by an earlier attempt with the same idempotency key */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrappedPhotoUploaded"];
+                };
+            };
+            /** @description Photo stored */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrappedPhotoUploaded"];
+                };
+            };
+            /** @description Bad Request - Missing file, wrong type or too large, or an idempotency key that belongs to another photo */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict - the caller has no photos left */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -59,3 +59,19 @@ export const setWrappedCameraSchema = Schema(
             }),
     }),
 );
+
+export const uploadWrappedPhotoQuerySchema = z.object({
+    idempotencyKey: z.uuid().optional().meta({
+        description:
+            "An id the client makes up for this photo (a UUID). Sending the same photo again under the same key never costs a second photo, so a retry after a lost answer is safe.",
+    }),
+});
+
+export const uploadWrappedPhotoResponseSchema = Schema(
+    "WrappedPhotoUploaded",
+    z.object({
+        id: z.uuid().meta({ description: "Photo ID" }),
+        shotsUsed: z.number().int(),
+        shotsLeft: z.number().int(),
+    }),
+);
