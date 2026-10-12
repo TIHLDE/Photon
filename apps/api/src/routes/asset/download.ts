@@ -1,11 +1,10 @@
 import {
     IMAGE_VARIANT_WIDTHS,
     type ImageVariantWidth,
-    imageVariantKey,
     isImageVariantWidth,
     isOptimizableImage,
-    resizeImage,
 } from "~/lib/asset/image";
+import { getImageVariant } from "~/lib/asset/variant";
 import { isMemberReadableAsset } from "~/lib/asset/member-readable";
 import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
@@ -88,45 +87,18 @@ parameter is ignored for non-image assets (PDF, GIF).`,
 
         try {
             if (variantWidth !== undefined) {
-                const variantKey = imageVariantKey(key, variantWidth);
-                let variant = await bucket.getObject(variantKey);
-
-                if (!variant) {
-                    const original = await bucket.download(key);
-                    variant = await resizeImage(
-                        original,
-                        variantWidth,
-                        c.get("logger"),
-                    );
-
-                    if (variant) {
-                        // Persisted so only the first request for a given
-                        // width pays the re-encode. A failure to cache is not
-                        // worth failing the response over — the next request
-                        // simply regenerates.
-                        await bucket
-                            .putObject(variantKey, variant, "image/webp")
-                            .catch((error: unknown) => {
-                                c.get("logger")?.warn(
-                                    { err: error, variantKey },
-                                    "Could not cache image variant",
-                                );
-                            });
-                    } else {
-                        // sharp unavailable or undecodable input: the original
-                        // is still a correct answer, just a heavier one.
-                        return imageResponse(
-                            original,
-                            asset.contentType || "application/octet-stream",
-                            asset.originalFilename,
-                            needsSession,
-                        );
-                    }
-                }
+                const { body, resized } = await getImageVariant(
+                    bucket,
+                    key,
+                    variantWidth,
+                    c.get("logger"),
+                );
 
                 return imageResponse(
-                    variant,
-                    "image/webp",
+                    body,
+                    resized
+                        ? "image/webp"
+                        : asset.contentType || "application/octet-stream",
                     asset.originalFilename,
                     needsSession,
                 );

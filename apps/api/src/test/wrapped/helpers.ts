@@ -71,7 +71,7 @@ export function uploadPhoto(
     ctx: IntegrationTestContext,
     cookie: string,
     eventId: string,
-    file: { type: string; name: string } = {
+    file: { type: string; name: string; content?: Buffer } = {
         type: "image/png",
         name: "bilde.png",
     },
@@ -81,7 +81,15 @@ export function uploadPhoto(
     body.append(
         "file",
         new Blob(
-            [Buffer.concat([Buffer.from(PNG_HEADER), Buffer.from("bilde")])],
+            [
+                new Uint8Array(
+                    file.content ??
+                        Buffer.concat([
+                            Buffer.from(PNG_HEADER),
+                            Buffer.from("bilde"),
+                        ]),
+                ),
+            ],
             { type: file.type },
         ),
         file.name,
