@@ -68,3 +68,30 @@ export const deleteToddelResponseSchema = Schema(
     "DeleteToddelResponse",
     z.object({ message: z.string() }),
 );
+
+/**
+ * The Overhört form is anonymous: these two fields are the whole submission,
+ * and nothing identifying the sender may be added to it.
+ */
+export const overhortSchema = Schema(
+    "Overhort",
+    z.object({
+        name: z
+            .string()
+            .trim()
+            .min(1)
+            .max(200)
+            .meta({ description: "Navnet til den skyldige" }),
+        statement: z
+            .string()
+            .trim()
+            .min(1)
+            .max(5000)
+            .meta({ description: "Hva som ble sagt" }),
+    }),
+);
+
+export const overhortResponseSchema = Schema(
+    "OverhortResponse",
+    z.object({ message: z.string() }),
+);

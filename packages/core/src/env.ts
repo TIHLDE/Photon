@@ -164,6 +164,8 @@ const envSchema = z
         COMPANY_CONTACT_EMAIL: z
             .string()
             .default("naeringslivsminister@tihlde.org"),
+        /** Where the anonymous Overhört form on the TÖDDEL page delivers */
+        OVERHORT_EMAIL: z.string().default("redaktor@tihlde.org"),
         /**
          * Who is told that a self-registered account is waiting for approval.
          *

@@ -2433,6 +2433,26 @@ export interface paths {
         patch: operations["updateToddel"];
         trace?: never;
     };
+    "/api/toddel/overhort": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit to Overhört
+         * @description Public, anonymous endpoint behind the Overhört button on the TÖDDEL page. Emails the submission to TÖDDEL's editor. Nothing is stored, and nothing about the sender is read, sent or logged.
+         */
+        post: operations["submitOverhort"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/roles": {
         parameters: {
             query?: never;
@@ -5887,6 +5907,15 @@ export interface components {
         };
         DeleteToddelResponse: {
             message: string;
+        };
+        OverhortResponse: {
+            message: string;
+        };
+        Overhort: {
+            /** @description Navnet til den skyldige */
+            name: string;
+            /** @description Hva som ble sagt */
+            statement: string;
         };
         RoleUser: {
             userId: string;
@@ -13707,6 +13736,37 @@ export interface operations {
             };
             /** @description Not Found - Issue not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    submitOverhort: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Overhort"];
+            };
+        };
+        responses: {
+            /** @description Submission queued for delivery */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OverhortResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid input */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
