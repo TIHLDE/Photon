@@ -1120,7 +1120,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List the photos taken at an event
+         * @description Every photo taken with the event's camera, for the organizer to pick from. Requires 'events:update' or 'events:manage', globally or for the arranging group — nobody else sees a photo before it is published.
+         */
+        get: operations["listWrappedPhotos"];
         put?: never;
         /**
          * Upload a photo taken with the event's camera
@@ -1141,6 +1145,46 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/wrapped/photos/{photoId}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the image of a photo taken at an event
+         * @description The image bytes of one photo, for the organizer. This is the only route that serves a photo before it is published: the asset is private and the open asset route answers 404 for it. Requires 'events:update' or 'events:manage', globally or for the arranging group.
+         */
+        get: operations["getWrappedPhotoImage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/wrapped/photos/{photoId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Pick a photo, or take it out of the selection
+         * @description Mark one of the event's photos as picked for publishing, or undo it. Requires 'events:update' or 'events:manage', globally or for the arranging group.
+         */
+        patch: operations["updateWrappedPhoto"];
         trace?: never;
     };
     "/api/feedback": {
@@ -4428,6 +4472,42 @@ export interface components {
             id: string;
             shotsUsed: number;
             shotsLeft: number;
+        };
+        WrappedPhoto: {
+            /**
+             * Format: uuid
+             * @description Photo ID
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When the photo was taken
+             */
+            createdAt: string;
+            /** @description Whether the organizer has picked the photo */
+            selected: boolean;
+            uploadedBy: {
+                id: string;
+                name: string;
+            };
+            /** @description Path on the API that serves the image to the organizer. Needs the session, so fetch it with credentials rather than using it as an `<img src>` from another origin. */
+            imageUrl: string;
+        };
+        WrappedPhotoList: {
+            /** @description Total number of items available */
+            totalCount: number;
+            /** @description Total number of pages available */
+            pages: number;
+            /** @description The next page number that can be fetched */
+            nextPage: number | null;
+            /** @description How many of the event's photos are picked */
+            selectedCount: number;
+            /** @description List of photos */
+            items: components["schemas"]["WrappedPhoto"][];
+        };
+        UpdateWrappedPhoto: {
+            /** @description Pick the photo, or take it out of the selection */
+            selected: boolean;
         };
         FeedbackItem: {
             /**
@@ -9223,6 +9303,52 @@ export interface operations {
             };
         };
     };
+    listWrappedPhotos: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrappedPhotoList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
     uploadWrappedPhoto: {
         parameters: {
             query?: {
@@ -9290,6 +9416,108 @@ export interface operations {
             };
             /** @description Conflict - the caller has no photos left */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getWrappedPhotoImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+                /** @description Photo ID */
+                photoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The image */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Photo not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateWrappedPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+                /** @description Photo ID */
+                photoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateWrappedPhoto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrappedPhoto"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Photo not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

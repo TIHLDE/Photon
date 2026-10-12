@@ -29,7 +29,10 @@ import { listStrikesRoute } from "./strike/list";
 import { updateRoute } from "./update";
 import {
     getWrappedCameraRoute,
+    getWrappedPhotoImageRoute,
+    listWrappedPhotosRoute,
     setWrappedCameraRoute,
+    updateWrappedPhotoRoute,
     uploadWrappedPhotoRoute,
 } from "./wrapped";
 
@@ -84,4 +87,7 @@ export const eventRoutes = route()
     // Wrapped: engangskameraet til arrangementet
     .route("/", getWrappedCameraRoute)
     .route("/", setWrappedCameraRoute)
-    .route("/", uploadWrappedPhotoRoute);
+    .route("/", uploadWrappedPhotoRoute)
+    .route("/", listWrappedPhotosRoute)
+    .route("/", getWrappedPhotoImageRoute)
+    .route("/", updateWrappedPhotoRoute);

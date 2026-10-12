@@ -1,9 +1,14 @@
 import z from "zod";
 import { Schema } from "~/lib/openapi";
+import { PagniationResponseSchema } from "~/middleware/pagination";
 import { MAX_SHOTS_PER_PERSON, cameraBlockedReasons } from "~/lib/wrapped";
 
 export const eventIdParamSchema = z.object({
     eventId: z.uuid().meta({ description: "Event ID" }),
+});
+
+export const photoParamSchema = eventIdParamSchema.extend({
+    photoId: z.uuid().meta({ description: "Photo ID" }),
 });
 
 export const wrappedCameraSchema = Schema(
@@ -73,5 +78,45 @@ export const uploadWrappedPhotoResponseSchema = Schema(
         id: z.uuid().meta({ description: "Photo ID" }),
         shotsUsed: z.number().int(),
         shotsLeft: z.number().int(),
+    }),
+);
+
+export const wrappedPhotoSchema = Schema(
+    "WrappedPhoto",
+    z.object({
+        id: z.uuid().meta({ description: "Photo ID" }),
+        createdAt: z.iso.datetime().meta({
+            description: "When the photo was taken",
+        }),
+        selected: z.boolean().meta({
+            description: "Whether the organizer has picked the photo",
+        }),
+        uploadedBy: z.object({
+            id: z.string(),
+            name: z.string(),
+        }),
+        imageUrl: z.string().meta({
+            description:
+                "Path on the API that serves the image to the organizer. Needs the session, so fetch it with credentials rather than using it as an `<img src>` from another origin.",
+        }),
+    }),
+);
+
+export const wrappedPhotoListResponseSchema = Schema(
+    "WrappedPhotoList",
+    PagniationResponseSchema.extend({
+        selectedCount: z.number().int().meta({
+            description: "How many of the event's photos are picked",
+        }),
+        items: z.array(wrappedPhotoSchema).describe("List of photos"),
+    }),
+);
+
+export const updateWrappedPhotoSchema = Schema(
+    "UpdateWrappedPhoto",
+    z.object({
+        selected: z.boolean().meta({
+            description: "Pick the photo, or take it out of the selection",
+        }),
     }),
 );
