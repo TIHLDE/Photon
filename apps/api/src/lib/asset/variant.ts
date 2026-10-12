@@ -6,27 +6,25 @@ import { type ImageVariantWidth, imageVariantKey, resizeImage } from "./image";
  * The image stored under `key`, re-encoded at `width`.
  *
  * Generated on the first request and kept, so only that request pays for the
- * re-encode. Returns null when the original cannot be re-encoded (sharp is
- * unavailable, or the bytes are not an image it can read): the original is
- * then still a correct answer for the caller to serve, just a heavier one.
+ * re-encode. When the original cannot be re-encoded (sharp is unavailable, or
+ * the bytes are not an image it can read) the original itself is returned,
+ * with `resized: false`: it is still a correct answer, just a heavier one, and
+ * the caller must not have to fetch it a second time to serve it.
  */
 export async function getImageVariant(
     bucket: StorageService,
     key: string,
     width: ImageVariantWidth,
     logger?: LoggerType,
-): Promise<Buffer | null> {
+): Promise<{ body: Buffer; resized: boolean }> {
     const variantKey = imageVariantKey(key, width);
 
     const cached = await bucket.getObject(variantKey);
-    if (cached) return cached;
+    if (cached) return { body: cached, resized: true };
 
-    const variant = await resizeImage(
-        await bucket.download(key),
-        width,
-        logger,
-    );
-    if (!variant) return null;
+    const original = await bucket.download(key);
+    const variant = await resizeImage(original, width, logger);
+    if (!variant) return { body: original, resized: false };
 
     // A failure to cache is not worth failing the response over — the next
     // request simply regenerates.
@@ -39,5 +37,5 @@ export async function getImageVariant(
             );
         });
 
-    return variant;
+    return { body: variant, resized: true };
 }

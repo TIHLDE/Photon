@@ -87,22 +87,21 @@ parameter is ignored for non-image assets (PDF, GIF).`,
 
         try {
             if (variantWidth !== undefined) {
-                const variant = await getImageVariant(
+                const { body, resized } = await getImageVariant(
                     bucket,
                     key,
                     variantWidth,
                     c.get("logger"),
                 );
 
-                if (variant) {
-                    return imageResponse(
-                        variant,
-                        "image/webp",
-                        asset.originalFilename,
-                        needsSession,
-                    );
-                }
-                // No variant to be had: fall through to the original.
+                return imageResponse(
+                    body,
+                    resized
+                        ? "image/webp"
+                        : asset.contentType || "application/octet-stream",
+                    asset.originalFilename,
+                    needsSession,
+                );
             }
 
             const content = await bucket.download(key);

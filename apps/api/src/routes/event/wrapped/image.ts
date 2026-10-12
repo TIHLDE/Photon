@@ -54,22 +54,23 @@ export const getWrappedPhotoImageRoute = route().get(
         const isImage =
             asset.contentType !== null && isOptimizableImage(asset.contentType);
 
-        let body: Buffer | null = null;
+        let body: Buffer;
         let resized = false;
         try {
-            // A variant is cached next to the photo under a key that has no
-            // asset row, so the open asset route cannot serve it either, and
-            // deleting the photo takes it along.
+            // A variant is cached under a key that has no asset row, so the
+            // open asset route cannot serve it either. `deleteAsset` removes
+            // variants along with the original, which is why deleting a
+            // wrapped photo must go through it and never the bucket directly.
             if (w && isImage) {
-                body = await getImageVariant(
+                ({ body, resized } = await getImageVariant(
                     bucket,
                     asset.key,
                     Number(w) as ImageVariantWidth,
                     c.get("logger"),
-                );
-                resized = body !== null;
+                ));
+            } else {
+                body = await bucket.download(asset.key);
             }
-            body ??= await bucket.download(asset.key);
         } catch (error) {
             c.get("logger").error(
                 { err: error, eventId, photoId },
