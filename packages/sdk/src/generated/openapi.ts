@@ -1089,6 +1089,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/event/{eventId}/wrapped": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the event's camera status
+         * @description The disposable camera of an event, as it looks to the caller: whether it is on, when it is open, how many photos they have left and — if they cannot take one — why. Members only. An event whose camera was never configured answers with `enabled: false`.
+         */
+        get: operations["getWrappedCamera"];
+        /**
+         * Turn the event's camera on or off
+         * @description Turn the disposable camera on or off for an event and set how many photos each member may take. Requires 'events:update' or 'events:manage', globally or for the arranging group. Turning the camera off keeps the photos already taken.
+         */
+        put: operations["setWrappedCamera"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/feedback": {
         parameters: {
             query?: never;
@@ -4331,6 +4355,40 @@ export interface components {
                     order: number;
                 }[];
             }[];
+        };
+        WrappedCamera: {
+            /** @description Whether the organizer has turned the camera on */
+            enabled: boolean;
+            /** @description How many photos each member may take at this event */
+            shotsPerPerson: number;
+            /**
+             * Format: date-time
+             * @description When the camera opens: two hours before the event
+             */
+            opensAt: string;
+            /**
+             * Format: date-time
+             * @description When the camera closes: four hours after the event
+             */
+            closesAt: string;
+            /** @description Enabled and inside the window right now */
+            isOpen: boolean;
+            /** @description Photos the caller has taken at this event */
+            shotsUsed: number;
+            /** @description Photos the caller has left */
+            shotsLeft: number;
+            /** @description Whether the caller may upload a photo right now */
+            canShoot: boolean;
+            /** @description Why the caller cannot take a photo, or null when they can. The first that applies, in the order of the enum. */
+            reason: ("disabled" | "not_open_yet" | "closed" | "not_registered" | "no_shots_left") | null;
+            /** @description Whether the caller arranges the event */
+            canManage: boolean;
+        };
+        SetWrappedCamera: {
+            /** @description Turn the camera on or off */
+            enabled: boolean;
+            /** @description Photos per member. Omit to keep the current value (5 on a camera that was never configured). */
+            shotsPerPerson?: number;
         };
         FeedbackItem: {
             /**
@@ -9018,6 +9076,106 @@ export interface operations {
                 };
             };
             /** @description Not Found - Form not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getWrappedCamera: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrappedCamera"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    setWrappedCamera: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetWrappedCamera"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrappedCamera"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
             404: {
                 headers: {
                     [name: string]: unknown;

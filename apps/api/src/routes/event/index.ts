@@ -27,6 +27,7 @@ import { deleteStrikeRoute } from "./strike/delete";
 import { listStrikesByUserRoute } from "./strike/list-by-user";
 import { listStrikesRoute } from "./strike/list";
 import { updateRoute } from "./update";
+import { getWrappedCameraRoute, setWrappedCameraRoute } from "./wrapped";
 
 export const eventRoutes = route()
     // Strikes (registered before "/:eventId" so the static /strikes path wins)
@@ -74,4 +75,8 @@ export const eventRoutes = route()
     // Forms
     .route("/", createEventFormRoute)
     .route("/", listEventFormsRoute)
-    .route("/", getEventFormRoute);
+    .route("/", getEventFormRoute)
+
+    // Wrapped: engangskameraet til arrangementet
+    .route("/", getWrappedCameraRoute)
+    .route("/", setWrappedCameraRoute);
