@@ -41,6 +41,7 @@ const tags = [
     "toddel",
     "users",
     "webhooks",
+    "wrapped",
 ] as const;
 
 /**
