@@ -19,6 +19,7 @@ import {
 import { LoadMoreButton } from "#/components/load-more-button";
 import { PageHeader } from "#/components/page-header";
 import { useDebouncedValue } from "#/hooks/use-debounced-value";
+import { useMediaQuery } from "#/hooks/use-media-query";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 import { formatEventDateTime } from "#/lib/event";
 import {
@@ -87,6 +88,8 @@ const VIEWS = [
 ] as const;
 
 type EventView = (typeof VIEWS)[number]["value"];
+
+const VIEW_TABS_DONT_FIT = "(width < 30rem), (48rem <= width < 64rem)";
 
 const searchSchema = z.object({
     visning: z.enum(["liste", "kalender"]).default("liste").catch("liste"),
@@ -175,6 +178,9 @@ function EventsPage() {
     // forespørselen som ikke treffer.
     const canCreateEvent = useAnyScopePermission(EVENT_CREATE_PERMISSIONS);
 
+    // Uten viewport (SSR) er svaret false, så serveren viser fanene.
+    const viewTabsFit = !useMediaQuery(VIEW_TABS_DONT_FIT);
+
     const changeView = (next: EventView) => {
         navigate({
             to: "/arrangementer",
@@ -204,6 +210,11 @@ function EventsPage() {
                         value={filters}
                         categories={categories}
                         onChange={setFilters}
+                        showCalendarOption={!viewTabsFit}
+                        calendar={visning === "kalender"}
+                        onCalendarChange={(checked) =>
+                            changeView(checked ? "kalender" : "liste")
+                        }
                     />
                 </aside>
 
@@ -223,24 +234,26 @@ function EventsPage() {
                                 ))}
                             </TabsList>
                         </Tabs>
-                        <Tabs
-                            className="ml-auto"
-                            value={visning}
-                            onValueChange={(next) =>
-                                changeView(next as EventView)
-                            }
-                        >
-                            <TabsList>
-                                {VIEWS.map((view) => (
-                                    <TabsTrigger
-                                        key={view.value}
-                                        value={view.value}
-                                    >
-                                        {view.label}
-                                    </TabsTrigger>
-                                ))}
-                            </TabsList>
-                        </Tabs>
+                        {viewTabsFit ? (
+                            <Tabs
+                                className="ml-auto"
+                                value={visning}
+                                onValueChange={(next) =>
+                                    changeView(next as EventView)
+                                }
+                            >
+                                <TabsList>
+                                    {VIEWS.map((view) => (
+                                        <TabsTrigger
+                                            key={view.value}
+                                            value={view.value}
+                                        >
+                                            {view.label}
+                                        </TabsTrigger>
+                                    ))}
+                                </TabsList>
+                            </Tabs>
+                        ) : null}
                     </div>
                     {visning === "kalender" ? (
                         <EventCalendar

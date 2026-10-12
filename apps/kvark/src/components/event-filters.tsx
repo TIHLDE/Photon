@@ -34,12 +34,19 @@ type EventFiltersProps = {
     value: EventFiltersValue;
     categories: Category[];
     onChange: (next: EventFiltersValue) => void;
+    /** Show "Kalender" under Alternativer, for when the view tabs don't fit. */
+    showCalendarOption?: boolean;
+    calendar?: boolean;
+    onCalendarChange?: (calendar: boolean) => void;
 };
 
 export function EventFilters({
     value,
     categories,
     onChange,
+    showCalendarOption = false,
+    calendar = false,
+    onCalendarChange,
 }: EventFiltersProps) {
     const pills = useMemo<FilterPill[]>(() => {
         const next: FilterPill[] = [];
@@ -128,6 +135,16 @@ export function EventFilters({
                                 onChange({ ...value, openRegistration })
                             }
                         />
+                        {showCalendarOption ? (
+                            <FilterCheckboxOption
+                                title="Kalender"
+                                description="Vis som kalender"
+                                checked={calendar}
+                                onCheckedChange={(checked) =>
+                                    onCalendarChange?.(checked)
+                                }
+                            />
+                        ) : null}
                     </div>
                 </div>
             }

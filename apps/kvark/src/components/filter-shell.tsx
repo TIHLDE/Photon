@@ -67,7 +67,7 @@ export function FilterShell({
             <div className="hidden flex-col gap-3 md:flex">
                 {searchSlot}
                 <Card>
-                    <CardHeader className="min-h-8">
+                    <CardHeader className="min-h-6">
                         <CardTitle>Filter</CardTitle>
                         {pills.length > 0 && (
                             <CardAction>
