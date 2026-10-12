@@ -43,6 +43,7 @@ export const ASSET_REFERENCE_COLUMNS: AssetReference[] = [
     ref(schema.contractSignature, schema.contractSignature.signatureFileKey),
     ref(schema.application, schema.application.pdfAssetKey),
     ref(schema.applicationAttachment, schema.applicationAttachment.assetKey),
+    ref(schema.wrappedPhoto, schema.wrappedPhoto.assetKey),
 ];
 
 /**
