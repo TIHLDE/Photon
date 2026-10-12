@@ -44,6 +44,9 @@ export const listWrappedPhotosQuery = (
             }),
         initialPageParam: 0,
         getNextPageParam: (lastPage) => lastPage.nextPage,
+        // Arrangøren følger med mens bildene kommer inn, så lista hentes på
+        // nytt hver gang fanen åpnes eller får fokus.
+        staleTime: 0,
     });
 
 export const setWrappedCameraMutation = mutationOptions({

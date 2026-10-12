@@ -89,7 +89,7 @@ function AppLayout() {
         // which only exists below lg — and is taller while the camera banner
         // sits on top of it.
         <div
-            className={`flex min-h-screen flex-col lg:pb-0 ${showCameraBanner ? "pb-28" : "pb-16"}`}
+            className={`flex min-h-screen flex-col lg:pb-0 ${showCameraBanner ? "pb-32" : "pb-16"}`}
         >
             <SiteHeader
                 navItems={navItems}
