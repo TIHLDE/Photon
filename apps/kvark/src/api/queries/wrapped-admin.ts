@@ -117,7 +117,14 @@ export const UPDATE_WRAPPED_PHOTO_KEY = WrappedAdminQueryKeys.updatePhoto;
  * Bildene er private og serveres bare av organisatorens bilderute, som krever
  * sesjonen. De hentes derfor med credentials og vises som object-URL-er.
  * Kalleren må `revokeObjectURL` når den er ferdig.
+ *
+ * Aldri originalen: rutenettet får en flis på 480 px og lysboksen 1920 px.
+ * Tusen bilder i full størrelse er flere hundre megabyte på en telefon.
  */
-export function fetchWrappedPhotoImage(imageUrl: string): Promise<string> {
-    return fetchPrivateObjectUrl(imageUrl);
+export function fetchWrappedPhotoTile(imageUrl: string): Promise<string> {
+    return fetchPrivateObjectUrl(`${imageUrl}?w=480`);
+}
+
+export function fetchWrappedPhotoLarge(imageUrl: string): Promise<string> {
+    return fetchPrivateObjectUrl(`${imageUrl}?w=1920`);
 }

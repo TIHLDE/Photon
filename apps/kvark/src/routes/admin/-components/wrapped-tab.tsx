@@ -13,7 +13,8 @@ import { getWrappedCameraQuery } from "#/api/queries/wrapped";
 import {
     UPDATE_WRAPPED_PHOTO_KEY,
     type UpdateWrappedPhotoVariables,
-    fetchWrappedPhotoImage,
+    fetchWrappedPhotoLarge,
+    fetchWrappedPhotoTile,
     listWrappedPhotosQuery,
     setWrappedCameraMutation,
     updateWrappedPhotoMutation,
@@ -123,7 +124,16 @@ function PhotosSection({ eventId }: { eventId: string }) {
         () => photos.map((photo) => photo.imageUrl),
         [photos],
     );
-    const imageUrls = useObjectUrls(paths, fetchWrappedPhotoImage);
+    const imageUrls = useObjectUrls(paths, fetchWrappedPhotoTile);
+
+    // Den store versjonen hentes bare for bildet som faktisk åpnes, ikke for
+    // hver flis i rutenettet.
+    const openImageUrl = photos.find((photo) => photo.id === openId)?.imageUrl;
+    const openPaths = useMemo(
+        () => (openImageUrl ? [openImageUrl] : []),
+        [openImageUrl],
+    );
+    const largeUrls = useObjectUrls(openPaths, fetchWrappedPhotoLarge);
 
     // Siste trykk per bilde vinner.
     const pendingSelection = new Map(
@@ -171,13 +181,14 @@ function PhotosSection({ eventId }: { eventId: string }) {
     }
 
     // Lightboxen får bare bildene som er hentet; resten har ingen URL ennå.
+    // Flisa står inne til den store versjonen er kommet.
     const lightboxPictures: LightboxPicture[] = photos.flatMap((photo) => {
         const src = imageUrls.get(photo.imageUrl);
         if (!src) return [];
         return [
             {
                 id: photo.id,
-                imageUrl: src,
+                imageUrl: largeUrls.get(photo.imageUrl) ?? src,
                 imageAlt: `Bilde fra ${photo.uploadedBy.name}`,
                 title: photo.uploadedBy.name,
                 description: `Tatt ${formatInOslo(photo.createdAt, "d. MMM yyyy 'kl.' HH:mm")}`,
