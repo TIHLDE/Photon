@@ -25,9 +25,27 @@ type WrappedCameraProps = {
     shotsPerPerson: number;
     uploadState: WrappedUploadState;
     onPhoto: (file: File) => void;
-    /** Bare satt når et bilde ligger klart til å sendes på nytt. */
+    /**
+     * Bare satt når et bilde ligger klart og et nytt forsøk kan hjelpe —
+     * altså ikke når serveren har avvist selve bildet.
+     */
     onRetry?: () => void;
 };
+
+/**
+ * Kvitteringen for et lagret bilde. Egen komponent fordi den også må vises
+ * over «ingen bilder igjen»: det siste bildet tømmer kvoten i samme øyeblikk
+ * som det lagres, og uten kvitteringen vet ingen om det kom fram.
+ */
+export function WrappedPhotoSaved() {
+    return (
+        <Alert>
+            <CircleCheck />
+            <AlertTitle>Bildet er lagret</AlertTitle>
+            <AlertDescription>Det er sendt til arrangøren.</AlertDescription>
+        </Alert>
+    );
+}
 
 /**
  * Engangskameraet for ett arrangement. Bildet vises aldri etter at det er
@@ -51,7 +69,8 @@ export function WrappedCamera({
             <CardHeader>
                 <CardTitle>{eventTitle}</CardTitle>
                 <CardDescription>
-                    Bildene dine blir tilgjengelige etter arrangementet.
+                    Arrangøren velger ut hvilke bilder som deles etter
+                    arrangementet.
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">
@@ -86,15 +105,7 @@ export function WrappedCamera({
                           : "Ta bilde"}
                 </Button>
 
-                {uploadState.status === "done" ? (
-                    <Alert>
-                        <CircleCheck />
-                        <AlertTitle>Bildet er lagret</AlertTitle>
-                        <AlertDescription>
-                            Du får se det etter arrangementet.
-                        </AlertDescription>
-                    </Alert>
-                ) : null}
+                {uploadState.status === "done" ? <WrappedPhotoSaved /> : null}
 
                 {uploadState.status === "failed" ? (
                     <Alert variant="destructive">
@@ -105,8 +116,8 @@ export function WrappedCamera({
                             {onRetry ? (
                                 <>
                                     <span>
-                                        Bildet er tatt vare på, og du har ikke
-                                        brukt opp noe forsøk.
+                                        Bildet er tatt vare på. Et nytt forsøk
+                                        koster ikke et ekstra bilde.
                                     </span>
                                     <div>
                                         <Button
