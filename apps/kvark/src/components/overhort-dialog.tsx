@@ -13,7 +13,7 @@ import {
 import { FieldError, FieldGroup } from "@tihlde/ui/ui/field";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 import { CheckCircle2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
 const schema = z.object({
@@ -39,15 +39,23 @@ export function OverhortDialog({ onSubmit }: OverhortDialogProps) {
     const [open, setOpen] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [sent, setSent] = useState(false);
+    /**
+     * Økes hver gang dialogen åpnes eller lukkes. Lukker noen dialogen mens en
+     * innsending pågår og åpner den igjen, skal ikke svaret på den gamle
+     * innsendingen vise «Sendt!» eller tømme det de skriver nå.
+     */
+    const sessionRef = useRef(0);
 
     const form = useAppForm({
         defaultValues: { name: "", statement: "" },
         validators: { onDynamic: schema },
         async onSubmit({ value }) {
+            const session = sessionRef.current;
             setSubmitError(null);
             try {
                 await onSubmit(value);
             } catch (error) {
+                if (session !== sessionRef.current) return;
                 // Dialogen blir stående med det som ble skrevet, så det kan
                 // sendes på nytt.
                 setSubmitError(
@@ -57,6 +65,7 @@ export function OverhortDialog({ onSubmit }: OverhortDialogProps) {
                 );
                 return;
             }
+            if (session !== sessionRef.current) return;
             setSent(true);
             form.reset();
         },
@@ -72,6 +81,7 @@ export function OverhortDialog({ onSubmit }: OverhortDialogProps) {
         <Dialog
             open={open}
             onOpenChange={(next) => {
+                sessionRef.current += 1;
                 // Tilbakestilles ved åpning, ikke lukking: ellers blinker
                 // skjemaet frem igjen mens dialogen animeres bort.
                 if (next) {

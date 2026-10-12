@@ -97,6 +97,31 @@ describe("Overhört", () => {
     );
 
     integrationTest(
+        "Stops at 50 submissions an hour, counted across everyone",
+        async ({ ctx }) => {
+            // Two separate clients: the cap is global, not per sender.
+            const first = ctx.utils.client();
+            const second = ctx.utils.client();
+
+            for (let i = 0; i < 50; i++) {
+                const client = i % 2 === 0 ? first : second;
+                const response = await client.api.toddel.overhort.$post({
+                    json: { name: `Nummer ${i}`, statement: "Sitat" },
+                });
+                expect(response.status).toBe(200);
+            }
+
+            const blocked = await first.api.toddel.overhort.$post({
+                json: { name: "Nummer 51", statement: "Sitat" },
+            });
+
+            expect(blocked.status).toBe(429);
+            expect(await queuedEmails(ctx)).toHaveLength(50);
+        },
+        500_000,
+    );
+
+    integrationTest(
         "Both fields are required",
         async ({ ctx }) => {
             const client = ctx.utils.client();
