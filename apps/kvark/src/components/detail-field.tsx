@@ -20,7 +20,7 @@ export function DetailField({
             // (kontaktpersoner, «Studenter ved …») presset raden ut av
             // skjermen på mobil. Begge sidene får krympe nå; bare ikonet og
             // handlingen holdes i full bredde.
-            <div className="flex items-start justify-between gap-3 text-sm">
+            <div className="flex flex-col items-start justify-between gap-3 text-sm">
                 <div className="flex min-w-0 items-center gap-2.5 text-muted-foreground">
                     {Icon ? <Icon className="size-4 shrink-0" /> : null}
                     <span className="truncate">{label}</span>
