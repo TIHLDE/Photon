@@ -75,7 +75,12 @@ function AppLayout() {
         select: (state) => state.location.pathname,
     });
     const openCamera = openCameras?.[0];
+    // Innlogget-sjekken må stå her også: en spørring som slås av beholder
+    // det den sist hentet, så uten den ville forrige medlems arrangement
+    // blitt stående etter utlogging.
     const showCameraBanner =
+        isAuthenticated &&
+        !isPendingApproval &&
         openCamera !== undefined &&
         pathname !== `/arrangementer/${openCamera.slug}/kamera`;
 
