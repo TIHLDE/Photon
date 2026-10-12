@@ -90,7 +90,9 @@ import {
 } from "#/api/queries/events";
 import { getGroupMembersQuery, getGroupsQuery } from "#/api/queries/groups";
 import { getInstitutesQuery } from "#/api/queries/institutes";
+import { getWrappedCameraQuery } from "#/api/queries/wrapped";
 import { AdminEmptyState } from "#/components/admin-empty-state";
+import { WrappedTab } from "./-components/wrapped-tab";
 import { AttendanceScannerDialog } from "#/components/attendance-scanner-dialog";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { TeknologiministerMessage } from "#/components/teknologiminister-message";
@@ -143,6 +145,7 @@ const TABS = [
     "skjemaer",
     "betalinger",
     "allergier",
+    "kamera",
 ] as const;
 type TabValue = (typeof TABS)[number];
 
@@ -182,6 +185,11 @@ export const Route = createFileRoute("/admin/arrangementer/$eventId")({
         void context.queryClient
             .ensureQueryData(getInstitutesQuery())
             .catch(() => {});
+        // Uten denne viser en lenke rett til `?fane=kamera` detaljfanen et
+        // øyeblikk, til kamerastatusen har avgjort om fanen finnes.
+        void context.queryClient
+            .ensureQueryData(getWrappedCameraQuery(params.eventId))
+            .catch(() => {});
         return { breadcrumbs: event.title };
     },
 });
@@ -204,6 +212,14 @@ function EventAdminDetailPage() {
     const canSeePayments = useCanActOnGroupResource(
         EVENT_PAYMENT_VIEW_PERMISSIONS,
     )(organizerSlug, event.createdById);
+    // Engangskameraet har sitt eget svar på hvem som kurerer (`canManage`).
+    // Det spørres bare om for dem som kan administrere arrangementet, og
+    // fanen dukker opp når svaret er kommet.
+    const { data: wrappedCamera } = useQuery({
+        ...getWrappedCameraQuery(eventId),
+        enabled: canManage,
+    });
+    const canCurateWrapped = canManage && wrappedCamera?.canManage === true;
 
     // Påmeldte, oppmøte og skjemaer er administrasjon av arrangementet, og
     // endepunktene bak dem svarer bare den som kan det. Uten tilgang står
@@ -224,8 +240,11 @@ function EventAdminDetailPage() {
             ...(canManage
                 ? [{ value: "allergier" as const, label: "Allergier" }]
                 : []),
+            ...(canCurateWrapped
+                ? [{ value: "kamera" as const, label: "Kamera" }]
+                : []),
         ],
-        [canManage, canSeePayments],
+        [canManage, canSeePayments, canCurateWrapped],
     );
 
     // A tab the user cannot see falls back to the first one they can.
@@ -292,6 +311,9 @@ function EventAdminDetailPage() {
                 <Suspense fallback={<TableSkeleton />}>
                     <AllergiesTab eventId={eventId} />
                 </Suspense>
+            )}
+            {activeTab === "kamera" && canCurateWrapped && (
+                <WrappedTab eventId={eventId} />
             )}
         </Stagger>
     );
