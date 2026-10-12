@@ -114,7 +114,9 @@ export function EventFilters({
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <span className="text-sm">Alternativer</span>
+                        <span className="text-sm font-medium">
+                            Alternativer
+                        </span>
                         <FilterCheckboxOption
                             title="Tidligere"
                             description="Vis kun tidligere arrangementer"
