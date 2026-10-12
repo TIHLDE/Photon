@@ -70,6 +70,7 @@ import { Route as AdminArrangementerIndexRouteImport } from './routes/admin/arra
 import { Route as AdminArrangementerEventIdRouteImport } from './routes/admin/arrangementer.$eventId'
 import { Route as AdminArrangementerNyRouteImport } from './routes/admin/arrangementer.ny'
 import { Route as AppArrangementerSlugTitleRouteImport } from './routes/_app/arrangementer.$slug.$title'
+import { Route as AppArrangementerSlugKameraRouteImport } from './routes/_app/arrangementer.$slug_.kamera'
 import { Route as AppGalleriSlugTitleRouteImport } from './routes/_app/galleri.$slug.$title'
 import { Route as AppGrupperSlugSectionRouteImport } from './routes/_app/grupper.$slug.$section'
 import { Route as AppKokebokStudyIdSplatRouteImport } from './routes/_app/kokebok.$studyId.$'
@@ -386,6 +387,12 @@ const AppArrangementerSlugTitleRoute =
     path: '/$title',
     getParentRoute: () => AppArrangementerSlugRoute,
   } as any)
+const AppArrangementerSlugKameraRoute =
+  AppArrangementerSlugKameraRouteImport.update({
+    id: '/arrangementer/$slug_/kamera',
+    path: '/arrangementer/$slug/kamera',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppGalleriSlugTitleRoute = AppGalleriSlugTitleRouteImport.update({
   id: '/$title',
   path: '/$title',
@@ -503,6 +510,7 @@ export interface FileRoutesByFullPath {
   '/nyheter/': typeof AppNyheterIndexRoute
   '/admin/arrangementer/': typeof AdminArrangementerIndexRoute
   '/arrangementer/$slug/$title': typeof AppArrangementerSlugTitleRoute
+  '/arrangementer/$slug/kamera': typeof AppArrangementerSlugKameraRoute
   '/galleri/$slug/$title': typeof AppGalleriSlugTitleRoute
   '/grupper/$slug/$section': typeof AppGrupperSlugSectionRoute
   '/kokebok/$studyId/$': typeof AppKokebokStudyIdSplatRoute
@@ -571,6 +579,7 @@ export interface FileRoutesByTo {
   '/nyheter': typeof AppNyheterIndexRoute
   '/admin/arrangementer': typeof AdminArrangementerIndexRoute
   '/arrangementer/$slug/$title': typeof AppArrangementerSlugTitleRoute
+  '/arrangementer/$slug/kamera': typeof AppArrangementerSlugKameraRoute
   '/galleri/$slug/$title': typeof AppGalleriSlugTitleRoute
   '/grupper/$slug/$section': typeof AppGrupperSlugSectionRoute
   '/kokebok/$studyId/$': typeof AppKokebokStudyIdSplatRoute
@@ -646,6 +655,7 @@ export interface FileRoutesById {
   '/_app/nyheter/': typeof AppNyheterIndexRoute
   '/admin/arrangementer/': typeof AdminArrangementerIndexRoute
   '/_app/arrangementer/$slug/$title': typeof AppArrangementerSlugTitleRoute
+  '/_app/arrangementer/$slug_/kamera': typeof AppArrangementerSlugKameraRoute
   '/_app/galleri/$slug/$title': typeof AppGalleriSlugTitleRoute
   '/_app/grupper/$slug/$section': typeof AppGrupperSlugSectionRoute
   '/_app/kokebok/$studyId/$': typeof AppKokebokStudyIdSplatRoute
@@ -718,6 +728,7 @@ export interface FileRouteTypes {
     | '/nyheter/'
     | '/admin/arrangementer/'
     | '/arrangementer/$slug/$title'
+    | '/arrangementer/$slug/kamera'
     | '/galleri/$slug/$title'
     | '/grupper/$slug/$section'
     | '/kokebok/$studyId/$'
@@ -786,6 +797,7 @@ export interface FileRouteTypes {
     | '/nyheter'
     | '/admin/arrangementer'
     | '/arrangementer/$slug/$title'
+    | '/arrangementer/$slug/kamera'
     | '/galleri/$slug/$title'
     | '/grupper/$slug/$section'
     | '/kokebok/$studyId/$'
@@ -860,6 +872,7 @@ export interface FileRouteTypes {
     | '/_app/nyheter/'
     | '/admin/arrangementer/'
     | '/_app/arrangementer/$slug/$title'
+    | '/_app/arrangementer/$slug_/kamera'
     | '/_app/galleri/$slug/$title'
     | '/_app/grupper/$slug/$section'
     | '/_app/kokebok/$studyId/$'
@@ -1309,6 +1322,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppArrangementerSlugTitleRouteImport
       parentRoute: typeof AppArrangementerSlugRoute
     }
+    '/_app/arrangementer/$slug_/kamera': {
+      id: '/_app/arrangementer/$slug_/kamera'
+      path: '/arrangementer/$slug/kamera'
+      fullPath: '/arrangementer/$slug/kamera'
+      preLoaderRoute: typeof AppArrangementerSlugKameraRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/galleri/$slug/$title': {
       id: '/_app/galleri/$slug/$title'
       path: '/$title'
@@ -1508,6 +1528,7 @@ interface AppRouteChildren {
   AppGrupperIndexRoute: typeof AppGrupperIndexRoute
   AppKontraktIndexRoute: typeof AppKontraktIndexRoute
   AppNyheterIndexRoute: typeof AppNyheterIndexRoute
+  AppArrangementerSlugKameraRoute: typeof AppArrangementerSlugKameraRoute
   AppSporreskjemaIdSvarRoute: typeof AppSporreskjemaIdSvarRoute
 }
 
@@ -1538,6 +1559,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppGrupperIndexRoute: AppGrupperIndexRoute,
   AppKontraktIndexRoute: AppKontraktIndexRoute,
   AppNyheterIndexRoute: AppNyheterIndexRoute,
+  AppArrangementerSlugKameraRoute: AppArrangementerSlugKameraRoute,
   AppSporreskjemaIdSvarRoute: AppSporreskjemaIdSvarRoute,
 }
 
