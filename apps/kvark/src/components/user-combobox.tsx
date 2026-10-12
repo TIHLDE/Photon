@@ -1,3 +1,4 @@
+import { getSearchTerms } from "@photon/core/search";
 import {
     Combobox,
     ComboboxChip,
@@ -11,6 +12,7 @@ import {
     ComboboxList,
     ComboboxValue,
     useComboboxAnchor,
+    useComboboxFilter,
 } from "@tihlde/ui/ui/combobox";
 
 type UserMultiComboboxProps = {
@@ -66,7 +68,18 @@ export function UserMultiCombobox({
 export type ComboboxMember = {
     id: string;
     name: string;
+    username?: string | null;
 };
+
+function useMemberFilter() {
+    const { contains } = useComboboxFilter();
+    return (member: ComboboxMember, query: string) =>
+        getSearchTerms(query).every(
+            (term) =>
+                contains(member.name, term) ||
+                contains(member.username ?? "", term),
+        );
+}
 
 type MemberMultiComboboxProps = {
     items: ComboboxMember[];
@@ -89,6 +102,7 @@ export function MemberMultiCombobox({
     placeholder,
 }: MemberMultiComboboxProps) {
     const anchor = useComboboxAnchor();
+    const filterMember = useMemberFilter();
     return (
         <Combobox
             items={items}
@@ -97,6 +111,7 @@ export function MemberMultiCombobox({
             onValueChange={onValueChange}
             itemToStringLabel={(item: ComboboxMember) => item.name}
             itemToStringValue={(item: ComboboxMember) => item.id}
+            filter={filterMember}
             isItemEqualToValue={(a: ComboboxMember, b: ComboboxMember) =>
                 a.id === b.id
             }
@@ -149,6 +164,7 @@ export function MemberSingleCombobox({
     onValueChange,
     placeholder,
 }: MemberSingleComboboxProps) {
+    const filterMember = useMemberFilter();
     return (
         <Combobox
             items={items}
@@ -156,6 +172,7 @@ export function MemberSingleCombobox({
             onValueChange={onValueChange}
             itemToStringLabel={(item: ComboboxMember) => item.name}
             itemToStringValue={(item: ComboboxMember) => item.id}
+            filter={filterMember}
             isItemEqualToValue={(a: ComboboxMember, b: ComboboxMember) =>
                 a.id === b.id
             }

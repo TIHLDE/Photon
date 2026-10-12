@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { matchesSearch } from "@photon/core/search";
 import {
     useInfiniteQuery,
     useMutation,
@@ -1427,9 +1428,13 @@ function MembersTable({
     );
 
     const filtered = useMemo(() => {
-        const needle = debouncedSearch.toLowerCase();
         return (members ?? []).filter((member) => {
-            if (needle && !member.user.name.toLowerCase().includes(needle)) {
+            if (
+                !matchesSearch(
+                    [member.user.name, member.user.username],
+                    debouncedSearch,
+                )
+            ) {
                 return false;
             }
             if (role !== ALL && member.role !== role) {
@@ -1490,7 +1495,7 @@ function MembersTable({
                         id="member-search"
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
-                        placeholder="Søk etter navn…"
+                        placeholder="Søk etter navn eller brukernavn…"
                     />
                 </Field>
                 <Field>

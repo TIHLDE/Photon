@@ -1,3 +1,4 @@
+import { matchesSearch } from "@photon/core/search";
 import {
     useInfiniteQuery,
     useMutation,
@@ -967,11 +968,11 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
         [participants, facets.classLevel, facets.study],
     );
 
-    const query = search.trim().toLowerCase();
+    const query = search.trim();
     const visibleParticipants = useMemo(
         () =>
             facetedParticipants.filter((participant) =>
-                matchesQuery([participant.name, participant.email], query),
+                matchesSearch([participant.name, participant.email], query),
             ),
         [facetedParticipants, query],
     );
@@ -1261,11 +1262,11 @@ function AttendanceTab({ eventId }: { eventId: string }) {
         return { attended, total: participants.length };
     }, [participants]);
 
-    const query = search.trim().toLowerCase();
+    const query = search.trim();
     const visibleParticipants = useMemo(
         () =>
             participants.filter((participant) =>
-                matchesQuery([participant.name, participant.email], query),
+                matchesSearch([participant.name, participant.email], query),
             ),
         [participants, query],
     );
@@ -1902,11 +1903,11 @@ function PaymentsTab({
 
     const groups = useMemo(() => groupPaymentsByUser(payments), [payments]);
 
-    const query = search.trim().toLowerCase();
+    const query = search.trim();
     const visibleGroups = useMemo(
         () =>
             groups.filter((group) =>
-                matchesQuery([group.user.name, group.user.email], query),
+                matchesSearch([group.user.name, group.user.email], query),
             ),
         [groups, query],
     );
@@ -2312,12 +2313,6 @@ function useLoadAllPages({
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 }
 
-/** Case-insensitive match across the fields a person is searched by. */
-function matchesQuery(fields: (string | null | undefined)[], query: string) {
-    if (!query) return true;
-    return fields.some((field) => field?.toLowerCase().includes(query));
-}
-
 function formatDateTime(iso: string) {
     return formatInOslo(iso, "d. MMM yyyy 'kl.' HH:mm");
 }
@@ -2342,11 +2337,11 @@ function AllergiesTab({ eventId }: { eventId: string }) {
     const [search, setSearch] = useState("");
     const [hasCopied, setHasCopied] = useState(false);
 
-    const query = search.trim().toLowerCase();
+    const query = search.trim();
     const visibleParticipants = useMemo(
         () =>
             data.participants.filter((participant) =>
-                matchesQuery(
+                matchesSearch(
                     [participant.name, ...participant.customAllergies],
                     query,
                 ),
