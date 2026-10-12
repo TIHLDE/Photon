@@ -10,6 +10,7 @@ import z from "zod";
 import { getEventsInfiniteQuery } from "#/api/queries/events";
 import { EventCalendar } from "#/components/event-calendar";
 import { EventCard } from "#/components/event-card";
+import { FilterCheckboxOption } from "#/components/filter-checkbox-option";
 import {
     type Category,
     DEFAULT_EVENT_FILTERS,
@@ -210,10 +211,19 @@ function EventsPage() {
                         value={filters}
                         categories={categories}
                         onChange={setFilters}
-                        showCalendarOption={!viewTabsFit}
-                        calendar={visning === "kalender"}
-                        onCalendarChange={(checked) =>
-                            changeView(checked ? "kalender" : "liste")
+                        extraOptions={
+                            !viewTabsFit && (
+                                <FilterCheckboxOption
+                                    title="Kalender"
+                                    description="Vis som kalender"
+                                    checked={visning === "kalender"}
+                                    onCheckedChange={(checked) =>
+                                        changeView(
+                                            checked ? "kalender" : "liste",
+                                        )
+                                    }
+                                />
+                            )
                         }
                     />
                 </aside>
