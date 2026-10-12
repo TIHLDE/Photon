@@ -1,7 +1,7 @@
 import { Button } from "@tihlde/ui/ui/button";
 import { Dialog, DialogContent } from "@tihlde/ui/ui/dialog";
 import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
-import { useCallback, useEffect, useRef } from "react";
+import { type ReactNode, useCallback, useEffect, useRef } from "react";
 
 import { assetImageUrl } from "#/lib/assets";
 
@@ -21,6 +21,8 @@ type GalleryLightboxProps = {
     /** Viser «Rediger»-knappen. Uten `onEdit` skjules den uansett. */
     canEdit?: boolean;
     onEdit?: (picture: LightboxPicture) => void;
+    /** Egne handlinger for bildet som vises, ved siden av «Rediger». */
+    renderActions?: (picture: LightboxPicture) => ReactNode;
 };
 
 /**
@@ -33,6 +35,7 @@ export function GalleryLightbox({
     onOpenChange,
     canEdit = false,
     onEdit,
+    renderActions,
 }: GalleryLightboxProps) {
     const index = openIndex ?? -1;
     const picture = pictures[index] ?? null;
@@ -156,17 +159,19 @@ export function GalleryLightbox({
                             {index + 1} / {pictures.length}
                         </p>
                     </div>
-                    {canEdit && onEdit ? (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="shrink-0"
-                            onClick={() => onEdit(picture)}
-                        >
-                            <Pencil />
-                            Rediger
-                        </Button>
-                    ) : null}
+                    <div className="flex shrink-0 gap-2">
+                        {renderActions?.(picture)}
+                        {canEdit && onEdit ? (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onEdit(picture)}
+                            >
+                                <Pencil />
+                                Rediger
+                            </Button>
+                        ) : null}
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>
