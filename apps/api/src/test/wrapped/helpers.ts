@@ -2,6 +2,10 @@ import { schema } from "@photon/db";
 import type { RegistrationStatus } from "@photon/db/schema";
 import type { IntegrationTestContext } from "~/test/config/integration";
 
+type TestUser = Awaited<
+    ReturnType<IntegrationTestContext["utils"]["createTestUser"]>
+>;
+
 const HOUR = 60 * 60 * 1000;
 
 /** An event that is under way, so its camera window is open right now. */
@@ -42,4 +46,51 @@ export async function register(
     await ctx.db
         .insert(schema.eventRegistration)
         .values({ eventId, userId, status });
+}
+
+/**
+ * The typed test client pins `Content-Type: application/json`, which breaks a
+ * multipart body — so uploads go through `app.request` with the cookie alone.
+ */
+export async function sessionCookie(
+    ctx: IntegrationTestContext,
+    user: TestUser,
+): Promise<string> {
+    const response = await ctx.auth.api.signInEmail({
+        body: { email: user.email, password: user.password },
+        returnHeaders: true,
+    });
+    const cookie = response.headers.getSetCookie()[0]?.split(";")[0];
+    if (!cookie) throw new Error("Sign-in returned no session cookie");
+    return cookie;
+}
+
+const PNG_HEADER = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+export function uploadPhoto(
+    ctx: IntegrationTestContext,
+    cookie: string,
+    eventId: string,
+    file: { type: string; name: string } = {
+        type: "image/png",
+        name: "bilde.png",
+    },
+    idempotencyKey?: string,
+) {
+    const body = new FormData();
+    body.append(
+        "file",
+        new Blob(
+            [Buffer.concat([Buffer.from(PNG_HEADER), Buffer.from("bilde")])],
+            { type: file.type },
+        ),
+        file.name,
+    );
+
+    const query = idempotencyKey ? `?idempotencyKey=${idempotencyKey}` : "";
+    return ctx.app.request(`/api/event/${eventId}/wrapped/photos${query}`, {
+        method: "POST",
+        body,
+        headers: { Cookie: cookie },
+    });
 }
