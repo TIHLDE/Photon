@@ -856,7 +856,10 @@ export function createAuth(options: CreateAuthOptions) {
             // the Feide provider itself is gated inside feidePlugin() on the
             // credentials being set.
             feidePlugin(options.services.db),
-            username(),
+            username({
+                // Better Auth's default rejects "-", which self-registration hands out.
+                usernameValidator: (value) => /^[a-zA-Z0-9_.-]+$/.test(value),
+            }),
             jwt({
                 // Recommended by better-auth docs when using with OAuth Provider plugin
                 disableSettingJwtHeader: true,
