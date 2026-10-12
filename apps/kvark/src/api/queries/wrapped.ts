@@ -11,7 +11,27 @@ export type WrappedUploadResult = components["schemas"]["WrappedPhotoUploaded"];
 
 const WrappedQueryKeys = {
     camera: ["wrapped", "camera"] as const,
+    open: ["wrapped", "open"] as const,
 } as const;
+
+/**
+ * Kameraene den innloggede kan ta bilde med akkurat nå, det mest aktuelle
+ * først. Som regel tom.
+ *
+ * Et kamera åpner og stenger med klokka, uten at noe skjer på sida, så svaret
+ * hentes på nytt hvert minutt i tillegg til når fanen får fokus.
+ *
+ * Nøkkelen bærer brukeren: svaret er personlig, og uten den ville neste
+ * medlem som logger inn i samme fane fått se forrige medlems arrangement til
+ * et nytt svar var hentet.
+ */
+export const listOpenWrappedCamerasQuery = (userId: string) =>
+    queryOptions({
+        queryKey: [...WrappedQueryKeys.open, userId],
+        queryFn: () => apiClient.get("/api/event/wrapped/open"),
+        staleTime: 0,
+        refetchInterval: 60_000,
+    });
 
 export const getWrappedCameraQuery = (eventId: string) =>
     queryOptions({
@@ -54,5 +74,12 @@ export const uploadWrappedPhotoMutation = mutationOptions({
                 cause: error,
             });
         }
+    },
+    // Hvert bilde endrer hvor mange som er igjen, og det siste tar kameraet
+    // ut av lista over åpne kameraer.
+    onSuccess(_, __, ___, ctx) {
+        return ctx.client.invalidateQueries({
+            queryKey: WrappedQueryKeys.open,
+        });
     },
 });

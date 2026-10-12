@@ -8,7 +8,7 @@ import {
 import { Button } from "@tihlde/ui/ui/button";
 import { isHeicFile } from "@tihlde/ui/lib/heic";
 import { compressImageFile } from "@tihlde/ui/lib/image-compression";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Images } from "lucide-react";
 
 import { authClientWithRedirect } from "#/api/auth";
 import { getEventByIdQuery } from "#/api/queries/events";
@@ -201,6 +201,24 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
         await upload({ file: prepared, idempotencyKey: crypto.randomUUID() });
     }
 
+    // Den som arrangerer kan følge med på bildene mens de kommer inn. De
+    // ligger i arrangementsadminen, og dette er veien dit fra telefonen.
+    const organizerLink = camera.canManage ? (
+        <Button
+            variant="outline"
+            render={
+                <Link
+                    to="/admin/arrangementer/$eventId"
+                    params={{ eventId: event.id }}
+                    search={{ fane: "kamera" }}
+                />
+            }
+        >
+            <Images />
+            Se bildene som er tatt
+        </Button>
+    ) : null;
+
     if (!camera.canShoot && camera.reason) {
         return (
             <>
@@ -209,22 +227,26 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
                     reason={camera.reason}
                     opensAt={camera.opensAt}
                 />
+                {organizerLink}
             </>
         );
     }
 
     return (
-        <WrappedCamera
-            eventTitle={event.title}
-            shotsLeft={camera.shotsLeft}
-            shotsPerPerson={camera.shotsPerPerson}
-            uploadState={uploadState}
-            onPhoto={(file) => void handlePhoto(file)}
-            onRetry={
-                pending && uploadState.status === "failed"
-                    ? () => void upload(pending)
-                    : undefined
-            }
-        />
+        <>
+            <WrappedCamera
+                eventTitle={event.title}
+                shotsLeft={camera.shotsLeft}
+                shotsPerPerson={camera.shotsPerPerson}
+                uploadState={uploadState}
+                onPhoto={(file) => void handlePhoto(file)}
+                onRetry={
+                    pending && uploadState.status === "failed"
+                        ? () => void upload(pending)
+                        : undefined
+                }
+            />
+            {organizerLink}
+        </>
     );
 }

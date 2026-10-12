@@ -157,6 +157,7 @@ export type Notification = Schemas["Notification"];
 export type NotificationDeviceResponse = Schemas["NotificationDeviceResponse"];
 export type NotificationList = Schemas["NotificationList"];
 export type OnboardUserInput = Schemas["OnboardUserInput"];
+export type OpenWrappedCameras = Schemas["OpenWrappedCameras"];
 export type RefundEventPayment = Schemas["RefundEventPayment"];
 export type RegenerateApplicationPdfResponse = Schemas["RegenerateApplicationPdfResponse"];
 export type RegisterNotificationDevice = Schemas["RegisterNotificationDevice"];

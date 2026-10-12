@@ -749,6 +749,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/event/wrapped/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the cameras I can take a photo with right now
+         * @description The disposable cameras that are open for the caller at this moment: turned on, inside their window, at an event the caller holds a spot on, and with photos left. Events under way come first, the one that started last on top. This is what the site uses to offer a shortcut to the camera, so it is empty far more often than not.
+         */
+        get: operations["listOpenWrappedCameras"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/event/favorite/{id}": {
         parameters: {
             query?: never;
@@ -3683,6 +3703,25 @@ export interface components {
         DeleteStrikeResponse: {
             message: string;
         };
+        OpenWrappedCameras: {
+            /** Format: uuid */
+            eventId: string;
+            /** @description The event's slug, for linking to its camera */
+            slug: string;
+            title: string;
+            /** Format: date-time */
+            start: string;
+            /** Format: date-time */
+            end: string;
+            /**
+             * Format: date-time
+             * @description When the camera closes: four hours after the event
+             */
+            closesAt: string;
+            shotsPerPerson: number;
+            /** @description Photos the caller has left. Always at least 1. */
+            shotsLeft: number;
+        }[];
         UpdateFavoriteResponse: {
             success: boolean;
         };
@@ -8184,6 +8223,44 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    listOpenWrappedCameras: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenWrappedCameras"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };

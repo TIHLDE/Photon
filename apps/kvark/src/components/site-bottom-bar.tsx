@@ -20,7 +20,7 @@ import {
     Menu,
     SquareArrowOutUpRight,
 } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import { loginSearchFor } from "#/api/auth";
 
@@ -36,12 +36,15 @@ type SiteBottomBarProps = {
      * påminnelsen forsvunnet for alle på mobil.
      */
     hasProfileTodo?: boolean;
+    /** En `BottomBarBanner` som legges oppå fanene, når det finnes en. */
+    banner?: ReactNode;
 };
 
 export function SiteBottomBar({
     navItems,
     isAuthenticated,
     hasProfileTodo = false,
+    banner,
 }: SiteBottomBarProps) {
     const [menuOpen, setMenuOpen] = useState(false);
     const closeMenu = () => setMenuOpen(false);
@@ -51,6 +54,7 @@ export function SiteBottomBar({
 
     return (
         <BottomBar className="lg:hidden">
+            {banner}
             <div className="flex items-stretch justify-between gap-1 px-2 py-1">
                 <BottomBarItem
                     render={<Link to="/" activeOptions={{ exact: true }} />}

@@ -108,4 +108,77 @@ function BottomBarItem({ className, render, ...props }: BottomBarItemProps) {
     });
 }
 
-export { BottomBar, BottomBarItem };
+type BottomBarBannerProps = React.ComponentProps<"button"> & {
+    render?: useRender.RenderProp;
+};
+
+/**
+ * Én handling som står oppå raden med faner, i full bredde.
+ *
+ * Til det som bare gjelder akkurat nå og som ikke skal måtte letes fram i en
+ * meny — et kamera som er åpent mens arrangementet pågår.
+ *
+ * Den flyter like over linja, med luft på sidene og mot fanene, så den leses
+ * som noe eget og ikke som en del av menyen. Den er likevel et barn av linja
+ * og plassert ut fra den: da følger den med uansett hva Safari gjør med
+ * viewporten, og trenger ikke vite hvor høy linja er.
+ *
+ * Trykket vises i det fingeren treffer, ikke når den slipper.
+ */
+function BottomBarBanner({
+    className,
+    render,
+    ...props
+}: BottomBarBannerProps) {
+    return useRender({
+        render: render ?? <button type="button" />,
+        props: {
+            "data-slot": "bottom-bar-banner",
+            className: cn(
+                "absolute inset-x-3 bottom-full mb-2 flex min-h-12 cursor-pointer items-center gap-3 rounded-xl bg-primary px-4 py-2 text-left text-primary-foreground shadow-md outline-none transition-opacity duration-100 select-none active:opacity-80 focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none [&_svg]:size-5 [&_svg]:shrink-0",
+                className,
+            ),
+            ...props,
+        },
+    });
+}
+
+function BottomBarBannerTitle({
+    className,
+    ...props
+}: React.ComponentProps<"span">) {
+    return (
+        <span
+            data-slot="bottom-bar-banner-title"
+            className={cn(
+                "block truncate text-sm leading-tight font-semibold",
+                className,
+            )}
+            {...props}
+        />
+    );
+}
+
+function BottomBarBannerDescription({
+    className,
+    ...props
+}: React.ComponentProps<"span">) {
+    return (
+        <span
+            data-slot="bottom-bar-banner-description"
+            className={cn(
+                "block truncate text-xs text-primary-foreground/80",
+                className,
+            )}
+            {...props}
+        />
+    );
+}
+
+export {
+    BottomBar,
+    BottomBarBanner,
+    BottomBarBannerDescription,
+    BottomBarBannerTitle,
+    BottomBarItem,
+};
