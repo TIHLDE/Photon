@@ -35,6 +35,20 @@ export class InMemoryCache extends BaseCache {
         return Math.floor((entry.expires - Date.now()) / 1000);
     }
 
+    override async increment(key: string, ttl: number): Promise<number> {
+        // No await between the read and the write, so concurrent callers
+        // cannot interleave here.
+        const now = Date.now();
+        const entry = this.#cache.get(key);
+        if (entry == null || (entry.expires != -1 && entry.expires < now)) {
+            this.#cache.set(key, { value: 1, expires: now + ttl * 1000 });
+            return 1;
+        }
+        const count = Number(entry.value) + 1;
+        entry.value = count;
+        return count;
+    }
+
     override async delete(key: string): Promise<void> {
         this.#cache.delete(key);
     }

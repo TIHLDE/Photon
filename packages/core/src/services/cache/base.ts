@@ -26,6 +26,15 @@ export interface CacheService {
     getString(key: string): Promise<string | undefined>;
     setString(key: string, value: string, ttl?: number): Promise<void>;
 
+    /**
+     * Atomically add one to the counter at `key` and return the new count.
+     * The expiry is set only when the counter is created, so the window is
+     * fixed from the first hit rather than pushed back by every later one.
+     * Read-then-write rate limiting lets concurrent requests overwrite each
+     * other's count; this cannot.
+     */
+    increment(key: string, ttl: number): Promise<number>;
+
     getObject<T>(key: string): Promise<T | undefined>;
     setObject<T>(key: string, value: T, ttl?: number): Promise<void>;
 
@@ -39,6 +48,7 @@ export abstract class BaseCache implements CacheService {
     abstract set(key: string, value: unknown, ttl?: number): Promise<void>;
     abstract delete(key: string): Promise<void>;
     abstract getTTL(key: string): Promise<number | undefined>;
+    abstract increment(key: string, ttl: number): Promise<number>;
 
     async getString(key: string) {
         const value = await this.get(key);

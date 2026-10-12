@@ -5,7 +5,10 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { overhortResponseSchema, overhortSchema } from "./schema";
 
-/** Submissions allowed in total within {@link RATE_LIMIT_WINDOW_SECONDS} */
+/**
+ * Submissions allowed in total within {@link RATE_LIMIT_WINDOW_SECONDS}. The
+ * window is fixed: it starts with the first submission and does not move.
+ */
 const RATE_LIMIT_MAX = 50;
 const RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
 
@@ -43,17 +46,16 @@ export const overhortRoute = route().post(
         const body = c.req.valid("json");
         const { cache, email } = c.get("ctx");
 
-        const attempts = Number(await cache.getString(RATE_LIMIT_KEY)) || 0;
-        if (attempts >= RATE_LIMIT_MAX) {
+        // Atomic: parallel requests cannot share one count and slip past.
+        const submissions = await cache.increment(
+            RATE_LIMIT_KEY,
+            RATE_LIMIT_WINDOW_SECONDS,
+        );
+        if (submissions > RATE_LIMIT_MAX) {
             throw new HTTPException(429, {
                 message: "For mange innsendinger. Prøv igjen senere.",
             });
         }
-        await cache.setString(
-            RATE_LIMIT_KEY,
-            String(attempts + 1),
-            RATE_LIMIT_WINDOW_SECONDS,
-        );
 
         // No replyTo and no sender details: the editor gets the two fields and
         // nothing else.

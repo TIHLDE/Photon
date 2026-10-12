@@ -97,25 +97,33 @@ describe("Overhört", () => {
     );
 
     integrationTest(
-        "Stops at 50 submissions an hour, counted across everyone",
+        "Stops at 50 submissions an hour, even when they arrive at once",
         async ({ ctx }) => {
             // Two separate clients: the cap is global, not per sender.
             const first = ctx.utils.client();
             const second = ctx.utils.client();
 
-            for (let i = 0; i < 50; i++) {
-                const client = i % 2 === 0 ? first : second;
-                const response = await client.api.toddel.overhort.$post({
-                    json: { name: `Nummer ${i}`, statement: "Sitat" },
-                });
-                expect(response.status).toBe(200);
-            }
+            // All in flight together, so a read-then-write counter would let
+            // far more than 50 through.
+            const responses = await Promise.all(
+                Array.from({ length: 60 }, (_, i) =>
+                    (i % 2 === 0 ? first : second).api.toddel.overhort.$post({
+                        json: { name: `Nummer ${i}`, statement: "Sitat" },
+                    }),
+                ),
+            );
+            // 429 comes from a thrown HTTPException, so the typed client doesn't
+            // list it among the route's statuses.
+            const statuses: number[] = responses.map(
+                (response) => response.status,
+            );
 
-            const blocked = await first.api.toddel.overhort.$post({
-                json: { name: "Nummer 51", statement: "Sitat" },
-            });
-
-            expect(blocked.status).toBe(429);
+            expect(statuses.filter((status) => status === 200)).toHaveLength(
+                50,
+            );
+            expect(statuses.filter((status) => status === 429)).toHaveLength(
+                10,
+            );
             expect(await queuedEmails(ctx)).toHaveLength(50);
         },
         500_000,
