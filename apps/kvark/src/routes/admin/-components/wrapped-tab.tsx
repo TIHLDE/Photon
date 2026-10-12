@@ -106,9 +106,9 @@ function PhotosSection({ eventId }: { eventId: string }) {
         },
     });
 
-    // Trykk som er underveis vises med en gang, uten å skrive i cachen.
-    // Mutasjonen står som pending til lista er hentet på nytt, så bildet
-    // blinker ikke tilbake i mellomtiden.
+    // Trykk som er underveis vises med en gang. Når svaret kommer, skriver
+    // mutasjonen det inn i lista i samme øyeblikk som den slutter å være
+    // pending, så bildet blinker ikke tilbake i mellomtiden.
     const pending = useMutationState({
         filters: { mutationKey: UPDATE_WRAPPED_PHOTO_KEY, status: "pending" },
         select: (mutation) =>

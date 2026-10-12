@@ -1,41 +1,13 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
+import type { components } from "@tihlde/sdk";
+import { apiClient } from "#/api/api-client";
 import { uploadErrorMessage } from "#/api/queries/assets";
-import { mockGetCamera, mockUpload } from "#/api/queries/wrapped-mock";
 
-/**
- * Engangskameraet (tihlde-wrapped). Formen følger kontrakten i #865.
- *
- * TODO(#867): API-et er ikke slått sammen ennå, så status og opplasting er
- * statiske stand-ins fra `wrapped-mock.ts`, delt med utvalget i
- * `wrapped-admin.ts`. Når `@tihlde/sdk` har rutene, byttes `queryFn` og
- * `mutationFn` til `apiClient` og `wrapped-mock.ts` slettes.
- */
+/** Engangskameraet (tihlde-wrapped). */
 
-export type WrappedCameraReason =
-    | "disabled"
-    | "not_open_yet"
-    | "closed"
-    | "not_registered"
-    | "no_shots_left";
-
-export type WrappedCameraStatus = {
-    enabled: boolean;
-    shotsPerPerson: number;
-    opensAt: string;
-    closesAt: string;
-    isOpen: boolean;
-    shotsUsed: number;
-    shotsLeft: number;
-    canShoot: boolean;
-    reason: WrappedCameraReason | null;
-    canManage: boolean;
-};
-
-export type WrappedUploadResult = {
-    id: string;
-    shotsUsed: number;
-    shotsLeft: number;
-};
+export type WrappedCameraStatus = components["schemas"]["WrappedCamera"];
+export type WrappedCameraReason = NonNullable<WrappedCameraStatus["reason"]>;
+export type WrappedUploadResult = components["schemas"]["WrappedPhotoUploaded"];
 
 const WrappedQueryKeys = {
     camera: ["wrapped", "camera"] as const,
@@ -44,20 +16,37 @@ const WrappedQueryKeys = {
 export const getWrappedCameraQuery = (eventId: string) =>
     queryOptions({
         queryKey: [...WrappedQueryKeys.camera, eventId],
-        queryFn: () => mockGetCamera(),
+        queryFn: () =>
+            apiClient.get("/api/event/{eventId}/wrapped", {
+                params: { eventId },
+            }),
+        // Statusen følger klokka og hvert bilde som tas, så den er aldri
+        // «fersk nok» til å vises uten å spørre på nytt.
+        staleTime: 0,
     });
 
 export const uploadWrappedPhotoMutation = mutationOptions({
     mutationFn: async ({
+        eventId,
         file,
+        idempotencyKey,
     }: {
         eventId: string;
         file: File;
+        /**
+         * Én UUID per bilde, den samme i hvert forsøk. Kom svaret aldri fram
+         * forrige gang, kjenner API-et igjen bildet og trekker ikke et nytt.
+         */
+        idempotencyKey: string;
     }): Promise<WrappedUploadResult> => {
         const formData = new FormData();
         formData.append("file", file);
         try {
-            return await mockUpload(file);
+            return await apiClient.post("/api/event/{eventId}/wrapped/photos", {
+                params: { eventId },
+                searchParams: { idempotencyKey },
+                body: formData,
+            } as never);
         } catch (error) {
             // `cause` beholder den opprinnelige feilen, så ruta kan lese
             // statuskoden (403/409 betyr at statusen er utdatert).

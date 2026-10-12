@@ -1,45 +1,18 @@
-import { infiniteQueryOptions, mutationOptions } from "@tanstack/react-query";
 import {
-    getWrappedCameraQuery,
-    type WrappedCameraStatus,
-} from "#/api/queries/wrapped";
-import {
-    mockListPhotos,
-    mockPhotoImage,
-    mockSetCamera,
-    mockUpdatePhoto,
-} from "#/api/queries/wrapped-mock";
+    type InfiniteData,
+    infiniteQueryOptions,
+    mutationOptions,
+} from "@tanstack/react-query";
+import type { components } from "@tihlde/sdk";
+import { apiClient } from "#/api/api-client";
+import { getWrappedCameraQuery } from "#/api/queries/wrapped";
+import { fetchPrivateObjectUrl } from "#/lib/assets";
 
-/**
- * Organisatorens side av engangskameraet: innstillinger og utvalg. Formen
- * følger kontrakten i #865.
- *
- * TODO(#867): `queryFn`/`mutationFn` går mot stand-ins i `wrapped-mock.ts`.
- * Når `@tihlde/sdk` har rutene, byttes de til `apiClient`, typene under til
- * `@tihlde/sdk`, og `fetchWrappedPhotoImage` til `fetchPrivateObjectUrl`.
- */
+/** Organisatorens side av engangskameraet: innstillinger og utvalg. */
 
-export type SetWrappedCamera = {
-    enabled: boolean;
-    shotsPerPerson?: number;
-};
-
-export type WrappedPhoto = {
-    id: string;
-    createdAt: string;
-    selected: boolean;
-    uploadedBy: { id: string; name: string };
-    /** Sti på API-et som krever sesjonen — ikke en offentlig asset-URL. */
-    imageUrl: string;
-};
-
-export type WrappedPhotoList = {
-    totalCount: number;
-    pages: number;
-    nextPage: number | null;
-    selectedCount: number;
-    items: WrappedPhoto[];
-};
+export type SetWrappedCamera = components["schemas"]["SetWrappedCamera"];
+export type WrappedPhoto = components["schemas"]["WrappedPhoto"];
+export type WrappedPhotoList = components["schemas"]["WrappedPhotoList"];
 
 export type UpdateWrappedPhotoVariables = {
     eventId: string;
@@ -55,8 +28,8 @@ const WrappedAdminQueryKeys = {
 const PHOTO_PAGE_SIZE = 24;
 
 /**
- * Bildene tatt på et arrangement, eldste først (se #865): nye bilder havner
- * nederst i stedet for å stokke om rutenettet mens organisatoren ser på det.
+ * Bildene tatt på et arrangement, eldste først: nye bilder havner nederst i
+ * stedet for å stokke om rutenettet mens organisatoren ser på det.
  */
 export const listWrappedPhotosQuery = (
     eventId: string,
@@ -65,47 +38,76 @@ export const listWrappedPhotosQuery = (
     infiniteQueryOptions({
         queryKey: [...WrappedAdminQueryKeys.photos, eventId, pageSize],
         queryFn: ({ pageParam }) =>
-            mockListPhotos(eventId, pageParam, pageSize),
+            apiClient.get("/api/event/{eventId}/wrapped/photos", {
+                params: { eventId },
+                searchParams: { page: pageParam, pageSize },
+            }),
         initialPageParam: 0,
         getNextPageParam: (lastPage) => lastPage.nextPage,
     });
 
 export const setWrappedCameraMutation = mutationOptions({
     mutationFn: ({
+        eventId,
         data,
     }: {
         eventId: string;
         data: SetWrappedCamera;
-    }): Promise<WrappedCameraStatus> => mockSetCamera(data),
+    }) =>
+        apiClient.put("/api/event/{eventId}/wrapped", {
+            params: { eventId },
+            json: data,
+        }),
     onSuccess(_, vars, __, ctx) {
-        return Promise.all([
-            ctx.client.invalidateQueries(getWrappedCameraQuery(vars.eventId)),
-            ctx.client.invalidateQueries({
-                queryKey: [...WrappedAdminQueryKeys.photos, vars.eventId],
-            }),
-        ]);
+        return ctx.client.invalidateQueries(
+            getWrappedCameraQuery(vars.eventId),
+        );
     },
 });
 
 /**
  * Nøkkelen lar fanen lese hvilke bilder som er underveis med
- * `useMutationState`, så et trykk vises med en gang uten å skrive i cachen.
+ * `useMutationState`, så et trykk vises med en gang.
+ *
+ * Svaret skrives rett inn i lista i stedet for å invalidere den: en
+ * invalidering henter alle sidene som er lastet på nytt, og på et stort
+ * arrangement er det et tjuetalls kall for hvert eneste trykk.
  */
 export const updateWrappedPhotoMutation = mutationOptions({
     mutationKey: WrappedAdminQueryKeys.updatePhoto,
-    mutationFn: ({
-        eventId,
-        photoId,
-        selected,
-    }: UpdateWrappedPhotoVariables): Promise<WrappedPhoto> =>
-        mockUpdatePhoto(eventId, photoId, selected),
-    onSuccess(_, vars, __, ctx) {
-        return Promise.all([
-            ctx.client.invalidateQueries({
-                queryKey: [...WrappedAdminQueryKeys.photos, vars.eventId],
-            }),
-            ctx.client.invalidateQueries(getWrappedCameraQuery(vars.eventId)),
-        ]);
+    mutationFn: ({ eventId, photoId, selected }: UpdateWrappedPhotoVariables) =>
+        apiClient.patch("/api/event/{eventId}/wrapped/photos/{photoId}", {
+            params: { eventId, photoId },
+            json: { selected },
+        }),
+    onSuccess(updated, vars, __, ctx) {
+        ctx.client.setQueriesData<InfiniteData<WrappedPhotoList>>(
+            { queryKey: [...WrappedAdminQueryKeys.photos, vars.eventId] },
+            (list) => {
+                if (!list) return list;
+
+                const before = list.pages
+                    .flatMap((page) => page.items)
+                    .find((photo) => photo.id === updated.id);
+                const delta =
+                    before && before.selected !== updated.selected
+                        ? updated.selected
+                            ? 1
+                            : -1
+                        : 0;
+
+                return {
+                    ...list,
+                    pages: list.pages.map((page) => ({
+                        ...page,
+                        selectedCount: page.selectedCount + delta,
+                        items: page.items.map((photo) =>
+                            photo.id === updated.id ? updated : photo,
+                        ),
+                    })),
+                };
+            },
+        );
     },
 });
 
@@ -117,5 +119,5 @@ export const UPDATE_WRAPPED_PHOTO_KEY = WrappedAdminQueryKeys.updatePhoto;
  * Kalleren må `revokeObjectURL` når den er ferdig.
  */
 export function fetchWrappedPhotoImage(imageUrl: string): Promise<string> {
-    return mockPhotoImage(imageUrl);
+    return fetchPrivateObjectUrl(imageUrl);
 }

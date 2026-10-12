@@ -1,4 +1,4 @@
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
     useMutation,
@@ -6,7 +6,7 @@ import {
     useSuspenseQuery,
 } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
-import { convertHeicToJpeg, isHeicFile } from "@tihlde/ui/lib/heic";
+import { isHeicFile } from "@tihlde/ui/lib/heic";
 import { compressImageFile } from "@tihlde/ui/lib/image-compression";
 import { ArrowLeft } from "lucide-react";
 
@@ -18,6 +18,7 @@ import {
 } from "#/api/queries/wrapped";
 import {
     WrappedCamera,
+    WrappedPhotoSaved,
     type WrappedUploadState,
 } from "#/components/wrapped-camera";
 import { WrappedCameraSkeleton } from "#/components/wrapped-camera-skeleton";
@@ -67,6 +68,15 @@ function WrappedCameraPage() {
     );
 }
 
+/** Det API-et tar imot. Alt annet avvises der, så det stoppes her. */
+const UPLOADABLE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+/** Et bilde som er gjort klart, med nøkkelen som følger det i hvert forsøk. */
+type PendingPhoto = { file: File; idempotencyKey: string };
+
+/** `setTimeout` regner i 32 bit, og ingen venter et døgn på samme side. */
+const MAX_WAIT_MS = 24 * 60 * 60 * 1000;
+
 function WrappedCameraContainer({ slug }: { slug: string }) {
     const queryClient = useQueryClient();
     const { data: event } = useSuspenseQuery(getEventByIdQuery(slug));
@@ -79,19 +89,31 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
     });
     // Det ferdig konverterte bildet holdes i minnet til det er lastet opp, så
     // et dårlig nett ikke koster bildet.
-    const [pendingFile, setPendingFile] = useState<File | null>(null);
+    const [pending, setPending] = useState<PendingPhoto | null>(null);
 
-    async function upload(file: File) {
+    // Den som venter på at kameraet skal åpne, skal ikke måtte laste sida på
+    // nytt: statusen hentes igjen i det åpningstiden passerer.
+    const waitingUntil =
+        camera.reason === "not_open_yet" ? camera.opensAt : null;
+    useEffect(() => {
+        if (!waitingUntil) return;
+        const delay = new Date(waitingUntil).getTime() - Date.now() + 1000;
+        if (delay > MAX_WAIT_MS) return;
+        const timer = setTimeout(() => void refetch(), Math.max(delay, 0));
+        return () => clearTimeout(timer);
+    }, [waitingUntil, refetch]);
+
+    async function upload(photo: PendingPhoto) {
         setUploadState({ status: "uploading" });
         try {
             const result = await uploadPhoto.mutateAsync({
                 eventId: event.id,
-                file,
+                ...photo,
             });
             if (import.meta.env.DEV) {
                 console.info("[wrapped] lastet opp", result.id);
             }
-            setPendingFile(null);
+            setPending(null);
             setUploadState({ status: "done" });
             // Svaret har tellerne, så de vises med en gang; statusen hentes
             // likevel på nytt for resten av feltene.
@@ -114,12 +136,18 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
             // 403/409: statusen vi viste var utdatert. Grunnen hentes fra
             // serveren og vises i stedet for en egen feilmelding.
             if (status === 403 || status === 409) {
-                setPendingFile(null);
+                setPending(null);
                 setUploadState({ status: "idle" });
                 await refetch();
                 return;
             }
-            setPendingFile(file);
+            // Uten statuskode kom vi aldri fram, og 5xx er serverens feil:
+            // da kan samme bilde sendes på nytt, og nøkkelen sørger for at
+            // det ikke koster et ekstra om det første forsøket likevel kom
+            // fram. Alt annet har serveren avvist, og et nytt forsøk med det
+            // samme bildet får samme svar.
+            const retryable = status === undefined || status >= 500;
+            setPending(retryable ? photo : null);
             setUploadState({
                 status: "failed",
                 message:
@@ -131,7 +159,7 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
     }
 
     async function handlePhoto(file: File) {
-        setPendingFile(null);
+        setPending(null);
         // HEIC-filer har ofte tom `type`, så de slippes gjennom på filnavnet.
         if (!file.type.startsWith("image/") && !isHeicFile(file)) {
             setUploadState({
@@ -144,27 +172,44 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
         setUploadState({ status: "converting" });
         let prepared: File;
         try {
-            const jpeg = isHeicFile(file)
-                ? await convertHeicToJpeg(file)
-                : file;
-            prepared = await compressImageFile(jpeg);
+            // Konverterer også HEIC til JPEG før den komprimerer.
+            prepared = await compressImageFile(file);
         } catch (error) {
             console.error("Klargjøring av kamerabilde feilet", error);
             setUploadState({
                 status: "failed",
-                message: "Fikk ikke lest bildet. Prøv å ta det på nytt.",
+                message:
+                    error instanceof Error
+                        ? error.message
+                        : "Fikk ikke lest bildet. Prøv å ta det på nytt.",
             });
             return;
         }
-        await upload(prepared);
+
+        if (!UPLOADABLE_TYPES.includes(prepared.type)) {
+            console.warn("Kamerabilde i et format API-et ikke tar", {
+                type: prepared.type,
+            });
+            setUploadState({
+                status: "failed",
+                message:
+                    "Kameraet tar bare vanlige bilder. Ta et nytt bilde med kameraet på telefonen.",
+            });
+            return;
+        }
+
+        await upload({ file: prepared, idempotencyKey: crypto.randomUUID() });
     }
 
     if (!camera.canShoot && camera.reason) {
         return (
-            <WrappedCameraUnavailable
-                reason={camera.reason}
-                opensAt={camera.opensAt}
-            />
+            <>
+                {uploadState.status === "done" ? <WrappedPhotoSaved /> : null}
+                <WrappedCameraUnavailable
+                    reason={camera.reason}
+                    opensAt={camera.opensAt}
+                />
+            </>
         );
     }
 
@@ -176,8 +221,8 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
             uploadState={uploadState}
             onPhoto={(file) => void handlePhoto(file)}
             onRetry={
-                pendingFile && uploadState.status === "failed"
-                    ? () => void upload(pendingFile)
+                pending && uploadState.status === "failed"
+                    ? () => void upload(pending)
                     : undefined
             }
         />

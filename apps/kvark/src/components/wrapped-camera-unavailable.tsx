@@ -64,7 +64,8 @@ function describe(
             return {
                 icon: <Lock />,
                 title: "Kameraet er stengt",
-                description: "Bildene kommer etter arrangementet.",
+                description:
+                    "Arrangøren velger ut hvilke bilder som deles etter arrangementet.",
             };
         case "not_registered":
             return {
@@ -78,7 +79,7 @@ function describe(
                 icon: <CameraOff />,
                 title: "Ingen bilder igjen",
                 description:
-                    "Du har brukt alle bildene dine. De kommer etter arrangementet.",
+                    "Du har brukt alle bildene dine. Arrangøren velger ut hvilke som deles etter arrangementet.",
             };
     }
 }
