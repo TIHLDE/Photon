@@ -20,10 +20,14 @@ const WrappedQueryKeys = {
  *
  * Et kamera åpner og stenger med klokka, uten at noe skjer på sida, så svaret
  * hentes på nytt hvert minutt i tillegg til når fanen får fokus.
+ *
+ * Nøkkelen bærer brukeren: svaret er personlig, og uten den ville neste
+ * medlem som logger inn i samme fane fått se forrige medlems arrangement til
+ * et nytt svar var hentet.
  */
-export const listOpenWrappedCamerasQuery = () =>
+export const listOpenWrappedCamerasQuery = (userId: string) =>
     queryOptions({
-        queryKey: WrappedQueryKeys.open,
+        queryKey: [...WrappedQueryKeys.open, userId],
         queryFn: () => apiClient.get("/api/event/wrapped/open"),
         staleTime: 0,
         refetchInterval: 60_000,

@@ -68,7 +68,7 @@ function AppLayout() {
     // og de har bilder igjen. Det mest aktuelle arrangementet kommer først
     // fra API-et. På selve kamerasida er man allerede framme.
     const { data: openCameras } = useQuery({
-        ...listOpenWrappedCamerasQuery(),
+        ...listOpenWrappedCamerasQuery(session?.user?.id ?? ""),
         enabled: isAuthenticated && !isPendingApproval,
     });
     const pathname = useRouterState({
