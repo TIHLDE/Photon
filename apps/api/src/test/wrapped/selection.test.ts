@@ -117,6 +117,7 @@ describe("wrapped photo selection", () => {
                 ":photoId"
             ].image.$get({
                 param: { eventId: event.id, photoId: photo!.id },
+                query: {},
             });
 
             expect(response.status).toBe(200);
@@ -135,6 +136,81 @@ describe("wrapped photo selection", () => {
     );
 
     integrationTest(
+        "the organizer gets a small version for the grid, and it is no more reachable than the photo",
+        async ({ ctx }) => {
+            const event = await createOngoingEvent(ctx);
+            await enableCamera(ctx, event.id);
+            const photographer = await ctx.utils.createTestUser();
+            await register(ctx, event.id, photographer.id);
+            const organizer = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(organizer, ["events:update"]);
+
+            // A real photo this time: the stand-in bytes cannot be resized.
+            const sharp = (await import("sharp")).default;
+            const content = await sharp({
+                create: {
+                    width: 2000,
+                    height: 1500,
+                    channels: 3,
+                    background: { r: 20, g: 120, b: 200 },
+                },
+            })
+                .png()
+                .toBuffer();
+            await uploadPhoto(
+                ctx,
+                await sessionCookie(ctx, photographer),
+                event.id,
+                { type: "image/png", name: "fest.png", content },
+            );
+            const [photo] = await ctx.db.query.wrappedPhoto.findMany();
+            const param = { eventId: event.id, photoId: photo!.id };
+
+            const client = await ctx.utils.clientForUser(organizer);
+            const image =
+                client.api.event[":eventId"].wrapped.photos[":photoId"].image;
+
+            const tile = await image.$get({ param, query: { w: "480" } });
+
+            expect(tile.status).toBe(200);
+            expect(tile.headers.get("Content-Type")).toBe("image/webp");
+            expect(tile.headers.get("Cache-Control")).toBe("private, no-store");
+            const meta = await sharp(
+                Buffer.from(await tile.arrayBuffer()),
+            ).metadata();
+            expect(meta.width).toBe(480);
+            expect(meta.height).toBe(360);
+
+            // Only the two widths the selection view uses.
+            const other = await ctx.app.request(
+                `/api/event/${event.id}/wrapped/photos/${photo!.id}/image?w=320`,
+                { headers: { Cookie: await sessionCookie(ctx, organizer) } },
+            );
+            expect(other.status).toBe(400);
+
+            // The cached variant sits in storage without an asset row, so the
+            // open asset route cannot be talked into serving it.
+            const variantKey = `derivatives/w480/${photo!.assetKey}.webp`;
+            expect(await ctx.bucket.getObject(variantKey)).not.toBeNull();
+            const leaked = await client.api.assets[":key{.+}"].$get({
+                param: { key: variantKey },
+            });
+            expect(leaked.status).toBe(404);
+
+            // And the photographer still gets nothing, at any width.
+            const asPhotographer = await ctx.utils.clientForUser(photographer);
+            const denied = await asPhotographer.api.event[
+                ":eventId"
+            ].wrapped.photos[":photoId"].image.$get({
+                param,
+                query: { w: "480" },
+            });
+            expect(denied.status).toBe(403);
+        },
+        500_000,
+    );
+
+    integrationTest(
         "a member who does not arrange the event sees nothing, not even their own photo",
         async ({ ctx }) => {
             const { event, photographer } = await eventWithPhotos(ctx, 1);
@@ -147,7 +223,10 @@ describe("wrapped photo selection", () => {
                 param: { eventId: event.id },
                 query: {},
             });
-            const image = await photos[":photoId"].image.$get({ param });
+            const image = await photos[":photoId"].image.$get({
+                param,
+                query: {},
+            });
             const pick = await photos[":photoId"].$patch({
                 param,
                 json: { selected: true },
@@ -171,7 +250,7 @@ describe("wrapped photo selection", () => {
 
             const image = await client.api.event[":eventId"].wrapped.photos[
                 ":photoId"
-            ].image.$get({ param });
+            ].image.$get({ param, query: {} });
             const pick = await client.api.event[":eventId"].wrapped.photos[
                 ":photoId"
             ].$patch({ param, json: { selected: true } });

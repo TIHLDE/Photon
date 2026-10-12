@@ -1156,7 +1156,7 @@ export interface paths {
         };
         /**
          * Get the image of a photo taken at an event
-         * @description The image bytes of one photo, for the organizer. This is the only route that serves a photo before it is published: the asset is private and the open asset route answers 404 for it. Requires 'events:update' or 'events:manage', globally or for the arranging group.
+         * @description The image bytes of one photo, for the organizer. Pass `w` for a smaller WebP variant; it is generated on first request and kept. This is the only route that serves a photo before it is published: the asset is private and the open asset route answers 404 for it. Requires 'events:update' or 'events:manage', globally or for the arranging group.
          */
         get: operations["getWrappedPhotoImage"];
         put?: never;
@@ -9425,7 +9425,10 @@ export interface operations {
     };
     getWrappedPhotoImage: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Width of a resized WebP variant: 480 for a grid tile, 1920 for a lightbox. Omit for the stored photo. */
+                w?: "480" | "1920";
+            };
             header?: never;
             path: {
                 /** @description Event ID */

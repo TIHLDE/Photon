@@ -11,6 +11,23 @@ export const photoParamSchema = eventIdParamSchema.extend({
     photoId: z.uuid().meta({ description: "Photo ID" }),
 });
 
+/**
+ * The widths the organizer's image route serves. Two, not the whole list the
+ * asset route allows: every width is another stored object per photo, and the
+ * selection view only needs a tile and a lightbox.
+ */
+export const WRAPPED_IMAGE_WIDTHS = [480, 1920] as const;
+
+export const photoImageQuerySchema = z.object({
+    w: z
+        .enum(WRAPPED_IMAGE_WIDTHS.map(String) as ["480", "1920"])
+        .optional()
+        .meta({
+            description:
+                "Width of a resized WebP variant: 480 for a grid tile, 1920 for a lightbox. Omit for the stored photo.",
+        }),
+});
+
 export const wrappedCameraSchema = Schema(
     "WrappedCamera",
     z.object({
