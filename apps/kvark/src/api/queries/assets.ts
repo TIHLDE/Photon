@@ -36,7 +36,7 @@ export const getAssetMetadataQuery = (key: string) =>
  * surfaces a bare `TypeError` instead — the size has to come from the file we
  * tried to send rather than from the response.
  */
-function uploadErrorMessage(error: unknown, formData: FormData): string {
+export function uploadErrorMessage(error: unknown, formData: FormData): string {
     const file = formData.get("file");
     const name = file instanceof File ? `«${file.name}»` : "Filen";
     const size =
