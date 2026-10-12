@@ -1,8 +1,13 @@
-import { Outlet, createFileRoute } from "@tanstack/react-router";
+import {
+    Outlet,
+    createFileRoute,
+    useRouterState,
+} from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
 import { authQueryOptions } from "#/api/auth";
 import { getUnansweredEvaluationsQuery } from "#/api/queries/user";
+import { listOpenWrappedCamerasQuery } from "#/api/queries/wrapped";
 import { EventRulesConsent } from "#/components/event-rules-consent";
 import { FeedbackButton } from "#/components/feedback-button";
 import { NotificationBell } from "#/components/notification-bell";
@@ -12,6 +17,7 @@ import { SiteBottomBar } from "#/components/site-bottom-bar";
 import { SiteFooter } from "#/components/site-footer";
 import { SiteHeader } from "#/components/site-header";
 import { useSiteNavItems } from "#/components/site-nav-items";
+import { WrappedCameraBanner } from "#/components/wrapped-camera-banner";
 import { useEventRulesConsent } from "#/hooks/use-event-rules-consent";
 import { useSetPassword } from "#/hooks/use-set-password";
 
@@ -57,11 +63,29 @@ function AppLayout() {
         (session?.user.settings?.allergiesConfirmedAt == null ||
             (evaluations?.length ?? 0) > 0);
     const navItems = useSiteNavItems(isAuthenticated, !isPendingApproval);
+    // Den som står på et arrangement med åpent kamera skal ikke måtte lete
+    // etter det: snarveien ligger oppå bunnlinja så lenge kameraet er åpent
+    // og de har bilder igjen. Det mest aktuelle arrangementet kommer først
+    // fra API-et. På selve kamerasida er man allerede framme.
+    const { data: openCameras } = useQuery({
+        ...listOpenWrappedCamerasQuery(),
+        enabled: isAuthenticated && !isPendingApproval,
+    });
+    const pathname = useRouterState({
+        select: (state) => state.location.pathname,
+    });
+    const openCamera = openCameras?.[0];
+    const showCameraBanner =
+        openCamera !== undefined &&
+        pathname !== `/arrangementer/${openCamera.slug}/kamera`;
 
     return (
         // The bottom padding keeps the footer clear of the fixed bottom bar,
-        // which only exists below lg.
-        <div className="flex min-h-screen flex-col pb-16 lg:pb-0">
+        // which only exists below lg — and is taller while the camera banner
+        // sits on top of it.
+        <div
+            className={`flex min-h-screen flex-col lg:pb-0 ${showCameraBanner ? "pb-28" : "pb-16"}`}
+        >
             <SiteHeader
                 navItems={navItems}
                 user={currentUser}
@@ -109,6 +133,15 @@ function AppLayout() {
                 navItems={navItems}
                 isAuthenticated={isAuthenticated}
                 hasProfileTodo={hasProfileTodo}
+                banner={
+                    showCameraBanner ? (
+                        <WrappedCameraBanner
+                            slug={openCamera.slug}
+                            title={openCamera.title}
+                            shotsLeft={openCamera.shotsLeft}
+                        />
+                    ) : null
+                }
             />
         </div>
     );

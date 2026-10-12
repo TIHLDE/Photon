@@ -137,3 +137,26 @@ export const updateWrappedPhotoSchema = Schema(
         }),
     }),
 );
+
+export const openWrappedCamerasSchema = Schema(
+    "OpenWrappedCameras",
+    z.array(
+        z.object({
+            eventId: z.uuid(),
+            slug: z.string().meta({
+                description: "The event's slug, for linking to its camera",
+            }),
+            title: z.string(),
+            start: z.iso.datetime(),
+            end: z.iso.datetime(),
+            closesAt: z.iso.datetime().meta({
+                description:
+                    "When the camera closes: four hours after the event",
+            }),
+            shotsPerPerson: z.number().int(),
+            shotsLeft: z.number().int().meta({
+                description: "Photos the caller has left. Always at least 1.",
+            }),
+        }),
+    ),
+);

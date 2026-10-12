@@ -1,6 +1,6 @@
 import { schema } from "@photon/db";
 import type { RegistrationStatus } from "@photon/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq, gte, inArray, lte } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 import {
     DEFAULT_STATUSES,
@@ -187,4 +187,111 @@ export async function getCameraStatus(
     ]);
 
     return state && { ...state, canManage };
+}
+
+export type OpenCamera = {
+    eventId: string;
+    slug: string;
+    title: string;
+    start: Date;
+    end: Date;
+    closesAt: Date;
+    shotsPerPerson: number;
+    shotsLeft: number;
+};
+
+/**
+ * The cameras `userId` can take a photo with right now: turned on, inside
+ * their window, at an event they hold a spot on, with photos left.
+ *
+ * Ordered by how much it is "the event you are at": events under way come
+ * first, the one that started last on top — at 22:30 the party that began at
+ * 22:00 beats the meeting that ended at 20:00 and still has its camera open.
+ * Cameras that have opened ahead of their event follow, soonest first, and
+ * events that are over come last.
+ */
+export async function listOpenCameras(
+    db: AppContext["db"],
+    userId: string,
+    now: Date = new Date(),
+): Promise<OpenCamera[]> {
+    const cameras = await db
+        .select({
+            eventId: schema.event.id,
+            slug: schema.event.slug,
+            title: schema.event.title,
+            start: schema.event.start,
+            end: schema.event.end,
+            shotsPerPerson: schema.wrappedCamera.shotsPerPerson,
+        })
+        .from(schema.wrappedCamera)
+        .innerJoin(
+            schema.event,
+            eq(schema.event.id, schema.wrappedCamera.eventId),
+        )
+        .innerJoin(
+            schema.eventRegistration,
+            and(
+                eq(schema.eventRegistration.eventId, schema.event.id),
+                eq(schema.eventRegistration.userId, userId),
+                inArray(schema.eventRegistration.status, [...DEFAULT_STATUSES]),
+            ),
+        )
+        .where(
+            and(
+                eq(schema.wrappedCamera.enabled, true),
+                // The same window as `cameraWindow`, turned around so the
+                // comparison is against the stored columns.
+                lte(
+                    schema.event.start,
+                    new Date(now.getTime() + CAMERA_OPENS_BEFORE_START_MS),
+                ),
+                gte(
+                    schema.event.end,
+                    new Date(now.getTime() - CAMERA_CLOSES_AFTER_END_MS),
+                ),
+            ),
+        );
+    if (cameras.length === 0) return [];
+
+    const used = await db
+        .select({
+            eventId: schema.wrappedPhoto.eventId,
+            photos: count(),
+        })
+        .from(schema.wrappedPhoto)
+        .where(
+            and(
+                eq(schema.wrappedPhoto.uploadedById, userId),
+                inArray(
+                    schema.wrappedPhoto.eventId,
+                    cameras.map((camera) => camera.eventId),
+                ),
+            ),
+        )
+        .groupBy(schema.wrappedPhoto.eventId);
+    const usedByEvent = new Map(used.map((row) => [row.eventId, row.photos]));
+
+    // 0: under way, 1: camera open ahead of the event, 2: event over.
+    const rank = (camera: { start: Date; end: Date }) =>
+        now < camera.start ? 1 : now > camera.end ? 2 : 0;
+
+    return cameras
+        .map((camera) => ({
+            ...camera,
+            closesAt: cameraWindow(camera).closesAt,
+            shotsLeft: Math.max(
+                0,
+                camera.shotsPerPerson - (usedByEvent.get(camera.eventId) ?? 0),
+            ),
+        }))
+        .filter((camera) => camera.shotsLeft > 0)
+        .sort((a, b) => {
+            if (rank(a) !== rank(b)) return rank(a) - rank(b);
+            // Under way: the one that started last. Ahead: the one that starts
+            // first. Over: the one that ended last.
+            if (rank(a) === 0) return b.start.getTime() - a.start.getTime();
+            if (rank(a) === 1) return a.start.getTime() - b.start.getTime();
+            return b.end.getTime() - a.end.getTime();
+        });
 }

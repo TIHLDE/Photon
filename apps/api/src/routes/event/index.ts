@@ -30,6 +30,7 @@ import { updateRoute } from "./update";
 import {
     getWrappedCameraRoute,
     getWrappedPhotoImageRoute,
+    listOpenWrappedCamerasRoute,
     listWrappedPhotosRoute,
     setWrappedCameraRoute,
     updateWrappedPhotoRoute,
@@ -48,6 +49,9 @@ export const eventRoutes = route()
 
     // Kalender-abonnement (statisk /calendar-sti, må slå "/:eventId")
     .route("/", getCalendarFeedRoute)
+
+    // Wrapped: åpne kameraer (statisk /wrapped/open-sti, må slå "/:eventId")
+    .route("/", listOpenWrappedCamerasRoute)
 
     // Favorites (registered before "/:eventId" so the static /favorite path wins)
     .route("/favorite", updateFavoriteEventsRoute)
