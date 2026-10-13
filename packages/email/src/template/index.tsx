@@ -11,6 +11,7 @@ import FormSubmissionDeletedEmail from "./form-submission-deleted";
 import FormSubmissionEmail from "./form-submission";
 import NotificationMail from "./notification-mail";
 import OtpSignInEmail from "./otp-sign-in";
+import OverhortEmail from "./overhort";
 import RegistrationBlockedEmail from "./registration-blocked";
 import RegistrationConfirmedEmail from "./registration-confirmed";
 import RegistrationOpeningEmail from "./registration-opening";
@@ -37,6 +38,7 @@ const EMAIL_TEMPLATES = {
     FormSubmissionEmail,
     NotificationMail,
     OtpSignInEmail,
+    OverhortEmail,
     RegistrationBlockedEmail,
     RegistrationConfirmedEmail,
     RegistrationOpeningEmail,
@@ -85,6 +87,7 @@ export {
     FormSubmissionEmail,
     NotificationMail,
     OtpSignInEmail,
+    OverhortEmail,
     RegistrationBlockedEmail,
     RegistrationConfirmedEmail,
     RegistrationOpeningEmail,
