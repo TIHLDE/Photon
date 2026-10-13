@@ -133,7 +133,7 @@ export const searchUsersRoute = route().get(
         const { db } = c.get("ctx");
         const { q } = c.req.valid("query");
 
-        const exact = q.replace(/[\\%_]/g, "\\$&");
+        const exact = q.replace(/\s+/g, " ").replace(/[\\%_]/g, "\\$&");
         const users = await db
             .select({
                 id: schema.user.id,

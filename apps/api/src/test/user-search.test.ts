@@ -125,6 +125,28 @@ describe("user search", () => {
                 results.find((user) => user.id === noUsername.user.id)
                     ?.username,
             ).toBeNull();
+
+            const partialName = await ctx.auth.api.createUser({
+                body: {
+                    email: "partial-name-search@test.com",
+                    name: "Z Middle Search Exact",
+                    password: "test123!",
+                },
+            });
+            for (const q of [
+                "Z Search Exact",
+                "  z  SEARCH   exact  ",
+                "Z\tSearch\nExact",
+            ]) {
+                const response = await client.api.user.search.$get({
+                    query: { q },
+                });
+                expect(response.status).toBe(200);
+                expect((await response.json()).map((user) => user.id)).toEqual([
+                    exact.user.id,
+                    partialName.user.id,
+                ]);
+            }
         },
     );
 
