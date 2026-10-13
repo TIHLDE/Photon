@@ -100,34 +100,30 @@ function ToddelPage() {
                 title="TÖDDEL"
                 description="Les tidligere utgaver av TIHLDE sitt studentblad"
                 action={
-                    // PageHeader viser handlingsfeltet så lenge `action` er
-                    // satt, så null når ingen av knappene gjelder.
-                    canSubmitOverhort || canCreateIssue ? (
-                        <>
-                            {canSubmitOverhort ? (
-                                <OverhortDialog
-                                    onSubmit={async (values) => {
-                                        await submitOverhort.mutateAsync({
-                                            data: values,
-                                        });
-                                    }}
-                                />
-                            ) : null}
-                            {canCreateIssue ? (
-                                <Button
-                                    render={
-                                        <Link
-                                            to="/admin/toddel"
-                                            search={{ ny: true }}
-                                        />
-                                    }
-                                >
-                                    <PlusIcon className="size-4" />
-                                    Ny utgave
-                                </Button>
-                            ) : null}
-                        </>
-                    ) : null
+                    <>
+                        {canSubmitOverhort ? (
+                            <OverhortDialog
+                                onSubmit={async (values) => {
+                                    await submitOverhort.mutateAsync({
+                                        data: values,
+                                    });
+                                }}
+                            />
+                        ) : null}
+                        {canCreateIssue ? (
+                            <Button
+                                render={
+                                    <Link
+                                        to="/admin/toddel"
+                                        search={{ ny: true }}
+                                    />
+                                }
+                            >
+                                <PlusIcon className="size-4" />
+                                Ny utgave
+                            </Button>
+                        ) : null}
+                    </>
                 }
             />
 

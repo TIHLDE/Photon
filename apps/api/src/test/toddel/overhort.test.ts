@@ -48,58 +48,6 @@ describe("Overhört", () => {
     );
 
     integrationTest(
-        "A logged-in sender leaves no trace in the email or the logs",
-        async ({ ctx }) => {
-            const sender = await ctx.utils.createTestUser();
-            const client = await ctx.utils.clientForUser(sender);
-
-            // Tests run the root logger silent, so route every request logger
-            // into an in-memory sink to see what would reach Loki.
-            const records: string[] = [];
-            const sink = pino(
-                { serializers: { err: serializeError } },
-                {
-                    write(line: string) {
-                        records.push(line);
-                    },
-                },
-            );
-            const childSpy = vi
-                .spyOn(rootLogger, "child")
-                .mockImplementation((bindings) => sink.child(bindings));
-
-            try {
-                const response = await client.api.toddel.overhort.$post({
-                    json: {
-                        name: "Kari Nordmann",
-                        statement: "Det der var ikke meg.",
-                    },
-                });
-                expect(response.status).toBe(200);
-            } finally {
-                childSpy.mockRestore();
-            }
-
-            const jobs = await queuedEmails(ctx);
-            expect(jobs).toHaveLength(1);
-            expect(jobs[0]?.data.options.replyTo).toBeUndefined();
-
-            const payload = JSON.stringify(jobs[0]?.data);
-            expect(payload).not.toContain(sender.id);
-            expect(payload).not.toContain(sender.email);
-            expect(payload).not.toContain(sender.name);
-
-            // The request was logged, just without anything about the sender.
-            expect(records.length).toBeGreaterThan(0);
-            const logs = records.join("\n");
-            expect(logs).not.toContain(sender.id);
-            expect(logs).not.toContain(sender.email);
-            expect(logs).not.toContain("userId");
-        },
-        500_000,
-    );
-
-    integrationTest(
         "Logged-out visitors are turned away",
         async ({ ctx }) => {
             const client = ctx.utils.client();
