@@ -87,6 +87,68 @@ describe("notification list", () => {
     );
 });
 
+describe("mark all notifications as read", () => {
+    integrationTest(
+        "marks only the caller's unread notifications as read",
+        async ({ ctx }) => {
+            const mine = await ctx.utils.createTestUser();
+            const theirs = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(mine);
+
+            await ctx.db.insert(schema.notification).values([
+                {
+                    userId: mine.id,
+                    title: "Ulest 1",
+                    description: "",
+                    isRead: false,
+                },
+                {
+                    userId: mine.id,
+                    title: "Ulest 2",
+                    description: "",
+                    isRead: false,
+                },
+                {
+                    userId: mine.id,
+                    title: "Lest",
+                    description: "",
+                    isRead: true,
+                },
+                {
+                    userId: theirs.id,
+                    title: "Ikke min",
+                    description: "",
+                    isRead: false,
+                },
+            ]);
+
+            const response = await client.api.notification["read-all"].$patch();
+            expect(response.status).toBe(200);
+            // The already-read one is not counted as updated.
+            expect((await response.json()).updatedCount).toBe(2);
+
+            const unread = await client.api.notification.$get({
+                query: { isRead: "false" },
+            });
+            expect((await unread.json()).totalCount).toBe(0);
+
+            const theirsClient = await ctx.utils.clientForUser(theirs);
+            const theirsUnread = await theirsClient.api.notification.$get({
+                query: { isRead: "false" },
+            });
+            expect((await theirsUnread.json()).totalCount).toBe(1);
+        },
+    );
+
+    integrationTest("returns 401 for unauthenticated user", async ({ ctx }) => {
+        const client = ctx.utils.client();
+
+        const response = await client.api.notification["read-all"].$patch();
+
+        expect(response.status).toBe(401);
+    });
+});
+
 describe("push notification devices", () => {
     integrationTest(
         "registering an already-known token moves it to the new user",
