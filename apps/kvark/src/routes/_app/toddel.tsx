@@ -105,7 +105,13 @@ function ToddelPage() {
                             {canSubmitOverhort ? (
                                 <Button
                                     className="ph-no-capture"
-                                    render={<a href={OVERHORT_FORM_URL} />}
+                                    render={
+                                        <a
+                                            href={OVERHORT_FORM_URL}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        />
+                                    }
                                 >
                                     Send inn til Overhört
                                 </Button>
