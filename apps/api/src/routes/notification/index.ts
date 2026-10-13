@@ -2,6 +2,7 @@ import { route } from "../../lib/route";
 import { deleteNotificationRoute } from "./delete";
 import { registerDeviceRoute, unregisterDeviceRoute } from "./device";
 import { listNotificationsRoute } from "./list";
+import { markAllReadNotificationsRoute } from "./mark-all-read";
 import { markReadNotificationRoute } from "./mark-read";
 
 /**
@@ -14,4 +15,5 @@ export const notificationRoutes = route()
     .route("/", unregisterDeviceRoute)
     .route("/", listNotificationsRoute)
     .route("/", deleteNotificationRoute)
+    .route("/", markAllReadNotificationsRoute)
     .route("/", markReadNotificationRoute);
