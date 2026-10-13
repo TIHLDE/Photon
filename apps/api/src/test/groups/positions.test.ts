@@ -651,7 +651,7 @@ describe("group positions", () => {
         );
 
         integrationTest(
-            "leadership change moves the verv and prunes the old leader from HS",
+            "leadership change moves the verv and keeps the old leader in HS",
             async ({ ctx }) => {
                 const oldLeader = await ctx.utils.createTestUser();
                 const newLeader = await ctx.utils.createTestUser();
@@ -707,14 +707,13 @@ describe("group positions", () => {
                     );
                 expect(holder?.userId).toBe(newLeader.id);
 
-                // Old leader is out of HS, new leader is in
                 const oldHs = await ctx.db.query.groupMembership.findFirst({
                     where: and(
                         eq(schema.groupMembership.userId, oldLeader.id),
                         eq(schema.groupMembership.groupSlug, "hs"),
                     ),
                 });
-                expect(oldHs).toBeUndefined();
+                expect(oldHs).toBeDefined();
                 const newHs = await ctx.db.query.groupMembership.findFirst({
                     where: and(
                         eq(schema.groupMembership.userId, newLeader.id),
