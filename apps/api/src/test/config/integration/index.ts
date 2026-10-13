@@ -159,19 +159,20 @@ async function createWorkerDatabase(): Promise<WorkerDatabase> {
 
     const resetSql = [
         // Skips FK triggers so seeded rows can go back in any order.
-        "SET session_replication_role = replica;",
+        "SET LOCAL session_replication_role = replica;",
         tables.length > 0
             ? `TRUNCATE ${tables.map(({ name }) => `public."${name}"`).join(", ")};`
             : "",
         ...restoreSeed,
         ...restoreSequences,
-        "SET session_replication_role = DEFAULT;",
     ].join("\n");
 
     return {
         pglite,
         reset: async () => {
-            await pglite.exec(resetSql);
+            await pglite.transaction(async (tx) => {
+                await tx.exec(resetSql);
+            });
         },
     };
 }
