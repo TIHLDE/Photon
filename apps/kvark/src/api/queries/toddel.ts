@@ -1,5 +1,5 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
-import type { CreateToddel, Overhort, UpdateToddel } from "@tihlde/sdk";
+import type { CreateToddel, UpdateToddel } from "@tihlde/sdk";
 import { apiClient } from "#/api/api-client";
 
 const ToddelQueryKeys = {
@@ -43,9 +43,4 @@ export const deleteToddelMutation = mutationOptions({
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries(getToddelIssuesQuery());
     },
-});
-
-export const submitOverhortMutation = mutationOptions({
-    mutationFn: ({ data }: { data: Overhort }) =>
-        apiClient.post("/api/toddel/overhort", { json: data }),
 });
