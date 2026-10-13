@@ -34,17 +34,6 @@ export class RedisCache extends BaseCache {
         }
     }
 
-    async increment(key: string, ttl: number): Promise<number> {
-        // One transaction, so a counter can never be left without an expiry
-        // and block forever. NX: only the first hit in a window sets it.
-        const [count] = await this.#redis
-            .multi()
-            .incr(key)
-            .expire(key, ttl, "NX")
-            .exec();
-        return Number(count);
-    }
-
     async delete(key: string) {
         const redis = this.#redis;
         await redis.del(key);

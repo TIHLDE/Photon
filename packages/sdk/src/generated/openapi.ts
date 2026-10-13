@@ -2444,7 +2444,7 @@ export interface paths {
         put?: never;
         /**
          * Submit to Overhört
-         * @description Public, anonymous endpoint behind the Overhört button on the TÖDDEL page. Emails the submission to TÖDDEL's editor. Nothing is stored, and nothing about the sender is read, sent or logged. Limited to a fixed number of submissions per hour in total, not per client.
+         * @description Anonymous endpoint behind the Overhört button on the TÖDDEL page. Emails the submission to TÖDDEL's editor. Requires a signed-in, approved member, but nothing is stored, and nothing about the sender is sent or logged.
          */
         post: operations["submitOverhort"];
         delete?: never;
@@ -13772,12 +13772,23 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Too many submissions in total this hour */
-            429: {
+            /** @description Authentication required */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };

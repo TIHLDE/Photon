@@ -1,4 +1,6 @@
 import type { EmailQueueJobData } from "@photon/core/services/email";
+import { schema } from "@photon/db";
+import { eq } from "drizzle-orm";
 import { EMAIL_QUEUE_NAME } from "@photon/core/services/queue";
 import { pino } from "pino";
 import { describe, expect, vi } from "vitest";
@@ -13,9 +15,10 @@ async function queuedEmails(ctx: IntegrationTestContext) {
 
 describe("Overhört", () => {
     integrationTest(
-        "An anonymous submission is emailed to the editor",
+        "A member's submission is emailed to the editor",
         async ({ ctx }) => {
-            const client = ctx.utils.client();
+            const member = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(member);
 
             const response = await client.api.toddel.overhort.$post({
                 json: {
@@ -97,34 +100,36 @@ describe("Overhört", () => {
     );
 
     integrationTest(
-        "Stops at 50 submissions an hour, even when they arrive at once",
+        "Logged-out visitors are turned away",
         async ({ ctx }) => {
-            // Two separate clients: the cap is global, not per sender.
-            const first = ctx.utils.client();
-            const second = ctx.utils.client();
+            const client = ctx.utils.client();
 
-            // All in flight together, so a read-then-write counter would let
-            // far more than 50 through.
-            const responses = await Promise.all(
-                Array.from({ length: 60 }, (_, i) =>
-                    (i % 2 === 0 ? first : second).api.toddel.overhort.$post({
-                        json: { name: `Nummer ${i}`, statement: "Sitat" },
-                    }),
-                ),
-            );
-            // 429 comes from a thrown HTTPException, so the typed client doesn't
-            // list it among the route's statuses.
-            const statuses: number[] = responses.map(
-                (response) => response.status,
-            );
+            const response = await client.api.toddel.overhort.$post({
+                json: { name: "Ola Nordmann", statement: "Sitat" },
+            });
 
-            expect(statuses.filter((status) => status === 200)).toHaveLength(
-                50,
-            );
-            expect(statuses.filter((status) => status === 429)).toHaveLength(
-                10,
-            );
-            expect(await queuedEmails(ctx)).toHaveLength(50);
+            expect(response.status).toBe(401);
+            expect(await queuedEmails(ctx)).toHaveLength(0);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "Accounts waiting for approval are turned away",
+        async ({ ctx }) => {
+            const pending = await ctx.utils.createTestUser();
+            await ctx.db
+                .update(schema.user)
+                .set({ approvalStatus: "pending" })
+                .where(eq(schema.user.id, pending.id));
+            const client = await ctx.utils.clientForUser(pending);
+
+            const response = await client.api.toddel.overhort.$post({
+                json: { name: "Ola Nordmann", statement: "Sitat" },
+            });
+
+            expect(response.status).toBe(403);
+            expect(await queuedEmails(ctx)).toHaveLength(0);
         },
         500_000,
     );
@@ -132,7 +137,8 @@ describe("Overhört", () => {
     integrationTest(
         "Both fields are required",
         async ({ ctx }) => {
-            const client = ctx.utils.client();
+            const member = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(member);
 
             const response = await client.api.toddel.overhort.$post({
                 json: { name: "", statement: "   " },

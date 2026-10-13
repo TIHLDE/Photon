@@ -1,10 +1,11 @@
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PlusIcon } from "lucide-react";
 import { Suspense } from "react";
 import { Button } from "@tihlde/ui/ui/button";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 
+import { authQueryOptions } from "#/api/auth";
 import {
     getToddelIssuesQuery,
     submitOverhortMutation,
@@ -87,6 +88,11 @@ function ToddelPage() {
     // uansett den enkelte forespørselen som ikke treffer.
     const canCreateIssue = useAnyScopePermission(TODDEL_CREATE_PERMISSIONS);
     const submitOverhort = useMutation(submitOverhortMutation);
+    // Samme krav som API-et: innlogget og godkjent. Hvem som sendte, havner
+    // likevel ingen steder.
+    const { data: session } = useQuery(authQueryOptions);
+    const canSubmitOverhort =
+        session?.user != null && session.user.isPendingApproval !== true;
 
     return (
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
@@ -94,28 +100,34 @@ function ToddelPage() {
                 title="TÖDDEL"
                 description="Les tidligere utgaver av TIHLDE sitt studentblad"
                 action={
-                    <>
-                        <OverhortDialog
-                            onSubmit={async (values) => {
-                                await submitOverhort.mutateAsync({
-                                    data: values,
-                                });
-                            }}
-                        />
-                        {canCreateIssue ? (
-                            <Button
-                                render={
-                                    <Link
-                                        to="/admin/toddel"
-                                        search={{ ny: true }}
-                                    />
-                                }
-                            >
-                                <PlusIcon className="size-4" />
-                                Ny utgave
-                            </Button>
-                        ) : null}
-                    </>
+                    // PageHeader viser handlingsfeltet så lenge `action` er
+                    // satt, så null når ingen av knappene gjelder.
+                    canSubmitOverhort || canCreateIssue ? (
+                        <>
+                            {canSubmitOverhort ? (
+                                <OverhortDialog
+                                    onSubmit={async (values) => {
+                                        await submitOverhort.mutateAsync({
+                                            data: values,
+                                        });
+                                    }}
+                                />
+                            ) : null}
+                            {canCreateIssue ? (
+                                <Button
+                                    render={
+                                        <Link
+                                            to="/admin/toddel"
+                                            search={{ ny: true }}
+                                        />
+                                    }
+                                >
+                                    <PlusIcon className="size-4" />
+                                    Ny utgave
+                                </Button>
+                            ) : null}
+                        </>
+                    ) : null
                 }
             />
 
