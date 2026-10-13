@@ -269,11 +269,9 @@ export async function demoteOtherLeaders(
     const group = await getGroup(ctx, groupSlug);
     if (!group) return;
 
-    // Avgåtte undergruppeledere mister HS-plassen på samme måte som når de
-    // settes ned manuelt eller meldes ut.
     if (isSubgroupType(group.type)) {
         for (const { userId } of outgoing) {
-            await syncSubgroupLeaderOutOfHs(ctx, userId, groupSlug);
+            await releaseLinkedLeaderVerv(ctx, userId, groupSlug);
         }
         return;
     }
@@ -348,10 +346,8 @@ export async function removeUserFromGroup(
     // just deleted.
     await removeUserPositionsInGroup(ctx, userId, groupSlug);
 
-    // A departing subgroup leader forfeits the HS seat too (unless something
-    // else warrants it — see pruneHsMembershipIfUnwarranted)
     if (wasSubgroupLeader) {
-        await syncSubgroupLeaderOutOfHs(ctx, userId, groupSlug);
+        await releaseLinkedLeaderVerv(ctx, userId, groupSlug);
     }
 }
 
@@ -419,7 +415,7 @@ export async function updateGroupMemberRole(
         if (newRole === "leader") {
             await syncSubgroupLeaderIntoHs(ctx, userId, group);
         } else {
-            await syncSubgroupLeaderOutOfHs(ctx, userId, groupSlug);
+            await releaseLinkedLeaderVerv(ctx, userId, groupSlug);
         }
     }
 
@@ -439,8 +435,8 @@ export async function updateGroupMemberRole(
 // fly as "Leder av <gruppe>" if none is linked yet — minister titles like
 // Teknologiminister are linked via groupPosition.linkedGroupSlug and are
 // then reused instead). When they lose the leadership, the verv is taken
-// back and the hs membership is removed unless something else warrants it
-// (another subgroup leadership or another hs verv, e.g. an AU title).
+// back but the hs membership stays: an outgoing leader sits in HS for four
+// more weeks alongside the successor, and is removed from hs by hand after.
 // =============================================================================
 
 export const HS_GROUP_SLUG = "hs";
@@ -564,10 +560,10 @@ export async function syncSubgroupLeaderIntoHs(
 
 /**
  * Called when `userId` STOPS being leader of subgroup `groupSlug`. Takes the
- * linked leader-verv back (if they hold it) and prunes the hs membership if
- * nothing else warrants it.
+ * linked leader-verv back (if they hold it). The hs membership is left alone
+ * on purpose — see the overlap rule above.
  */
-async function syncSubgroupLeaderOutOfHs(
+async function releaseLinkedLeaderVerv(
     ctx: AppContext,
     userId: string,
     groupSlug: string,
@@ -583,7 +579,6 @@ async function syncSubgroupLeaderOutOfHs(
                 ),
             );
     }
-    await pruneHsMembershipIfUnwarranted(ctx, userId);
 }
 
 /**
