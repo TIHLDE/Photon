@@ -1529,6 +1529,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/notification/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Mark all notifications as read
+         * @description Mark every unread notification of the authenticated user as read. Returns how many notifications were updated.
+         */
+        patch: operations["markAllNotificationsRead"];
+        trace?: never;
+    };
     "/api/notification/{id}/read": {
         parameters: {
             query?: never;
@@ -4930,6 +4950,10 @@ export interface components {
         DeleteNotificationResponse: {
             /** @description Whether deletion was successful */
             success: boolean;
+        };
+        MarkAllNotificationsReadResponse: {
+            /** @description Number of notifications marked as read */
+            updatedCount: number;
         };
         MarkReadResponse: {
             /** @description Notification ID */
@@ -10777,6 +10801,44 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    markAllNotificationsRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Notifications updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkAllNotificationsReadResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };

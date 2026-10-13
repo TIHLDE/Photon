@@ -36,7 +36,7 @@ jobs:
                         - '!scripts/**'
     check:
         name: Check Code Quality
-        runs-on: blacksmith-2vcpu-ubuntu-2404
+        runs-on: blacksmith-4vcpu-ubuntu-2404
         steps:
             - name: Checkout code
               uses: actions/checkout@v3
@@ -65,7 +65,7 @@ jobs:
         name: API Tests (${{ matrix.shard }})
         needs: [check, changes]
         if: needs.changes.outputs.backend == 'true'
-        runs-on: blacksmith-2vcpu-ubuntu-2404
+        runs-on: blacksmith-4vcpu-ubuntu-2404
         strategy:
             fail-fast: false
             matrix:
@@ -79,8 +79,6 @@ jobs:
               uses: tihlde/tihlde-workflows/.github/setup-bun@v1
 
             - name: Run API test shard
-              env:
-                  MAX_TEST_WORKERS: 2
               run: bun run test -- --filter=@photon/api --log-order=stream -- --shard=${{ matrix.shard }}
 
     other-tests:

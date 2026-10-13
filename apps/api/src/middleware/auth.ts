@@ -150,22 +150,12 @@ function assertApproved(user: AuthUser): void {
  * `allowPendingApproval` lets an account that has not been approved yet
  * through — only for the handful of routes that exist to serve exactly that
  * person, such as their own settings.
- *
- * `traceUser: false` leaves the request logger untagged, so nothing in the
- * logs ties the request to the caller. See {@link requireAuthUntraced}.
  */
-const authMiddleware = (options: {
-    allowPendingApproval: boolean;
-    traceUser?: boolean;
-}) =>
+const authMiddleware = (options: { allowPendingApproval: boolean }) =>
     createMiddleware<{ Variables: AuthVariables & { logger: LoggerType } }>(
         async (c, next) => {
             const guard = (user: AuthUser) => {
                 if (!options.allowPendingApproval) assertApproved(user);
-            };
-            const tagLogger = (fields: Record<string, string>) => {
-                if (options.traceUser === false) return;
-                c.set("logger", c.get("logger").child(fields));
             };
             const { auth } = c.get("ctx");
             const bearer = getBearerTokenFromHeader(
@@ -185,12 +175,15 @@ const authMiddleware = (options: {
                     c.set("user", hydrated.user);
                     c.set("session", hydrated.session);
                     setVerifiedOAuthClient(c, verified);
-                    tagLogger({
-                        userId: verified.sub,
-                        ...(verified.clientId
-                            ? { oauthClientId: verified.clientId }
-                            : {}),
-                    });
+                    c.set(
+                        "logger",
+                        c.get("logger").child({
+                            userId: verified.sub,
+                            ...(verified.clientId
+                                ? { oauthClientId: verified.clientId }
+                                : {}),
+                        }),
+                    );
 
                     await next();
                     return;
@@ -202,12 +195,15 @@ const authMiddleware = (options: {
                         userFromClaims(verified.sub, verified.payload),
                     );
                     setVerifiedOAuthClient(c, verified);
-                    tagLogger({
-                        userId: verified.sub,
-                        ...(verified.clientId
-                            ? { oauthClientId: verified.clientId }
-                            : {}),
-                    });
+                    c.set(
+                        "logger",
+                        c.get("logger").child({
+                            userId: verified.sub,
+                            ...(verified.clientId
+                                ? { oauthClientId: verified.clientId }
+                                : {}),
+                        }),
+                    );
 
                     await next();
                     return;
@@ -222,7 +218,7 @@ const authMiddleware = (options: {
             guard(session.user as AuthUser);
             c.set("user", session.user);
             c.set("session", session.session);
-            tagLogger({ userId: session.user.id });
+            c.set("logger", c.get("logger").child({ userId: session.user.id }));
 
             await next();
         },
@@ -230,26 +226,6 @@ const authMiddleware = (options: {
 
 export const requireAuth = describeMiddleware(
     authMiddleware({ allowPendingApproval: false }),
-    describeMiddlewareRoute()
-        .errorResponses([
-            HTTPAppException.Unauthorized(),
-            HTTPAppException.Forbidden(
-                "Kontoen din venter på godkjenning fra en administrator.",
-            ),
-        ])
-        .getSpec(),
-);
-
-/**
- * `requireAuth` that leaves the user out of the request logs.
- *
- * For routes whose whole point is that the caller cannot be traced, like the
- * anonymous Overhört form: only signed-in, approved members may use it, but
- * nothing in the logs says who did. The user is still on the context, so a
- * route using this must not log or send anything from it either.
- */
-export const requireAuthUntraced = describeMiddleware(
-    authMiddleware({ allowPendingApproval: false, traceUser: false }),
     describeMiddlewareRoute()
         .errorResponses([
             HTTPAppException.Unauthorized(),

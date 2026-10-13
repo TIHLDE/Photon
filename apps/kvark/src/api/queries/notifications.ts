@@ -1,4 +1,5 @@
 import {
+    type QueryClient,
     infiniteQueryOptions,
     mutationOptions,
     queryOptions,
@@ -73,24 +74,28 @@ export const getNotificationsInfiniteQuery = (
             lastPage.items.length < pageSize ? null : lastPage.nextPage,
     });
 
+/** Både lesing og sletting endrer listene og antallet uleste. */
+function invalidateNotifications(client: QueryClient) {
+    client.invalidateQueries({
+        queryKey: [...NotificationQueryKeys.list],
+        exact: false,
+    });
+    client.invalidateQueries({
+        queryKey: [...NotificationQueryKeys.listInfinite],
+        exact: false,
+    });
+    client.invalidateQueries({
+        queryKey: NotificationQueryKeys.unreadCount,
+    });
+}
+
 export const deleteNotificationMutation = mutationOptions({
     mutationFn: ({ notificationId }: { notificationId: string }) =>
         apiClient.delete("/api/notification/{id}", {
             params: { id: notificationId },
         }),
     onSuccess(_, __, ___, ctx) {
-        ctx.client.invalidateQueries({
-            queryKey: [...NotificationQueryKeys.list],
-            exact: false,
-        });
-        ctx.client.invalidateQueries({
-            queryKey: [...NotificationQueryKeys.listInfinite],
-            exact: false,
-        });
-        // Både lesing og sletting endrer antallet uleste.
-        ctx.client.invalidateQueries({
-            queryKey: NotificationQueryKeys.unreadCount,
-        });
+        invalidateNotifications(ctx.client);
     },
 });
 
@@ -107,17 +112,13 @@ export const markNotificationReadMutation = mutationOptions({
             json: { isRead },
         }),
     onSuccess(_, __, ___, ctx) {
-        ctx.client.invalidateQueries({
-            queryKey: [...NotificationQueryKeys.list],
-            exact: false,
-        });
-        ctx.client.invalidateQueries({
-            queryKey: [...NotificationQueryKeys.listInfinite],
-            exact: false,
-        });
-        // Både lesing og sletting endrer antallet uleste.
-        ctx.client.invalidateQueries({
-            queryKey: NotificationQueryKeys.unreadCount,
-        });
+        invalidateNotifications(ctx.client);
+    },
+});
+
+export const markAllNotificationsReadMutation = mutationOptions({
+    mutationFn: () => apiClient.patch("/api/notification/read-all"),
+    onSuccess(_, __, ___, ctx) {
+        invalidateNotifications(ctx.client);
     },
 });

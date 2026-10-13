@@ -604,7 +604,7 @@ function EventDetailPage() {
                                                   : "Prioritert"
                                           }
                                           value={
-                                              <span className="flex flex-wrap justify-end gap-1.5">
+                                              <span className="flex flex-wrap justify-start gap-1.5">
                                                   {priorityLabels.map(
                                                       (label) => (
                                                           <Badge

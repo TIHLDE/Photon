@@ -146,6 +146,7 @@ export type JobList = Schemas["JobList"];
 export type JobListItem = Schemas["JobListItem"];
 export type Law = Schemas["Law"];
 export type LawList = Schemas["LawList"];
+export type MarkAllNotificationsReadResponse = Schemas["MarkAllNotificationsReadResponse"];
 export type MarkNotificationRead = Schemas["MarkNotificationRead"];
 export type MarkReadResponse = Schemas["MarkReadResponse"];
 export type MyEventHistory = Schemas["MyEventHistory"];

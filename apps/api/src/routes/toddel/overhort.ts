@@ -2,8 +2,8 @@ import { validator } from "hono-openapi";
 import { env } from "~/lib/env";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { requireAuthUntraced } from "~/middleware/auth";
 import { overhortResponseSchema, overhortSchema } from "./schema";
+import { requireAuth } from "~/middleware/auth";
 
 export const overhortRoute = route().post(
     "/overhort",
@@ -21,9 +21,7 @@ export const overhortRoute = route().post(
         })
         .badRequest({ description: "Invalid input" })
         .build(),
-    // Members only, but untraced: plain requireAuth would tag the request
-    // logger with the sender's user ID.
-    requireAuthUntraced,
+    requireAuth,
     validator("json", overhortSchema),
     async (c) => {
         const body = c.req.valid("json");

@@ -1,3 +1,4 @@
+import { cn } from "@tihlde/ui/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
@@ -470,18 +471,23 @@ function buildTimeline(props: EventRegistrationCardProps): TimelinePoint[] {
 
 function RegistrationTimeline({ points }: { points: TimelinePoint[] }) {
     return (
-        // Med tre punkter (Åpnet / Avmelding / Lukker) er det ikke plass på
-        // én linje på mobil. `flex-wrap` lar punktene stable seg i stedet for
-        // å presse kortet — og dermed hele sida — ut av skjermen. Streken
-        // gir bare mening når punktene faktisk står ved siden av hverandre,
-        // så den skjules på de smaleste skjermene.
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+        // Samme oppsett på alle skjermstørrelser: første punkt helt til
+        // venstre, siste helt til høyre og en strek imellom. Punktene har
+        // `min-w-0` så teksten bryter i stedet for å presse kortet — og
+        // dermed hele sida — ut av skjermen når det er tre punkter på mobil.
+        <div className="flex items-center gap-2 text-sm sm:gap-3">
             {points.map((point, i) => (
                 <Fragment key={point.label}>
                     {i > 0 ? (
-                        <div className="hidden h-px flex-1 bg-border sm:block" />
+                        <div className="h-px min-w-2 flex-1 bg-border" />
                     ) : null}
-                    <div className="flex min-w-0 flex-col gap-0.5">
+                    <div
+                        className={cn(
+                            "flex min-w-0 flex-col gap-0.5",
+                            i > 0 && i === points.length - 1 && "text-right",
+                            i > 0 && i < points.length - 1 && "text-center",
+                        )}
+                    >
                         <span>{point.label}</span>
                         <span className="text-muted-foreground">
                             {point.day}

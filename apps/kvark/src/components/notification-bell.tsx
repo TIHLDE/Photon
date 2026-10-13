@@ -10,13 +10,14 @@ import {
 } from "@tihlde/ui/ui/popover";
 import { Separator } from "@tihlde/ui/ui/separator";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
-import { Bell } from "lucide-react";
+import { Bell, CheckCheck } from "lucide-react";
 import { useState } from "react";
 
 import {
     deleteNotificationMutation,
     getNotificationsInfiniteQuery,
     getUnreadNotificationCountQuery,
+    markAllNotificationsReadMutation,
     markNotificationReadMutation,
 } from "#/api/queries/notifications";
 import { LoadMoreButton } from "#/components/load-more-button";
@@ -48,6 +49,7 @@ export function NotificationBell() {
         });
 
     const markRead = useMutation(markNotificationReadMutation);
+    const markAllRead = useMutation(markAllNotificationsReadMutation);
     const remove = useMutation(deleteNotificationMutation);
 
     const notifications = data?.pages.flatMap((page) => page.items) ?? [];
@@ -88,11 +90,22 @@ export function NotificationBell() {
                 <PopoverHeader className="flex-row items-center justify-between gap-2 p-3">
                     <PopoverTitle>Varsler</PopoverTitle>
                     {unreadCount > 0 ? (
-                        <span className="text-xs text-muted-foreground">
-                            {unreadCount === 1
-                                ? "1 ulest"
-                                : `${unreadCount} uleste`}
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                                {unreadCount === 1
+                                    ? "1 ulest"
+                                    : `${unreadCount} uleste`}
+                            </span>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={markAllRead.isPending}
+                                onClick={() => markAllRead.mutate()}
+                            >
+                                <CheckCheck />
+                                Marker alle som lest
+                            </Button>
+                        </div>
                     ) : null}
                 </PopoverHeader>
                 <Separator />
