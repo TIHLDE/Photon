@@ -5,6 +5,7 @@ import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
+import { canSeeFeedbackAuthor, getFeedbackAuthors } from "./author";
 import {
     PaginationSchema,
     getNextPage,
@@ -58,8 +59,9 @@ export const listRoute = route().get(
         const totalPages = getTotalPages(totalCount, pageSize);
 
         /**
-         * The author is selected only to answer "did I file this?" — feedback
-         * is shown anonymously, so no name or picture leaves the database.
+         * The author id is selected to answer "did I file this?". Feedback is
+         * anonymous to regular members: names are looked up below, and only
+         * for moderators.
          *
          * Vote counts are aggregated in the query rather than by loading every
          * vote row: the page shows a running tally per item and nothing else,
@@ -105,6 +107,14 @@ export const listRoute = route().get(
             .limit(pageSize)
             .offset(getPageOffset(page, pageSize));
 
+        const canSeeAuthor = await canSeeFeedbackAuthor(c.get("ctx"), userId);
+        const authors = canSeeAuthor
+            ? await getFeedbackAuthors(
+                  db,
+                  rows.map((row) => row.authorId),
+              )
+            : new Map();
+
         const items = rows.map((row) => ({
             id: row.id,
             type: row.type,
@@ -112,6 +122,10 @@ export const listRoute = route().get(
             title: row.title,
             description: row.description,
             isAuthor: row.authorId === userId,
+            // `undefined` is dropped from the JSON, so non-moderators get no key at all.
+            author: canSeeAuthor
+                ? (authors.get(row.authorId) ?? null)
+                : undefined,
             upvotes: row.upvotes,
             downvotes: row.downvotes,
             myVote: row.myVote,

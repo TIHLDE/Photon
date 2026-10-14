@@ -4440,6 +4440,10 @@ export interface components {
         DeleteEventReactionResponse: {
             message: string;
         };
+        FeedbackAuthor: {
+            id: string;
+            name: string;
+        };
         FeedbackItem: {
             /**
              * Format: uuid
@@ -4452,8 +4456,10 @@ export interface components {
             status: "open" | "in_progress" | "closed" | "rejected";
             title: string;
             description: string;
-            /** @description Whether the requesting user filed this. Feedback is anonymous: the author is never exposed to anyone else. */
+            /** @description Whether the requesting user filed this. Feedback is anonymous to regular members. */
             isAuthor: boolean;
+            /** @description Who filed this. Only present for users with 'feedback:update' or 'feedback:manage'; omitted for everyone else. */
+            author?: components["schemas"]["FeedbackAuthor"] | null;
             upvotes: number;
             downvotes: number;
             /** @description The requesting user's own vote, if any */

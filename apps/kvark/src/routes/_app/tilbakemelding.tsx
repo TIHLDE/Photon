@@ -185,9 +185,10 @@ function VoteButtons({ item }: { item: FeedbackItem }) {
 function FeedbackRow({ item }: { item: FeedbackItem }) {
     const [open, setOpen] = useState(false);
     const canModerate = usePermission(MODERATE_PERMISSIONS);
-    // Feedback is anonymous, so there is no author id to compare against —
-    // the API tells us whether this row is ours.
+    // Feedback is anonymous to regular users. The API tells us whether this
+    // row is ours, and only sends `author` to users with moderate permissions.
     const canDelete = canModerate || item.isAuthor;
+    const authorName = canModerate ? (item.author?.name ?? null) : null;
 
     const remove = useMutation(deleteFeedbackMutation);
     const update = useMutation(updateFeedbackMutation);
@@ -224,7 +225,7 @@ function FeedbackRow({ item }: { item: FeedbackItem }) {
 
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-muted-foreground">
-                        {item.isAuthor ? "Din" : "Anonym"} ·{" "}
+                        {item.isAuthor ? "Din" : (authorName ?? "Anonym")} ·{" "}
                         {formatDate(item.createdAt)}
                     </p>
 
@@ -369,7 +370,9 @@ function CreateFeedbackDialog({
                         <DialogDescription>
                             {isBug
                                 ? "Fortell hva som ikke virker, så ser Index på det."
-                                : "Foreslå noe du vil ha på nettsiden."}
+                                : "Foreslå noe du vil ha på nettsiden."}{" "}
+                            Andre brukere ser deg som anonym, men Index kan se
+                            hvem som har sendt inn.
                         </DialogDescription>
                     </DialogHeader>
 

@@ -1,4 +1,3 @@
-import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { and, eq, sql } from "drizzle-orm";
 import { validator } from "hono-openapi";
@@ -9,6 +8,7 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
+import { canSeeFeedbackAuthor, getFeedbackAuthors } from "./author";
 import {
     feedbackIdParamSchema,
     feedbackItemSchema,
@@ -64,18 +64,17 @@ export const updateRoute = route().patch(
          * arrives here as the owner: the permission is re-checked rather than
          * inferred from `isResourceOwner` being false.
          */
-        if (body.status !== undefined && c.get("isResourceOwner")) {
-            const mayModerate = await hasPermission(c.get("ctx"), userId, [
-                "feedback:update",
-                "feedback:manage",
-            ]);
+        const mayModerate = await canSeeFeedbackAuthor(c.get("ctx"), userId);
 
-            if (!mayModerate) {
-                throw new HTTPException(403, {
-                    message:
-                        "Forbidden - changing the status requires permission: feedback:update or feedback:manage",
-                });
-            }
+        if (
+            body.status !== undefined &&
+            c.get("isResourceOwner") &&
+            !mayModerate
+        ) {
+            throw new HTTPException(403, {
+                message:
+                    "Forbidden - changing the status requires permission: feedback:update or feedback:manage",
+            });
         }
 
         const [updated] = await db
@@ -109,6 +108,12 @@ export const updateRoute = route().patch(
             ),
         });
 
+        const author = mayModerate
+            ? ((await getFeedbackAuthors(db, [updated.authorId])).get(
+                  updated.authorId,
+              ) ?? null)
+            : undefined;
+
         return c.json({
             id: updated.id,
             type: updated.type,
@@ -116,6 +121,7 @@ export const updateRoute = route().patch(
             title: updated.title,
             description: updated.description,
             isAuthor: updated.authorId === userId,
+            author,
             upvotes: counts?.upvotes ?? 0,
             downvotes: counts?.downvotes ?? 0,
             myVote: myVote?.value ?? null,

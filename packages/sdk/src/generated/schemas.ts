@@ -104,6 +104,7 @@ export type EventRegistration = Schemas["EventRegistration"];
 export type EventRegistrationList = Schemas["EventRegistrationList"];
 export type EventRegistrationPayment = Schemas["EventRegistrationPayment"];
 export type FavoriteEvents = Schemas["FavoriteEvents"];
+export type FeedbackAuthor = Schemas["FeedbackAuthor"];
 export type FeedbackItem = Schemas["FeedbackItem"];
 export type FeedbackList = Schemas["FeedbackList"];
 export type FeedbackMessageResponse = Schemas["FeedbackMessageResponse"];
