@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { isGroupScopablePermission } from "@photon/auth/rbac/registry";
+import { matchesSearch } from "@photon/core/search";
 import { union } from "es-toolkit";
 import type { Group, GroupPosition } from "@tihlde/sdk";
 import {
@@ -1145,19 +1146,17 @@ function PositionDialog({
         unassign.isPending;
 
     // Holders must be members of the group, so the group's own member list is
-    // the candidate set — filtered client-side on name.
+    // the candidate set — filtered client-side on name and username.
     const memberOptions: UserSearchOption[] = useMemo(() => {
-        const q = holderQuery.trim().toLowerCase();
         return (members ?? [])
             .map((member) => ({
                 id: member.user?.id ?? member.userId,
                 name: member.user?.name ?? member.userId,
+                username: member.user?.username,
                 image: member.user?.image ?? null,
             }))
             .filter((option) =>
-                q.length === 0
-                    ? true
-                    : (option.name ?? "").toLowerCase().includes(q),
+                matchesSearch([option.name, option.username], holderQuery),
             )
             .filter(
                 (option) => !holders.some((holder) => holder.id === option.id),

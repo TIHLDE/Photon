@@ -9,6 +9,69 @@ import {
 } from "~/test/config/integration";
 
 describe("user list", () => {
+    integrationTest(
+        "matches all name words before counting, pagination and study filters",
+        async ({ ctx }) => {
+            const admin = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(admin, ["users:view"]);
+            const client = await ctx.utils.clientForUser(admin);
+            const study = await ctx.utils.createTestGroup({
+                slug: "word-search-study",
+                type: "STUDY",
+            });
+            const matches = [];
+            for (const name of [
+                "Pagination Middle Search",
+                "Pagination Other Search",
+            ]) {
+                const result = await ctx.auth.api.createUser({
+                    body: {
+                        email: `${crypto.randomUUID()}@test.com`,
+                        name,
+                        password: "test123!",
+                    },
+                });
+                matches.push(result.user);
+            }
+            await ctx.auth.api.createUser({
+                body: {
+                    email: "pagination-nonmatch@test.com",
+                    name: "Pagination Nonmatch",
+                    password: "test123!",
+                },
+            });
+            await ctx.db.insert(schema.groupMembership).values({
+                userId: matches[0]!.id,
+                groupSlug: study.slug,
+            });
+
+            for (const [page, user] of matches.entries()) {
+                const response = await client.api.user.$get({
+                    query: {
+                        search: "  SEARCH\t Pagination ",
+                        page: String(page),
+                        pageSize: "1",
+                    },
+                });
+                expect(response.status).toBe(200);
+                const result = await response.json();
+                expect(result.totalCount).toBe(2);
+                expect(result.items.map((item) => item.id)).toEqual([user.id]);
+                expect(result.nextPage).toBe(page === 0 ? 1 : null);
+            }
+
+            const scoped = await client.api.user.$get({
+                query: { search: "Pagination Search", study: study.slug },
+            });
+            expect(scoped.status).toBe(200);
+            const scopedResult = await scoped.json();
+            expect(scopedResult.totalCount).toBe(1);
+            expect(scopedResult.items.map((user) => user.id)).toEqual([
+                matches[0]!.id,
+            ]);
+        },
+    );
+
     /** The two baseline roles as production seeds them; a test db starts empty. */
     async function seedBaselineRoles(ctx: IntegrationTestContext) {
         await createTestingRole(ctx, {

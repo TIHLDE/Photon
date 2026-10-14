@@ -1,10 +1,11 @@
 import { schema } from "@photon/db";
-import { and, asc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { userImage } from "~/lib/user/avatar";
+import { userSearchFilter } from "~/lib/user/search";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 import { computeClassStanding } from "~/lib/event/priority";
@@ -178,12 +179,7 @@ export const listUsersRoute = route().get(
             .as("baseline_role");
 
         const where = and(
-            search
-                ? or(
-                      ilike(schema.user.name, `%${search}%`),
-                      ilike(schema.user.username, `%${search}%`),
-                  )
-                : undefined,
+            userSearchFilter(search),
             study === NO_STUDY_FILTER
                 ? isNull(studyProgram.slug)
                 : study

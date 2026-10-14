@@ -4,7 +4,7 @@ import {
     hasScopedPermission,
 } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
-import { ilike, or } from "drizzle-orm";
+import { desc, ilike, or, sql } from "drizzle-orm";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono-openapi";
@@ -14,6 +14,7 @@ import { isGroupLeader } from "~/lib/group/middleware";
 import { Schema, describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { userImage } from "~/lib/user/avatar";
+import { userSearchFilter } from "~/lib/user/search";
 import { requireAuth } from "~/middleware/auth";
 
 export const userSearchResultSchema = Schema(
@@ -99,7 +100,7 @@ export const searchUsersRoute = route().get(
         summary: "Search users",
         operationId: "searchUsers",
         description:
-            "Search users by name or username (case-insensitive substring). Used by admin UIs to assign roles and positions, and to name individually prioritized users on an event. Requires 'users:view' or 'roles:assign', or an event permission ('events:create'/'events:update'/'events:manage') held for at least one group — or, when 'groupSlug' is given, the right to manage that group's roster ('groups:manage' scoped to it, or being its leader).",
+            "Search users by name or username. Every search word must match, case-insensitively and in any order. Used by admin UIs to assign roles and positions, and to name individually prioritized users on an event. Requires 'users:view' or 'roles:assign', or an event permission ('events:create'/'events:update'/'events:manage') held for at least one group — or, when 'groupSlug' is given, the right to manage that group's roster ('groups:manage' scoped to it, or being its leader).",
     })
         .schemaResponse({
             statusCode: 200,
@@ -118,6 +119,7 @@ export const searchUsersRoute = route().get(
         z.object({
             q: z
                 .string()
+                .trim()
                 .min(2)
                 .max(100)
                 .meta({ description: "Search term (name or username)" }),
@@ -131,7 +133,7 @@ export const searchUsersRoute = route().get(
         const { db } = c.get("ctx");
         const { q } = c.req.valid("query");
 
-        const pattern = `%${q.trim()}%`;
+        const exact = q.replace(/\s+/g, " ").replace(/[\\%_]/g, "\\$&");
         const users = await db
             .select({
                 id: schema.user.id,
@@ -140,13 +142,17 @@ export const searchUsersRoute = route().get(
                 image: userImage(schema.user),
             })
             .from(schema.user)
-            .where(
-                or(
-                    ilike(schema.user.name, pattern),
-                    ilike(schema.user.username, pattern),
+            .where(userSearchFilter(q))
+            .orderBy(
+                desc(
+                    sql`coalesce(${or(
+                        ilike(schema.user.name, exact),
+                        ilike(schema.user.username, exact),
+                    )}, false)`,
                 ),
+                schema.user.name,
+                schema.user.id,
             )
-            .orderBy(schema.user.name)
             .limit(10);
 
         return c.json(users);

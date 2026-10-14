@@ -4,6 +4,153 @@ import { integrationTest } from "~/test/config/integration";
 
 describe("user search", () => {
     integrationTest(
+        "matches every name or username word in any order, without middle names",
+        async ({ ctx }) => {
+            const admin = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(admin, ["users:view"]);
+            const client = await ctx.utils.clientForUser(admin);
+            const target = await ctx.auth.api.createUser({
+                body: {
+                    email: "word-search@test.com",
+                    name: "Stian Closs Walmann",
+                    password: "test123!",
+                    data: { username: "scw123" },
+                },
+            });
+            for (const name of ["Stian Other", "Other Walmann"]) {
+                await ctx.auth.api.createUser({
+                    body: {
+                        email: `${crypto.randomUUID()}@test.com`,
+                        name,
+                        password: "test123!",
+                    },
+                });
+            }
+
+            for (const q of [
+                "Stian Walmann",
+                "Walmann Stian",
+                "  STIAN\t WALMANN  ",
+                "sti walm",
+                "Stian scw123",
+            ]) {
+                const response = await client.api.user.search.$get({
+                    query: { q },
+                });
+                expect(response.status).toBe(200);
+                expect((await response.json()).map((user) => user.id)).toEqual([
+                    target.user.id,
+                ]);
+            }
+
+            const blank = await client.api.user.search.$get({
+                query: { q: "  " },
+            });
+            expect(blank.status).toBe(400);
+        },
+    );
+
+    integrationTest(
+        "treats LIKE wildcard characters as literal search text",
+        async ({ ctx }) => {
+            const admin = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(admin, ["users:view"]);
+            const client = await ctx.utils.clientForUser(admin);
+            const target = await ctx.auth.api.createUser({
+                body: {
+                    email: "literal-search@test.com",
+                    name: "Literal %_\\ Person",
+                    password: "test123!",
+                },
+            });
+            await ctx.auth.api.createUser({
+                body: {
+                    email: "not-literal-search@test.com",
+                    name: "Literal Person",
+                    password: "test123!",
+                },
+            });
+            for (const q of ["Literal %", "Literal _", "Literal \\"]) {
+                const response = await client.api.user.search.$get({
+                    query: { q },
+                });
+                expect(response.status).toBe(200);
+                expect((await response.json()).map((user) => user.id)).toEqual([
+                    target.user.id,
+                ]);
+            }
+        },
+    );
+
+    integrationTest(
+        "puts exact matches before alphabetical partial matches",
+        async ({ ctx }) => {
+            const admin = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(admin, ["users:view"]);
+            const client = await ctx.utils.clientForUser(admin);
+            const noUsername = await ctx.auth.api.createUser({
+                body: {
+                    email: "no-username-search@test.com",
+                    name: "A Search Prefix",
+                    password: "test123!",
+                },
+            });
+            const partial = await ctx.auth.api.createUser({
+                body: {
+                    email: "partial-search@test.com",
+                    name: "B Search Prefix",
+                    password: "test123!",
+                    data: { username: "prefixlong" },
+                },
+            });
+            const exact = await ctx.auth.api.createUser({
+                body: {
+                    email: "exact-search@test.com",
+                    name: "Z Search Exact",
+                    password: "test123!",
+                    data: { username: "prefix" },
+                },
+            });
+            const response = await client.api.user.search.$get({
+                query: { q: "PREFIX" },
+            });
+            expect(response.status).toBe(200);
+            const results = await response.json();
+            expect(results.map((user) => user.id)).toEqual([
+                exact.user.id,
+                noUsername.user.id,
+                partial.user.id,
+            ]);
+            expect(
+                results.find((user) => user.id === noUsername.user.id)
+                    ?.username,
+            ).toBeNull();
+
+            const partialName = await ctx.auth.api.createUser({
+                body: {
+                    email: "partial-name-search@test.com",
+                    name: "Z Middle Search Exact",
+                    password: "test123!",
+                },
+            });
+            for (const q of [
+                "Z Search Exact",
+                "  z  SEARCH   exact  ",
+                "Z\tSearch\nExact",
+            ]) {
+                const response = await client.api.user.search.$get({
+                    query: { q },
+                });
+                expect(response.status).toBe(200);
+                expect((await response.json()).map((user) => user.id)).toEqual([
+                    exact.user.id,
+                    partialName.user.id,
+                ]);
+            }
+        },
+    );
+
+    integrationTest(
         "finds users by name and by username, requires permission",
         async ({ ctx }) => {
             const admin = await ctx.utils.createTestUser();
@@ -69,14 +216,14 @@ describe("user search", () => {
             const target = await ctx.auth.api.createUser({
                 body: {
                     email: "plaskmedlem@test.com",
-                    name: "Torkil Plasketest",
+                    name: "Torkil Middle Plasketest",
                     password: "test123!",
                     data: { username: "torkilplask" },
                 },
             });
 
             const forOwnGroup = await client.api.user.search.$get({
-                query: { q: "plasketest", groupSlug: group.slug },
+                query: { q: "Plasketest Torkil", groupSlug: group.slug },
             });
             expect(forOwnGroup.status).toBe(200);
             expect(
@@ -85,13 +232,13 @@ describe("user search", () => {
 
             // En annen gruppe er ikke lederens bord.
             const forOtherGroup = await client.api.user.search.$get({
-                query: { q: "plasketest", groupSlug: otherGroup.slug },
+                query: { q: "Plasketest Torkil", groupSlug: otherGroup.slug },
             });
             expect(forOtherGroup.status).toBe(403);
 
             // Og uten gruppe gjelder fortsatt users:view/roles:assign.
             const withoutGroup = await client.api.user.search.$get({
-                query: { q: "plasketest" },
+                query: { q: "Plasketest Torkil" },
             });
             expect(withoutGroup.status).toBe(403);
         },

@@ -17,6 +17,7 @@
     "dependencies": {
         "@better-auth/oauth-provider": "catalog:backend",
         "@photon/auth": "workspace:*",
+        "@photon/core": "workspace:*",
         "@posthog/react": "^1.7.0",
         "@t3-oss/env-core": "^0.13.10",
         "@tailwindcss/vite": "catalog:frontend",

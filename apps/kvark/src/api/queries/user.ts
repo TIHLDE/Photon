@@ -19,7 +19,7 @@ const UserQueryKeys = {
 const DEFAULT_PAGE_SIZE = 50;
 
 export type UserListFilters = {
-    /** Name or username substring. */
+    /** Every word must match the name or username. */
     search?: string;
     /** STUDY group slug, or "none" for users without a study programme. */
     study?: string;

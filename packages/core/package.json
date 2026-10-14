@@ -12,7 +12,8 @@
         "./services/storage": "./src/services/storage/index.ts",
         "./env": "./src/env.ts",
         "./http": "./src/http.ts",
-        "./slug": "./src/slug.ts"
+        "./slug": "./src/slug.ts",
+        "./search": "./src/search.ts"
     },
     "dependencies": {
         "@aws-sdk/client-s3": "^3.927.0",
