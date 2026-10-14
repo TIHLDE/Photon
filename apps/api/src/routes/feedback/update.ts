@@ -1,10 +1,12 @@
-import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import type z from "zod";
-import { isFeedbackAuthor } from "~/lib/feedback/middleware";
+import {
+    canModerateFeedback,
+    isFeedbackAuthor,
+} from "~/lib/feedback/middleware";
 import { getFeedbackItem } from "~/lib/feedback/serialize";
 import { sendNotification } from "~/lib/notification";
 import { describeRoute } from "~/lib/openapi";
@@ -76,10 +78,7 @@ export const updateRoute = route().patch(
 
         const mayModerate =
             !c.get("isResourceOwner") ||
-            (await hasPermission(c.get("ctx"), userId, [
-                "feedback:update",
-                "feedback:manage",
-            ]));
+            (await canModerateFeedback(c.get("ctx"), userId));
 
         if (isModerating && !mayModerate) {
             throw new HTTPException(403, {
@@ -169,7 +168,7 @@ export const updateRoute = route().patch(
             }
         }
 
-        const item = await getFeedbackItem(db, id, userId);
+        const item = await getFeedbackItem(db, id, userId, mayModerate);
 
         if (!item) {
             throw new HTTPException(404, { message: "Feedback not found" });

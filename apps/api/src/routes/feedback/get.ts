@@ -1,5 +1,6 @@
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { canModerateFeedback } from "~/lib/feedback/middleware";
 import { getFeedbackItem } from "~/lib/feedback/serialize";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -26,8 +27,14 @@ export const getRoute = route().get(
     async (c) => {
         const { db } = c.get("ctx");
         const { id } = c.req.valid("param");
+        const userId = c.get("user").id;
 
-        const item = await getFeedbackItem(db, id, c.get("user").id);
+        const item = await getFeedbackItem(
+            db,
+            id,
+            userId,
+            await canModerateFeedback(c.get("ctx"), userId),
+        );
 
         if (!item) {
             throw new HTTPException(404, { message: "Feedback not found" });

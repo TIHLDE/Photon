@@ -1,3 +1,4 @@
+import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
@@ -22,3 +23,14 @@ export const isFeedbackAuthor = async (
 
     return item?.authorId != null && item.authorId === userId;
 };
+
+/**
+ * Moderators — Index — may change a feedback's status, and see who filed it
+ * even when it is anonymous. Anonymity hides the author from other members,
+ * not from the people handling the report.
+ */
+export const canModerateFeedback = (
+    ctx: AppContext,
+    userId: string,
+): Promise<boolean> =>
+    hasPermission(ctx, userId, ["feedback:update", "feedback:manage"]);

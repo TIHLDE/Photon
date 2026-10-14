@@ -219,7 +219,10 @@ function VoteButtons({ item }: { item: FeedbackItem }) {
 
 function authorLabel(item: FeedbackItem): string {
     if (item.isAuthor) return item.isAnonymous ? "Din · anonym" : "Din";
-    return item.author?.name ?? "Anonym";
+    if (!item.author) return "Anonym";
+    // Only Index gets the name of anonymous feedback. The marker reminds them
+    // that everyone else sees it as anonymous.
+    return item.isAnonymous ? `${item.author.name} · anonym` : item.author.name;
 }
 
 function CommentAuthorAvatar({
@@ -808,8 +811,8 @@ function FeedbackFormDialog({
                                     Anonym
                                 </FieldLabel>
                                 <FieldDescription>
-                                    Viser du navnet ditt, kan Index spørre deg
-                                    om detaljer og fikse problemet raskere.
+                                    Andre medlemmer ser ikke navnet ditt, men
+                                    Index kan alltid se hvem som sendte inn.
                                 </FieldDescription>
                             </FieldContent>
                             <Switch
