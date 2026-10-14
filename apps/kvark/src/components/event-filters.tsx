@@ -7,7 +7,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@tihlde/ui/ui/select";
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 
 import { FilterCheckboxOption } from "#/components/filter-checkbox-option";
 import { type FilterPill } from "#/components/filter-pill-row";
@@ -34,12 +34,15 @@ type EventFiltersProps = {
     value: EventFiltersValue;
     categories: Category[];
     onChange: (next: EventFiltersValue) => void;
+    /** Rendered last under "Alternativer". */
+    extraOptions?: ReactNode;
 };
 
 export function EventFilters({
     value,
     categories,
     onChange,
+    extraOptions,
 }: EventFiltersProps) {
     const pills = useMemo<FilterPill[]>(() => {
         const next: FilterPill[] = [];
@@ -111,7 +114,9 @@ export function EventFilters({
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <span className="text-sm">Alternativer</span>
+                        <span className="text-sm font-medium">
+                            Alternativer
+                        </span>
                         <FilterCheckboxOption
                             title="Tidligere"
                             description="Vis kun tidligere arrangementer"
@@ -128,6 +133,7 @@ export function EventFilters({
                                 onChange({ ...value, openRegistration })
                             }
                         />
+                        {extraOptions}
                     </div>
                 </div>
             }
