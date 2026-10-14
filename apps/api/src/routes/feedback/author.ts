@@ -19,6 +19,18 @@ export function canSeeFeedbackAuthor(
     return hasPermission(ctx, userId, ["feedback:update", "feedback:manage"]);
 }
 
+/** Looks up a single author. A missing author id or user gives `null`. */
+export async function getFeedbackAuthor(
+    db: AppContext["db"],
+    authorId: string | null,
+): Promise<FeedbackAuthor | null> {
+    if (!authorId) {
+        return null;
+    }
+
+    return (await getFeedbackAuthors(db, [authorId])).get(authorId) ?? null;
+}
+
 /** Looks up the given authors in one query, keyed by user id. */
 export async function getFeedbackAuthors(
     db: AppContext["db"],

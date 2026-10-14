@@ -8,7 +8,7 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { canSeeFeedbackAuthor, getFeedbackAuthors } from "./author";
+import { canSeeFeedbackAuthor, getFeedbackAuthor } from "./author";
 import {
     feedbackIdParamSchema,
     feedbackItemSchema,
@@ -109,9 +109,7 @@ export const updateRoute = route().patch(
         });
 
         const author = mayModerate
-            ? ((await getFeedbackAuthors(db, [updated.authorId])).get(
-                  updated.authorId,
-              ) ?? null)
+            ? await getFeedbackAuthor(db, updated.authorId)
             : undefined;
 
         return c.json({

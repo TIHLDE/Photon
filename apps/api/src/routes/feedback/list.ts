@@ -113,7 +113,7 @@ export const listRoute = route().get(
                   db,
                   rows.map((row) => row.authorId),
               )
-            : new Map();
+            : new Map<string, { id: string; name: string }>();
 
         const items = rows.map((row) => ({
             id: row.id,
@@ -124,7 +124,7 @@ export const listRoute = route().get(
             isAuthor: row.authorId === userId,
             // `undefined` is dropped from the JSON, so non-moderators get no key at all.
             author: canSeeAuthor
-                ? (authors.get(row.authorId) ?? null)
+                ? ((row.authorId ? authors.get(row.authorId) : null) ?? null)
                 : undefined,
             upvotes: row.upvotes,
             downvotes: row.downvotes,
