@@ -1957,6 +1957,50 @@ export interface paths {
         patch: operations["updateGroupMemberRole"];
         trace?: never;
     };
+    "/api/groups/{groupSlug}/join-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List pending join requests
+         * @description The group's pending join requests, oldest first. Requires being the group's leader, or 'groups:manage' (globally or scoped to the group).
+         */
+        get: operations["listGroupJoinRequests"];
+        put?: never;
+        /**
+         * Ask to join an interest group
+         * @description Creates a pending join request for the caller and notifies the group's leaders. Only interest groups that take join requests accept them.
+         */
+        post: operations["createGroupJoinRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/join-requests/{requestId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Approve or reject a join request
+         * @description Approving adds the applicant as a regular member. Requires being the group's leader, or 'groups:manage' (globally or scoped to the group).
+         */
+        patch: operations["handleGroupJoinRequest"];
+        trace?: never;
+    };
     "/api/groups/{groupSlug}/positions": {
         parameters: {
             query?: never;
@@ -4975,6 +5019,8 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
+            /** @description Whether members can ask to join from the group page (interest groups only) */
+            acceptsJoinRequests: boolean;
             /** @description When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions. */
             archivedAt: string | null;
             /** @description Creation timestamp */
@@ -5010,6 +5056,8 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
+            /** @description Whether members can ask to join from the group page (interest groups only) */
+            acceptsJoinRequests: boolean;
             /** @description When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions. */
             archivedAt: string | null;
             /** @description Creation timestamp */
@@ -5052,6 +5100,8 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
+            /** @description Whether members can ask to join from the group page (interest groups only) */
+            acceptsJoinRequests: boolean;
             /** @description When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions. */
             archivedAt: string | null;
             /** @description Creation timestamp */
@@ -5127,6 +5177,8 @@ export interface components {
             finesAdminId?: string | null;
             /** @description Whether contract signing is required for group members */
             contractSigningRequired?: boolean;
+            /** @description Whether members can ask to join from the group page (interest groups only) */
+            acceptsJoinRequests?: boolean;
         };
         GroupDetail: {
             /** @description Group slug */
@@ -5153,6 +5205,8 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
+            /** @description Whether members can ask to join from the group page (interest groups only) */
+            acceptsJoinRequests: boolean;
             /** @description When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions. */
             archivedAt: string | null;
             /** @description Creation timestamp */
@@ -5165,6 +5219,10 @@ export interface components {
             archivable: boolean;
             /** @description Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student. */
             viewerCanUseFines: boolean;
+            /** @description Whether the caller can ask to join: signed in, not a member, no pending request, and the group takes join requests. */
+            viewerCanRequestToJoin: boolean;
+            /** @description Whether the caller has a pending join request here. */
+            viewerHasPendingJoinRequest: boolean;
             /** @description Whether the caller may read the fines they are party to here without taking part in the group's fine system: true for someone who has left the group but was once a member. Never true together with 'viewerCanUseFines'. */
             viewerCanSeeOwnFines: boolean;
         };
@@ -5458,6 +5516,34 @@ export interface components {
              * @enum {string}
              */
             role: "member" | "leader";
+        };
+        GroupJoinRequest: {
+            id: string;
+            /** @enum {string} */
+            status: "pending" | "approved" | "rejected";
+        };
+        CreateGroupJoinRequest: {
+            name: string;
+            message: string;
+        };
+        PendingGroupJoinRequestList: {
+            id: string;
+            name: string;
+            message: string;
+            createdAt: string;
+            user: {
+                id: string;
+                email: string;
+                studyProgram: string | null;
+                classYear: number | null;
+            };
+        }[];
+        HandleGroupJoinRequest: {
+            /**
+             * @description Approve adds the applicant as a regular member
+             * @enum {string}
+             */
+            status: "approved" | "rejected";
         };
         GroupPositionHolder: {
             /** @description Holder's user ID */
@@ -12150,6 +12236,163 @@ export interface operations {
                 };
             };
             /** @description Not Found - Group, user, or membership not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listGroupJoinRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pending join requests */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingGroupJoinRequestList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    createGroupJoinRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGroupJoinRequest"];
+            };
+        };
+        responses: {
+            /** @description Join request created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupJoinRequest"];
+                };
+            };
+            /** @description Bad Request - The group does not take join requests */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Already a member, or a request is already pending */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    handleGroupJoinRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandleGroupJoinRequest"];
+            };
+        };
+        responses: {
+            /** @description Join request handled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupJoinRequest"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - No pending request with that ID */
             404: {
                 headers: {
                     [name: string]: unknown;

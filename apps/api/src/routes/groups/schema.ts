@@ -103,6 +103,10 @@ export const updateGroupSchema = Schema(
             description:
                 "Whether contract signing is required for group members",
         }),
+        acceptsJoinRequests: z.boolean().optional().meta({
+            description:
+                "Whether members can ask to join from the group page (interest groups only)",
+        }),
     }),
 );
 
@@ -166,6 +170,10 @@ export const groupSchema = Schema(
         contractSigningRequired: z.boolean().meta({
             description: "Whether contract signing is required",
         }),
+        acceptsJoinRequests: z.boolean().meta({
+            description:
+                "Whether members can ask to join from the group page (interest groups only)",
+        }),
         archivedAt: z.string().nullable().meta({
             description:
                 "When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions.",
@@ -199,6 +207,13 @@ export const groupDetailSchema = Schema(
         viewerCanUseFines: z.boolean().meta({
             description:
                 "Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student.",
+        }),
+        viewerCanRequestToJoin: z.boolean().meta({
+            description:
+                "Whether the caller can ask to join: signed in, not a member, no pending request, and the group takes join requests.",
+        }),
+        viewerHasPendingJoinRequest: z.boolean().meta({
+            description: "Whether the caller has a pending join request here.",
         }),
         viewerCanSeeOwnFines: z.boolean().meta({
             description:

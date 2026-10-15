@@ -55,6 +55,9 @@ import {
     archiveGroupMutation,
     unarchiveGroupMutation,
     updateLawMutation,
+    createGroupJoinRequestMutation,
+    getGroupJoinRequestsQuery,
+    handleGroupJoinRequestMutation,
 } from "#/api/queries/groups";
 import {
     DetailLayout,
@@ -215,6 +218,8 @@ function GroupDetail() {
     const updateMemberRole = useMutation(updateGroupMemberRoleMutation);
     const removeMember = useMutation(removeGroupMemberMutation);
     const addMember = useMutation(addGroupMemberMutation);
+    const createJoinRequest = useMutation(createGroupJoinRequestMutation);
+    const handleJoinRequest = useMutation(handleGroupJoinRequestMutation);
     const updateGroup = useMutation(updateGroupMutation);
     const archiveGroup = useMutation(archiveGroupMutation);
     const unarchiveGroup = useMutation(unarchiveGroupMutation);
@@ -248,6 +253,10 @@ function GroupDetail() {
     );
     const canArchive = hasGroupsManage || isLeader;
     const canManageMembers = canArchive && !isArchived;
+    const { data: joinRequests } = useQuery({
+        ...getGroupJoinRequestsQuery(slug),
+        enabled: canManageMembers,
+    });
     // Skjemaene til gruppen er scopet hit, akkurat som resten av siden: et
     // grant for denne gruppen teller, et grant for en annen gruppe gjør ikke.
     // Det var en global sjekk her, og den er strengere enn API-et — «Spørre-
@@ -512,6 +521,7 @@ function GroupDetail() {
                     finesActivated: values.finesActivated,
                     finesAdminId: values.finesAdminId,
                     finesInfo: values.finesInfo,
+                    acceptsJoinRequests: values.acceptsJoinRequests,
                 },
             });
             return true;
@@ -748,6 +758,21 @@ function GroupDetail() {
                         onSaveGroup={handleSaveGroup}
                         isSavingGroup={updateGroup.isPending}
                         saveGroupError={groupError}
+                        join={
+                            apiGroup.viewerCanRequestToJoin ||
+                            apiGroup.viewerHasPendingJoinRequest
+                                ? {
+                                      pending:
+                                          apiGroup.viewerHasPendingJoinRequest,
+                                      defaultName: session?.user?.name ?? "",
+                                      onRequest: (values) =>
+                                          createJoinRequest.mutateAsync({
+                                              groupSlug: slug,
+                                              data: values,
+                                          }),
+                                  }
+                                : undefined
+                        }
                     />
                 }
             >
@@ -771,6 +796,14 @@ function GroupDetail() {
                             formerMembers={formerMembers}
                             isAdmin={canManageMembers}
                             canPromote={canManageMembers}
+                            joinRequests={joinRequests ?? []}
+                            onHandleJoinRequest={(request, status) =>
+                                handleJoinRequest.mutate({
+                                    groupSlug: slug,
+                                    requestId: request.id,
+                                    data: { status },
+                                })
+                            }
                             leaderTransfer={
                                 canManageMembers && canPickLeaderOutsideGroup
                                     ? {

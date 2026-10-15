@@ -1,8 +1,17 @@
+import { Button } from "@tihlde/ui/ui/button";
 import {
     Collapsible,
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@tihlde/ui/ui/collapsible";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@tihlde/ui/ui/table";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
@@ -10,8 +19,22 @@ import type { GroupAddMemberDialogProps } from "#/components/group-add-member-di
 import { GroupAddMemberDialog } from "#/components/group-add-member-dialog";
 import { GroupMemberRow } from "#/components/group-member-row";
 import { GroupPageHeader } from "#/components/group-page-header";
+import { formatInOslo } from "#/lib/date";
+import { formatSubmissionStudy } from "#/lib/form";
 import type { Member } from "#/lib/group";
 import { cn } from "#/lib/utils";
+
+export type JoinRequest = {
+    id: string;
+    name: string;
+    message: string;
+    createdAt: string;
+    user: {
+        email: string;
+        studyProgram: string | null;
+        classYear: number | null;
+    };
+};
 
 type GroupMembersTabProps = {
     /**
@@ -36,6 +59,11 @@ type GroupMembersTabProps = {
     leaderTransfer?: GroupAddMemberDialogProps;
     onPromote: (member: Member) => void;
     onRemove: (member: Member) => void;
+    joinRequests: JoinRequest[];
+    onHandleJoinRequest: (
+        request: JoinRequest,
+        status: "approved" | "rejected",
+    ) => void;
 };
 
 export function GroupMembersTab({
@@ -48,6 +76,8 @@ export function GroupMembersTab({
     leaderTransfer,
     onPromote,
     onRemove,
+    joinRequests,
+    onHandleJoinRequest,
 }: GroupMembersTabProps) {
     const [showFormer, setShowFormer] = useState(false);
 
@@ -66,6 +96,85 @@ export function GroupMembersTab({
                     </div>
                 }
             />
+
+            {isAdmin && joinRequests.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                    <h3 className="text-lg">
+                        Søknader ({joinRequests.length})
+                    </h3>
+                    <Table className="min-w-max">
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Navn</TableHead>
+                                <TableHead>Sendt inn</TableHead>
+                                <TableHead className="max-w-xs whitespace-normal">
+                                    Søknadstekst
+                                </TableHead>
+                                <TableHead />
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {joinRequests.map((request) => {
+                                const study = formatSubmissionStudy(
+                                    request.user.studyProgram,
+                                    request.user.classYear,
+                                );
+                                return (
+                                    <TableRow key={request.id}>
+                                        <TableCell>
+                                            <div className="flex flex-col">
+                                                <span>{request.name}</span>
+                                                <span className="text-xs text-muted-foreground">
+                                                    {request.user.email}
+                                                </span>
+                                                {study ? (
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {study}
+                                                    </span>
+                                                ) : null}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            {formatInOslo(
+                                                request.createdAt,
+                                                "d. MMM yyyy",
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="max-w-xs whitespace-normal">
+                                            {request.message}
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    onClick={() =>
+                                                        onHandleJoinRequest(
+                                                            request,
+                                                            "approved",
+                                                        )
+                                                    }
+                                                >
+                                                    Legg til i interessegruppen
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={() =>
+                                                        onHandleJoinRequest(
+                                                            request,
+                                                            "rejected",
+                                                        )
+                                                    }
+                                                >
+                                                    Avvis dette medlemmet
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
+                </div>
+            ) : null}
 
             {/* Lederen ligger øverst i samme liste som resten — badgen skiller den ut. */}
             <ul className="flex flex-col gap-2">
