@@ -1,4 +1,5 @@
 import { Button } from "@tihlde/ui/ui/button";
+import { FieldError } from "@tihlde/ui/ui/field";
 import {
     Collapsible,
     CollapsibleContent,
@@ -64,6 +65,8 @@ type GroupMembersTabProps = {
         request: JoinRequest,
         status: "approved" | "rejected",
     ) => void;
+    handlingJoinRequestId?: string;
+    joinRequestError: string | null;
 };
 
 export function GroupMembersTab({
@@ -78,6 +81,8 @@ export function GroupMembersTab({
     onRemove,
     joinRequests,
     onHandleJoinRequest,
+    handlingJoinRequestId,
+    joinRequestError,
 }: GroupMembersTabProps) {
     const [showFormer, setShowFormer] = useState(false);
 
@@ -146,6 +151,10 @@ export function GroupMembersTab({
                                         <TableCell>
                                             <div className="flex gap-2">
                                                 <Button
+                                                    disabled={
+                                                        handlingJoinRequestId ===
+                                                        request.id
+                                                    }
                                                     onClick={() =>
                                                         onHandleJoinRequest(
                                                             request,
@@ -157,6 +166,10 @@ export function GroupMembersTab({
                                                 </Button>
                                                 <Button
                                                     variant="outline"
+                                                    disabled={
+                                                        handlingJoinRequestId ===
+                                                        request.id
+                                                    }
                                                     onClick={() =>
                                                         onHandleJoinRequest(
                                                             request,
@@ -173,6 +186,13 @@ export function GroupMembersTab({
                             })}
                         </TableBody>
                     </Table>
+                    <FieldError
+                        errors={
+                            joinRequestError
+                                ? [{ message: joinRequestError }]
+                                : undefined
+                        }
+                    />
                 </div>
             ) : null}
 

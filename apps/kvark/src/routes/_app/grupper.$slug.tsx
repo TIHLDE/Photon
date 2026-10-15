@@ -220,6 +220,9 @@ function GroupDetail() {
     const addMember = useMutation(addGroupMemberMutation);
     const createJoinRequest = useMutation(createGroupJoinRequestMutation);
     const handleJoinRequest = useMutation(handleGroupJoinRequestMutation);
+    const [joinRequestError, setJoinRequestError] = useState<string | null>(
+        null,
+    );
     const updateGroup = useMutation(updateGroupMutation);
     const archiveGroup = useMutation(archiveGroupMutation);
     const unarchiveGroup = useMutation(unarchiveGroupMutation);
@@ -797,13 +800,32 @@ function GroupDetail() {
                             isAdmin={canManageMembers}
                             canPromote={canManageMembers}
                             joinRequests={joinRequests ?? []}
-                            onHandleJoinRequest={(request, status) =>
-                                handleJoinRequest.mutate({
-                                    groupSlug: slug,
-                                    requestId: request.id,
-                                    data: { status },
-                                })
+                            onHandleJoinRequest={(request, status) => {
+                                setJoinRequestError(null);
+                                handleJoinRequest.mutate(
+                                    {
+                                        groupSlug: slug,
+                                        requestId: request.id,
+                                        data: { status },
+                                    },
+                                    {
+                                        // 404: another leader already answered it.
+                                        onError: (error) => {
+                                            if (errorStatus(error) !== 404) {
+                                                setJoinRequestError(
+                                                    error.message,
+                                                );
+                                            }
+                                        },
+                                    },
+                                );
+                            }}
+                            handlingJoinRequestId={
+                                handleJoinRequest.isPending
+                                    ? handleJoinRequest.variables.requestId
+                                    : undefined
                             }
+                            joinRequestError={joinRequestError}
                             leaderTransfer={
                                 canManageMembers && canPickLeaderOutsideGroup
                                     ? {

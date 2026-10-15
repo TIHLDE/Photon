@@ -45,23 +45,29 @@ export const handleJoinRequestRoute = route().patch(
             throw HTTPAppException.NotFound("Join request");
         }
 
-        // Only a pending request matches, so two answers at once can't both apply.
-        const [request] = await ctx.db
-            .update(schema.groupJoinRequest)
-            .set({ status })
-            .where(
-                and(
-                    eq(schema.groupJoinRequest.id, requestId),
-                    eq(schema.groupJoinRequest.groupSlug, groupSlug),
-                    eq(schema.groupJoinRequest.status, "pending"),
-                ),
-            )
-            .returning();
+        const request = await ctx.db.transaction(async (tx) => {
+            // Only a pending request matches, so two answers at once can't both apply.
+            const [updated] = await tx
+                .update(schema.groupJoinRequest)
+                .set({ status })
+                .where(
+                    and(
+                        eq(schema.groupJoinRequest.id, requestId),
+                        eq(schema.groupJoinRequest.groupSlug, groupSlug),
+                        eq(schema.groupJoinRequest.status, "pending"),
+                    ),
+                )
+                .returning();
+            if (updated && status === "approved") {
+                await addUserToGroup(
+                    { ...ctx, db: tx },
+                    updated.userId,
+                    groupSlug,
+                );
+            }
+            return updated;
+        });
         if (!request) throw HTTPAppException.NotFound("Join request");
-
-        if (status === "approved") {
-            await addUserToGroup(ctx, request.userId, groupSlug);
-        }
 
         const group = await getGroup(ctx, groupSlug);
         const groupName = group?.name ?? groupSlug;
