@@ -59,10 +59,16 @@ export function EventMessagePreview(
             return;
         }
 
-        doc.open();
-        doc.write(html);
-        doc.close();
+        writeDocument(doc, html);
     }, [html]);
+
+    // Noen nettlesere bytter ut det tomme startdokumentet etter at vi har
+    // skrevet til det, så et tomt dokument ved load skrives på nytt.
+    function handleLoad() {
+        const doc = frameRef.current?.contentDocument;
+        if (!doc || html === null || doc.body?.childElementCount) return;
+        writeDocument(doc, html);
+    }
 
     if (html === null) {
         return <Skeleton className="h-[560px] w-full" />;
@@ -72,10 +78,17 @@ export function EventMessagePreview(
         <iframe
             title="Forhåndsvisning av e-posten"
             ref={frameRef}
+            onLoad={handleLoad}
             // Uten allow-same-origin får dokumentet en opak opprinnelse, og
             // logoen blir blokkert. Skript er fortsatt av.
             sandbox="allow-same-origin"
             className="h-[560px] w-full"
         />
     );
+}
+
+function writeDocument(doc: Document, html: string) {
+    doc.open();
+    doc.write(html);
+    doc.close();
 }

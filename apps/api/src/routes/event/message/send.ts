@@ -67,11 +67,17 @@ export const sendEventMessageRoute = route().post(
             async (tx) => {
                 // Serialises sends per event, so a double click cannot slip
                 // two copies past the duplicate check below.
-                await tx
+                const [locked] = await tx
                     .select({ id: schema.event.id })
                     .from(schema.event)
                     .where(eq(schema.event.id, eventId))
                     .for("update");
+
+                if (!locked) {
+                    throw new HTTPException(404, {
+                        message: "Event not found",
+                    });
+                }
 
                 const duplicate = await tx.query.eventMessage.findFirst({
                     where: and(

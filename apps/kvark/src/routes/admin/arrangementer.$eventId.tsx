@@ -2612,7 +2612,10 @@ function MessagesTab({ eventId }: { eventId: string }) {
                                 id="message-title"
                                 value={title}
                                 maxLength={MESSAGE_TITLE_MAX}
-                                onChange={(e) => setTitle(e.target.value)}
+                                onChange={(e) => {
+                                    setTitle(e.target.value);
+                                    setIsTestSent(false);
+                                }}
                                 placeholder="Bussen går 17:00"
                             />
                             <FieldDescription>
@@ -2627,7 +2630,10 @@ function MessagesTab({ eventId }: { eventId: string }) {
                                 id="message-body"
                                 value={body}
                                 maxLength={MESSAGE_BODY_MAX}
-                                onChange={(e) => setBody(e.target.value)}
+                                onChange={(e) => {
+                                    setBody(e.target.value);
+                                    setIsTestSent(false);
+                                }}
                                 rows={8}
                             />
                             <FieldDescription>

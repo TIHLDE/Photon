@@ -646,6 +646,8 @@ export const getEventMessagesQuery = (eventId: string) =>
             apiClient.get("/api/event/{eventId}/messages", {
                 params: { eventId },
             }),
+        // Antallet står i bekreftelsen før sending, så det må være ferskt.
+        staleTime: 0,
     });
 
 export const sendEventMessageMutation = mutationOptions({
