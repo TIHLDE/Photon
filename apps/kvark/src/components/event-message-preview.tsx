@@ -1,6 +1,6 @@
 import type { EmailTemplateOptions } from "@photon/email/templates";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Templates = typeof import("@photon/email/templates");
 
@@ -13,6 +13,7 @@ export function EventMessagePreview(
 ) {
     const [templates, setTemplates] = useState<Templates | null>(null);
     const [html, setHtml] = useState<string | null>(null);
+    const frameRef = useRef<HTMLIFrameElement>(null);
 
     useEffect(() => {
         let isCurrent = true;
@@ -46,6 +47,23 @@ export function EventMessagePreview(
         };
     }, [templates, title, body, eventTitle, senderName, link, logoUrl]);
 
+    // Ny srcDoc laster hele dokumentet på nytt for hvert tastetrykk, og det
+    // blinker. Dokumentet skrives derfor én gang, og bare body byttes etterpå.
+    useEffect(() => {
+        const doc = frameRef.current?.contentDocument;
+        if (!doc || html === null) return;
+
+        if (doc.body?.childElementCount) {
+            const next = new DOMParser().parseFromString(html, "text/html");
+            doc.body.replaceWith(doc.importNode(next.body, true));
+            return;
+        }
+
+        doc.open();
+        doc.write(html);
+        doc.close();
+    }, [html]);
+
     if (html === null) {
         return <Skeleton className="h-[560px] w-full" />;
     }
@@ -53,7 +71,7 @@ export function EventMessagePreview(
     return (
         <iframe
             title="Forhåndsvisning av e-posten"
-            srcDoc={html}
+            ref={frameRef}
             // Uten allow-same-origin får dokumentet en opak opprinnelse, og
             // logoen blir blokkert. Skript er fortsatt av.
             sandbox="allow-same-origin"
