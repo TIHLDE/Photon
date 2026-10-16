@@ -318,8 +318,10 @@ export const getGroupFinesInfiniteQuery = (
     groupSlug: string,
     filters: FineListFilters = {},
     pageSize: number = DEFAULT_PAGE_SIZE,
-) =>
-    infiniteQueryOptions({
+) => {
+    const { aroundFineId, ...listFilters } = filters;
+    const initialPageParam: number | string = aroundFineId ?? 0;
+    return infiniteQueryOptions({
         queryKey: [
             ...GroupQueryKeys.fines,
             groupSlug,
@@ -331,14 +333,19 @@ export const getGroupFinesInfiniteQuery = (
             apiClient.get("/api/groups/{groupSlug}/fines", {
                 params: { groupSlug },
                 searchParams: definedParams({
-                    page: pageParam,
                     pageSize,
-                    ...filters,
+                    ...listFilters,
+                    ...(typeof pageParam === "string"
+                        ? { aroundFineId: pageParam }
+                        : { page: pageParam }),
                 }),
             }),
-        initialPageParam: 0,
+        initialPageParam,
         getNextPageParam: (lastPage) => lastPage.nextPage ?? undefined,
+        getPreviousPageParam: (firstPage) =>
+            firstPage.page > 0 ? firstPage.page - 1 : undefined,
     });
+};
 
 type FineUserListFilters = Omit<
     QueryParamsHelper<"get", "/api/groups/{groupSlug}/fines/users">,

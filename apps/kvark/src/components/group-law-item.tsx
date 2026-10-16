@@ -23,7 +23,8 @@ export function GroupLawItem({ law, onEdit }: GroupLawItemProps) {
                     etter — skjul tellingen helt i stedet. */}
                 {law.amount !== 0 ? (
                     <span className="text-sm text-muted-foreground">
-                        Bøter: {law.amount}
+                        {Math.abs(law.amount) === 1 ? "Bot" : "Bøter"}:{" "}
+                        {law.amount}
                     </span>
                 ) : null}
             </div>

@@ -176,6 +176,9 @@ export const fineSchema = Schema(
 export const fineListResponseSchema = Schema(
     "FineList",
     z.object({
+        page: z
+            .number()
+            .meta({ description: "Resolved zero-based page number" }),
         totalCount: z.number().meta({ description: "Total number of fines" }),
         pages: z.number().meta({ description: "Total number of pages" }),
         nextPage: z
