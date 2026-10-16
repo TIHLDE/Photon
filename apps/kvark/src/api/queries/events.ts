@@ -14,10 +14,12 @@ import type {
     CreateStrike,
     UpdateFavoriteEvent,
     CreateEventReaction,
+    EventMessageContent,
 } from "@tihlde/sdk";
 
 export const EventQueryKeys = {
     allergies: ["events", "allergies"] as const,
+    messages: ["events", "messages"] as const,
     listInfinite: ["events", "list-infinite"] as const,
     list: ["events", "list-paged"] as const,
     detail: ["events", "detail"] as const,
@@ -634,3 +636,49 @@ export const getEventAllergiesQuery = (eventId: string) =>
                 params: { eventId },
             }),
     });
+
+// -- Meldinger til deltakerne --
+
+export const getEventMessagesQuery = (eventId: string) =>
+    queryOptions({
+        queryKey: [...EventQueryKeys.messages, eventId],
+        queryFn: () =>
+            apiClient.get("/api/event/{eventId}/messages", {
+                params: { eventId },
+            }),
+        // Antallet står i bekreftelsen før sending, så det må være ferskt.
+        staleTime: 0,
+    });
+
+export const sendEventMessageMutation = mutationOptions({
+    mutationFn: ({
+        eventId,
+        data,
+    }: {
+        eventId: string;
+        data: EventMessageContent;
+    }) =>
+        apiClient.post("/api/event/{eventId}/messages", {
+            params: { eventId },
+            json: data,
+        }),
+    onSuccess(_, vars, __, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: [...EventQueryKeys.messages, vars.eventId],
+        });
+    },
+});
+
+export const testEventMessageMutation = mutationOptions({
+    mutationFn: ({
+        eventId,
+        data,
+    }: {
+        eventId: string;
+        data: EventMessageContent;
+    }) =>
+        apiClient.post("/api/event/{eventId}/messages/test", {
+            params: { eventId },
+            json: data,
+        }),
+});
