@@ -20,6 +20,13 @@ export interface EventMessageEmailProps {
     logoUrl: string;
 }
 
+// Tabellen e-posten er bygget av vokser til det lengste ordet den ikke kan
+// bryte, så en lang lenke i teksten gjorde hele e-posten bredere.
+const breakLongWords = {
+    overflowWrap: "anywhere",
+    wordBreak: "break-word",
+} as const;
+
 export const EventMessageEmail = ({
     title = "Bussen går 17:00",
     body = "Vi samles utenfor hovedinngangen.\nHusk varme klær!",
@@ -42,9 +49,15 @@ export const EventMessageEmail = ({
                         alt="TIHLDE Logomark"
                         style={emailStyles.logo}
                     />
-                    <Heading style={emailStyles.heading}>{title}</Heading>
+                    <Heading
+                        style={{ ...emailStyles.heading, ...breakLongWords }}
+                    >
+                        {title}
+                    </Heading>
                     {/* white-space: pre-line er ikke støttet i alle e-postklienter. */}
-                    <Text style={emailStyles.paragraph}>
+                    <Text
+                        style={{ ...emailStyles.paragraph, ...breakLongWords }}
+                    >
                         {lines.map((line, index) => (
                             <React.Fragment key={index}>
                                 {index > 0 && <br />}
@@ -55,7 +68,9 @@ export const EventMessageEmail = ({
                     <Button href={link} style={emailStyles.button}>
                         Se arrangementet
                     </Button>
-                    <Text style={emailStyles.paragraph}>
+                    <Text
+                        style={{ ...emailStyles.paragraph, ...breakLongWords }}
+                    >
                         Sendt av {senderName} om {eventTitle}
                     </Text>
                 </Container>
