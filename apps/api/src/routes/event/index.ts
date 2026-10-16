@@ -10,6 +10,9 @@ import { getEventFormRoute } from "./form/get";
 import { listEventFormsRoute } from "./form/list";
 import { getRoute } from "./get";
 import { listRoute } from "./list";
+import { listEventMessagesRoute } from "./message/list";
+import { sendEventMessageRoute } from "./message/send";
+import { testEventMessageRoute } from "./message/test";
 import { confirmPaymentRoute } from "./payment/confirm";
 import { createPaymentRoute } from "./payment/create";
 import { listEventPaymentsRoute } from "./payment/list";
@@ -65,6 +68,11 @@ export const eventRoutes = route()
 
     // Allergier for arrangøren
     .route("/", getEventAllergiesRoute)
+
+    // Meldinger til deltakerne
+    .route("/", listEventMessagesRoute)
+    .route("/", testEventMessageRoute)
+    .route("/", sendEventMessageRoute)
 
     // Payment
     .route("/", createPaymentRoute)

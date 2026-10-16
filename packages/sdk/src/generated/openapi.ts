@@ -945,6 +945,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/event/{eventId}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List messages sent to an event's participants
+         * @description Everything the arrangers have sent to the participants, newest first, along with how many a new message would reach. Same access as editing the event.
+         */
+        get: operations["listEventMessages"];
+        put?: never;
+        /**
+         * Send a message to an event's participants
+         * @description Sends a message to everyone holding a spot on the event (registered, attended or no-show — never the waitlist) as a notification in the bell, an email and a push. Replies to the email go to the event's contact person, or the arranging group's contact address. Same access as editing the event.
+         */
+        post: operations["sendEventMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/messages/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a test of an event message to yourself
+         * @description Sends the message as an email and a push to the caller only, with «[Test]» in front of the title. Nothing is saved, and the bell is left alone.
+         */
+        post: operations["testEventMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/event/{eventId}/payment": {
         parameters: {
             query?: never;
@@ -4243,6 +4287,28 @@ export interface components {
             summary: components["schemas"]["EventAllergySummaryEntry"][];
             /** @description Only the participants who registered something, so the list stays readable. */
             participants: components["schemas"]["EventParticipantAllergies"][];
+        };
+        EventMessage: {
+            id: string;
+            title: string;
+            body: string;
+            recipientCount: number;
+            sentBy: {
+                id: string;
+                name: string;
+            } | null;
+            createdAt: string;
+        };
+        EventMessageList: {
+            /** @description How many would get a message sent right now: everyone holding a spot. */
+            recipientCount: number;
+            messages: components["schemas"]["EventMessage"][];
+        };
+        EventMessageContent: {
+            /** @description Short headline. The event title is put in front of it in the email subject, the push and the bell. */
+            title: string;
+            /** @description Plain text. Line breaks are kept in the email. */
+            body: string;
         };
         CreatePaymentResponse: {
             /** Format: uuid */
@@ -8736,6 +8802,167 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
+            };
+        };
+    };
+    listEventMessages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventMessageList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    sendEventMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventMessageContent"];
+            };
+        };
+        responses: {
+            /** @description Message saved and handed to the email and push queues */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventMessage"];
+                };
+            };
+            /** @description Bad Request - Nobody holds a spot on the event */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The same message was sent to this event less than a minute ago */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    testEventMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventMessageContent"];
+            };
+        };
+        responses: {
+            /** @description Test handed to the queues */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
