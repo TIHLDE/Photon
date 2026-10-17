@@ -10,6 +10,7 @@ import {
 } from "@tihlde/ui/ui/card";
 import { FieldGroup } from "@tihlde/ui/ui/field";
 import { Spinner } from "@tihlde/ui/ui/spinner";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { changePasswordMutationOptions } from "#/api/auth";
 import { formHandlers, useAppForm } from "#/hooks/form";
@@ -167,7 +168,7 @@ function ResetPasswordPage() {
                     </form.AppForm>
                 </CardContent>
                 <CardFooter className="justify-center">
-                    <p className="text-sm text-muted-foreground">
+                    <Text size="sm" tone="muted">
                         <Link
                             to="/login"
                             search={{ redirectTo }}
@@ -175,7 +176,7 @@ function ResetPasswordPage() {
                         >
                             Tilbake til innlogging
                         </Link>
-                    </p>
+                    </Text>
                 </CardFooter>
             </form>
         </Card>

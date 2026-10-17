@@ -15,6 +15,7 @@ import {
 import { FieldGroup } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
 import { Spinner } from "@tihlde/ui/ui/spinner";
+import { Text } from "@tihlde/ui/ui/text";
 
 import {
     AuthError,
@@ -245,9 +246,9 @@ function LoginPage() {
                     </form.AppForm>
 
                     {signInMutation.isError && !emailNotVerified && (
-                        <p className="text-sm text-destructive">
+                        <Text size="sm" tone="destructive">
                             {signInMutation.error.message}
-                        </p>
+                        </Text>
                     )}
 
                     <form.AppForm>
@@ -281,11 +282,11 @@ function LoginPage() {
                     onSignIn={() => handleFeideSignIn()}
                     loading={feideLoading}
                 />
-                <p className="text-sm text-muted-foreground">
+                <Text size="sm" tone="muted">
                     Registrerte du deg med Feide og aldri satte et
                     TIHLDE-passord? Logg inn med Feide, eller bruk «Glemt
                     passord» for å lage et.
-                </p>
+                </Text>
             </CardContent>
 
             {emailNotVerified && (
@@ -312,7 +313,7 @@ function LoginPage() {
             )}
 
             <CardFooter className="justify-center">
-                <p className="text-sm text-muted-foreground">
+                <Text size="sm" tone="muted">
                     Har du ikke konto?{" "}
                     <Link
                         to="/register"
@@ -320,7 +321,7 @@ function LoginPage() {
                     >
                         Opprett bruker
                     </Link>
-                </p>
+                </Text>
             </CardFooter>
         </Card>
     );
@@ -376,9 +377,9 @@ function EmailVerificationPrompt({
                             )}
                         </Button>
                         {error && (
-                            <p className="text-sm text-destructive">
+                            <Text size="sm" tone="destructive">
                                 Fikk ikke sendt lenken. Prøv igjen.
-                            </p>
+                            </Text>
                         )}
                     </form>
                 )}

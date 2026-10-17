@@ -12,6 +12,7 @@ import {
 } from "@tihlde/ui/ui/card";
 import { FieldGroup } from "@tihlde/ui/ui/field";
 import { Spinner } from "@tihlde/ui/ui/spinner";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { useState } from "react";
 
@@ -282,12 +283,12 @@ function RegisterPage() {
             )}
 
             <CardFooter className="justify-center">
-                <p className="text-sm text-muted-foreground">
+                <Text size="sm" tone="muted">
                     Har du allerede konto?{" "}
                     <Link to="/login" className="underline underline-offset-4">
                         Logg inn
                     </Link>
-                </p>
+                </Text>
             </CardFooter>
         </Card>
     );

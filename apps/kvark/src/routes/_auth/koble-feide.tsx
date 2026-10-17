@@ -13,6 +13,7 @@ import {
 } from "@tihlde/ui/ui/card";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Spinner } from "@tihlde/ui/ui/spinner";
+import { Text } from "@tihlde/ui/ui/text";
 
 import {
     authQueryOptions,
@@ -242,9 +243,9 @@ function LinkFeidePrompt({
                     )}
                 </Button>
                 {linkMutation.isError && (
-                    <p className="text-sm text-destructive">
+                    <Text size="sm" tone="destructive">
                         {linkMutation.error.message}
-                    </p>
+                    </Text>
                 )}
             </CardContent>
             {/*

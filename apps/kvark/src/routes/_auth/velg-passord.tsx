@@ -14,6 +14,7 @@ import {
 import { FieldGroup } from "@tihlde/ui/ui/field";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Spinner } from "@tihlde/ui/ui/spinner";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { authQueryOptions, sanitizeRedirectTo } from "#/api/auth";
 import { setPasswordMutation } from "#/api/queries/password";
@@ -167,9 +168,9 @@ function ChoosePasswordCard() {
                     </form.AppForm>
 
                     {mutation.isError && (
-                        <p className="text-sm text-destructive">
+                        <Text size="sm" tone="destructive">
                             {mutation.error.message}
-                        </p>
+                        </Text>
                     )}
 
                     <form.AppForm>

@@ -13,6 +13,7 @@ import {
     CardTitle,
 } from "@tihlde/ui/ui/card";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { authClientWithRedirect } from "#/api/auth";
 import {
@@ -104,22 +105,24 @@ function ConsentCard({
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col gap-3">
-                    <p className="text-sm">Applikasjonen ber om tilgang til:</p>
+                    <Text size="sm">Applikasjonen ber om tilgang til:</Text>
                     <ul className="flex flex-col gap-2">
                         {scopesToShow.map((s) => (
-                            <li
+                            <Text
+                                render={<li />}
+                                size="sm"
                                 key={s}
-                                className="flex items-start gap-2 text-sm"
+                                className="flex items-start gap-2"
                             >
                                 <span aria-hidden>•</span>
                                 <span>{SCOPE_DESCRIPTIONS[s] ?? s}</span>
-                            </li>
+                            </Text>
                         ))}
                     </ul>
                     {decision.isError && (
-                        <p className="text-sm text-destructive" role="alert">
+                        <Text size="sm" tone="destructive" role="alert">
                             {decision.error.message}
-                        </p>
+                        </Text>
                     )}
                 </div>
             </CardContent>
