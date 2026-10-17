@@ -102,8 +102,7 @@ export const account = pgTable(
          * Where `password` came from — only ever set on `credential` rows.
          *
          * `migrated` marks the 1634 accounts the Lepton migration created with
-         * a `crypto.randomUUID()` password it never stored anywhere
-         * (`packages/lepton-migration/import-users.ts`). Those rows grant
+         * a `crypto.randomUUID()` password it never stored anywhere. Those rows grant
          * nobody access: the member cannot know the value, so "this account
          * has a password" is true in the schema and false in practice.
          *

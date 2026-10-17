@@ -205,24 +205,6 @@
         "typescript": "catalog:",
       },
     },
-    "packages/lepton-migration": {
-      "name": "@photon/lepton-migration",
-      "version": "0.0.0",
-      "dependencies": {
-        "@photon/auth": "workspace:*",
-        "@photon/core": "workspace:*",
-        "@photon/db": "workspace:*",
-        "@photon/email": "workspace:*",
-        "drizzle-orm": "catalog:backend",
-        "mysql2": "^3.14.4",
-      },
-      "devDependencies": {
-        "@photon/tsconfig": "workspace:*",
-        "@types/bun": "catalog:",
-        "@types/node": "catalog:",
-        "typescript": "catalog:",
-      },
-    },
     "packages/sdk": {
       "name": "@tihlde/sdk",
       "version": "0.0.5",
@@ -930,8 +912,6 @@
     "@photon/docker": ["@photon/docker@workspace:infra/docker"],
 
     "@photon/email": ["@photon/email@workspace:packages/email"],
-
-    "@photon/lepton-migration": ["@photon/lepton-migration@workspace:packages/lepton-migration"],
 
     "@photon/tsconfig": ["@photon/tsconfig@workspace:packages/tsconfig"],
 
