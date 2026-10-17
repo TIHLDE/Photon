@@ -76,10 +76,10 @@ describe("Feedback", () => {
             expect(found.totalCount).toBe(1);
             expect(found.items[0]?.id).toBe(idea.id);
 
-            // Feedback is anonymous: nothing in the payload names the author,
-            // and the only trace of them is the flag the author sees on their
-            // own row.
-            expect(found.items[0]).not.toHaveProperty("author");
+            // Feedback is anonymous by default: nothing in the payload names
+            // the author, and the only trace of them is the flag the author
+            // sees on their own row.
+            expect(found.items[0]?.author).toBeNull();
             expect(found.items[0]?.isAuthor).toBe(false);
 
             const ownList = await (

@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { validator } from "hono-openapi";
 import type z from "zod";
+import { getFeedbackItem } from "~/lib/feedback/serialize";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -35,6 +36,7 @@ export const createRoute = route().post(
                 title: body.title,
                 description: body.description,
                 authorId: user.id,
+                isAnonymous: body.isAnonymous,
             })
             .returning();
 
@@ -42,21 +44,12 @@ export const createRoute = route().post(
             throw new Error("Failed to create feedback");
         }
 
-        return c.json(
-            {
-                id: created.id,
-                type: created.type,
-                status: created.status,
-                title: created.title,
-                description: created.description,
-                isAuthor: true,
-                upvotes: 0,
-                downvotes: 0,
-                myVote: null,
-                createdAt: created.createdAt.toISOString(),
-                updatedAt: created.updatedAt.toISOString(),
-            } satisfies z.infer<typeof feedbackItemSchema>,
-            201,
-        );
+        const item = await getFeedbackItem(db, created.id, user.id);
+
+        if (!item) {
+            throw new Error("Failed to create feedback");
+        }
+
+        return c.json(item satisfies z.infer<typeof feedbackItemSchema>, 201);
     },
 );
