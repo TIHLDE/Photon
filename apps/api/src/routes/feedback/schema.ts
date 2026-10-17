@@ -25,7 +25,7 @@ export const createFeedbackSchema = Schema(
             .min(10)
             .max(2000)
             .meta({ description: "What the idea or the bug is" }),
-        isAnonymous: z.boolean().default(true).meta({
+        isAnonymous: z.boolean().optional().meta({
             description:
                 "Hide the author's name from everyone else. Defaults to anonymous.",
         }),

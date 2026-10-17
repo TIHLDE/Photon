@@ -4609,11 +4609,8 @@ export interface components {
             title: string;
             /** @description What the idea or the bug is */
             description: string;
-            /**
-             * @description Hide the author's name from everyone else. Defaults to anonymous.
-             * @default true
-             */
-            isAnonymous: boolean;
+            /** @description Hide the author's name from everyone else. Defaults to anonymous. */
+            isAnonymous?: boolean;
         };
         UpdateFeedback: {
             title?: string;

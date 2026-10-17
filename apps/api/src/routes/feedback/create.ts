@@ -36,7 +36,7 @@ export const createRoute = route().post(
                 title: body.title,
                 description: body.description,
                 authorId: user.id,
-                isAnonymous: body.isAnonymous,
+                isAnonymous: body.isAnonymous ?? true,
             })
             .returning();
 
