@@ -12,6 +12,7 @@ import {
     InputGroupButton,
     InputGroupInput,
 } from "@tihlde/ui/ui/input-group";
+import { Text } from "@tihlde/ui/ui/text";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { useId, useState } from "react";
 
@@ -47,7 +48,11 @@ export function InputField({
             {label && (
                 <FieldLabel htmlFor={inputId}>
                     {label}{" "}
-                    {required && <span className="text-destructive">*</span>}
+                    {required && (
+                        <Text render={<span />} tone="destructive">
+                            *
+                        </Text>
+                    )}
                 </FieldLabel>
             )}
             <Input
@@ -113,7 +118,11 @@ export function PasswordField({
             {label && (
                 <FieldLabel htmlFor={inputId}>
                     {label}{" "}
-                    {required && <span className="text-destructive">*</span>}
+                    {required && (
+                        <Text render={<span />} tone="destructive">
+                            *
+                        </Text>
+                    )}
                 </FieldLabel>
             )}
             <InputGroup>

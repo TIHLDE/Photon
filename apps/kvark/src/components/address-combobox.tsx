@@ -7,6 +7,7 @@ import {
     AutocompleteItem,
     AutocompleteList,
 } from "@tihlde/ui/ui/autocomplete";
+import { Text } from "@tihlde/ui/ui/text";
 
 import type { AddressSuggestion } from "#/api/queries/address";
 
@@ -80,9 +81,14 @@ export function AddressCombobox({
                                         {item.street}
                                     </span>
                                     {item.postal ? (
-                                        <span className="truncate text-xs text-muted-foreground">
+                                        <Text
+                                            render={<span />}
+                                            size="xs"
+                                            tone="muted"
+                                            className="truncate"
+                                        >
                                             {item.postal}
-                                        </span>
+                                        </Text>
                                     ) : null}
                                 </span>
                             </AutocompleteItem>

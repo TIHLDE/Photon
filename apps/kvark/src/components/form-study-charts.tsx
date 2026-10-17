@@ -19,6 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@tihlde/ui/ui/select";
+import { Text } from "@tihlde/ui/ui/text";
 import { useMemo, useState } from "react";
 import { Cell, Pie, PieChart } from "recharts";
 
@@ -109,9 +110,11 @@ function FormStudyDonut({ title, description, slices }: FormStudyDonutProps) {
                 </ChartContainer>
                 <ul className="flex flex-col gap-2">
                     {slices.map((slice, index) => (
-                        <li
+                        <Text
+                            render={<li />}
+                            size="sm"
                             key={slice.key}
-                            className="flex items-center gap-2 text-sm"
+                            className="flex items-center gap-2"
                         >
                             <span
                                 aria-hidden
@@ -121,10 +124,15 @@ function FormStudyDonut({ title, description, slices }: FormStudyDonutProps) {
                                 }}
                             />
                             <span className="truncate">{slice.label}</span>
-                            <span className="ml-auto font-medium tabular-nums text-muted-foreground">
+                            <Text
+                                render={<span />}
+                                weight="medium"
+                                tone="muted"
+                                className="ml-auto tabular-nums"
+                            >
                                 {slice.count} ({slice.percentage} %)
-                            </span>
-                        </li>
+                            </Text>
+                        </Text>
                     ))}
                 </ul>
             </CardContent>

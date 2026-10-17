@@ -1,5 +1,6 @@
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import { Label } from "@tihlde/ui/ui/label";
+import { Text } from "@tihlde/ui/ui/text";
 import type { ReactNode } from "react";
 
 type FilterCheckboxOptionProps = {
@@ -25,9 +26,9 @@ export function FilterCheckboxOption({
             <span className="flex min-w-0 flex-col gap-0.5">
                 <span>{title}</span>
                 {description ? (
-                    <span className="text-xs text-muted-foreground">
+                    <Text render={<span />} size="xs" tone="muted">
                         {description}
-                    </span>
+                    </Text>
                 ) : null}
             </span>
         </Label>

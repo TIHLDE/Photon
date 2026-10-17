@@ -6,6 +6,7 @@ import {
     TableHeader,
     TableRow,
 } from "@tihlde/ui/ui/table";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { type FormSubmissionRow, formatSubmissionStudy } from "#/lib/form";
 
@@ -21,9 +22,9 @@ export function FormSubmissionsTable({
 }: FormSubmissionsTableProps) {
     if (submissions.length === 0) {
         return (
-            <p className="text-sm text-muted-foreground">
+            <Text size="sm" tone="muted">
                 Ingen har svart på skjemaet ennå.
-            </p>
+            </Text>
         );
     }
 
@@ -56,9 +57,9 @@ export function FormSubmissionsTable({
                         <TableCell>
                             <div className="flex flex-col">
                                 <span>{submission.userName}</span>
-                                <span className="text-xs text-muted-foreground">
+                                <Text render={<span />} size="xs" tone="muted">
                                     {submission.userEmail}
-                                </span>
+                                </Text>
                                 {/* Studie og klassetrinn hører til personen,
                                     ikke til et eget spørsmål: skjemaeieren
                                     leser svarene per klassetrinn like ofte som
@@ -67,12 +68,16 @@ export function FormSubmissionsTable({
                                     submission.studyProgram,
                                     submission.classYear,
                                 ) ? (
-                                    <span className="text-xs text-muted-foreground">
+                                    <Text
+                                        render={<span />}
+                                        size="xs"
+                                        tone="muted"
+                                    >
                                         {formatSubmissionStudy(
                                             submission.studyProgram,
                                             submission.classYear,
                                         )}
-                                    </span>
+                                    </Text>
                                 ) : null}
                             </div>
                         </TableCell>

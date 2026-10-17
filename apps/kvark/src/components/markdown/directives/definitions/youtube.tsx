@@ -1,5 +1,6 @@
 import { defineDirective } from "@tihlde/ui/complex/markdown";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
+import { Text } from "@tihlde/ui/ui/text";
 import { NodeViewWrapper } from "@tiptap/react";
 import { Video as YoutubeIcon } from "lucide-react";
 import { z } from "zod";
@@ -48,7 +49,9 @@ export const youtube = defineDirective({
                     <CardContent className="flex flex-col gap-2 p-3">
                         <div className="flex items-center gap-2">
                             <YoutubeIcon className="size-4" />
-                            <span className="text-sm">YouTube</span>
+                            <Text render={<span />} size="sm">
+                                YouTube
+                            </Text>
                         </div>
                         {url ? (
                             <div className="aspect-video w-full">
@@ -60,9 +63,9 @@ export const youtube = defineDirective({
                                 />
                             </div>
                         ) : (
-                            <span className="text-xs text-muted-foreground">
+                            <Text render={<span />} size="xs" tone="muted">
                                 Set a YouTube video id to preview.
-                            </span>
+                            </Text>
                         )}
                     </CardContent>
                 </Card>

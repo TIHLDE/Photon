@@ -1,5 +1,6 @@
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Input } from "@tihlde/ui/ui/input";
+import { Text } from "@tihlde/ui/ui/text";
 import { XIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -79,9 +80,9 @@ export function AdminAllergyPicker({
                     ))}
                 </ul>
             ) : (
-                <p className="text-sm text-muted-foreground">
+                <Text size="sm" tone="muted">
                     Ingen allergier registrert.
-                </p>
+                </Text>
             )}
 
             <Input
@@ -110,7 +111,9 @@ export function AdminAllergyPicker({
                     ))}
                 </ul>
             ) : query.trim() !== "" ? (
-                <p className="text-sm text-muted-foreground">Ingen treff.</p>
+                <Text size="sm" tone="muted">
+                    Ingen treff.
+                </Text>
             ) : null}
         </div>
     );

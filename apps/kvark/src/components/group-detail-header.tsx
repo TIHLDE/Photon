@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
+import { Text } from "@tihlde/ui/ui/text";
 import { Archive, ArchiveRestore, Crown, HandCoins, Mail } from "lucide-react";
 import { useState } from "react";
 
@@ -76,7 +77,9 @@ export function GroupDetailHeader({
             }
             title={
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-2xl">{group.name}</h1>
+                    <Text render={<h1 />} size="2xl">
+                        {group.name}
+                    </Text>
                     <a
                         href={`mailto:${group.contactEmail}`}
                         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground md:hidden"
@@ -103,10 +106,12 @@ export function GroupDetailHeader({
                             className="hidden gap-1.5 md:flex"
                         >
                             <Crown />
-                            <span className="font-medium">
+                            <Text render={<span />} weight="medium">
                                 {group.leaderTitle ?? "Leder"}
-                            </span>
-                            <span className="text-muted-foreground">·</span>
+                            </Text>
+                            <Text render={<span />} tone="muted">
+                                ·
+                            </Text>
                             {group.leader}
                         </Badge>
                     ) : null}

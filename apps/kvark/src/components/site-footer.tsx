@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Separator } from "@tihlde/ui/ui/separator";
+import { Text } from "@tihlde/ui/ui/text";
 import { Facebook, Instagram, Linkedin } from "lucide-react";
 
 export function SiteFooter() {
@@ -8,9 +9,14 @@ export function SiteFooter() {
             <Separator variant="subtle" />
             <div className="container mx-auto grid gap-6 px-4 py-6 md:grid-cols-3 md:gap-8 md:py-10">
                 <div className="flex flex-col items-center gap-1 text-center md:items-start md:gap-2 md:text-left">
-                    <h3 className="font-heading text-sm font-semibold">
+                    <Text
+                        render={<h3 />}
+                        size="sm"
+                        weight="semibold"
+                        className="font-heading"
+                    >
                         Kontakt
-                    </h3>
+                    </Text>
                     <p>
                         E-post: <a href="mailto:hs@tihlde.org">hs@tihlde.org</a>
                     </p>
@@ -19,9 +25,14 @@ export function SiteFooter() {
                 </div>
 
                 <div className="flex flex-col items-center gap-3 text-center">
-                    <h3 className="font-heading text-sm font-semibold">
+                    <Text
+                        render={<h3 />}
+                        size="sm"
+                        weight="semibold"
+                        className="font-heading"
+                    >
                         Hovedsamarbeidspartner
-                    </h3>
+                    </Text>
                     <a
                         href="https://www.dnv.no/"
                         target="_blank"
@@ -39,9 +50,14 @@ export function SiteFooter() {
                 </div>
 
                 <div className="flex flex-col items-center gap-3 text-center md:items-end md:text-right">
-                    <h3 className="font-heading text-sm font-semibold">
+                    <Text
+                        render={<h3 />}
+                        size="sm"
+                        weight="semibold"
+                        className="font-heading"
+                    >
                         Samarbeid
-                    </h3>
+                    </Text>
                     <a
                         href="https://www.nito.no/"
                         target="_blank"
@@ -85,10 +101,14 @@ export function SiteFooter() {
                 </div>
             </div>
             <Separator variant="subtle" />
-            <div className="container mx-auto flex flex-col items-center justify-between gap-1 px-4 py-4 text-center text-sm md:flex-row md:gap-2 md:py-6 md:text-left">
+            <Text
+                render={<div />}
+                size="sm"
+                className="container mx-auto flex flex-col items-center justify-between gap-1 px-4 py-4 text-center md:flex-row md:gap-2 md:py-6 md:text-left"
+            >
                 <p>© {new Date().getFullYear()} TIHLDE</p>
                 <Link to="/personvern">Personvernerklæring</Link>
-            </div>
+            </Text>
         </footer>
     );
 }

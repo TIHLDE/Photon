@@ -16,6 +16,7 @@ import { GroupFineAccordion } from "#/components/group-fine-accordion";
 import { GroupFineStatCard } from "#/components/group-fine-stat-card";
 import { GroupPageHeader } from "#/components/group-page-header";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
+import { Text } from "@tihlde/ui/ui/text";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import type { Fine, FineStatistics, FineStatus, FineUser } from "#/lib/group";
 import { initials } from "#/lib/utils";
@@ -139,10 +140,10 @@ export function GroupFinesTab({
             <GroupPageHeader title={ownFinesOnly ? "Mine bøter" : "Bøter"} />
 
             {ownFinesOnly ? (
-                <p className="text-sm text-muted-foreground">
+                <Text size="sm" tone="muted">
                     Du er ikke lenger medlem av gruppen. Her står bøtene du fikk
                     og ga mens du var med.
-                </p>
+                </Text>
             ) : null}
 
             {/* Botreglene gjelder dem som er med. Har du gått ut, er de ikke
@@ -230,9 +231,9 @@ export function GroupFinesTab({
 
                 {selectedUserId && grouping === "alle" ? (
                     <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">
+                        <Text render={<span />} size="sm" tone="muted">
                             Viser bøter for {selectedUserName ?? "medlem"}
-                        </span>
+                        </Text>
                         <Button
                             size="sm"
                             variant="ghost"
@@ -412,16 +413,25 @@ function FineUserList({
                                 </AvatarFallback>
                             </Avatar>
                             <div className="flex min-w-0 flex-1 flex-col">
-                                <span className="truncate font-medium">
+                                <Text
+                                    render={<span />}
+                                    weight="medium"
+                                    className="truncate"
+                                >
                                     {user.name}
-                                </span>
-                                <span className="truncate text-sm text-muted-foreground">
+                                </Text>
+                                <Text
+                                    render={<span />}
+                                    size="sm"
+                                    tone="muted"
+                                    className="truncate"
+                                >
                                     {user.finesAmount} bøter fordelt på{" "}
                                     {user.finesCount}{" "}
                                     {user.finesCount === 1
                                         ? "hendelse"
                                         : "hendelser"}
-                                </span>
+                                </Text>
                             </div>
                             {canManage && user.finesCount > 0 ? (
                                 <div className="flex flex-wrap gap-2">

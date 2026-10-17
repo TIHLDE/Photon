@@ -1,4 +1,5 @@
 import { Badge } from "@tihlde/ui/ui/badge";
+import { Text } from "@tihlde/ui/ui/text";
 import { Github, Linkedin } from "lucide-react";
 
 import type { ProfileLink } from "#/components/profile-header";
@@ -12,7 +13,9 @@ export function ProfileLinksSection({ links }: ProfileLinksSectionProps) {
 
     return (
         <div className="flex flex-col gap-3 md:hidden">
-            <h3 className="text-xs text-muted-foreground">Lenker</h3>
+            <Text render={<h3 />} size="xs" tone="muted">
+                Lenker
+            </Text>
             <div className="flex flex-wrap items-center gap-2">
                 {links.map((link) => (
                     <Badge

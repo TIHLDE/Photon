@@ -1,5 +1,6 @@
 import { Button } from "@tihlde/ui/ui/button";
 import { Card } from "@tihlde/ui/ui/card";
+import { Text } from "@tihlde/ui/ui/text";
 import { HelpCircle } from "lucide-react";
 
 export type ProfileTodoRowProps = {
@@ -18,10 +19,17 @@ export function ProfileTodoRow({ title, meta, action }: ProfileTodoRowProps) {
                 <HelpCircle className="size-5" />
             </div>
             <div className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate font-medium">{title}</span>
-                <span className="truncate text-sm text-muted-foreground">
+                <Text render={<span />} weight="medium" className="truncate">
+                    {title}
+                </Text>
+                <Text
+                    render={<span />}
+                    size="sm"
+                    tone="muted"
+                    className="truncate"
+                >
                     {meta}
-                </span>
+                </Text>
             </div>
             <div className="pr-3">
                 <Button size="sm">{action}</Button>

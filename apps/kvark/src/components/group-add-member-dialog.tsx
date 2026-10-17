@@ -9,6 +9,7 @@ import {
     DialogTrigger,
 } from "@tihlde/ui/ui/dialog";
 import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
+import { Text } from "@tihlde/ui/ui/text";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
@@ -111,7 +112,9 @@ export function GroupAddMemberDialog({
                         />
                     </Field>
                     {error ? (
-                        <p className="text-sm text-destructive">{error}</p>
+                        <Text size="sm" tone="destructive">
+                            {error}
+                        </Text>
                     ) : null}
                 </FieldGroup>
                 <DialogFooter>

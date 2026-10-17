@@ -19,6 +19,7 @@ import {
 import { Separator } from "@tihlde/ui/ui/separator";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Spinner } from "@tihlde/ui/ui/spinner";
+import { Text } from "@tihlde/ui/ui/text";
 import { LockIcon, PlusIcon, TrashIcon, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
@@ -573,9 +574,9 @@ function QuestionsEditor({
                     </div>
 
                     {questionList.state.value.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
+                        <Text size="sm" tone="muted">
                             Skjemaet har ingen spørsmål ennå.
-                        </p>
+                        </Text>
                     ) : null}
 
                     {questionList.state.value.map((question, index) => (
@@ -731,9 +732,9 @@ function OptionsEditor({
                         </div>
                     ))}
                     {optionList.state.value.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
+                        <Text size="sm" tone="muted">
                             Spørsmålet trenger minst ett alternativ.
-                        </p>
+                        </Text>
                     ) : null}
                     <Button
                         type="button"

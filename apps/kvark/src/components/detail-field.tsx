@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { Text } from "@tihlde/ui/ui/text";
 
 type DetailFieldProps = {
     icon?: LucideIcon;
@@ -20,23 +21,35 @@ export function DetailField({
             // (kontaktpersoner, «Studenter ved …») presset raden ut av
             // skjermen på mobil. Begge sidene får krympe nå; bare ikonet og
             // handlingen holdes i full bredde.
-            <div className="flex flex-col items-start justify-between gap-3 text-sm">
-                <div className="flex min-w-0 items-center gap-2.5 text-muted-foreground">
+            <Text
+                render={<div />}
+                size="sm"
+                className="flex flex-col items-start justify-between gap-3"
+            >
+                <Text
+                    render={<div />}
+                    tone="muted"
+                    className="flex min-w-0 items-center gap-2.5"
+                >
                     {Icon ? <Icon className="size-4 shrink-0" /> : null}
                     <span className="truncate">{label}</span>
-                </div>
+                </Text>
                 <div className="flex min-w-0 items-center gap-2">
                     <span className="min-w-0 text-right wrap-anywhere">
                         {value}
                     </span>
                     {action ? <div className="shrink-0">{action}</div> : null}
                 </div>
-            </div>
+            </Text>
         );
     }
 
     return (
-        <div className="flex items-start justify-between gap-3 text-sm">
+        <Text
+            render={<div />}
+            size="sm"
+            className="flex items-start justify-between gap-3"
+        >
             <div className="flex min-w-0 items-start gap-2.5">
                 {Icon ? (
                     <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
@@ -44,6 +57,6 @@ export function DetailField({
                 <span className="wrap-anywhere">{value}</span>
             </div>
             {action ? <div className="shrink-0">{action}</div> : null}
-        </div>
+        </Text>
     );
 }

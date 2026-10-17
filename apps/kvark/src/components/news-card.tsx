@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { IMAGE_PRESETS } from "@tihlde/ui/ui/image-preset";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { assetImageProps } from "#/lib/assets";
 import { DEFAULT_COVER_IMAGE } from "#/lib/image";
@@ -47,11 +48,13 @@ export function NewsCard({
             </div>
             <div className="flex min-w-0 flex-col gap-1">
                 <h3 className="line-clamp-2 text-lg sm:text-xl">{title}</h3>
-                <p className="text-sm text-muted-foreground">{publishedAt}</p>
+                <Text size="sm" tone="muted">
+                    {publishedAt}
+                </Text>
                 {excerpt ? (
-                    <p className="line-clamp-2 text-sm text-muted-foreground">
+                    <Text size="sm" tone="muted" className="line-clamp-2">
                         {excerpt}
-                    </p>
+                    </Text>
                 ) : null}
             </div>
         </Link>

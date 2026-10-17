@@ -5,6 +5,7 @@ import { Button } from "@tihlde/ui/ui/button";
 import { VippsButton } from "@tihlde/ui/ui/vipps-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 import { Progress } from "@tihlde/ui/ui/progress";
+import { Text } from "@tihlde/ui/ui/text";
 import {
     AlertCircle,
     Ban,
@@ -164,9 +165,9 @@ export function EventRegistrationCard(props: EventRegistrationCardProps) {
                     <InfoRow icon={state.icon}>
                         <span>{state.message}</span>
                         {state.secondary ? (
-                            <span className="text-sm text-muted-foreground">
+                            <Text render={<span />} size="sm" tone="muted">
                                 {state.secondary}
-                            </span>
+                            </Text>
                         ) : null}
                     </InfoRow>
                 ) : null}
@@ -475,7 +476,11 @@ function RegistrationTimeline({ points }: { points: TimelinePoint[] }) {
         // venstre, siste helt til høyre og en strek imellom. Punktene har
         // `min-w-0` så teksten bryter i stedet for å presse kortet — og
         // dermed hele sida — ut av skjermen når det er tre punkter på mobil.
-        <div className="flex items-center gap-2 text-sm sm:gap-3">
+        <Text
+            render={<div />}
+            size="sm"
+            className="flex items-center gap-2 sm:gap-3"
+        >
             {points.map((point, i) => (
                 <Fragment key={point.label}>
                     {i > 0 ? (
@@ -489,16 +494,16 @@ function RegistrationTimeline({ points }: { points: TimelinePoint[] }) {
                         )}
                     >
                         <span>{point.label}</span>
-                        <span className="text-muted-foreground">
+                        <Text render={<span />} tone="muted">
                             {point.day}
-                        </span>
-                        <span className="text-muted-foreground">
+                        </Text>
+                        <Text render={<span />} tone="muted">
                             kl. {point.time}
-                        </span>
+                        </Text>
                     </div>
                 </Fragment>
             ))}
-        </div>
+        </Text>
     );
 }
 
@@ -515,17 +520,21 @@ function RegistrationStats({
 
     return (
         <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-sm">
+            <Text
+                render={<div />}
+                size="sm"
+                className="flex items-center gap-2"
+            >
                 <Users className="size-4 text-muted-foreground" />
                 <span className="tabular-nums">
                     {registeredCount}/{capacityLabel} påmeldte
                 </span>
                 {waitlistCount > 0 ? (
-                    <span className="text-muted-foreground">
+                    <Text render={<span />} tone="muted">
                         · {waitlistCount} venteliste
-                    </span>
+                    </Text>
                 ) : null}
-            </div>
+            </Text>
             {progress !== null ? <Progress value={progress} /> : null}
         </div>
     );
@@ -539,11 +548,11 @@ function InfoRow({
     children: ReactNode;
 }) {
     return (
-        <div className="flex items-start gap-2 text-sm">
+        <Text render={<div />} size="sm" className="flex items-start gap-2">
             {Icon ? (
                 <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
             ) : null}
             <div className="flex min-w-0 flex-col gap-1">{children}</div>
-        </div>
+        </Text>
     );
 }

@@ -19,6 +19,7 @@ import { Separator } from "@tihlde/ui/ui/separator";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 import { Textarea } from "@tihlde/ui/ui/textarea";
+import { Text } from "@tihlde/ui/ui/text";
 import { Download, FileTextIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type {
@@ -182,9 +183,9 @@ export function AdminDetailDialog({
                                     status={application.status}
                                     label={application.statusLabel}
                                 />
-                                <span className="text-sm text-muted-foreground">
+                                <Text render={<span />} size="sm" tone="muted">
                                     {formatOsloDateTime(application.createdAt)}
-                                </span>
+                                </Text>
                                 {application.hasPdf && (
                                     <Button
                                         variant="outline"
@@ -206,18 +207,26 @@ export function AdminDetailDialog({
                                         key={field.label}
                                         className="flex flex-col gap-1"
                                     >
-                                        <dt className="text-sm text-muted-foreground">
+                                        <Text
+                                            render={<dt />}
+                                            size="sm"
+                                            tone="muted"
+                                        >
                                             {field.label}
-                                        </dt>
+                                        </Text>
                                         <dd className="whitespace-pre-wrap">
                                             {field.value}
                                         </dd>
                                     </div>
                                 ))}
                                 <div className="flex flex-col gap-1">
-                                    <dt className="text-sm text-muted-foreground">
+                                    <Text
+                                        render={<dt />}
+                                        size="sm"
+                                        tone="muted"
+                                    >
                                         Signatur
-                                    </dt>
+                                    </Text>
                                     <dd>{application.signature}</dd>
                                 </div>
                             </dl>
@@ -226,9 +235,13 @@ export function AdminDetailDialog({
                                 <>
                                     <Separator />
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-sm text-muted-foreground">
+                                        <Text
+                                            render={<span />}
+                                            size="sm"
+                                            tone="muted"
+                                        >
                                             Vedlegg
-                                        </span>
+                                        </Text>
                                         <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
                                             {application.attachments.map(
                                                 (attachment) => {

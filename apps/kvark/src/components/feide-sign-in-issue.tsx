@@ -4,6 +4,7 @@ import { Button } from "@tihlde/ui/ui/button";
 import { Input } from "@tihlde/ui/ui/input";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 import { Textarea } from "@tihlde/ui/ui/textarea";
+import { Text } from "@tihlde/ui/ui/text";
 
 /**
  * Why a Feide login came back without signing anyone in.
@@ -218,7 +219,11 @@ function VerifyEmailPrompt({
                         "Send lenke"
                     )}
                 </Button>
-                {error && <p className="text-sm text-destructive">{error}</p>}
+                {error && (
+                    <Text size="sm" tone="destructive">
+                        {error}
+                    </Text>
+                )}
                 <Button type="button" variant="link" onClick={onNeedHelp}>
                     Husker du ikke e-posten?
                 </Button>
@@ -296,7 +301,11 @@ function HelpForm({
                         "Send forespørsel"
                     )}
                 </Button>
-                {error && <p className="text-sm text-destructive">{error}</p>}
+                {error && (
+                    <Text size="sm" tone="destructive">
+                        {error}
+                    </Text>
+                )}
                 <Button type="button" variant="link" onClick={onBack}>
                     Tilbake
                 </Button>

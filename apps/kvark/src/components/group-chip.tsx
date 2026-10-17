@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { avatarImageUrl } from "#/lib/assets";
 
@@ -21,7 +22,9 @@ export function GroupChip({ name, logoUrl }: GroupChipProps) {
                     {name.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
             </Avatar>
-            <span className="w-full truncate text-xs">{name}</span>
+            <Text render={<span />} size="xs" className="w-full truncate">
+                {name}
+            </Text>
         </a>
     );
 }

@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 import { Progress, ProgressLabel, ProgressValue } from "@tihlde/ui/ui/progress";
+import { Text } from "@tihlde/ui/ui/text";
 
 import type { FormQuestionStatistics } from "#/lib/form";
 
@@ -10,10 +11,10 @@ type FormStatisticsListProps = {
 export function FormStatisticsList({ statistics }: FormStatisticsListProps) {
     if (statistics.length === 0) {
         return (
-            <p className="text-sm text-muted-foreground">
+            <Text size="sm" tone="muted">
                 Skjemaet har ingen spørsmål med alternativer, så det er ingen
                 fordeling å vise. Fritekstsvarene ligger under «Svar».
-            </p>
+            </Text>
         );
     }
 

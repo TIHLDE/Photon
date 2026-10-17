@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
+import { Text } from "@tihlde/ui/ui/text";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 
@@ -87,11 +88,11 @@ export function GroupEventsTab({
                     ))}
                 </div>
             ) : events.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <Text size="sm" tone="muted">
                     {period === "kommende"
                         ? "Gruppen har ingen kommende arrangementer."
                         : "Gruppen har ingen tidligere arrangementer."}
-                </p>
+                </Text>
             ) : (
                 <ul className="flex flex-col">
                     {events.map((event) => (

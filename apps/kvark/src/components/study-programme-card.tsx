@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
+import { Text } from "@tihlde/ui/ui/text";
 
 export interface StudyProgrammeCardProps {
     title: string;
@@ -18,7 +19,9 @@ export function StudyProgrammeCard({
                 <CardTitle className="text-xl">{title}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col gap-4">
-                <p className="flex-1 text-muted-foreground">{description}</p>
+                <Text tone="muted" className="flex-1">
+                    {description}
+                </Text>
                 {action && <div className="flex justify-end">{action}</div>}
             </CardContent>
         </Card>

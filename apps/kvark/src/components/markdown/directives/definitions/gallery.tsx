@@ -2,6 +2,7 @@ import {
     GALLERY_DIRECTIVE,
     defineDirective,
 } from "@tihlde/ui/complex/markdown";
+import { Text } from "@tihlde/ui/ui/text";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { Images } from "lucide-react";
 import { z } from "zod";
@@ -40,10 +41,15 @@ export const gallery = defineDirective({
     Edit: () => (
         <NodeViewWrapper>
             <div className="my-4 rounded-lg border border-dashed p-2">
-                <div className="mb-2 flex items-center gap-2 text-muted-foreground text-xs">
+                <Text
+                    render={<div />}
+                    tone="muted"
+                    size="xs"
+                    className="mb-2 flex items-center gap-2"
+                >
                     <Images className="size-4" />
                     <span>Image gallery</span>
-                </div>
+                </Text>
                 <NodeViewContent
                     data-slot="markdown-gallery"
                     className={GALLERY_LAYOUT}

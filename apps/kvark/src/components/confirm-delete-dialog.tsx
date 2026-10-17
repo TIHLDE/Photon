@@ -9,6 +9,7 @@ import {
     AlertDialogTitle,
 } from "@tihlde/ui/ui/alert-dialog";
 import { Input } from "@tihlde/ui/ui/input";
+import { Text } from "@tihlde/ui/ui/text";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 type ConfirmDeleteDialogProps = {
@@ -60,12 +61,12 @@ export function ConfirmDeleteDialog({
                 </AlertDialogHeader>
                 {confirmationPhrase ? (
                     <div className="flex flex-col gap-2">
-                        <p className="text-sm font-medium">
+                        <Text size="sm" weight="medium">
                             Skriv:
                             <span className="rounded bg-muted px-1 py-0.5 font-mono">
                                 {confirmationPhrase}
                             </span>
-                        </p>
+                        </Text>
                         <Input
                             value={confirmation}
                             onChange={(event) =>

@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@tihlde/ui/ui/card";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { assetImageProps } from "#/lib/assets";
 
@@ -25,7 +26,7 @@ export function CompanyOfferCard({
             >
                 <div className="flex w-full flex-col gap-3 md:w-1/2">
                     <h2 className="text-2xl md:text-3xl">{title}</h2>
-                    <p className="text-muted-foreground">{description}</p>
+                    <Text tone="muted">{description}</Text>
                 </div>
                 <div className="w-full md:w-1/2">
                     <img

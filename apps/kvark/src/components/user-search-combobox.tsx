@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Input } from "@tihlde/ui/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@tihlde/ui/ui/popover";
+import { Text } from "@tihlde/ui/ui/text";
 import { ChevronDownIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 
@@ -65,12 +66,14 @@ export function UserSearchCombobox({
                                 {initials(holder.name ?? "?")}
                             </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm">{holder.name}</span>
+                        <Text render={<span />} size="sm">
+                            {holder.name}
+                        </Text>
                     </>
                 ) : (
-                    <span className="text-sm text-muted-foreground">
+                    <Text render={<span />} size="sm" tone="muted">
                         {emptyLabel}
-                    </span>
+                    </Text>
                 )}
                 <ChevronDownIcon className="size-4 opacity-60" />
             </PopoverTrigger>
@@ -86,16 +89,26 @@ export function UserSearchCombobox({
                     autoFocus
                 />
                 {isSearching ? (
-                    <span className="px-1 text-xs text-muted-foreground">
+                    <Text
+                        render={<span />}
+                        size="xs"
+                        tone="muted"
+                        className="px-1"
+                    >
                         Søker…
-                    </span>
+                    </Text>
                 ) : null}
                 {!isSearching &&
                 query.trim().length >= 2 &&
                 results.length === 0 ? (
-                    <span className="px-1 text-xs text-muted-foreground">
+                    <Text
+                        render={<span />}
+                        size="xs"
+                        tone="muted"
+                        className="px-1"
+                    >
                         Ingen treff
-                    </span>
+                    </Text>
                 ) : null}
                 {results.length > 0 ? (
                     <ul className="flex max-h-64 flex-col gap-1 overflow-y-auto">
@@ -120,13 +133,23 @@ export function UserSearchCombobox({
                                         </AvatarFallback>
                                     </Avatar>
                                     <span className="flex min-w-0 flex-col">
-                                        <span className="truncate text-sm font-medium">
+                                        <Text
+                                            render={<span />}
+                                            size="sm"
+                                            weight="medium"
+                                            className="truncate"
+                                        >
                                             {user.name}
-                                        </span>
+                                        </Text>
                                         {user.username ? (
-                                            <span className="truncate text-xs text-muted-foreground">
+                                            <Text
+                                                render={<span />}
+                                                size="xs"
+                                                tone="muted"
+                                                className="truncate"
+                                            >
                                                 {user.username}
-                                            </span>
+                                            </Text>
                                         ) : null}
                                     </span>
                                 </button>

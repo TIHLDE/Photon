@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Text } from "@tihlde/ui/ui/text";
 
 type AdminPageHeaderProps = {
     title: string;
@@ -18,10 +19,10 @@ export function AdminPageHeader({
     return (
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex flex-col gap-1">
-                <h1 className="text-3xl">{title}</h1>
-                {description && (
-                    <p className="text-muted-foreground">{description}</p>
-                )}
+                <Text render={<h1 />} size="3xl">
+                    {title}
+                </Text>
+                {description && <Text tone="muted">{description}</Text>}
             </div>
             {action && <div className="flex shrink-0 gap-2">{action}</div>}
         </div>

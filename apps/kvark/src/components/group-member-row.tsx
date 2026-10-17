@@ -20,6 +20,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@tihlde/ui/ui/dropdown-menu";
+import { Text } from "@tihlde/ui/ui/text";
 import {
     ArrowUpCircle,
     Crown,
@@ -76,7 +77,11 @@ export function GroupMemberRow({
                 <div className="flex min-w-0 flex-1 flex-col">
                     {/* `truncate` på selve navnet — på flex-raden klipper den
                         «Leder»-badgen midt av i stedet for å forkorte navnet. */}
-                    <span className="flex items-center gap-2 font-medium">
+                    <Text
+                        render={<span />}
+                        weight="medium"
+                        className="flex items-center gap-2"
+                    >
                         <span className="truncate">{member.name}</span>
                         {isLeader ? (
                             <Badge variant="secondary" className="gap-1">
@@ -84,11 +89,16 @@ export function GroupMemberRow({
                                 Leder
                             </Badge>
                         ) : null}
-                    </span>
-                    <span className="truncate text-sm text-muted-foreground">
+                    </Text>
+                    <Text
+                        render={<span />}
+                        size="sm"
+                        tone="muted"
+                        className="truncate"
+                    >
                         {member.joined} → {historic ? member.until : "nå"}
                         {historic && member.role ? ` · ${member.role}` : ""}
-                    </span>
+                    </Text>
                 </div>
             </Link>
             {!historic && hasActions ? (

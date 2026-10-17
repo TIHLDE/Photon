@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Card } from "@tihlde/ui/ui/card";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { avatarImageUrl } from "#/lib/assets";
 
@@ -54,10 +55,17 @@ export function ProfileMembershipCard({
                 </AvatarFallback>
             </Avatar>
             <div className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate font-medium">{name}</span>
-                <span className="truncate text-sm text-muted-foreground">
+                <Text render={<span />} weight="medium" className="truncate">
+                    {name}
+                </Text>
+                <Text
+                    render={<span />}
+                    size="sm"
+                    tone="muted"
+                    className="truncate"
+                >
                     {period ? `${typeLabel} · ${period}` : typeLabel}
-                </span>
+                </Text>
             </div>
             <Badge variant={role === "leader" ? "default" : "secondary"}>
                 {role === "leader" ? "Leder" : "Medlem"}

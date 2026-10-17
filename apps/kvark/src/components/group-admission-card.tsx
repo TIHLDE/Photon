@@ -7,6 +7,7 @@ import {
     CollapsibleTrigger,
 } from "@tihlde/ui/ui/collapsible";
 import { Spinner } from "@tihlde/ui/ui/spinner";
+import { Text } from "@tihlde/ui/ui/text";
 import { ArrowRight, ChevronDown, Lock } from "lucide-react";
 
 import { GroupIdentity } from "#/components/group-identity";
@@ -109,22 +110,27 @@ function AdmissionAction({
     switch (status) {
         case "unauthenticated":
             return (
-                <p className="text-sm text-muted-foreground">
+                <Text size="sm" tone="muted">
                     Du må være innlogget for å se opptaksskjemaet.
-                </p>
+                </Text>
             );
         case "loading":
             return (
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Text
+                    render={<div />}
+                    size="sm"
+                    tone="muted"
+                    className="flex items-center justify-center gap-2"
+                >
                     <Spinner className="size-4" />
                     Laster inn opptaksskjema...
-                </div>
+                </Text>
             );
         case "missing":
             return (
-                <p className="text-center text-sm text-muted-foreground">
+                <Text size="sm" tone="muted" className="text-center">
                     Ingen opptaksskjemaer funnet
-                </p>
+                </Text>
             );
         case "closed":
             return (

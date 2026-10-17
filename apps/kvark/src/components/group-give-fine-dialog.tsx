@@ -12,6 +12,7 @@ import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
 import { ImageDropzone } from "@tihlde/ui/ui/image-dropzone";
 import { Separator } from "@tihlde/ui/ui/separator";
 import { Textarea } from "@tihlde/ui/ui/textarea";
+import { Text } from "@tihlde/ui/ui/text";
 import { useEffect, useState } from "react";
 
 import { LawCombobox } from "#/components/law-combobox";
@@ -132,10 +133,10 @@ export function GroupGiveFineDialog({
                                     onValueChange={setRecipients}
                                     placeholder="Velg bruker..."
                                 />
-                                <p className="text-xs text-muted-foreground">
+                                <Text size="xs" tone="muted">
                                     Du kan velge flere personer. Alle får hver
                                     sin bot.
-                                </p>
+                                </Text>
                             </Field>
 
                             <Field>
@@ -153,16 +154,16 @@ export function GroupGiveFineDialog({
                                             orientation="vertical"
                                             className="h-auto self-stretch"
                                         />
-                                        <p className="text-sm text-muted-foreground">
+                                        <Text size="sm" tone="muted">
                                             {law.description}
-                                        </p>
+                                        </Text>
                                     </div>
                                 ) : null}
                                 {lawRequired ? null : (
-                                    <p className="text-xs text-muted-foreground">
+                                    <Text size="xs" tone="muted">
                                         Gruppa har ikke lagt inn noe lovverk
                                         ennå, så boten gis uten paragraf.
-                                    </p>
+                                    </Text>
                                 )}
                             </Field>
 
@@ -176,11 +177,11 @@ export function GroupGiveFineDialog({
                                     value={amount}
                                     onValueChange={setAmount}
                                 />
-                                <p className="text-xs text-muted-foreground">
+                                <Text size="xs" tone="muted">
                                     Sett 0 hvis boten skal registreres uten å
                                     telle, eller et negativt tall for å trekke
                                     fra bøter personen har fått.
-                                </p>
+                                </Text>
                             </Field>
 
                             <Field>

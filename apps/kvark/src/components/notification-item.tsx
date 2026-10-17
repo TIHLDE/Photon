@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
+import { Text } from "@tihlde/ui/ui/text";
 import { Check, Trash2 } from "lucide-react";
 
 export type NotificationItemProps = {
@@ -38,11 +39,17 @@ export function NotificationItem({
     const body = (
         <div className="flex flex-col gap-1">
             <div className="flex items-start gap-2">
-                <span className="flex-1 text-sm">{title}</span>
+                <Text render={<span />} size="sm" className="flex-1">
+                    {title}
+                </Text>
                 {isRead ? null : <Badge>Ny</Badge>}
             </div>
-            <p className="text-sm text-muted-foreground">{description}</p>
-            <span className="text-xs text-muted-foreground">{timeLabel}</span>
+            <Text size="sm" tone="muted">
+                {description}
+            </Text>
+            <Text render={<span />} size="xs" tone="muted">
+                {timeLabel}
+            </Text>
         </div>
     );
 

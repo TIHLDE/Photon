@@ -7,6 +7,7 @@ import {
     DialogTrigger,
 } from "@tihlde/ui/ui/dialog";
 import { QRCode } from "@tihlde/ui/ui/qr-code";
+import { Text } from "@tihlde/ui/ui/text";
 import { QrCode } from "lucide-react";
 
 type MembershipQrDialogProps = {
@@ -37,7 +38,9 @@ export function MembershipQrDialog({ name, userId }: MembershipQrDialogProps) {
                     {userId ? (
                         <QRCode className="w-full max-w-xs" value={userId} />
                     ) : null}
-                    <p className="text-base font-medium">{name}</p>
+                    <Text size="base" weight="medium">
+                        {name}
+                    </Text>
                 </div>
             </DialogContent>
         </Dialog>

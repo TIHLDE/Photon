@@ -1,6 +1,7 @@
 import { Mail, User } from "lucide-react";
 
 import { avatarImageUrl } from "#/lib/assets";
+import { Text } from "@tihlde/ui/ui/text";
 
 export type GroupIdentityProps = {
     name: string;
@@ -31,18 +32,28 @@ export function GroupIdentity({
                 </div>
             )}
             <div className="flex min-w-0 flex-1 flex-col text-left">
-                <span className="truncate font-medium">{name}</span>
+                <Text render={<span />} weight="medium" className="truncate">
+                    {name}
+                </Text>
                 {leader ? (
-                    <span className="flex items-center gap-1 truncate text-muted-foreground">
+                    <Text
+                        render={<span />}
+                        tone="muted"
+                        className="flex items-center gap-1 truncate"
+                    >
                         <User className="size-3 shrink-0" />
                         <span className="truncate">{leader}</span>
-                    </span>
+                    </Text>
                 ) : null}
                 {email ? (
-                    <span className="flex items-center gap-1 truncate text-muted-foreground">
+                    <Text
+                        render={<span />}
+                        tone="muted"
+                        className="flex items-center gap-1 truncate"
+                    >
                         <Mail className="size-3 shrink-0" />
                         <span className="truncate">{email}</span>
-                    </span>
+                    </Text>
                 ) : null}
             </div>
         </>

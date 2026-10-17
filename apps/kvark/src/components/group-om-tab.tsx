@@ -1,5 +1,6 @@
 import { Card } from "@tihlde/ui/ui/card";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { GroupPageHeader } from "#/components/group-page-header";
 import { richRegistry } from "#/components/markdown/directives/presets";
@@ -34,18 +35,18 @@ export function GroupOmTab({ group }: GroupOmTabProps) {
                 ) : null}
 
                 <div className="order-2 flex flex-col gap-3 lg:order-1">
-                    <h3 className="text-lg font-medium">
+                    <Text render={<h3 />} size="lg" weight="medium">
                         Hva gjør {group.name}?
-                    </h3>
+                    </Text>
                     {group.description ? (
                         <MarkdownView
                             registry={richRegistry}
                             source={group.description}
                         />
                     ) : (
-                        <p className="text-sm text-muted-foreground">
+                        <Text size="sm" tone="muted">
                             Ingen beskrivelse tilgjengelig ennå.
-                        </p>
+                        </Text>
                     )}
                 </div>
             </div>

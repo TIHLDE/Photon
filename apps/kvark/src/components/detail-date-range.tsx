@@ -1,5 +1,6 @@
 import { CalendarDays } from "lucide-react";
 import type { ReactNode } from "react";
+import { Text } from "@tihlde/ui/ui/text";
 
 export type DetailDatePoint = {
     date: string;
@@ -43,11 +44,11 @@ function SingleDay({
         <div className="flex h-8 min-w-0 flex-col justify-center gap-0.5">
             <span>{start.date}</span>
             {start.time ? (
-                <span className="text-sm text-muted-foreground">
+                <Text render={<span />} size="sm" tone="muted">
                     {end?.time
                         ? `kl. ${start.time} → kl. ${end.time}`
                         : `kl. ${start.time}`}
-                </span>
+                </Text>
             ) : null}
         </div>
     );
@@ -66,18 +67,23 @@ function MultiDay({
             <span className="self-center leading-6">{start.date}</span>
 
             <Connector />
-            <span className="text-sm text-muted-foreground">
+            <Text render={<span />} size="sm" tone="muted">
                 {start.time ? `kl. ${start.time}` : null}
-            </span>
+            </Text>
             <div className="h-2 col-span-2" />
 
             <Marker />
             <span className="self-center leading-6">{end.date}</span>
 
             {end.time ? (
-                <span className="col-start-2 text-sm text-muted-foreground">
+                <Text
+                    render={<span />}
+                    size="sm"
+                    tone="muted"
+                    className="col-start-2"
+                >
                     kl. {end.time}
-                </span>
+                </Text>
             ) : null}
         </div>
     );

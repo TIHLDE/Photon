@@ -1,4 +1,5 @@
 import { Button } from "@tihlde/ui/ui/button";
+import { Text } from "@tihlde/ui/ui/text";
 import { Plus } from "lucide-react";
 
 import { GroupFormRow } from "#/components/group-form-row";
@@ -48,9 +49,9 @@ export function GroupFormsTab({
                     ))}
                 </ul>
             ) : (
-                <p className="text-sm text-muted-foreground">
+                <Text size="sm" tone="muted">
                     Ingen spørreskjema tilgjengelig ennå.
-                </p>
+                </Text>
             )}
         </div>
     );

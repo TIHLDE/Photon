@@ -7,6 +7,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@tihlde/ui/ui/select";
+import { Text } from "@tihlde/ui/ui/text";
 import { type ReactNode, useMemo } from "react";
 
 import { FilterCheckboxOption } from "#/components/filter-checkbox-option";
@@ -114,9 +115,9 @@ export function EventFilters({
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <span className="text-sm font-medium">
+                        <Text render={<span />} size="sm" weight="medium">
                             Alternativer
-                        </span>
+                        </Text>
                         <FilterCheckboxOption
                             title="Tidligere"
                             description="Vis kun tidligere arrangementer"

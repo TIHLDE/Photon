@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@tihlde/ui/ui/card";
+import { Text } from "@tihlde/ui/ui/text";
 
 type GroupFineStatCardProps = {
     label: string;
@@ -14,11 +15,15 @@ export function GroupFineStatCard({
     return (
         <Card size="sm">
             <CardContent className="flex flex-col gap-1">
-                <span className="text-xs text-muted-foreground">{label}</span>
-                <span className="text-2xl font-medium">{value}</span>
-                <span className="text-xs text-muted-foreground">
+                <Text render={<span />} size="xs" tone="muted">
+                    {label}
+                </Text>
+                <Text render={<span />} size="2xl" weight="medium">
+                    {value}
+                </Text>
+                <Text render={<span />} size="xs" tone="muted">
                     {perMember} per medlem
-                </span>
+                </Text>
             </CardContent>
         </Card>
     );

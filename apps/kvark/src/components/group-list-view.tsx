@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { GroupIdentity } from "#/components/group-identity";
 import type {
@@ -31,7 +32,9 @@ export function GroupListView({ tree }: { tree: GroupTreeInput }) {
         <div className="flex flex-col gap-6">
             {sections.map((section) => (
                 <section key={section.id} className="flex flex-col gap-3">
-                    <h2 className="text-lg font-semibold">{section.label}</h2>
+                    <Text render={<h2 />} size="lg" weight="semibold">
+                        {section.label}
+                    </Text>
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                         {section.items.map((item) => (
                             <Link

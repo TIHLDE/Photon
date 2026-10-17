@@ -7,6 +7,7 @@ import {
     DialogTrigger,
 } from "@tihlde/ui/ui/dialog";
 import { QRCode } from "@tihlde/ui/ui/qr-code";
+import { Text } from "@tihlde/ui/ui/text";
 import type { ReactElement } from "react";
 
 type EventQrDialogProps = {
@@ -42,17 +43,17 @@ export function EventQrDialog({
                                 value={userId}
                             />
                             <span>{registrantName}</span>
-                            <span className="text-sm text-muted-foreground">
+                            <Text render={<span />} size="sm" tone="muted">
                                 Vis denne koden ved oppmøte
-                            </span>
+                            </Text>
                         </>
                     ) : (
                         <>
                             <span>{registrantName}</span>
-                            <span className="text-sm text-muted-foreground">
+                            <Text render={<span />} size="sm" tone="muted">
                                 Logg inn på nytt for å hente medlemsbeviset
                                 ditt.
-                            </span>
+                            </Text>
                         </>
                     )}
                 </div>

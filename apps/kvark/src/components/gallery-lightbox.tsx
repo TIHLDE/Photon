@@ -1,5 +1,6 @@
 import { Button } from "@tihlde/ui/ui/button";
 import { Dialog, DialogContent } from "@tihlde/ui/ui/dialog";
+import { Text } from "@tihlde/ui/ui/text";
 import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
 
@@ -148,13 +149,11 @@ export function GalleryLightbox({
                     <div className="flex min-w-0 flex-col gap-1">
                         {picture.title ? <p>{picture.title}</p> : null}
                         {picture.description ? (
-                            <p className="text-muted-foreground">
-                                {picture.description}
-                            </p>
+                            <Text tone="muted">{picture.description}</Text>
                         ) : null}
-                        <p className="text-sm text-muted-foreground">
+                        <Text size="sm" tone="muted">
                             {index + 1} / {pictures.length}
-                        </p>
+                        </Text>
                     </div>
                     {canEdit && onEdit ? (
                         <Button

@@ -1,5 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
+import { Text } from "@tihlde/ui/ui/text";
 import { Github, GraduationCap, Linkedin, Mail } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -51,12 +52,18 @@ export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
                 /* Navn, studie + klassetrinn og e-post stables vertikalt — én
                    opplysning per linje, i stedet for å slås sammen på én rad. */
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-2xl">{user.name}</h1>
+                    <Text render={<h1 />} size="2xl">
+                        {user.name}
+                    </Text>
                     {user.programme ? (
-                        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Text
+                            size="sm"
+                            tone="muted"
+                            className="flex items-center gap-1.5"
+                        >
                             <GraduationCap className="size-3.5 shrink-0" />
                             {user.programme}
-                        </p>
+                        </Text>
                     ) : null}
                     {user.email ? (
                         <a

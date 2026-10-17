@@ -3,6 +3,7 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@tihlde/ui/ui/collapsible";
+import { Text } from "@tihlde/ui/ui/text";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
@@ -99,9 +100,9 @@ export function GroupMembersTab({
                             />
                         }
                     >
-                        <h3 className="text-lg">
+                        <Text render={<h3 />} size="lg">
                             Tidligere medlemmer ({formerMembers.length})
-                        </h3>
+                        </Text>
                         <ChevronDown
                             className={cn(
                                 "size-4 shrink-0 transition-transform",

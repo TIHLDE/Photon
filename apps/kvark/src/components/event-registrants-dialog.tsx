@@ -11,6 +11,7 @@ import {
     DialogTrigger,
 } from "@tihlde/ui/ui/dialog";
 import { ScrollArea } from "@tihlde/ui/ui/scroll-area";
+import { Text } from "@tihlde/ui/ui/text";
 import type { ReactElement } from "react";
 
 import { avatarImageUrl } from "#/lib/assets";
@@ -63,9 +64,14 @@ export function EventRegistrantsDialog({
 
                         {waitlist.length > 0 ? (
                             <>
-                                <div className="px-2 pt-3 pb-1 text-xs text-muted-foreground">
+                                <Text
+                                    render={<div />}
+                                    size="xs"
+                                    tone="muted"
+                                    className="px-2 pt-3 pb-1"
+                                >
                                     Venteliste
-                                </div>
+                                </Text>
                                 {waitlist.map((r) => (
                                     <RegistrantRow
                                         key={r.id}
@@ -77,9 +83,9 @@ export function EventRegistrantsDialog({
                         ) : null}
 
                         {registrants.length === 0 ? (
-                            <p className="p-2 text-sm text-muted-foreground">
+                            <Text size="sm" tone="muted" className="p-2">
                                 Ingen er påmeldt ennå.
-                            </p>
+                            </Text>
                         ) : null}
 
                         {hasMore ? (
@@ -121,7 +127,12 @@ function RegistrantRow({
             <div className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate">{registrant.name}</span>
                 {registrant.studyProgram || registrant.classYear ? (
-                    <span className="truncate text-xs text-muted-foreground">
+                    <Text
+                        render={<span />}
+                        size="xs"
+                        tone="muted"
+                        className="truncate"
+                    >
                         {[
                             registrant.studyProgram,
                             registrant.classYear
@@ -130,7 +141,7 @@ function RegistrantRow({
                         ]
                             .filter(Boolean)
                             .join(" · ")}
-                    </span>
+                    </Text>
                 ) : null}
             </div>
             {waitlist ? <Badge variant="secondary">Venteliste</Badge> : null}

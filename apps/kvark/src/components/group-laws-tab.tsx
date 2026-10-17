@@ -1,4 +1,5 @@
 import { Button } from "@tihlde/ui/ui/button";
+import { Text } from "@tihlde/ui/ui/text";
 import { useState } from "react";
 
 import { GroupLawFormDialog } from "#/components/group-law-form-dialog";
@@ -63,9 +64,9 @@ export function GroupLawsTab({
                 }
             />
             {laws.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <Text size="sm" tone="muted">
                     Gruppen har ingen lovparagrafer ennå.
-                </p>
+                </Text>
             ) : (
                 <div className="flex flex-col gap-2">
                     {laws.map((law) => (

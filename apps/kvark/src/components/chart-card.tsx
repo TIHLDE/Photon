@@ -6,6 +6,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@tihlde/ui/ui/card";
+import { Text } from "@tihlde/ui/ui/text";
 import { TrendingUp } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -33,10 +34,15 @@ export function ChartCard({
                 ) : null}
                 {trend ? (
                     <CardAction>
-                        <span className="flex items-center gap-1.5 text-sm font-medium">
+                        <Text
+                            render={<span />}
+                            size="sm"
+                            weight="medium"
+                            className="flex items-center gap-1.5"
+                        >
                             {trend}
                             <TrendingUp className="size-4" />
-                        </span>
+                        </Text>
                     </CardAction>
                 ) : null}
             </CardHeader>

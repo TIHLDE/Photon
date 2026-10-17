@@ -1,6 +1,7 @@
 import { Badge } from "@tihlde/ui/ui/badge";
 import { useRender } from "@tihlde/ui/hooks/use-render";
 import { IMAGE_PRESETS } from "@tihlde/ui/ui/image-preset";
+import { Text } from "@tihlde/ui/ui/text";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -83,7 +84,12 @@ export function ListCard({
                                 <div className="shrink-0">{titleBadge}</div>
                             ) : null}
                         </div>
-                        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                        <Text
+                            render={<div />}
+                            size="sm"
+                            tone="muted"
+                            className="flex flex-col gap-1"
+                        >
                             {meta.map((row, i) => (
                                 // `min-w-0`: uten den setter et langt stedsnavn
                                 // radens minstebredde, og `truncate` på
@@ -96,7 +102,7 @@ export function ListCard({
                                     <span className="truncate">{row.text}</span>
                                 </div>
                             ))}
-                        </div>
+                        </Text>
                     </div>
                 </>
             ),

@@ -23,6 +23,7 @@ import { Textarea } from "@tihlde/ui/ui/textarea";
 import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { HandCoins, ShieldCheck } from "lucide-react";
 
@@ -139,9 +140,9 @@ function GroupFineDetails({
     const text = (
         <div className="flex min-w-0 flex-1 flex-col gap-3">
             <div className="flex flex-col gap-1">
-                <span className="text-xs text-muted-foreground">
+                <Text render={<span />} size="xs" tone="muted">
                     Begrunnelse
-                </span>
+                </Text>
                 <MarkdownView registry={minimalRegistry} source={fine.reason} />
             </div>
             {isEditingDefense ? (
@@ -189,9 +190,9 @@ function GroupFineDetails({
                 </div>
             ) : canWriteDefense ? (
                 <div className="flex flex-col gap-2">
-                    <span className="text-xs text-muted-foreground">
+                    <Text render={<span />} size="xs" tone="muted">
                         Ditt forsvar
-                    </span>
+                    </Text>
                     <MarkdownView
                         registry={minimalRegistry}
                         source={fine.defense}
@@ -208,9 +209,9 @@ function GroupFineDetails({
                 </div>
             ) : hasDefense ? (
                 <div className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground">
+                    <Text render={<span />} size="xs" tone="muted">
                         Forsvar
-                    </span>
+                    </Text>
                     <MarkdownView
                         registry={minimalRegistry}
                         source={fine.defense}
@@ -232,14 +233,14 @@ function GroupFineDetails({
                     {fine.paid ? "Betalt" : "Ikke betalt"}
                 </Badge>
             </div>
-            <div className="text-sm">
+            <Text render={<div />} size="sm">
                 <p>Dato: {fine.date}</p>
                 {fine.createdBy ? <p>Fra: {fine.createdBy}</p> : null}
-            </div>
+            </Text>
             {fine.image && imageFailed ? (
-                <p className="text-sm text-muted-foreground">
+                <Text size="sm" tone="muted">
                     Fikk ikke lastet bildet. Last siden på nytt.
-                </p>
+                </Text>
             ) : null}
             {fine.image && !imageFailed ? (
                 imageUrl ? (

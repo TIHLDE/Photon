@@ -11,6 +11,7 @@ import {
     DialogTrigger,
 } from "@tihlde/ui/ui/dialog";
 import { cn } from "@tihlde/ui/lib/utils";
+import { Text } from "@tihlde/ui/ui/text";
 import { CheckCircle2, QrCode, XCircle } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -294,9 +295,9 @@ export function AttendanceScannerDialog({ eventId }: { eventId: string }) {
                 </DialogHeader>
                 <DialogBody className="flex flex-col gap-4">
                     {cameraError ? (
-                        <p className="text-destructive text-sm">
+                        <Text tone="destructive" size="sm">
                             {cameraError}
-                        </p>
+                        </Text>
                     ) : (
                         <div className="bg-muted relative aspect-square w-full overflow-hidden rounded-md">
                             <video
@@ -328,13 +329,13 @@ export function AttendanceScannerDialog({ eventId }: { eventId: string }) {
                                         <XCircle className="text-destructive mt-0.5 size-4 shrink-0" />
                                     )}
                                     <div>
-                                        <p className="font-medium">
+                                        <Text weight="medium">
                                             {result.title}
-                                        </p>
+                                        </Text>
                                         {result.description ? (
-                                            <p className="text-muted-foreground">
+                                            <Text tone="muted">
                                                 {result.description}
-                                            </p>
+                                            </Text>
                                         ) : null}
                                     </div>
                                 </li>

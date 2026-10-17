@@ -26,6 +26,7 @@ import {
 import { Separator } from "@tihlde/ui/ui/separator";
 import { Switch } from "@tihlde/ui/ui/switch";
 import { RichEditor } from "@tihlde/ui/complex/markdown";
+import { Text } from "@tihlde/ui/ui/text";
 import { Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -310,12 +311,9 @@ export function GroupEditDialog({
                             </Field>
                         </FieldGroup>
                         {error ? (
-                            <p
-                                role="alert"
-                                className="text-sm text-destructive"
-                            >
+                            <Text size="sm" tone="destructive" role="alert">
                                 {error}
-                            </p>
+                            </Text>
                         ) : null}
                     </form>
                 </DialogBody>

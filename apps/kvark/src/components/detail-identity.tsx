@@ -1,4 +1,5 @@
 import { avatarImageUrl } from "#/lib/assets";
+import { Text } from "@tihlde/ui/ui/text";
 
 type DetailIdentityProps = {
     name: string;
@@ -19,7 +20,9 @@ export function DetailIdentity({ name, logoUrl }: DetailIdentityProps) {
                     className="size-12 shrink-0 rounded-lg object-cover"
                 />
             ) : null}
-            <span className="truncate font-medium">{name}</span>
+            <Text render={<span />} weight="medium" className="truncate">
+                {name}
+            </Text>
         </div>
     );
 }

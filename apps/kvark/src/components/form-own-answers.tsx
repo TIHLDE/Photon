@@ -1,4 +1,5 @@
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
+import { Text } from "@tihlde/ui/ui/text";
 
 export type OwnSubmission = {
     id: string;
@@ -40,11 +41,11 @@ export function FormOwnAnswers({
         <div className="flex flex-col gap-5">
             {submissions.map((submission, index) => (
                 <div key={submission.id} className="flex flex-col gap-3">
-                    <p className="text-sm font-medium">
+                    <Text size="sm" weight="medium">
                         {submissions.length > 1
                             ? `Svar ${submissions.length - index} · sendt inn ${submission.submittedAt}`
                             : `Sendt inn ${submission.submittedAt}`}
-                    </p>
+                    </Text>
                     <dl className="flex flex-col gap-3">
                         {questions.map((question) => {
                             const answer = submission.answers.find(
@@ -55,18 +56,25 @@ export function FormOwnAnswers({
                                     key={question.id}
                                     className="flex flex-col gap-0.5"
                                 >
-                                    <dt className="text-sm text-muted-foreground">
+                                    <Text
+                                        render={<dt />}
+                                        size="sm"
+                                        tone="muted"
+                                    >
                                         {question.title}
-                                    </dt>
-                                    <dd className="text-sm">
+                                    </Text>
+                                    <Text render={<dd />} size="sm">
                                         {answer?.text ? (
                                             answer.text
                                         ) : (
-                                            <span className="text-muted-foreground">
+                                            <Text
+                                                render={<span />}
+                                                tone="muted"
+                                            >
                                                 Ikke besvart
-                                            </span>
+                                            </Text>
                                         )}
-                                    </dd>
+                                    </Text>
                                 </div>
                             );
                         })}

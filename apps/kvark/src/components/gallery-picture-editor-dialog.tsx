@@ -12,6 +12,7 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
 import { Textarea } from "@tihlde/ui/ui/textarea";
+import { Text } from "@tihlde/ui/ui/text";
 import { XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -158,10 +159,10 @@ export function GalleryPictureEditorDialog({
                                         setImageAlt(e.target.value)
                                     }
                                 />
-                                <p className="text-xs text-muted-foreground">
+                                <Text size="xs" tone="muted">
                                     Beskriver bildet for skjermlesere og vises
                                     hvis bildet ikke lastes.
-                                </p>
+                                </Text>
                             </Field>
                         </FieldGroup>
                     </form>
@@ -176,9 +177,9 @@ export function GalleryPictureEditorDialog({
                 </DialogBody>
                 {confirmingDelete ? (
                     <DialogFooter>
-                        <p className="mr-auto text-sm text-muted-foreground">
+                        <Text size="sm" tone="muted" className="mr-auto">
                             Slette bildet permanent?
-                        </p>
+                        </Text>
                         <Button
                             variant="outline"
                             disabled={busy}

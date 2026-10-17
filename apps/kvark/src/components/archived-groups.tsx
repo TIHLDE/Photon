@@ -5,6 +5,7 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@tihlde/ui/ui/collapsible";
+import { Text } from "@tihlde/ui/ui/text";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
@@ -27,9 +28,9 @@ export function ArchivedGroups({ groups }: { groups: SimpleSection["items"] }) {
                     />
                 }
             >
-                <h2 className="text-lg font-semibold">
+                <Text render={<h2 />} size="lg" weight="semibold">
                     Arkiverte grupper ({groups.length})
-                </h2>
+                </Text>
                 <ChevronDown
                     className={cn(
                         "size-4 shrink-0 transition-transform",

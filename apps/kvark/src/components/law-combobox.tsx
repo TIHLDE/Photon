@@ -7,6 +7,7 @@ import {
     ComboboxItem,
     ComboboxList,
 } from "@tihlde/ui/ui/combobox";
+import { Text } from "@tihlde/ui/ui/text";
 
 import type { Law } from "#/lib/group";
 
@@ -43,9 +44,14 @@ export function LawCombobox({ items, value, onValueChange }: LawComboboxProps) {
                                         overskrift/forklaring, ikke «null
                                         bøter». */}
                                     {item.amount !== 0 ? (
-                                        <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+                                        <Text
+                                            render={<span />}
+                                            size="xs"
+                                            tone="muted"
+                                            className="shrink-0 whitespace-nowrap"
+                                        >
                                             {item.amount} bøter
-                                        </span>
+                                        </Text>
                                     ) : null}
                                 </span>
                             </ComboboxItem>

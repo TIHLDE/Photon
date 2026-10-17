@@ -10,6 +10,7 @@ import {
 } from "@tihlde/ui/ui/popover";
 import { Separator } from "@tihlde/ui/ui/separator";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
+import { Text } from "@tihlde/ui/ui/text";
 import { Bell, CheckCheck } from "lucide-react";
 import { useState } from "react";
 
@@ -91,11 +92,11 @@ export function NotificationBell() {
                     <PopoverTitle>Varsler</PopoverTitle>
                     {unreadCount > 0 ? (
                         <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">
+                            <Text render={<span />} size="xs" tone="muted">
                                 {unreadCount === 1
                                     ? "1 ulest"
                                     : `${unreadCount} uleste`}
-                            </span>
+                            </Text>
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -117,9 +118,9 @@ export function NotificationBell() {
                         ))}
                     </div>
                 ) : notifications.length === 0 ? (
-                    <p className="p-4 text-sm text-muted-foreground">
+                    <Text size="sm" tone="muted" className="p-4">
                         Du har ingen varsler.
-                    </p>
+                    </Text>
                 ) : (
                     /* ScrollArea fra @tihlde/ui trenger en fast høyde for å
                        scrolle. Her vokser lista til den treffer max-h, så en

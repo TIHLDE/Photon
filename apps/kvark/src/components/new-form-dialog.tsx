@@ -15,6 +15,7 @@ import {
     FieldSeparator,
 } from "@tihlde/ui/ui/field";
 import { Spinner } from "@tihlde/ui/ui/spinner";
+import { Text } from "@tihlde/ui/ui/text";
 import { Plus, Trash2 } from "lucide-react";
 import { useEffect } from "react";
 import { z } from "zod";
@@ -212,9 +213,13 @@ export function NewFormDialog({
                                                     className="flex flex-col gap-3"
                                                 >
                                                     <div className="flex items-center justify-between gap-2">
-                                                        <span className="text-sm font-medium">
+                                                        <Text
+                                                            render={<span />}
+                                                            size="sm"
+                                                            weight="medium"
+                                                        >
                                                             Spørsmål {index + 1}
-                                                        </span>
+                                                        </Text>
                                                         <Button
                                                             type="button"
                                                             variant="ghost"

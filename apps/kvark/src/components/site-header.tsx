@@ -9,6 +9,7 @@ import {
     NavigationMenuList,
     NavigationMenuTrigger,
 } from "@tihlde/ui/ui/navigation-menu";
+import { Text } from "@tihlde/ui/ui/text";
 import { SquareArrowOutUpRight, User } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -97,15 +98,25 @@ export function SiteHeader({
                                                         closeOnClick={true}
                                                     >
                                                         <div className="relative flex flex-col gap-1">
-                                                            <span className="font-medium">
+                                                            <Text
+                                                                render={
+                                                                    <span />
+                                                                }
+                                                                weight="medium"
+                                                            >
                                                                 {sub.label}
-                                                            </span>
+                                                            </Text>
                                                             {sub.description ? (
-                                                                <span className="text-muted-foreground">
+                                                                <Text
+                                                                    render={
+                                                                        <span />
+                                                                    }
+                                                                    tone="muted"
+                                                                >
                                                                     {
                                                                         sub.description
                                                                     }
-                                                                </span>
+                                                                </Text>
                                                             ) : null}
                                                             {sub.kind ===
                                                             "external" ? (

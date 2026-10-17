@@ -26,6 +26,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@tihlde/ui/ui/select";
+import { Text } from "@tihlde/ui/ui/text";
 import { nb } from "date-fns/locale";
 import { XIcon } from "lucide-react";
 import { useRef } from "react";
@@ -870,7 +871,11 @@ export function EventForm({
                             />
                             {existingImageUrl && !values.image && !readOnly ? (
                                 values.removeImage ? (
-                                    <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Text
+                                        size="sm"
+                                        tone="muted"
+                                        className="flex items-center gap-2"
+                                    >
                                         Bildet fjernes når du lagrer.
                                         <Button
                                             type="button"
@@ -882,7 +887,7 @@ export function EventForm({
                                         >
                                             Angre
                                         </Button>
-                                    </p>
+                                    </Text>
                                 ) : (
                                     <div>
                                         <Button

@@ -10,6 +10,7 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
 import { Textarea } from "@tihlde/ui/ui/textarea";
+import { Text } from "@tihlde/ui/ui/text";
 import { useEffect, useState } from "react";
 
 import type { Law } from "#/lib/group";
@@ -118,10 +119,10 @@ export function GroupLawFormDialog({
                                 value={paragraph}
                                 onChange={(e) => setParagraph(e.target.value)}
                             />
-                            <p className="text-xs text-muted-foreground">
+                            <Text size="xs" tone="muted">
                                 Heltall for overskrift. Maks 2 siffer på hver
                                 side av komma
-                            </p>
+                            </Text>
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="law-title">
@@ -133,9 +134,9 @@ export function GroupLawFormDialog({
                                 onChange={(e) => setTitle(e.target.value)}
                                 placeholder="Skriv her..."
                             />
-                            <p className="text-xs text-muted-foreground">
+                            <Text size="xs" tone="muted">
                                 For eks.: Forsentkomming
-                            </p>
+                            </Text>
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="law-description">
@@ -148,10 +149,10 @@ export function GroupLawFormDialog({
                                 onChange={(e) => setDescription(e.target.value)}
                                 placeholder="Skriv her..."
                             />
-                            <p className="text-xs text-muted-foreground">
+                            <Text size="xs" tone="muted">
                                 La stå tom for å ikke kunne velges ved
                                 botgivning
-                            </p>
+                            </Text>
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="law-amount">
@@ -163,17 +164,17 @@ export function GroupLawFormDialog({
                                 value={amount}
                                 onValueChange={setAmount}
                             />
-                            <p className="text-xs text-muted-foreground">
+                            <Text size="xs" tone="muted">
                                 Brukes for å forhåndsutfylle antall bøter når
                                 det lages en ny. Sett 0 for overskrifter og
                                 forklaringer — da vises ingen bøteteller.
-                            </p>
+                            </Text>
                         </Field>
                     </FieldGroup>
                     {error ? (
-                        <p role="alert" className="text-sm text-destructive">
+                        <Text size="sm" tone="destructive" role="alert">
                             {error}
-                        </p>
+                        </Text>
                     ) : null}
                 </form>
                 <DialogFooter>

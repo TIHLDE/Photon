@@ -34,6 +34,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useMemo } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
+import { Text } from "@tihlde/ui/ui/text";
 import {
     UserSearchCombobox,
     type UserSearchOption,
@@ -753,9 +754,13 @@ function PriorityUserPicker({
                                     </AvatarFallback>
                                 </Avatar>
                                 <span className="flex min-w-0 flex-col">
-                                    <span className="truncate text-sm">
+                                    <Text
+                                        render={<span />}
+                                        size="sm"
+                                        className="truncate"
+                                    >
                                         {user.name ?? user.username}
-                                    </span>
+                                    </Text>
                                     {user.username ? (
                                         <CardDescription className="truncate">
                                             {user.username}

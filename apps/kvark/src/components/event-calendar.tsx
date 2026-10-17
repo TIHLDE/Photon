@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
+import { Text } from "@tihlde/ui/ui/text";
 import {
     addMonths,
     eachDayOfInterval,
@@ -73,9 +74,9 @@ export function EventCalendar({ events }: EventCalendarProps) {
                 >
                     <ChevronLeft />
                 </Button>
-                <span className="font-medium">
+                <Text render={<span />} weight="medium">
                     {format(month, "LLLL yyyy", { locale: nb })}
-                </span>
+                </Text>
                 <Button
                     variant="outline"
                     size="icon"
@@ -88,12 +89,15 @@ export function EventCalendar({ events }: EventCalendarProps) {
 
             <div className="grid grid-cols-7 gap-1">
                 {WEEKDAY_LABELS.map((label) => (
-                    <span
+                    <Text
+                        render={<span />}
+                        size="xs"
+                        tone="muted"
                         key={label}
-                        className="p-1 text-center text-xs text-muted-foreground"
+                        className="p-1 text-center"
                     >
                         {label}
-                    </span>
+                    </Text>
                 ))}
 
                 {days.map((day) => {
@@ -152,9 +156,9 @@ export function EventCalendar({ events }: EventCalendarProps) {
             {events.some((event) =>
                 days.some((day) => isSameDay(new Date(event.startTime), day)),
             ) ? null : (
-                <p className="text-sm text-muted-foreground">
+                <Text size="sm" tone="muted">
                     Ingen arrangementer denne måneden.
-                </p>
+                </Text>
             )}
         </div>
     );

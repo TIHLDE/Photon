@@ -11,6 +11,7 @@ import {
     ComboboxValue,
     useComboboxAnchor,
 } from "@tihlde/ui/ui/combobox";
+import { Text } from "@tihlde/ui/ui/text";
 import { PlusIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -237,9 +238,13 @@ export function AllergyPicker({
                                             færreste vet at worcestersaus
                                             inneholder fisk. */}
                                         {item.description ? (
-                                            <span className="text-xs text-muted-foreground">
+                                            <Text
+                                                render={<span />}
+                                                size="xs"
+                                                tone="muted"
+                                            >
                                                 {item.description}
-                                            </span>
+                                            </Text>
                                         ) : null}
                                     </span>
                                 )}

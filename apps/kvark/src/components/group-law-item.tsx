@@ -1,4 +1,5 @@
 import { Button } from "@tihlde/ui/ui/button";
+import { Text } from "@tihlde/ui/ui/text";
 
 import type { Law } from "#/lib/group";
 
@@ -15,21 +16,21 @@ export function GroupLawItem({ law, onEdit }: GroupLawItemProps) {
     const content = (
         <>
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <h3 className="min-w-0 font-medium">
+                <Text render={<h3 />} weight="medium" className="min-w-0">
                     {law.paragraph} - {law.title}
-                </h3>
+                </Text>
                 {/* 0 bøter brukes for overskrifter og forklarende paragrafer.
                     «Bøter: 0» leser da som en paragraf man kan bøtelegges
                     etter — skjul tellingen helt i stedet. */}
                 {law.amount !== 0 ? (
-                    <span className="text-sm text-muted-foreground">
+                    <Text render={<span />} size="sm" tone="muted">
                         Bøter: {law.amount}
-                    </span>
+                    </Text>
                 ) : null}
             </div>
-            <p className="pl-6 text-sm text-muted-foreground">
+            <Text size="sm" tone="muted" className="pl-6">
                 {law.description}
-            </p>
+            </Text>
         </>
     );
 

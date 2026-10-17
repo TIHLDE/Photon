@@ -1,4 +1,5 @@
 import { Input } from "@tihlde/ui/ui/input";
+import { Text } from "@tihlde/ui/ui/text";
 import { useMemo } from "react";
 
 import { FilterCheckboxOption } from "#/components/filter-checkbox-option";
@@ -90,7 +91,9 @@ export function JobFilters({
             fieldsSlot={
                 <div className="flex flex-col gap-4">
                     <div className="flex flex-col gap-2">
-                        <span className="text-sm">Klassetrinn</span>
+                        <Text render={<span />} size="sm">
+                            Klassetrinn
+                        </Text>
                         <div className="flex flex-col gap-2">
                             {classLevelOptions.map((opt) => (
                                 <FilterCheckboxOption
@@ -108,7 +111,9 @@ export function JobFilters({
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <span className="text-sm">Jobbtype</span>
+                        <Text render={<span />} size="sm">
+                            Jobbtype
+                        </Text>
                         <div className="flex flex-col gap-2">
                             {jobTypeOptions.map((opt) => (
                                 <FilterCheckboxOption

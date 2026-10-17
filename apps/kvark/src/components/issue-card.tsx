@@ -1,5 +1,6 @@
 import { Card, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 import { IMAGE_PRESETS } from "@tihlde/ui/ui/image-preset";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { assetImageProps } from "#/lib/assets";
 import { DEFAULT_COVER_IMAGE } from "#/lib/image";
@@ -34,7 +35,7 @@ export function IssueCard({
             />
             <CardHeader>
                 <CardTitle>{title}</CardTitle>
-                <p className="text-muted-foreground">{edition}</p>
+                <Text tone="muted">{edition}</Text>
             </CardHeader>
         </Card>
     );

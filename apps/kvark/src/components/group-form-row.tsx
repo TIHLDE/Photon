@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
+import { Text } from "@tihlde/ui/ui/text";
 import { ListChecksIcon, PencilIcon } from "lucide-react";
 
 import { ShareButton } from "#/components/share-button";
@@ -88,9 +89,9 @@ function FormScheduleNote({
 }) {
     if (form.isOpenNow) {
         return form.closesAt ? (
-            <p className="text-sm text-muted-foreground">
+            <Text size="sm" tone="muted">
                 Spørreskjemaet stenger {formatFormScheduleAt(form.closesAt)}.
-            </p>
+            </Text>
         ) : null;
     }
 
@@ -102,29 +103,29 @@ function FormScheduleNote({
 
     if (form.isOpen && opensInTheFuture && form.opensAt) {
         return (
-            <p className="text-sm text-muted-foreground">
+            <Text size="sm" tone="muted">
                 Spørreskjemaet åpner {formatFormScheduleAt(form.opensAt)}.
-            </p>
+            </Text>
         );
     }
 
     if (form.isOpen && form.closesAt) {
         return (
-            <p className="text-sm text-muted-foreground">
+            <Text size="sm" tone="muted">
                 Spørreskjemaet stengte {formatFormScheduleAt(form.closesAt)}.
                 {canManage
                     ? " Fjern eller flytt stengetidspunktet under «Rediger» for å ta imot svar igjen."
                     : ""}
-            </p>
+            </Text>
         );
     }
 
     return (
-        <p className="text-sm text-muted-foreground">
+        <Text size="sm" tone="muted">
             Spørreskjemaet er ikke åpent for innsending av svar.
             {canManage
                 ? " Åpne det under «Rediger» for å kunne svare på og dele skjemaet."
                 : ""}
-        </p>
+        </Text>
     );
 }
