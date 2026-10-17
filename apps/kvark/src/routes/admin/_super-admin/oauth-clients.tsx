@@ -33,6 +33,7 @@ import {
 } from "@tihlde/ui/ui/table";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Stagger } from "@tihlde/ui/ui/motion";
+import { Text } from "@tihlde/ui/ui/text";
 import { z } from "zod";
 
 import {
@@ -107,11 +108,13 @@ function OAuthClientsPage() {
         >
             <div className="flex items-end justify-between gap-4">
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-3xl">OAuth-klienter</h1>
-                    <p className="text-muted-foreground">
+                    <Text render={<h1 />} size="3xl">
+                        OAuth-klienter
+                    </Text>
+                    <Text tone="muted">
                         Registrer tredjepartsapper som logger inn brukere via
                         TIHLDE.
-                    </p>
+                    </Text>
                 </div>
                 <Button type="button" onClick={() => setCreateOpen(true)}>
                     Ny klient
@@ -163,9 +166,13 @@ function OAuthClientsPage() {
                         tilgangen til OAuth helt til de er oppdatert med den nye
                         hemmeligheten. Dette kan ikke angres.
                         {rotate.error && (
-                            <span className="mt-2 block text-destructive">
+                            <Text
+                                render={<span />}
+                                tone="destructive"
+                                className="mt-2 block"
+                            >
                                 {rotate.error.message}
-                            </span>
+                            </Text>
                         )}
                     </>
                 }
@@ -272,7 +279,9 @@ function ClientRow({
                 <ul className="flex flex-col gap-1">
                     {client.redirect_uris.map((uri) => (
                         <li key={uri}>
-                            <code className="text-xs">{uri}</code>
+                            <Text render={<code />} size="xs">
+                                {uri}
+                            </Text>
                         </li>
                     ))}
                 </ul>
@@ -595,9 +604,9 @@ function CreateClientDialog({
                         </Field>
                     </FieldGroup>
                     {error && (
-                        <p className="text-sm text-destructive" role="alert">
+                        <Text size="sm" tone="destructive" role="alert">
                             {error}
-                        </p>
+                        </Text>
                     )}
                     <DialogFooter>
                         <Button
@@ -642,20 +651,24 @@ function SecretRevealDialog({
                     <Card>
                         <CardContent className="flex flex-col gap-3 p-4">
                             <div className="flex flex-col gap-1">
-                                <span className="text-xs text-muted-foreground">
+                                <Text render={<span />} size="xs" tone="muted">
                                     Client ID
-                                </span>
-                                <code className="text-sm">
+                                </Text>
+                                <Text render={<code />} size="sm">
                                     {secret.clientId}
-                                </code>
+                                </Text>
                             </div>
                             <div className="flex flex-col gap-1">
-                                <span className="text-xs text-muted-foreground">
+                                <Text render={<span />} size="xs" tone="muted">
                                     Client Secret
-                                </span>
-                                <code className="text-sm break-all">
+                                </Text>
+                                <Text
+                                    render={<code />}
+                                    size="sm"
+                                    className="break-all"
+                                >
                                     {secret.clientSecret || "(none)"}
-                                </code>
+                                </Text>
                             </div>
                         </CardContent>
                         <CardFooter>

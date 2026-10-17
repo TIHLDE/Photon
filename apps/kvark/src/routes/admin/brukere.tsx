@@ -54,6 +54,7 @@ import {
     updateGroupMemberRoleMutation,
 } from "#/api/queries/groups";
 import { Stagger } from "@tihlde/ui/ui/motion";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { requireAdminSection } from "#/lib/admin-access";
 import { searchUsersQuery } from "#/api/queries/roles";
@@ -455,11 +456,11 @@ function AllUsersTable({
                 </Card>
             ) : (
                 <>
-                    <p className="text-sm">
+                    <Text size="sm">
                         {showingPendingQueue
                             ? `${totalCount} venter på godkjenning`
                             : `Viser ${users.length} av ${totalCount} brukere`}
-                    </p>
+                    </Text>
                     <Card>
                         <CardContent className="p-0">
                             <Table>
@@ -503,9 +504,14 @@ function AllUsersTable({
                                                         </AvatarFallback>
                                                     </Avatar>
                                                     <div className="flex flex-col">
-                                                        <span className="text-sm font-medium group-hover:underline">
+                                                        <Text
+                                                            render={<span />}
+                                                            size="sm"
+                                                            weight="medium"
+                                                            className="group-hover:underline"
+                                                        >
                                                             {user.name}
-                                                        </span>
+                                                        </Text>
                                                         {/* E-posten er den
                                                         eneste veien til et
                                                         medlem utenfor
@@ -514,9 +520,15 @@ function AllUsersTable({
                                                         en ukjent som venter
                                                         på. */}
                                                         {user.email && (
-                                                            <span className="text-sm text-muted-foreground">
+                                                            <Text
+                                                                render={
+                                                                    <span />
+                                                                }
+                                                                size="sm"
+                                                                tone="muted"
+                                                            >
                                                                 {user.email}
-                                                            </span>
+                                                            </Text>
                                                         )}
                                                     </div>
                                                 </Link>
@@ -915,9 +927,9 @@ function ApproveUserDialog({
                     Brukeren får en e-post om at kontoen er godkjent.
                 </FieldDescription>
                 {error && (
-                    <p className="text-sm text-destructive" role="alert">
+                    <Text size="sm" tone="destructive" role="alert">
                         {error}
-                    </p>
+                    </Text>
                 )}
                 <DialogFooter>
                     <Button
@@ -1040,9 +1052,9 @@ function DeleteUserDialog({
                         </FieldGroup>
                     )}
                     {error && (
-                        <p className="text-sm text-destructive" role="alert">
+                        <Text size="sm" tone="destructive" role="alert">
                             {error}
-                        </p>
+                        </Text>
                     )}
                     <DialogFooter>
                         <Button
@@ -1162,9 +1174,9 @@ function EditAllergiesForm({
                 </Field>
             </FieldGroup>
             {error && (
-                <p className="text-sm text-destructive" role="alert">
+                <Text size="sm" tone="destructive" role="alert">
                     {error}
-                </p>
+                </Text>
             )}
             <DialogFooter>
                 <Button type="button" variant="outline" onClick={onDone}>
@@ -1259,14 +1271,14 @@ function ChangeStatusDialog({
                             </Field>
                         </FieldGroup>
                     ) : (
-                        <p className="text-sm">
+                        <Text size="sm">
                             Medlemmet kan logge inn igjen med en gang.
-                        </p>
+                        </Text>
                     )}
                     {error && (
-                        <p className="text-sm text-destructive" role="alert">
+                        <Text size="sm" tone="destructive" role="alert">
                             {error}
-                        </p>
+                        </Text>
                     )}
                     <DialogFooter>
                         <Button
@@ -1350,19 +1362,19 @@ function ChangeBaselineRoleDialog({
                         </DialogTitle>
                         <DialogDescription>{user?.name}</DialogDescription>
                     </DialogHeader>
-                    <p className="text-sm">
+                    <Text size="sm">
                         {target === "alumni"
                             ? "Alumni kan ikke melde seg på arrangementer. Alt annet er som før: profil, grupper, historikk og sidene de kan lese."
                             : "Medlemmer kan melde seg på arrangementer. Det er den eneste forskjellen fra alumni."}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
+                    </Text>
+                    <Text size="sm" tone="muted">
                         Logger de inn med Feide senere, settes rollen på nytt ut
                         fra om studiet er aktivt.
-                    </p>
+                    </Text>
                     {error && (
-                        <p className="text-sm text-destructive" role="alert">
+                        <Text size="sm" tone="destructive" role="alert">
                             {error}
-                        </p>
+                        </Text>
                     )}
                     <DialogFooter>
                         <Button
@@ -1540,9 +1552,9 @@ function MembersTable({
                 </Field>
             </div>
 
-            <p className="text-sm">
+            <Text size="sm">
                 Viser {filtered.length} av {members.length} medlemmer
-            </p>
+            </Text>
 
             {filtered.length === 0 ? (
                 <Card>
@@ -1594,9 +1606,14 @@ function MembersTable({
                                                         )}
                                                     </AvatarFallback>
                                                 </Avatar>
-                                                <span className="text-sm font-medium group-hover:underline">
+                                                <Text
+                                                    render={<span />}
+                                                    size="sm"
+                                                    weight="medium"
+                                                    className="group-hover:underline"
+                                                >
                                                     {member.user.name}
-                                                </span>
+                                                </Text>
                                             </Link>
                                         </TableCell>
                                         <TableCell>
@@ -1848,9 +1865,9 @@ function EditCohortDialog({
                         </Field>
                     </FieldGroup>
                     {error && (
-                        <p className="text-sm text-destructive" role="alert">
+                        <Text size="sm" tone="destructive" role="alert">
                             {error}
-                        </p>
+                        </Text>
                     )}
                     <DialogFooter>
                         <Button
@@ -1974,9 +1991,9 @@ function EditStudyDialog({
                         </Field>
                     </FieldGroup>
                     {error && (
-                        <p className="text-sm text-destructive" role="alert">
+                        <Text size="sm" tone="destructive" role="alert">
                             {error}
-                        </p>
+                        </Text>
                     )}
                     <DialogFooter>
                         <Button
@@ -2095,9 +2112,9 @@ function AddMemberDialog({
                         </Field>
                     </FieldGroup>
                     {error && (
-                        <p className="text-sm text-destructive" role="alert">
+                        <Text size="sm" tone="destructive" role="alert">
                             {error}
-                        </p>
+                        </Text>
                     )}
                     <DialogFooter>
                         <Button

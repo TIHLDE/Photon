@@ -38,6 +38,7 @@ import {
 } from "@tihlde/ui/ui/table";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { requireAdminSection } from "#/lib/admin-access";
 import { uploadAssetMutation } from "#/api/queries/assets";
@@ -220,9 +221,12 @@ function IssuesTable({ onEdit }: { onEdit: (issue: ToddelIssue) => void }) {
                                                     Forside
                                                 </a>
                                             ) : (
-                                                <span className="text-muted-foreground">
+                                                <Text
+                                                    render={<span />}
+                                                    tone="muted"
+                                                >
                                                     Ingen forside
-                                                </span>
+                                                </Text>
                                             )}
                                         </div>
                                     </TableCell>

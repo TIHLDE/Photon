@@ -48,6 +48,7 @@ import {
     getStrikesByMemberQuery,
 } from "#/api/queries/events";
 import { Stagger } from "@tihlde/ui/ui/motion";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { requireAdminSection } from "#/lib/admin-access";
 import { searchUsersQuery } from "#/api/queries/roles";
@@ -280,9 +281,9 @@ function StrikesSection() {
 
             {(data?.pages ?? 0) > 1 && (
                 <div className="flex items-center justify-end gap-2">
-                    <span className="text-sm text-muted-foreground">
+                    <Text render={<span />} size="sm" tone="muted">
                         Side {page + 1} av {data?.pages}
-                    </span>
+                    </Text>
                     <Button
                         variant="outline"
                         size="sm"
@@ -489,12 +490,9 @@ function CreateStrikeDialog({
                             </Field>
                         </FieldGroup>
                         {error && (
-                            <p
-                                className="text-sm text-destructive"
-                                role="alert"
-                            >
+                            <Text size="sm" tone="destructive" role="alert">
                                 {error}
-                            </p>
+                            </Text>
                         )}
                     </DialogBody>
                     <DialogFooter>

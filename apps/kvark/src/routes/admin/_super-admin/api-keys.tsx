@@ -42,6 +42,7 @@ import {
     updateApiKeyMutation,
 } from "#/api/queries/api-keys";
 import { Stagger } from "@tihlde/ui/ui/motion";
+import { Text } from "@tihlde/ui/ui/text";
 
 import {
     ConfirmDeleteDialog,
@@ -167,22 +168,30 @@ function ApiKeysTable({
                                     <TableCell>
                                         <div className="flex flex-col gap-0.5">
                                             <span>{apiKey.name}</span>
-                                            <span className="text-xs text-muted-foreground">
+                                            <Text
+                                                render={<span />}
+                                                size="xs"
+                                                tone="muted"
+                                            >
                                                 {apiKey.description}
-                                            </span>
+                                            </Text>
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <code className="text-xs">
+                                        <Text render={<code />} size="xs">
                                             {apiKey.keyPrefix}…
-                                        </code>
+                                        </Text>
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex flex-wrap gap-1">
                                             {apiKey.permissions.length === 0 ? (
-                                                <span className="text-xs text-muted-foreground">
+                                                <Text
+                                                    render={<span />}
+                                                    size="xs"
+                                                    tone="muted"
+                                                >
                                                     Ingen
-                                                </span>
+                                                </Text>
                                             ) : (
                                                 apiKey.permissions.map(
                                                     (permission) => (
@@ -346,9 +355,9 @@ function CreateApiKeyDialog({
                         onPermissionsChange={setPermissionsRaw}
                     />
                     {error && (
-                        <p className="text-sm text-destructive" role="alert">
+                        <Text size="sm" tone="destructive" role="alert">
                             {error}
-                        </p>
+                        </Text>
                     )}
                     <DialogFooter>
                         <Button
@@ -434,9 +443,9 @@ function EditApiKeyDialog({
                         onPermissionsChange={setPermissionsRaw}
                     />
                     {error && (
-                        <p className="text-sm text-destructive" role="alert">
+                        <Text size="sm" tone="destructive" role="alert">
                             {error}
-                        </p>
+                        </Text>
                     )}
                     <DialogFooter>
                         <Button
@@ -540,7 +549,13 @@ function SecretRevealDialog({
                 {secret && (
                     <Card>
                         <CardContent className="p-4">
-                            <code className="text-sm break-all">{secret}</code>
+                            <Text
+                                render={<code />}
+                                size="sm"
+                                className="break-all"
+                            >
+                                {secret}
+                            </Text>
                         </CardContent>
                         <CardFooter>
                             <Button

@@ -48,6 +48,7 @@ import { Textarea } from "@tihlde/ui/ui/textarea";
 import { RichEditor } from "@tihlde/ui/complex/markdown";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { requireAdminSection } from "#/lib/admin-access";
 import { useImageUploader } from "#/api/queries/assets";
@@ -670,11 +671,11 @@ function JobDialog({
                                         value={deadline}
                                         onValueChange={setDeadline}
                                     />
-                                    <p className="text-xs text-muted-foreground">
+                                    <Text size="xs" tone="muted">
                                         Også fortløpende annonser trenger en
                                         frist, ellers blir de liggende for
                                         alltid.
-                                    </p>
+                                    </Text>
                                 </Field>
                                 <div className="flex items-center gap-2 sm:self-end sm:pb-2">
                                     <Checkbox
@@ -751,12 +752,9 @@ function JobDialog({
                             />
                         </FieldGroup>
                         {error && (
-                            <p
-                                className="text-sm text-destructive"
-                                role="alert"
-                            >
+                            <Text size="sm" tone="destructive" role="alert">
                                 {error}
-                            </p>
+                            </Text>
                         )}
                     </DialogBody>
                     <DialogFooter>

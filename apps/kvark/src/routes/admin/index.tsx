@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
@@ -294,13 +295,22 @@ function RecentEvents() {
                                     <span className="truncate">
                                         {event.title}
                                     </span>
-                                    <span className="text-xs text-muted-foreground">
+                                    <Text
+                                        render={<span />}
+                                        size="xs"
+                                        tone="muted"
+                                    >
                                         {event.organizer?.name ?? "Ukjent"}
-                                    </span>
+                                    </Text>
                                 </div>
-                                <span className="shrink-0 text-sm text-muted-foreground">
+                                <Text
+                                    render={<span />}
+                                    size="sm"
+                                    tone="muted"
+                                    className="shrink-0"
+                                >
                                     {formatDate(event.startTime)}
-                                </span>
+                                </Text>
                             </li>
                         ))}
                     </ul>
@@ -336,13 +346,23 @@ function RecentNews() {
                                     <span className="truncate">
                                         {article.title}
                                     </span>
-                                    <span className="truncate text-xs text-muted-foreground">
+                                    <Text
+                                        render={<span />}
+                                        size="xs"
+                                        tone="muted"
+                                        className="truncate"
+                                    >
                                         {article.header}
-                                    </span>
+                                    </Text>
                                 </div>
-                                <span className="shrink-0 text-sm text-muted-foreground">
+                                <Text
+                                    render={<span />}
+                                    size="sm"
+                                    tone="muted"
+                                    className="shrink-0"
+                                >
                                     {formatDate(article.createdAt)}
-                                </span>
+                                </Text>
                             </li>
                         ))}
                     </ul>

@@ -85,6 +85,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@tihlde/ui/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { requireAdminSection } from "#/lib/admin-access";
 import { searchAddressQuery } from "#/api/queries/address";
@@ -889,9 +890,9 @@ function BreakdownSection({
 
     return (
         <div className="flex flex-col gap-2">
-            <h3 className="text-sm font-medium text-muted-foreground">
+            <Text render={<h3 />} size="sm" weight="medium" tone="muted">
                 {title}
-            </h3>
+            </Text>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
                 {buckets.map(({ bucket, count }) => (
                     <BreakdownCard
@@ -1179,12 +1180,16 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
                                             <TableCell>
                                                 {participant.waitlistPosition !=
                                                 null ? (
-                                                    <span className="text-muted-foreground mr-2 tabular-nums">
+                                                    <Text
+                                                        render={<span />}
+                                                        tone="muted"
+                                                        className="mr-2 tabular-nums"
+                                                    >
                                                         {
                                                             participant.waitlistPosition
                                                         }
                                                         .
-                                                    </span>
+                                                    </Text>
                                                 ) : null}
                                                 {participant.name}
                                                 {participant.allowPhoto ===
@@ -1602,7 +1607,7 @@ function FormsTab({ eventId }: { eventId: string }) {
                         <CardContent className="flex flex-col gap-3">
                             {existing ? (
                                 <>
-                                    <p className="text-sm">{existing.title}</p>
+                                    <Text size="sm">{existing.title}</Text>
                                     <div className="flex flex-wrap gap-2">
                                         <Button
                                             variant="outline"
@@ -2019,9 +2024,14 @@ function PaymentsTab({
                                         <div className="flex flex-1 flex-col gap-2 pr-3 sm:flex-row sm:items-center sm:justify-between">
                                             <div className="flex flex-col">
                                                 <span>{group.user.name}</span>
-                                                <span className="text-muted-foreground text-xs font-normal">
+                                                <Text
+                                                    render={<span />}
+                                                    tone="muted"
+                                                    size="xs"
+                                                    weight="normal"
+                                                >
                                                     {group.user.email}
-                                                </span>
+                                                </Text>
                                             </div>
                                             <div className="flex flex-wrap items-center gap-2">
                                                 {group.flags.map((flag) => (
@@ -2030,11 +2040,16 @@ function PaymentsTab({
                                                         flag={flag}
                                                     />
                                                 ))}
-                                                <span className="text-muted-foreground text-xs font-normal">
+                                                <Text
+                                                    render={<span />}
+                                                    tone="muted"
+                                                    size="xs"
+                                                    weight="normal"
+                                                >
                                                     {group.payments.length === 1
                                                         ? "1 hendelse"
                                                         : `${group.payments.length} hendelser`}
-                                                </span>
+                                                </Text>
                                                 <PaymentHealthIcon
                                                     group={group}
                                                 />
@@ -2070,7 +2085,12 @@ function PaymentsTab({
                                                         </span>
                                                     </div>
 
-                                                    <dl className="grid gap-x-6 gap-y-1 text-muted-foreground text-xs sm:grid-cols-2">
+                                                    <Text
+                                                        render={<dl />}
+                                                        tone="muted"
+                                                        size="xs"
+                                                        className="grid gap-x-6 gap-y-1 sm:grid-cols-2"
+                                                    >
                                                         <PaymentDetail
                                                             term="Opprettet"
                                                             value={formatDateTime(
@@ -2101,7 +2121,7 @@ function PaymentsTab({
                                                                 }
                                                             />
                                                         ) : null}
-                                                    </dl>
+                                                    </Text>
 
                                                     {canRefund &&
                                                     payment.status ===
@@ -2200,7 +2220,9 @@ function PaymentDetail({ term, value }: { term: string; value: string }) {
     return (
         <div className="flex justify-between gap-2 sm:justify-start">
             <dt>{term}</dt>
-            <dd className="text-foreground">{value}</dd>
+            <Text render={<dd />} tone="foreground">
+                {value}
+            </Text>
         </div>
     );
 }
@@ -2226,9 +2248,9 @@ function RefundAction({
     if (refund.isError) {
         return (
             <div className="flex flex-col items-end gap-1">
-                <span className="text-destructive text-sm">
+                <Text render={<span />} tone="destructive" size="sm">
                     {refund.error.message}
-                </span>
+                </Text>
                 <Button
                     variant="outline"
                     size="sm"
@@ -2254,9 +2276,9 @@ function RefundAction({
 
     return (
         <div className="flex flex-col items-end gap-2">
-            <span className="text-sm">
+            <Text render={<span />} size="sm">
                 Refundere {formatAmount(amountMinor)} til {name}?
-            </span>
+            </Text>
             <div className="flex gap-2">
                 <Button
                     variant="outline"
@@ -2521,12 +2543,12 @@ function AllergiesTab({ eventId }: { eventId: string }) {
             {/* «Ikke svart» er ikke det samme som «ingen allergier», og den
                 forskjellen må stå tydelig: kjøkkenet skal ikke lese en tom
                 rad som en garanti. */}
-            <p className="text-sm text-muted-foreground">
+            <Text size="sm" tone="muted">
                 {data.totalParticipants} påmeldte totalt.{" "}
                 {data.notAnswered > 0
                     ? `${data.notAnswered} har ikke svart på allergispørsmålet ennå — det er ikke det samme som at de ikke har allergier.`
                     : "Alle har svart på allergispørsmålet."}
-            </p>
+            </Text>
         </div>
     );
 }
@@ -2658,11 +2680,11 @@ function MessagesTab({ eventId }: { eventId: string }) {
                             </Alert>
                         ) : null}
 
-                        <p className="text-sm text-muted-foreground">
+                        <Text size="sm" tone="muted">
                             {hasRecipients
                                 ? `Sendes til ${recipientLabel}.`
                                 : "Ingen har plass ennå."}
-                        </p>
+                        </Text>
                         <div className="flex flex-wrap gap-2">
                             <Button
                                 variant="outline"
@@ -2739,13 +2761,14 @@ function MessagesTab({ eventId }: { eventId: string }) {
                                     key={message.id}
                                     className="flex flex-col gap-1"
                                 >
-                                    <p className="font-medium">
-                                        {message.title}
-                                    </p>
-                                    <p className="whitespace-pre-line text-sm">
+                                    <Text weight="medium">{message.title}</Text>
+                                    <Text
+                                        size="sm"
+                                        className="whitespace-pre-line"
+                                    >
                                         {message.body}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
+                                    </Text>
+                                    <Text size="sm" tone="muted">
                                         {message.sentBy?.name ??
                                             "Slettet bruker"}{" "}
                                         · {formatDateTime(message.createdAt)} ·
@@ -2753,7 +2776,7 @@ function MessagesTab({ eventId }: { eventId: string }) {
                                         {message.recipientCount === 1
                                             ? "person"
                                             : "personer"}
-                                    </p>
+                                    </Text>
                                 </li>
                             ))}
                         </ul>

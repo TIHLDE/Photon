@@ -48,6 +48,7 @@ import { MoreHorizontalIcon, PlusIcon, ShieldIcon, XIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { requireAdminSection } from "#/lib/admin-access";
 import { getGroupMembersQuery, getGroupsQuery } from "#/api/queries/groups";
@@ -201,9 +202,9 @@ function PermissionDomainCheckboxes({
     return (
         <div className="flex flex-col gap-2">
             {hasRoot ? (
-                <p className="text-sm text-muted-foreground">
+                <Text size="sm" tone="muted">
                     Full tilgang (root) — har alle tilganger.
-                </p>
+                </Text>
             ) : null}
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
                 {domains.map((domain) => {
@@ -229,13 +230,17 @@ function PermissionDomainCheckboxes({
                                     )
                                 }
                             />
-                            <span className="text-sm">{domain.label}</span>
+                            <Text render={<span />} size="sm">
+                                {domain.label}
+                            </Text>
                         </label>
                     );
                 })}
             </div>
             {anyLocked && lockedHint ? (
-                <p className="text-sm text-muted-foreground">{lockedHint}</p>
+                <Text size="sm" tone="muted">
+                    {lockedHint}
+                </Text>
             ) : null}
         </div>
     );
@@ -292,7 +297,9 @@ function HolderAvatars({
         return (
             <div className="flex items-center gap-2">
                 <HolderAvatar holder={single} />
-                <span className="text-sm">{single.name}</span>
+                <Text render={<span />} size="sm">
+                    {single.name}
+                </Text>
             </div>
         );
     }
@@ -485,18 +492,26 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                         <TableRow key={position.id}>
                             <TableCell>
                                 <div className="flex flex-col">
-                                    <span className="font-medium">
+                                    <Text render={<span />} weight="medium">
                                         {position.name}
-                                    </span>
+                                    </Text>
                                     {position.linkedGroupSlug ? (
-                                        <span className="text-xs text-muted-foreground">
+                                        <Text
+                                            render={<span />}
+                                            size="xs"
+                                            tone="muted"
+                                        >
                                             Følger lederen av «
                                             {position.linkedGroupSlug}»
-                                        </span>
+                                        </Text>
                                     ) : position.scope === "global" ? (
-                                        <span className="text-xs text-muted-foreground">
+                                        <Text
+                                            render={<span />}
+                                            size="xs"
+                                            tone="muted"
+                                        >
                                             Gjelder hele TIHLDE
-                                        </span>
+                                        </Text>
                                     ) : null}
                                 </div>
                             </TableCell>
@@ -507,11 +522,15 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                                 {position.holders.length > 0 ? (
                                     <HolderAvatars holders={position.holders} />
                                 ) : (
-                                    <span className="text-sm text-muted-foreground">
+                                    <Text
+                                        render={<span />}
+                                        size="sm"
+                                        tone="muted"
+                                    >
                                         {position.linkedGroupSlug
                                             ? "Settes av gruppens leder"
                                             : "Ingen tildelt"}
-                                    </span>
+                                    </Text>
                                 )}
                             </TableCell>
                             <TableCell className="max-w-72 truncate text-sm text-muted-foreground">
@@ -580,9 +599,13 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                             <TableCell colSpan={4}>
                                 <div className="flex items-center justify-between gap-2">
                                     {positions?.length === 0 ? (
-                                        <span className="text-sm text-muted-foreground">
+                                        <Text
+                                            render={<span />}
+                                            size="sm"
+                                            tone="muted"
+                                        >
                                             Ingen verv ennå.
-                                        </span>
+                                        </Text>
                                     ) : (
                                         <span />
                                     )}
@@ -672,18 +695,20 @@ function MemberPermissionsRow({
         <TableRow>
             <TableCell>
                 <div className="flex flex-col">
-                    <span className="font-medium">Alle medlemmer</span>
-                    <span className="text-xs text-muted-foreground">
+                    <Text render={<span />} weight="medium">
+                        Alle medlemmer
+                    </Text>
+                    <Text render={<span />} size="xs" tone="muted">
                         Gjelder alle som er med i gruppen
-                    </span>
+                    </Text>
                 </div>
             </TableCell>
             <TableCell>
-                <span className="text-sm text-muted-foreground">
+                <Text render={<span />} size="sm" tone="muted">
                     {memberCount === 1
                         ? "1 medlem"
                         : `${memberCount} medlemmer`}
-                </span>
+                </Text>
             </TableCell>
             <TableCell className="max-w-72 truncate text-sm text-muted-foreground">
                 {canManage
@@ -791,11 +816,11 @@ function MemberPermissionsDialog({
                                 lockedDomains={globalDomains}
                                 lockedHint="Avhukede felt er allerede gitt for hele TIHLDE nedenfor."
                             />
-                            <p className="text-sm text-muted-foreground">
+                            <Text size="sm" tone="muted">
                                 Alle i gruppen får dette, men bare for gruppens
                                 eget innhold. Andre områder kan ikke begrenses
                                 til én gruppe, og ligger derfor bare nedenfor.
-                            </p>
+                            </Text>
                         </Field>
 
                         {canGrantGlobally ? (
@@ -805,16 +830,18 @@ function MemberPermissionsDialog({
                                     value={global}
                                     onChange={setGlobal}
                                 />
-                                <p className="text-sm text-muted-foreground">
+                                <Text size="sm" tone="muted">
                                     Alle i gruppen får dette på tvers av alle
                                     grupper. Du kan bare gi bort tilganger du
                                     selv har.
-                                </p>
+                                </Text>
                             </Field>
                         ) : null}
 
                         {error ? (
-                            <p className="text-sm text-destructive">{error}</p>
+                            <Text size="sm" tone="destructive">
+                                {error}
+                            </Text>
                         ) : null}
                     </FieldGroup>
                 </DialogBody>
@@ -900,19 +927,21 @@ function LeaderRow({
         <TableRow>
             <TableCell>
                 <div className="flex flex-col">
-                    <span className="font-medium">{title ?? "Leder"}</span>
-                    <span className="text-xs text-muted-foreground">
+                    <Text render={<span />} weight="medium">
+                        {title ?? "Leder"}
+                    </Text>
+                    <Text render={<span />} size="xs" tone="muted">
                         {title
                             ? "Gruppens leder — settes i medlemslisten"
                             : "Settes i gruppens medlemsliste"}
-                    </span>
+                    </Text>
                 </div>
             </TableCell>
             <TableCell>
                 {leaders.length === 0 ? (
-                    <span className="text-sm text-muted-foreground">
+                    <Text render={<span />} size="sm" tone="muted">
                         Ingen tildelt
-                    </span>
+                    </Text>
                 ) : (
                     <HolderAvatars holders={leaders} />
                 )}
@@ -1035,10 +1064,10 @@ function LeaderPermissionsDialog({
                                 onChange={(e) => setTitle(e.target.value)}
                                 placeholder="Leder"
                             />
-                            <p className="text-sm text-muted-foreground">
+                            <Text size="sm" tone="muted">
                                 Hva gruppen kaller lederen sin, f.eks.
                                 «President». Tomt felt gir «Leder».
-                            </p>
+                            </Text>
                         </Field>
                         <Field>
                             <FieldLabel>Gjelder denne gruppen</FieldLabel>
@@ -1049,12 +1078,12 @@ function LeaderPermissionsDialog({
                                 lockedDomains={covered}
                                 lockedHint="Avhukede felt er allerede gitt for hele TIHLDE nedenfor."
                             />
-                            <p className="text-sm text-muted-foreground">
+                            <Text size="sm" tone="muted">
                                 Gjelder bare gruppens eget innhold, og følger
                                 den som til enhver tid er leder. Står for seg
                                 selv: lederen beholder dette selv om gruppen
                                 endrer hva alle medlemmer får.
-                            </p>
+                            </Text>
                         </Field>
 
                         {canGrantGlobally ? (
@@ -1064,16 +1093,18 @@ function LeaderPermissionsDialog({
                                     value={global}
                                     onChange={setGlobal}
                                 />
-                                <p className="text-sm text-muted-foreground">
+                                <Text size="sm" tone="muted">
                                     Lederen får dette på tvers av alle grupper —
                                     det presidenten trenger utover HS. Du kan
                                     bare gi bort tilganger du selv har.
-                                </p>
+                                </Text>
                             </Field>
                         ) : null}
 
                         {error ? (
-                            <p className="text-sm text-destructive">{error}</p>
+                            <Text size="sm" tone="destructive">
+                                {error}
+                            </Text>
                         ) : null}
                     </FieldGroup>
                 </DialogBody>
@@ -1344,20 +1375,20 @@ function PositionDialog({
                                     lockedDomains={coveredGlobally}
                                     lockedHint="Avhukede felt er allerede gitt til alle medlemmer av gruppen."
                                 />
-                                <p className="text-sm text-muted-foreground">
+                                <Text size="sm" tone="muted">
                                     For det som ikke hører til én gruppe, som
                                     annonser. Vervet blir i gruppen. Du kan bare
                                     gi bort tilganger du selv har.
-                                </p>
+                                </Text>
                             </Field>
                         ) : null}
                         {scope === "group" &&
                         !canGrantGlobally &&
                         globalPermissions.length > 0 ? (
-                            <p className="text-sm text-muted-foreground">
+                            <Text size="sm" tone="muted">
                                 Gjelder også hele TIHLDE:{" "}
                                 {summarizePermissions(globalPermissions)}
-                            </p>
+                            </Text>
                         ) : null}
                         <Field>
                             <label className="flex items-center gap-2">
@@ -1388,15 +1419,17 @@ function PositionDialog({
                                         );
                                     }}
                                 />
-                                <span className="text-sm">
+                                <Text render={<span />} size="sm">
                                     Gjelder hele TIHLDE (ikke bare denne
                                     gruppen) — krever
                                     rolle-administrasjonstilgang
-                                </span>
+                                </Text>
                             </label>
                         </Field>
                         {error ? (
-                            <p className="text-sm text-destructive">{error}</p>
+                            <Text size="sm" tone="destructive">
+                                {error}
+                            </Text>
                         ) : null}
                     </FieldGroup>
                 </DialogBody>
