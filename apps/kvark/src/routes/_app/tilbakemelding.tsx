@@ -44,10 +44,19 @@ import {
     Field,
     FieldContent,
     FieldDescription,
+    FieldError,
     FieldGroup,
     FieldLabel,
 } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
+import {
+    Item,
+    ItemActions,
+    ItemContent,
+    ItemDescription,
+    ItemMedia,
+    ItemTitle,
+} from "@tihlde/ui/ui/item";
 import {
     Select,
     SelectContent,
@@ -55,6 +64,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@tihlde/ui/ui/select";
+import { Separator } from "@tihlde/ui/ui/separator";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Switch } from "@tihlde/ui/ui/switch";
 import { Textarea } from "@tihlde/ui/ui/textarea";
@@ -243,11 +253,16 @@ function CommentRow({
         comment.author?.name ?? (comment.isFeedbackAuthor ? "Anonym" : "Index");
 
     return (
-        <li className="flex gap-3">
-            <CommentAuthorAvatar name={name} image={comment.author?.image} />
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <span className="font-medium">{name}</span>
+        <Item render={<li />} size="flush" className="items-start">
+            <ItemMedia>
+                <CommentAuthorAvatar
+                    name={name}
+                    image={comment.author?.image}
+                />
+            </ItemMedia>
+            <ItemContent>
+                <ItemTitle>
+                    {name}
                     <Badge
                         variant={
                             comment.isFeedbackAuthor ? "outline" : "default"
@@ -255,31 +270,32 @@ function CommentRow({
                     >
                         {comment.isFeedbackAuthor ? "Innsender" : "Index"}
                     </Badge>
-                    <span className="text-muted-foreground">
-                        {formatDate(comment.createdAt)}
-                    </span>
-                    {comment.isMine || canManage ? (
-                        <Button
-                            type="button"
-                            size="icon-sm"
-                            variant="ghost"
-                            className="ml-auto"
-                            aria-label="Slett kommentar"
-                            disabled={remove.isPending}
-                            onClick={() =>
-                                remove.mutate({
-                                    feedbackId,
-                                    commentId: comment.id,
-                                })
-                            }
-                        >
-                            <Trash2 />
-                        </Button>
-                    ) : null}
-                </div>
-                <p className="whitespace-pre-wrap text-sm">{comment.body}</p>
-            </div>
-        </li>
+                </ItemTitle>
+                <ItemDescription>
+                    {formatDate(comment.createdAt)}
+                </ItemDescription>
+                <p className="whitespace-pre-wrap">{comment.body}</p>
+            </ItemContent>
+            {comment.isMine || canManage ? (
+                <ItemActions>
+                    <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="ghost"
+                        aria-label="Slett kommentar"
+                        disabled={remove.isPending}
+                        onClick={() =>
+                            remove.mutate({
+                                feedbackId,
+                                commentId: comment.id,
+                            })
+                        }
+                    >
+                        <Trash2 />
+                    </Button>
+                </ItemActions>
+            ) : null}
+        </Item>
     );
 }
 
@@ -338,9 +354,9 @@ function FeedbackComments({
                         }
                     />
                     {create.isError ? (
-                        <p className="text-sm text-destructive">
+                        <FieldError>
                             Kunne ikke sende kommentaren. Prøv igjen.
-                        </p>
+                        </FieldError>
                     ) : null}
                     <Button
                         type="submit"
@@ -416,9 +432,7 @@ function RejectDialog({
                     </Field>
 
                     {update.isError ? (
-                        <p className="text-sm text-destructive">
-                            Kunne ikke avvise. Prøv igjen.
-                        </p>
+                        <FieldError>Kunne ikke avvise. Prøv igjen.</FieldError>
                     ) : null}
 
                     <DialogFooter>
@@ -477,13 +491,13 @@ function FeedbackRow({
                 </span>
                 <span className="flex shrink-0 items-center gap-3">
                     {item.commentCount > 0 ? (
-                        <span
-                            className="flex items-center gap-1 text-sm text-muted-foreground"
+                        <Badge
+                            variant="outline"
                             aria-label={`${item.commentCount} kommentarer`}
                         >
-                            <MessageCircle className="size-4" />
+                            <MessageCircle />
                             {item.commentCount}
-                        </span>
+                        </Badge>
                     ) : null}
                     <Badge variant={STATUS_VARIANTS[item.status]}>
                         {STATUS_LABELS[item.status]}
@@ -638,12 +652,11 @@ function FeedbackRow({
                     onOpenChange={setRejectOpen}
                 />
 
-                <div className="mt-4 border-t pt-4">
-                    <FeedbackComments
-                        item={item}
-                        canComment={canModerate || item.isAuthor}
-                    />
-                </div>
+                <Separator className="my-4" />
+                <FeedbackComments
+                    item={item}
+                    canComment={canModerate || item.isAuthor}
+                />
             </CollapsibleContent>
         </Collapsible>
     );
