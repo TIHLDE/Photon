@@ -347,6 +347,9 @@ export const group = pgTable("group", {
      * it grants no permissions. Clearing the column brings all of that back.
      */
     archivedAt: timestamp("archived_at"),
+    acceptsJoinRequests: boolean("accepts_join_requests")
+        .notNull()
+        .default(false),
     ...timestamps,
 });
 
