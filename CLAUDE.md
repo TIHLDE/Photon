@@ -192,6 +192,17 @@ The repo has **one long-lived branch: `main`**. There is no `dev` branch.
 - **Error handling**: Use appropriate HTTP status codes
 - **Middleware**: Chain middleware using Hono patterns
 
+### Frontend (apps/kvark)
+
+**All UI comes from `@tihlde/ui`. Tailwind in `apps/kvark` is for layout only.** No exceptions.
+
+- Allowed: flex/grid, gap/space, padding/margin, sizing, positioning, overflow, responsive prefixes.
+- Forbidden: colors (`text-<color>`, `bg-*`, `border-<color>`, `ring-*`), typography (`text-sm`, `font-*`, `leading-*`, `tracking-*`), and decoration (`border`, `rounded-*`, `shadow-*`).
+- Missing a component or a variant? Add it to `packages/ui`, then use it from kvark.
+- The surrounding code is not the standard: kvark has hundreds of old violations. Don't copy them.
+- Read `apps/kvark/AGENTS.md` before changing the frontend. It is not loaded automatically when files are read through the shell.
+- `bun run lint:ui` fails on new violations in your diff against `main`. It runs in CI and as a Claude hook after every edit. Opt a line out only with a `ui-allow: <reason>` comment on the same line.
+
 ### Database
 
 - **ORM**: Drizzle exclusively
@@ -352,6 +363,7 @@ When server is running:
 9. **Follow existing patterns** in the codebase
 10. **Create migrations** for schema changes (`bun run db:generate`)
 11. **Use GitHub CLI (`gh`)** for GitHub operations
+12. **UI only from `@tihlde/ui`** - Tailwind in kvark is layout only (see Frontend above)
 
 ## Quick Start for Claude
 
