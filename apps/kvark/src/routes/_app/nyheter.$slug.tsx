@@ -4,6 +4,7 @@ import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Separator } from "@tihlde/ui/ui/separator";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
+import { Text } from "@tihlde/ui/ui/text";
 import { ArrowLeft, CalendarDays, Clock3, PencilLine } from "lucide-react";
 
 import { getNewsByIdQuery } from "#/api/queries/news";
@@ -80,9 +81,9 @@ function NewsDetailPage() {
                                 {news.title}
                             </h1>
                             {news.header ? (
-                                <p className="text-lg text-muted-foreground">
+                                <Text size="lg" tone="muted">
                                     {news.header}
-                                </p>
+                                </Text>
                             ) : null}
                         </div>
                         <div className="flex shrink-0 flex-wrap items-center gap-2">

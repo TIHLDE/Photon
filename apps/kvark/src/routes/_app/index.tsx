@@ -10,6 +10,7 @@ import { EventCalendar } from "@tihlde/ui/complex/event-calendar";
 import { Reveal, Stagger } from "@tihlde/ui/ui/motion";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
+import { Text } from "@tihlde/ui/ui/text";
 import { Plus } from "lucide-react";
 import { type ReactNode, Suspense } from "react";
 
@@ -120,7 +121,9 @@ function Home() {
                             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2" />
                         }
                     >
-                        <h2 className="min-w-0 text-2xl">Arrangementer</h2>
+                        <Text render={<h2 />} size="2xl" className="min-w-0">
+                            Arrangementer
+                        </Text>
                         <div className="flex flex-wrap items-center gap-2">
                             {canCreateEvent ? (
                                 <Button
@@ -459,7 +462,9 @@ function SectionHeader({
                 <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2" />
             }
         >
-            <h2 className="min-w-0 text-2xl">{title}</h2>
+            <Text render={<h2 />} size="2xl" className="min-w-0">
+                {title}
+            </Text>
             {actionLabel && actionTo ? (
                 <Button
                     variant="ghost"

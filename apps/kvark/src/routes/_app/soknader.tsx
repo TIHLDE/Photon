@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
+import { Text } from "@tihlde/ui/ui/text";
 import { CheckCircle2, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
@@ -229,11 +230,13 @@ function SoknaderPage() {
         <DetailLayout
             header={
                 <div className="flex flex-col gap-2">
-                    <h1 className="text-3xl">Søknader</h1>
-                    <p className="text-muted-foreground">
+                    <Text render={<h1 />} size="3xl">
+                        Søknader
+                    </Text>
+                    <Text tone="muted">
                         Send inn utlegg, søk om støtte, og meld inn saker til
                         Hovedstyret.
-                    </p>
+                    </Text>
                 </div>
             }
         >

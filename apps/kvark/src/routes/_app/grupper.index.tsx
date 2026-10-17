@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
+import { Text } from "@tihlde/ui/ui/text";
 import { ReactFlow, type Node } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useCallback, useMemo } from "react";
@@ -208,7 +209,9 @@ function GroupsPage() {
 
     return (
         <div className="container mx-auto flex w-full flex-col gap-4 px-4 py-8">
-            <h1 className="text-center text-2xl">Gruppeoversikt</h1>
+            <Text render={<h1 />} size="2xl" className="text-center">
+                Gruppeoversikt
+            </Text>
 
             <Tabs
                 className="self-center"

@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { StudyProgrammeCard } from "#/components/study-programme-card";
 import { STUDY_PROGRAMMES, TIHLDE_DESCRIPTION } from "#/data/company";
@@ -14,9 +15,7 @@ function StudiesPage() {
             <section className="flex flex-col gap-8 md:flex-row md:items-center">
                 <div className="flex flex-col gap-4 md:w-1/2">
                     <h1 className="text-4xl md:text-5xl">Om TIHLDE</h1>
-                    <p className="text-muted-foreground">
-                        {TIHLDE_DESCRIPTION}
-                    </p>
+                    <Text tone="muted">{TIHLDE_DESCRIPTION}</Text>
                 </div>
                 <div className="md:w-1/2">
                     <img
@@ -42,11 +41,11 @@ function StudiesPage() {
 
             <section className="flex flex-col items-center gap-4 text-center">
                 <h2 className="text-3xl md:text-4xl">Ta kontakt med oss</h2>
-                <p className="max-w-xl text-muted-foreground">
+                <Text tone="muted" className="max-w-xl">
                     Bedrifter kan ta kontakt med oss for å få mer informasjon om
                     hva vi tilbyr og hvordan vi kan hjelpe dem med å nå ut til
                     våre medlemmer.
-                </p>
+                </Text>
                 <Button
                     size="lg"
                     className="mt-2"

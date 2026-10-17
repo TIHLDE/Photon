@@ -4,6 +4,7 @@ import { PlusIcon } from "lucide-react";
 import { Suspense } from "react";
 import { Button } from "@tihlde/ui/ui/button";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
+import { Text } from "@tihlde/ui/ui/text";
 
 import { authQueryOptions } from "#/api/auth";
 import { getToddelIssuesQuery } from "#/api/queries/toddel";
@@ -59,11 +60,7 @@ function IssueGrid() {
     const { data: issues } = useSuspenseQuery(getToddelIssuesQuery());
 
     if (issues.length === 0) {
-        return (
-            <p className="text-muted-foreground">
-                Ingen utgaver er lagt ut ennå.
-            </p>
-        );
+        return <Text tone="muted">Ingen utgaver er lagt ut ennå.</Text>;
     }
 
     return (

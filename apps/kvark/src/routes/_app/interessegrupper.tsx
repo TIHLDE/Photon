@@ -1,6 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
+import { Text } from "@tihlde/ui/ui/text";
 import {
     ArrowRightIcon,
     HandCoinsIcon,
@@ -111,13 +112,17 @@ function InfoLinkCard({ title, description, href, icon: Icon }: InfoLink) {
                     <Icon className="size-5 shrink-0" />
                     <div className="flex flex-1 flex-col gap-2">
                         <h2 className="leading-none font-medium">{title}</h2>
-                        <p className="text-sm text-muted-foreground">
+                        <Text size="sm" tone="muted">
                             {description}
-                        </p>
-                        <span className="mt-auto flex items-center justify-end gap-2 text-sm">
+                        </Text>
+                        <Text
+                            render={<span />}
+                            size="sm"
+                            className="mt-auto flex items-center justify-end gap-2"
+                        >
                             Les mer
                             <ArrowRightIcon className="size-4 transition-transform group-hover:translate-x-0.5" />
-                        </span>
+                        </Text>
                     </div>
                 </CardContent>
             </Card>

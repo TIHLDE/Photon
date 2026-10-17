@@ -3,6 +3,7 @@ import { CatchBoundary, Link, createFileRoute } from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
+import { Text } from "@tihlde/ui/ui/text";
 import { ArrowRight, AtSign, Facebook, Instagram, Users2 } from "lucide-react";
 import { Suspense, useMemo } from "react";
 
@@ -76,12 +77,12 @@ function NewStudentPage() {
                     <h1 className="text-4xl font-bold md:text-6xl">
                         Velkommen til linjeforeningen TIHLDE!
                     </h1>
-                    <p className="text-muted-foreground">
+                    <Text tone="muted">
                         Her finner du nyttig info om hvordan linjeforeningen og
                         fadderuka fungerer. Er du ny student kan du melde deg på
                         fadderuka under. Du burde også lage deg en bruker om du
                         ikke har gjort det allerede.
-                    </p>
+                    </Text>
                     <div className="flex flex-col gap-2 sm:flex-row">
                         <Button
                             render={
@@ -113,16 +114,14 @@ function NewStudentPage() {
             </section>
 
             <section className="container mx-auto flex max-w-5xl flex-col gap-4 px-4 py-16">
-                <p className="text-muted-foreground">
-                    Ditt første møte med TIHLDE
-                </p>
+                <Text tone="muted">Ditt første møte med TIHLDE</Text>
                 <h2 className="text-3xl md:text-5xl">Fadderuka</h2>
-                <p className="max-w-2xl text-muted-foreground">
+                <Text tone="muted" className="max-w-2xl">
                     Fadderuka er en gyllen mulighet til å bli kjent med
                     medstudenter og med linjeforeningen. Fadderuka varer fra uka
                     før skolestart til en uke inn i semesteret. Meld deg på for
                     å få plass!
-                </p>
+                </Text>
                 <div className="flex flex-col gap-2 sm:flex-row">
                     <Button
                         render={
@@ -158,7 +157,7 @@ function NewStudentPage() {
             </section>
 
             <section className="container mx-auto flex max-w-4xl flex-col gap-2 px-4 py-16">
-                <p className="text-muted-foreground">Hva er egentlig TIHLDE?</p>
+                <Text tone="muted">Hva er egentlig TIHLDE?</Text>
                 <p className="text-xl md:text-3xl">
                     «TIHLDE (Trondheim IngeniørHøgskoles Linjeforening for
                     Dannede EDBere) er linjeforeningen for bachelorstudiene
@@ -175,10 +174,10 @@ function NewStudentPage() {
                         TIHLDE er drevet av frivillige studenter — bli kjent med
                         de forskjellige vervene
                     </h2>
-                    <p className="mx-auto max-w-lg text-muted-foreground">
+                    <Text tone="muted" className="mx-auto max-w-lg">
                         Opptaksrunder skjer rett etter fadderuka. Du blir kalt
                         inn på intervju ved å sende søknad.
-                    </p>
+                    </Text>
                 </div>
                 <Suspense fallback={<GroupSectionsSkeleton />}>
                     <GroupSections />
@@ -211,9 +210,7 @@ function NewStudentPage() {
                             <Card size="sm" className="h-full">
                                 <CardContent className="flex flex-col items-center gap-4 py-8">
                                     <contact.icon className="size-10" />
-                                    <p className="text-muted-foreground">
-                                        {contact.label}
-                                    </p>
+                                    <Text tone="muted">{contact.label}</Text>
                                 </CardContent>
                             </Card>
                         </a>
@@ -254,7 +251,9 @@ function GroupSections() {
         <div className="flex flex-col gap-10">
             {sections.map((section) => (
                 <div key={section.title} className="flex flex-col gap-3">
-                    <h3 className="text-lg font-semibold">{section.title}</h3>
+                    <Text render={<h3 />} size="lg" weight="semibold">
+                        {section.title}
+                    </Text>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {section.groups.map((group) => (
                             <GroupAdmissionLinkCard

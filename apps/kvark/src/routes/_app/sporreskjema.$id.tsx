@@ -13,6 +13,7 @@ import { FieldGroup } from "@tihlde/ui/ui/field";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
 import { Separator } from "@tihlde/ui/ui/separator";
 import { Spinner } from "@tihlde/ui/ui/spinner";
+import { Text } from "@tihlde/ui/ui/text";
 import { ArrowLeft, CheckCircle2, TriangleAlert } from "lucide-react";
 import type { FormDetail } from "@tihlde/sdk";
 import { z } from "zod";
@@ -227,9 +228,9 @@ function AlreadyAnswered({
             {canAnswerAgain ? (
                 <>
                     <Separator />
-                    <h2 className="text-lg font-medium">
+                    <Text render={<h2 />} size="lg" weight="medium">
                         Send inn et nytt svar
-                    </h2>
+                    </Text>
                     <AnswerForm form={form} />
                 </>
             ) : (

@@ -4,6 +4,7 @@ import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import { Field, FieldDescription, FieldLabel } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
 import { QRCode } from "@tihlde/ui/ui/qr-code";
+import { Text } from "@tihlde/ui/ui/text";
 import { Copy, Download, QrCode, Share2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -96,10 +97,10 @@ function QRCodesPage() {
     return (
         <div className="container mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-8">
             <div className="flex flex-col gap-1">
-                <h1 className="text-3xl">QR-kode</h1>
-                <p className="text-muted-foreground">
-                    Lag en QR-kode direkte i nettleseren.
-                </p>
+                <Text render={<h1 />} size="3xl">
+                    QR-kode
+                </Text>
+                <Text tone="muted">Lag en QR-kode direkte i nettleseren.</Text>
             </div>
 
             <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_20rem]">
@@ -170,7 +171,11 @@ function QRCodesPage() {
                         </Field>
                     ) : null}
 
-                    <label className="flex cursor-pointer items-center gap-3 text-sm">
+                    <Text
+                        render={<label />}
+                        size="sm"
+                        className="flex cursor-pointer items-center gap-3"
+                    >
                         <Checkbox
                             checked={includeLogo}
                             onCheckedChange={(checked) =>
@@ -178,7 +183,7 @@ function QRCodesPage() {
                             }
                         />
                         <span>Legg TIHLDE-logo i midten</span>
-                    </label>
+                    </Text>
                 </div>
 
                 <div className="flex flex-col items-center gap-4">
@@ -219,9 +224,9 @@ function QRCodesPage() {
                         </Button>
                     </div>
                     {shareError ? (
-                        <p className="text-sm text-destructive">
+                        <Text size="sm" tone="destructive">
                             Kunne ikke kopiere lenken. Prøv igjen.
-                        </p>
+                        </Text>
                     ) : null}
                 </div>
             </div>

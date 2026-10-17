@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { MarkdownView, RichEditor } from "@tihlde/ui/complex/markdown";
+import { Text } from "@tihlde/ui/ui/text";
 
 import {
     calloutOnlyRegistry,
@@ -69,17 +70,21 @@ function MarkdownPlaygroundPage() {
     return (
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
             <div className="flex flex-col gap-1">
-                <h1 className="text-3xl">Markdown playground</h1>
-                <p className="text-muted-foreground">
+                <Text render={<h1 />} size="3xl">
+                    Markdown playground
+                </Text>
+                <Text tone="muted">
                     Three registries, one shared markdown string. The rich
                     editor on the left is bound to the same state as the raw
                     textarea on the right; both update each other.
-                </p>
+                </Text>
             </div>
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div className="flex min-w-0 flex-col gap-2">
-                    <h2 className="text-lg">Editor — rich registry</h2>
+                    <Text render={<h2 />} size="lg">
+                        Editor — rich registry
+                    </Text>
                     <RichEditor
                         registry={richRegistry}
                         value={source}
@@ -88,7 +93,9 @@ function MarkdownPlaygroundPage() {
                 </div>
 
                 <div className="flex min-w-0 flex-col gap-2">
-                    <h2 className="text-lg">Editor — callout-only registry</h2>
+                    <Text render={<h2 />} size="lg">
+                        Editor — callout-only registry
+                    </Text>
                     <RichEditor
                         registry={calloutOnlyRegistry}
                         value={source}
@@ -98,7 +105,9 @@ function MarkdownPlaygroundPage() {
             </div>
 
             <div className="flex flex-col gap-2">
-                <h2 className="text-lg">Raw markdown</h2>
+                <Text render={<h2 />} size="lg">
+                    Raw markdown
+                </Text>
                 <textarea
                     value={source}
                     onChange={(event) => setSource(event.target.value)}
@@ -109,14 +118,18 @@ function MarkdownPlaygroundPage() {
 
             <div className="grid gap-4 lg:grid-cols-3">
                 <div className="flex flex-col gap-2">
-                    <h2 className="text-lg">Rendered — rich</h2>
+                    <Text render={<h2 />} size="lg">
+                        Rendered — rich
+                    </Text>
                     <div className="rounded border p-4">
                         <MarkdownView registry={richRegistry} source={source} />
                     </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
-                    <h2 className="text-lg">Rendered — callout-only</h2>
+                    <Text render={<h2 />} size="lg">
+                        Rendered — callout-only
+                    </Text>
                     <div className="rounded border p-4">
                         <MarkdownView
                             registry={calloutOnlyRegistry}
@@ -126,7 +139,9 @@ function MarkdownPlaygroundPage() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                    <h2 className="text-lg">Rendered — minimal</h2>
+                    <Text render={<h2 />} size="lg">
+                        Rendered — minimal
+                    </Text>
                     <div className="rounded border p-4">
                         <MarkdownView
                             registry={minimalRegistry}

@@ -3,6 +3,7 @@ import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Button } from "@tihlde/ui/ui/button";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
+import { Text } from "@tihlde/ui/ui/text";
 import {
     ArrowRight,
     CheckCircle2,
@@ -48,18 +49,16 @@ function CompanyLandingPage() {
             <section className="relative flex min-h-[60vh] w-full items-center justify-center overflow-hidden">
                 <HeroSectionBackground />
                 <div className="relative z-10 mx-auto flex max-w-3xl flex-col items-center gap-4 px-4 py-24 text-center">
-                    <p className="text-muted-foreground">
-                        Møt morgendagens IT-talenter!
-                    </p>
+                    <Text tone="muted">Møt morgendagens IT-talenter!</Text>
                     <h1 className="text-4xl font-bold md:text-6xl">
                         Samarbeid med TIHLDE
                     </h1>
-                    <p className="text-muted-foreground">
+                    <Text tone="muted">
                         Vi tilbyr unike muligheter for bedrifter til å knytte
                         seg til en ny generasjon IT-eksperter. Utforsk våre
                         tilbud og bli en del av nettverket som inspirerer,
                         engasjerer og rekrutterer!
-                    </p>
+                    </Text>
                     <Button
                         size="lg"
                         className="mt-4"
@@ -85,12 +84,14 @@ function CompanyLandingPage() {
 
             <section className="container mx-auto flex max-w-5xl flex-col gap-4 px-4 py-16">
                 <div className="flex flex-col gap-1">
-                    <h2 className="text-3xl">Stillingsannonser</h2>
-                    <p className="text-muted-foreground">
+                    <Text render={<h2 />} size="3xl">
+                        Stillingsannonser
+                    </Text>
+                    <Text tone="muted">
                         Publiser relevante stillinger, internships eller
                         trainee-programmer direkte til våre medlemmer. Sikre deg
                         de beste kandidatene!
-                    </p>
+                    </Text>
                 </div>
                 <CatchBoundary
                     getResetKey={() => "jobs"}
@@ -105,7 +106,9 @@ function CompanyLandingPage() {
             </section>
 
             <section className="container mx-auto flex max-w-5xl flex-col gap-4 px-4 py-16">
-                <h2 className="text-3xl">Studiene</h2>
+                <Text render={<h2 />} size="3xl">
+                    Studiene
+                </Text>
                 <div className="grid gap-4 md:grid-cols-2">
                     {STUDY_PROGRAMMES_SHORT.map((programme) => (
                         <StudyProgrammeCard
@@ -131,17 +134,15 @@ function CompanyLandingPage() {
                 className="container mx-auto flex w-full max-w-4xl scroll-mt-24 flex-col gap-8 px-4 py-16"
             >
                 <div className="flex flex-col items-center gap-3 text-center">
-                    <p className="text-muted-foreground">
-                        Møt morgendagens IT-talenter!
-                    </p>
+                    <Text tone="muted">Møt morgendagens IT-talenter!</Text>
                     <h2 className="text-3xl md:text-4xl">
                         Send oss en melding
                     </h2>
-                    <p className="max-w-2xl text-muted-foreground">
+                    <Text tone="muted" className="max-w-2xl">
                         Ta direkte kontakt med Næringsliv og kurs for å
                         diskutere hva som passer deres bedrift best. Vi hjelper
                         dere med å få ut informasjon om deres bedrift!
-                    </p>
+                    </Text>
                 </div>
 
                 <Suspense fallback={<Skeleton className="h-96 w-full" />}>
@@ -209,9 +210,7 @@ function JobPreview() {
 
     if (data.items.length === 0) {
         return (
-            <p className="text-muted-foreground">
-                Ingen aktive stillingsannonser akkurat nå.
-            </p>
+            <Text tone="muted">Ingen aktive stillingsannonser akkurat nå.</Text>
         );
     }
 

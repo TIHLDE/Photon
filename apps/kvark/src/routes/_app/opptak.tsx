@@ -12,6 +12,7 @@ import {
 } from "#/components/group-admission-card";
 import { HeroSectionBackground } from "#/components/hero-section";
 import { ADMISSION_INFOS } from "#/data/admissions";
+import { Text } from "@tihlde/ui/ui/text";
 
 export const Route = createFileRoute("/_app/opptak")({
     component: AdmissionsPage,
@@ -68,37 +69,37 @@ function AdmissionsPage() {
             <section className="relative flex min-h-[60vh] w-full items-center justify-center overflow-hidden">
                 <HeroSectionBackground />
                 <div className="relative z-10 mx-auto flex max-w-3xl flex-col items-center gap-4 px-4 py-24 text-center">
-                    <p className="text-muted-foreground">
-                        Bli med på å skape studentmiljøet
-                    </p>
+                    <Text tone="muted">Bli med på å skape studentmiljøet</Text>
                     <h1 className="text-4xl font-bold md:text-6xl">
                         Søk verv!
                     </h1>
-                    <p className="text-muted-foreground">
+                    <Text tone="muted">
                         Her finner du en oversikt over alle vervene i TIHLDE.
                         Søk på vervene du er interessert i, og bli med på å
                         skape et bedre studentmiljø!
-                    </p>
+                    </Text>
                 </div>
             </section>
 
             <section className="container mx-auto flex max-w-5xl flex-col gap-12 px-4 py-16">
                 <div className="flex max-w-xl flex-col gap-2">
-                    <h2 className="text-3xl">Hva er verv?</h2>
-                    <p className="text-muted-foreground">
+                    <Text render={<h2 />} size="3xl">
+                        Hva er verv?
+                    </Text>
+                    <Text tone="muted">
                         Et verv er en oppgave eller et ansvar som du får tildelt
                         i TIHLDE. Et verv gir deg muligheten til å være med på å
                         skape et bedre studentmiljø, og du lærer mye nyttig
                         underveis som du vil ta med deg resten av livet.
-                    </p>
+                    </Text>
                 </div>
                 <div className="grid gap-8 lg:grid-cols-3">
                     {ADMISSION_INFOS.map((info) => (
                         <div key={info.title} className="flex flex-col gap-2">
-                            <h3 className="font-semibold">{info.title}</h3>
-                            <p className="text-muted-foreground">
-                                {info.description}
-                            </p>
+                            <Text render={<h3 />} weight="semibold">
+                                {info.title}
+                            </Text>
+                            <Text tone="muted">{info.description}</Text>
                         </div>
                     ))}
                 </div>
@@ -106,13 +107,13 @@ function AdmissionsPage() {
 
             <section className="container mx-auto flex max-w-5xl flex-col gap-8 px-4 py-16">
                 <div className="flex flex-col gap-2 text-center">
-                    <h2 className="text-3xl">
+                    <Text render={<h2 />} size="3xl">
                         Det er mange verv å velge mellom!
-                    </h2>
-                    <p className="mx-auto max-w-lg text-muted-foreground">
+                    </Text>
+                    <Text tone="muted" className="mx-auto max-w-lg">
                         Det er separate intervjuer for hvert verv du har søkt
                         på, dersom du blir tatt opp til intervju.
-                    </p>
+                    </Text>
                 </div>
 
                 <AdmissionSection
@@ -135,13 +136,15 @@ function AdmissionsPage() {
             {interestGroups.length > 0 ? (
                 <section className="container mx-auto flex max-w-5xl flex-col gap-8 px-4 py-16">
                     <div className="flex flex-col gap-2 text-center">
-                        <h2 className="text-3xl">Interessegrupper</h2>
-                        <p className="mx-auto max-w-xl text-muted-foreground">
+                        <Text render={<h2 />} size="3xl">
+                            Interessegrupper
+                        </Text>
+                        <Text tone="muted" className="mx-auto max-w-xl">
                             TIHLDE har flere interessegrupper som du kan bli med
                             i. Her kan du drive med det du er interessert i,
                             eller lære noe nytt. Interessegruppene er åpne for
                             alle, og du kan være med i så mange du vil.
-                        </p>
+                        </Text>
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {interestGroups.map((group) => (
@@ -170,7 +173,9 @@ function AdmissionSection({
 
     return (
         <div className="flex flex-col gap-3">
-            <h3 className="text-lg font-semibold">{title}</h3>
+            <Text render={<h3 />} size="lg" weight="semibold">
+                {title}
+            </Text>
             <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {groups.map((group) => (
                     <AdmissionCardContainer

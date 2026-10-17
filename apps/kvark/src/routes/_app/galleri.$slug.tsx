@@ -6,6 +6,7 @@ import {
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Empty, EmptyDescription, EmptyTitle } from "@tihlde/ui/ui/empty";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
+import { Text } from "@tihlde/ui/ui/text";
 import { CalendarIcon } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 
@@ -40,9 +41,7 @@ function GalleryDetailPage() {
             <div className="flex flex-col gap-2">
                 <h1 className="text-3xl lg:text-5xl">{gallery.title}</h1>
                 {gallery.description && (
-                    <p className="text-muted-foreground">
-                        {gallery.description}
-                    </p>
+                    <Text tone="muted">{gallery.description}</Text>
                 )}
                 {gallery.event && (
                     <Link

@@ -29,6 +29,7 @@ import {
     TableHeader,
     TableRow,
 } from "@tihlde/ui/ui/table";
+import { Text } from "@tihlde/ui/ui/text";
 import {
     ArrowDown,
     ArrowUpDown,
@@ -157,7 +158,9 @@ function CookbookPage() {
 
     return (
         <div className="container mx-auto px-4 py-8">
-            <h1 className="text-4xl font-bold my-8">Kokeboka</h1>
+            <Text render={<h1 />} size="4xl" weight="bold" className="my-8">
+                Kokeboka
+            </Text>
             <div className=" grid w-full gap-4 lg:grid-cols-[15rem_minmax(0,1fr)]">
                 <Card size="sm" className="h-fit">
                     <CardContent>

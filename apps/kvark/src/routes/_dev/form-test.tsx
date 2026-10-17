@@ -18,6 +18,7 @@ import { type DateRange } from "@tihlde/ui/ui/date-picker";
 import { nb } from "date-fns/locale";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 import { type TimeValue } from "@tihlde/ui/ui/time-picker";
+import { Text } from "@tihlde/ui/ui/text";
 import {
     AtSignIcon,
     CheckIcon,
@@ -250,12 +251,14 @@ function FormTestPage() {
     return (
         <div className="container mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
             <header className="flex flex-col gap-1">
-                <h1 className="text-3xl">Form test</h1>
-                <p className="text-muted-foreground">
+                <Text render={<h1 />} size="3xl">
+                    Form test
+                </Text>
+                <Text tone="muted">
                     Demoside for alle TanStack Form composition components.
                     Trykk «Send inn» for å se feilmeldinger på alle påkrevde
                     felt.
-                </p>
+                </Text>
             </header>
 
             <form {...formHandlers(form)} className="flex flex-col gap-6">
@@ -1056,7 +1059,11 @@ function FormTestPage() {
                             })}
                         >
                             {(snapshot) => (
-                                <pre className="overflow-x-auto text-xs">
+                                <Text
+                                    render={<pre />}
+                                    size="xs"
+                                    className="overflow-x-auto"
+                                >
                                     {JSON.stringify(
                                         snapshot,
                                         (_, value) =>
@@ -1065,7 +1072,7 @@ function FormTestPage() {
                                                 : value,
                                         2,
                                     )}
-                                </pre>
+                                </Text>
                             )}
                         </form.Subscribe>
                     </CardContent>
