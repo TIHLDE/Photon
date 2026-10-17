@@ -50,7 +50,7 @@ export async function getStagedAssetsForCleanup(
 
 /**
  * The asset key a stored URL refers to, or null when the URL points somewhere
- * else (an external image, or the Azure blobs the old site used).
+ * else (an external image).
  */
 export function assetKeyFromUrl(url: string): string | null {
     try {

@@ -249,10 +249,9 @@ async function main() {
     const strandedBytes = stranded.reduce((sum, asset) => sum + asset.size, 0);
 
     /**
-     * A reference that names no asset row of ours. Mostly external addresses —
-     * the Azure blobs the Lepton fines and news carry — but a file whose row
-     * was deleted out from under it would look the same, so the two are not
-     * separated here.
+     * A reference that names no asset row of ours. Mostly external addresses,
+     * but a file whose row was deleted out from under it would look the same,
+     * so the two are not separated here.
      */
     const danglingReferences = [...referenced.keys()].filter(
         (key) => !assetKeys.has(key),

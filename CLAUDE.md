@@ -40,7 +40,6 @@ Photon/
 │   │   └── drizzle/             # Generated migrations
 │   ├── email/                   # React Email templates & mailer (@photon/email)
 │   │   └── src/template/        # Email templates (.tsx)
-│   ├── lepton-migration/        # One-shot migration tool from Lepton
 │   └── tsconfig/                # Shared TypeScript configs
 ├── infra/
 │   └── docker/                  # Docker Compose files & Dockerfile
