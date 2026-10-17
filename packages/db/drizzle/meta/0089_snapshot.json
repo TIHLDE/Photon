@@ -1,5 +1,5 @@
 {
-  "id": "1f30f668-f67d-476a-8b27-f250fd6be7e9",
+  "id": "ea7845c2-0174-47ad-b6b7-1befc632cea1",
   "prevId": "220ec3ec-5f5c-44de-ad74-e1e282ac8bc1",
   "version": "7",
   "dialect": "postgresql",
@@ -2581,6 +2581,113 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.event_message": {
+      "name": "event_message",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sent_by_id": {
+          "name": "sent_by_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recipient_count": {
+          "name": "recipient_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "message_event_id_idx": {
+          "name": "message_event_id_idx",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "event_message_event_id_event_event_id_fk": {
+          "name": "event_message_event_id_event_event_id_fk",
+          "tableFrom": "event_message",
+          "tableTo": "event_event",
+          "columnsFrom": [
+            "event_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "event_message_sent_by_id_auth_user_id_fk": {
+          "name": "event_message_sent_by_id_auth_user_id_fk",
+          "tableFrom": "event_message",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "sent_by_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.event_payment": {
       "name": "event_payment",
       "schema": "",
@@ -4959,13 +5066,6 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
-        },
-        "accepts_join_requests": {
-          "name": "accepts_join_requests",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
         },
         "created_at": {
           "name": "created_at",

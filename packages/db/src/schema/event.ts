@@ -620,6 +620,36 @@ export const eventFavoriteRelations = relations(eventFavorite, ({ one }) => ({
     }),
 }));
 
+export const eventMessage = pgTable(
+    "message",
+    {
+        id: uuid("id").primaryKey().defaultRandom(),
+        eventId: uuid("event_id")
+            .notNull()
+            .references(() => event.id, { onDelete: "cascade" }),
+        sentById: text("sent_by_id").references(() => user.id, {
+            onDelete: "set null",
+        }),
+        title: varchar("title", { length: 80 }).notNull(),
+        body: text("body").notNull(),
+        // Påmeldingene endrer seg etterpå, så tallet kan ikke regnes ut på nytt.
+        recipientCount: integer("recipient_count").notNull(),
+        ...timestamps,
+    },
+    (t) => [index("message_event_id_idx").on(t.eventId)],
+);
+
+export const eventMessageRelations = relations(eventMessage, ({ one }) => ({
+    event: one(event, {
+        fields: [eventMessage.eventId],
+        references: [event.id],
+    }),
+    sentBy: one(user, {
+        fields: [eventMessage.sentById],
+        references: [user.id],
+    }),
+}));
+
 // Vipps utsteder hemmeligheten én gang, ved registrering, og viser den aldri
 // igjen. Lå den bare i Redis, mistet vi den ved hver deploy — og siden en
 // glemt registrering ikke kan gjenfinnes, ble det registrert en ny hver gang.
