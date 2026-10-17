@@ -308,9 +308,13 @@ function FeedbackComments({
 }) {
     const [body, setBody] = useState("");
     const canManage = usePermission(MANAGE_PERMISSIONS);
-    const { data: comments, isPending } = useQuery(
-        getFeedbackCommentsQuery(item.id),
-    );
+    const {
+        data: comments,
+        isPending,
+        isError,
+        isFetching,
+        refetch,
+    } = useQuery(getFeedbackCommentsQuery(item.id));
     const create = useMutation(createFeedbackCommentMutation);
 
     function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -322,6 +326,25 @@ function FeedbackComments({
     }
 
     if (isPending) return <Skeleton className="h-12 w-full" />;
+
+    if (isError) {
+        return (
+            <Alert variant="destructive">
+                <AlertTitle>Kunne ikke hente kommentarene</AlertTitle>
+                <AlertAction>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        disabled={isFetching}
+                        onClick={() => refetch()}
+                    >
+                        Prøv igjen
+                    </Button>
+                </AlertAction>
+            </Alert>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-4">
@@ -842,11 +865,15 @@ function FeedbackPage() {
             ),
         );
 
-    const { data: linkedItem } = useQuery({
+    const linked = useQuery({
         ...getFeedbackItemQuery(linkedId ?? ""),
         enabled: linkedId !== undefined,
+        // A deleted item answers 404; retrying would only hold the skeleton
+        // for several seconds before saying so.
+        retry: false,
     });
 
+    const linkedItem = linked.data;
     const items = (data?.pages.flatMap((page) => page.items) ?? []).filter(
         (item) => item.id !== linkedItem?.id,
     );
@@ -894,6 +921,19 @@ function FeedbackPage() {
                     ))}
                 </SelectContent>
             </Select>
+
+            {linkedId !== undefined && linked.isPending ? (
+                <Skeleton className="h-16 w-full" />
+            ) : null}
+
+            {linked.isError ? (
+                <Alert>
+                    <AlertTitle>Fant ikke tilbakemeldingen</AlertTitle>
+                    <AlertDescription>
+                        Den kan ha blitt slettet.
+                    </AlertDescription>
+                </Alert>
+            ) : null}
 
             {linkedItem ? (
                 <FeedbackRow
