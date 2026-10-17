@@ -13,6 +13,7 @@ import {
     EmptyTitle,
 } from "@tihlde/ui/ui/empty";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
+import { Text } from "@tihlde/ui/ui/text";
 import { Ticket } from "lucide-react";
 import { sumBy } from "es-toolkit";
 
@@ -64,11 +65,11 @@ function RouteComponent() {
 
     return (
         <div className="flex flex-col gap-4">
-            <p className="text-sm text-muted-foreground">
+            <Text size="sm" tone="muted">
                 Du har {total} aktive {total === 1 ? "prikk" : "prikker"}. En
                 prikk varer i 20 dager, men telleren står stille i eksamens- og
                 ferieperiodene.
-            </p>
+            </Text>
 
             <ul className="flex flex-col gap-3">
                 {strikes.map((strike) => (
@@ -93,12 +94,12 @@ function RouteComponent() {
                                 </Badge>
                             </CardHeader>
                             <CardContent className="flex flex-col gap-1">
-                                <span className="text-sm">
+                                <Text render={<span />} size="sm">
                                     {strike.reason ?? "Ingen begrunnelse"}
-                                </span>
-                                <span className="text-sm text-muted-foreground">
+                                </Text>
+                                <Text render={<span />} size="sm" tone="muted">
                                     Gitt {formatEventDate(strike.createdAt)}
-                                </span>
+                                </Text>
                             </CardContent>
                         </Card>
                     </li>

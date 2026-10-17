@@ -25,6 +25,7 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from "@tihlde/ui/ui/empty";
+import { Text } from "@tihlde/ui/ui/text";
 import {
     FileSignature,
     HelpCircle,
@@ -98,11 +99,17 @@ function RouteComponent() {
 
     return (
         <>
-            <h2 className="text-2xl">Oversikt</h2>
+            <Text render={<h2 />} size="2xl">
+                Oversikt
+            </Text>
             {profile.bio ? (
                 <div className="flex flex-col gap-2">
-                    <h3 className="text-xs text-muted-foreground">Om</h3>
-                    <p className="whitespace-pre-line text-sm">{profile.bio}</p>
+                    <Text render={<h3 />} size="xs" tone="muted">
+                        Om
+                    </Text>
+                    <Text size="sm" className="whitespace-pre-line">
+                        {profile.bio}
+                    </Text>
                 </div>
             ) : null}
             <ProfileLinksSection links={links} />
@@ -134,9 +141,9 @@ function RouteComponent() {
                             }))}
                         />
                     ) : (
-                        <p className="text-sm text-muted-foreground">
+                        <Text size="sm" tone="muted">
                             {membershipDescription}
-                        </p>
+                        </Text>
                     )}
                 </div>
             ) : null}

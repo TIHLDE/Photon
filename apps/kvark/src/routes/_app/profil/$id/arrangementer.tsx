@@ -20,6 +20,7 @@ import {
     EmptyTitle,
 } from "@tihlde/ui/ui/empty";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
+import { Text } from "@tihlde/ui/ui/text";
 import { CalendarDays, Star } from "lucide-react";
 
 import { CalendarSubscription } from "#/components/calendar-subscription";
@@ -101,12 +102,21 @@ function RouteComponent() {
                                     }
                                 >
                                     <div className="flex min-w-0 flex-1 flex-col">
-                                        <span className="truncate font-medium">
+                                        <Text
+                                            render={<span />}
+                                            weight="medium"
+                                            className="truncate"
+                                        >
                                             {event.title}
-                                        </span>
-                                        <span className="truncate text-sm text-muted-foreground">
+                                        </Text>
+                                        <Text
+                                            render={<span />}
+                                            size="sm"
+                                            tone="muted"
+                                            className="truncate"
+                                        >
                                             {formatEventDate(event.startTime)}
-                                        </span>
+                                        </Text>
                                     </div>
                                     <Star className="size-4 shrink-0" />
                                 </Card>
@@ -173,12 +183,21 @@ function PastEventsSection() {
                                 }
                             >
                                 <div className="flex min-w-0 flex-1 flex-col">
-                                    <span className="truncate font-medium">
+                                    <Text
+                                        render={<span />}
+                                        weight="medium"
+                                        className="truncate"
+                                    >
                                         {event.title}
-                                    </span>
-                                    <span className="truncate text-sm text-muted-foreground">
+                                    </Text>
+                                    <Text
+                                        render={<span />}
+                                        size="sm"
+                                        tone="muted"
+                                        className="truncate"
+                                    >
                                         {formatEventDate(event.startTime)}
-                                    </span>
+                                    </Text>
                                 </div>
                                 <Badge variant="secondary">
                                     {STATUS_LABELS[event.status] ??

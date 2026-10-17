@@ -16,6 +16,7 @@ import {
     EmptyTitle,
 } from "@tihlde/ui/ui/empty";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
+import { Text } from "@tihlde/ui/ui/text";
 import { HelpCircle } from "lucide-react";
 import { Suspense } from "react";
 
@@ -68,10 +69,10 @@ function Evaluations() {
 
     return (
         <div className="flex flex-col gap-4">
-            <p className="text-sm text-muted-foreground">
+            <Text size="sm" tone="muted">
                 Du må svare på disse før du kan melde deg på flere
                 arrangementer.
-            </p>
+            </Text>
             <ul className="flex flex-col gap-3">
                 {evaluations.map((evaluation) => (
                     <li key={evaluation.formId}>

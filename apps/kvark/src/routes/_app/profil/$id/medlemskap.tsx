@@ -17,6 +17,7 @@ import {
     EmptyTitle,
 } from "@tihlde/ui/ui/empty";
 import { Separator } from "@tihlde/ui/ui/separator";
+import { Text } from "@tihlde/ui/ui/text";
 import { UserCircle2 } from "lucide-react";
 import { Fragment } from "react";
 
@@ -90,9 +91,9 @@ function RouteComponent() {
                         <Fragment key={section.key}>
                             {index > 0 ? <Separator /> : null}
                             <section className="flex flex-col gap-2">
-                                <h2 className="text-sm text-muted-foreground">
+                                <Text render={<h2 />} size="sm" tone="muted">
                                     {section.label}
-                                </h2>
+                                </Text>
                                 <ul className="flex flex-col gap-3">
                                     {section.groups.map((group) => (
                                         <li key={group.slug}>
@@ -117,9 +118,9 @@ function RouteComponent() {
 
             {formerMemberships.length > 0 ? (
                 <section className="flex flex-col gap-3">
-                    <h2 className="text-sm text-muted-foreground">
+                    <Text render={<h2 />} size="sm" tone="muted">
                         Tidligere medlemskap
-                    </h2>
+                    </Text>
                     <ul className="flex flex-col gap-3">
                         {formerMemberships.map((group) => (
                             <li key={group.slug}>
