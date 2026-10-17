@@ -77,6 +77,7 @@
         "lint:fix": "oxlint --fix .",
         "format": "oxfmt --check",
         "format:fix": "oxfmt .",
+        "lint:ui": "bun scripts/check-kvark-ui.ts",
         "db:push": "turbo db:push",
         "db:check-order": "turbo db:check-order",
         "db:generate": "turbo db:generate",
