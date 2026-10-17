@@ -11,6 +11,12 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@tihlde/ui/ui/alert-dialog";
+import {
+    Alert,
+    AlertAction,
+    AlertDescription,
+    AlertTitle,
+} from "@tihlde/ui/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
@@ -495,12 +501,13 @@ function FeedbackRow({
 
                 {item.status === "rejected" &&
                 (item.rejectionReason || canModerate) ? (
-                    <div className="mt-4 flex flex-col gap-1 rounded-md border border-destructive/40 bg-destructive/5 p-3">
-                        <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm font-medium">
-                                Grunn til avvisning
-                            </p>
-                            {canModerate ? (
+                    <Alert variant="destructive" className="mt-4">
+                        <AlertTitle>Grunn til avvisning</AlertTitle>
+                        <AlertDescription className="whitespace-pre-wrap">
+                            {item.rejectionReason ?? "Ingen grunn oppgitt."}
+                        </AlertDescription>
+                        {canModerate ? (
+                            <AlertAction>
                                 <Button
                                     type="button"
                                     size="sm"
@@ -511,18 +518,9 @@ function FeedbackRow({
                                         ? "Endre"
                                         : "Legg til"}
                                 </Button>
-                            ) : null}
-                        </div>
-                        {item.rejectionReason ? (
-                            <p className="whitespace-pre-wrap text-sm">
-                                {item.rejectionReason}
-                            </p>
-                        ) : (
-                            <p className="text-sm text-muted-foreground">
-                                Ingen grunn oppgitt.
-                            </p>
-                        )}
-                    </div>
+                            </AlertAction>
+                        ) : null}
+                    </Alert>
                 ) : null}
 
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
