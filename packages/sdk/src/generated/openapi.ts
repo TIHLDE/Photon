@@ -1197,7 +1197,7 @@ export interface paths {
         post?: never;
         /**
          * Delete feedback
-         * @description Delete a piece of feedback. Requires 'feedback:delete' or 'feedback:manage', or being the author.
+         * @description Delete a piece of feedback. Requires 'feedback:delete' or 'feedback:manage', or being the author while it is still open and nobody else has voted or commented.
          */
         delete: operations["deleteFeedback"];
         options?: never;
@@ -9748,6 +9748,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description The author can no longer delete it: it has moved past open, or someone else has voted or commented */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     updateFeedback: {
@@ -9795,6 +9802,13 @@ export interface operations {
             };
             /** @description Not Found - Feedback not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The author can no longer edit it: it has moved past open, or someone else has voted or commented */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

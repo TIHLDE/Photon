@@ -449,4 +449,67 @@ describe("Feedback anonymity, comments and rejection", () => {
         },
         500_000,
     );
+
+    integrationTest(
+        "Author can delete only while it is still editable",
+        async ({ ctx }) => {
+            const author = await ctx.utils.createTestUser();
+            const voter = await ctx.utils.createTestUser();
+            const deleter = await ctx.utils.createTestUser();
+            const indexAuthor = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(deleter, ["feedback:delete"]);
+            await ctx.utils.giveUserPermissions(indexAuthor, [
+                "feedback:manage",
+            ]);
+            const authorClient = await ctx.utils.clientForUser(author);
+            const voterClient = await ctx.utils.clientForUser(voter);
+            const deleterClient = await ctx.utils.clientForUser(deleter);
+            const indexAuthorClient =
+                await ctx.utils.clientForUser(indexAuthor);
+
+            const create = async (client: typeof authorClient, title: string) =>
+                (
+                    await client.api.feedback.$post({
+                        json: {
+                            type: "idea",
+                            title,
+                            description: "En idé som skal slettes.",
+                        },
+                    })
+                ).json();
+
+            const untouched = await create(authorClient, "Urørt");
+            const ownDelete = await authorClient.api.feedback[":id"].$delete({
+                param: { id: untouched.id },
+            });
+            expect(ownDelete.status).toBe(200);
+
+            const voted = await create(authorClient, "Har fått stemme");
+            await voterClient.api.feedback[":id"].vote.$put({
+                param: { id: voted.id },
+                json: { value: "up" },
+            });
+            const lockedDelete = await authorClient.api.feedback[":id"].$delete(
+                { param: { id: voted.id } },
+            );
+            expect(lockedDelete.status).toBe(409);
+
+            const indexDelete = await deleterClient.api.feedback[":id"].$delete(
+                { param: { id: voted.id } },
+            );
+            expect(indexDelete.status).toBe(200);
+
+            // Holding the permission lifts the lock on your own, too.
+            const indexOwn = await create(indexAuthorClient, "Fra Index");
+            await voterClient.api.feedback[":id"].vote.$put({
+                param: { id: indexOwn.id },
+                json: { value: "down" },
+            });
+            const indexOwnDelete = await indexAuthorClient.api.feedback[
+                ":id"
+            ].$delete({ param: { id: indexOwn.id } });
+            expect(indexOwnDelete.status).toBe(200);
+        },
+        500_000,
+    );
 });

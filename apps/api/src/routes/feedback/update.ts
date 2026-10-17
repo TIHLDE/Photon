@@ -32,6 +32,11 @@ export const updateRoute = route().patch(
             description: "Feedback updated",
         })
         .forbidden({ description: "Insufficient permissions" })
+        .response({
+            statusCode: 409,
+            description:
+                "The author can no longer edit it: it has moved past open, or someone else has voted or commented",
+        })
         .notFound({ description: "Feedback not found" })
         .build(),
     requireAuth,

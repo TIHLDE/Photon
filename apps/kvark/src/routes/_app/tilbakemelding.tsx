@@ -102,6 +102,7 @@ type TypeFilter = FeedbackType | "all";
 
 const MODERATE_PERMISSIONS = ["feedback:update", "feedback:manage"] as const;
 const MANAGE_PERMISSIONS = ["feedback:manage"] as const;
+const DELETE_PERMISSIONS = ["feedback:delete", "feedback:manage"] as const;
 
 const STATUS_LABELS: Record<FeedbackStatus, string> = {
     open: "Åpen",
@@ -447,7 +448,8 @@ function FeedbackRow({
     const [rejectOpen, setRejectOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const canModerate = usePermission(MODERATE_PERMISSIONS);
-    const canDelete = canModerate || item.isAuthor;
+    const mayDeleteAny = usePermission(DELETE_PERMISSIONS);
+    const canDelete = mayDeleteAny || item.isEditable;
 
     const remove = useMutation(deleteFeedbackMutation);
     const update = useMutation(updateFeedbackMutation);

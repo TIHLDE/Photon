@@ -202,19 +202,19 @@ describe("Feedback", () => {
             );
             expect(foreignDelete.status).toBe(403);
 
-            // The author may remove their own.
+            // Index has started on it, so it is no longer the author's to remove.
             const ownDelete = await authorClient.api.feedback[":id"].$delete({
                 param: { id: idea.id },
             });
-            expect(ownDelete.status).toBe(200);
+            expect(ownDelete.status).toBe(409);
 
             // A moderator may remove anyone's.
-            const moderatorDelete = await moderatorClient.api.feedback[
-                ":id"
-            ].$delete({
-                param: { id: bug.id },
-            });
-            expect(moderatorDelete.status).toBe(200);
+            for (const id of [idea.id, bug.id]) {
+                const moderatorDelete = await moderatorClient.api.feedback[
+                    ":id"
+                ].$delete({ param: { id } });
+                expect(moderatorDelete.status).toBe(200);
+            }
 
             const empty = await (
                 await moderatorClient.api.feedback.$get({ query: {} })
