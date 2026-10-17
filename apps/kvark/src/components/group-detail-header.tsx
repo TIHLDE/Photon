@@ -11,10 +11,7 @@ import {
     GroupEditDialog,
     type GroupEditValues,
 } from "#/components/group-edit-dialog";
-import {
-    GroupJoinButton,
-    type GroupJoinButtonProps,
-} from "#/components/group-join-button";
+import { GroupJoinButton } from "#/components/group-join-button";
 import type { ComboboxMember } from "#/components/user-combobox";
 import type { Group } from "#/lib/group";
 import { initials } from "#/lib/utils";
@@ -39,7 +36,7 @@ type GroupDetailHeaderProps = {
     onSaveGroup: (values: GroupEditValues) => Promise<boolean>;
     isSavingGroup?: boolean;
     saveGroupError?: string | null;
-    join?: Omit<GroupJoinButtonProps, "groupName">;
+    onRequestToJoin?: () => Promise<unknown>;
 };
 
 export function GroupDetailHeader({
@@ -55,7 +52,7 @@ export function GroupDetailHeader({
     onSaveGroup,
     isSavingGroup,
     saveGroupError,
-    join,
+    onRequestToJoin,
 }: GroupDetailHeaderProps) {
     const [confirmArchive, setConfirmArchive] = useState(false);
     const isArchived = Boolean(group.archivedAt);
@@ -128,10 +125,17 @@ export function GroupDetailHeader({
                 </div>
             }
             actions={
-                join || canGiveFine || isAdmin || showArchive || showRestore ? (
+                onRequestToJoin ||
+                canGiveFine ||
+                isAdmin ||
+                showArchive ||
+                showRestore ? (
                     <>
-                        {join ? (
-                            <GroupJoinButton groupName={group.name} {...join} />
+                        {onRequestToJoin ? (
+                            <GroupJoinButton
+                                groupName={group.name}
+                                onRequest={onRequestToJoin}
+                            />
                         ) : null}
                         {canGiveFine ? (
                             <Button onClick={onGiveFine}>

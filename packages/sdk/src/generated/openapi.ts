@@ -1957,31 +1957,7 @@ export interface paths {
         patch: operations["updateGroupMemberRole"];
         trace?: never;
     };
-    "/api/groups/{groupSlug}/join-requests": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List pending join requests
-         * @description The group's pending join requests, oldest first. Requires being the group's leader, or 'groups:manage' (globally or scoped to the group).
-         */
-        get: operations["listGroupJoinRequests"];
-        put?: never;
-        /**
-         * Ask to join an interest group
-         * @description Creates a pending join request for the caller and notifies the group's leaders. Only interest groups that take join requests accept them.
-         */
-        post: operations["createGroupJoinRequest"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/groups/{groupSlug}/join-requests/{requestId}": {
+    "/api/groups/{slug}/join-request": {
         parameters: {
             query?: never;
             header?: never;
@@ -1990,15 +1966,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Ask an interest group's leaders to add you
+         * @description Emails the group's leaders that the caller wants to join. At most once a day per member and group.
+         */
+        post: operations["requestToJoinGroup"];
         delete?: never;
         options?: never;
         head?: never;
-        /**
-         * Approve or reject a join request
-         * @description Approving adds the applicant as a regular member. Requires being the group's leader, or 'groups:manage' (globally or scoped to the group).
-         */
-        patch: operations["handleGroupJoinRequest"];
+        patch?: never;
         trace?: never;
     };
     "/api/groups/{groupSlug}/positions": {
@@ -5219,10 +5195,8 @@ export interface components {
             archivable: boolean;
             /** @description Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student. */
             viewerCanUseFines: boolean;
-            /** @description Whether the caller can ask to join: signed in, not a member, no pending request, and the group takes join requests. */
+            /** @description Whether the caller can ask to join: signed in, not a member, and the group takes join requests. */
             viewerCanRequestToJoin: boolean;
-            /** @description Whether the caller has a pending join request here. */
-            viewerHasPendingJoinRequest: boolean;
             /** @description Whether the caller may read the fines they are party to here without taking part in the group's fine system: true for someone who has left the group but was once a member. Never true together with 'viewerCanUseFines'. */
             viewerCanSeeOwnFines: boolean;
         };
@@ -5517,33 +5491,8 @@ export interface components {
              */
             role: "member" | "leader";
         };
-        GroupJoinRequest: {
-            id: string;
-            /** @enum {string} */
-            status: "pending" | "approved" | "rejected";
-        };
-        CreateGroupJoinRequest: {
-            name: string;
+        GroupJoinRequestResponse: {
             message: string;
-        };
-        PendingGroupJoinRequestList: {
-            id: string;
-            name: string;
-            message: string;
-            createdAt: string;
-            user: {
-                id: string;
-                email: string;
-                studyProgram: string | null;
-                classYear: number | null;
-            };
-        }[];
-        HandleGroupJoinRequest: {
-            /**
-             * @description Approve adds the applicant as a regular member
-             * @enum {string}
-             */
-            status: "approved" | "rejected";
         };
         GroupPositionHolder: {
             /** @description Holder's user ID */
@@ -12244,68 +12193,24 @@ export interface operations {
             };
         };
     };
-    listGroupJoinRequests: {
+    requestToJoinGroup: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                groupSlug: string;
+                slug: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Pending join requests */
+            /** @description Email sent to the leaders */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PendingGroupJoinRequestList"];
-                };
-            };
-            /** @description Authentication required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPAppException"];
-                };
-            };
-            /** @description Kontoen din venter på godkjenning fra en administrator. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPAppException"];
-                };
-            };
-        };
-    };
-    createGroupJoinRequest: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                groupSlug: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateGroupJoinRequest"];
-            };
-        };
-        responses: {
-            /** @description Join request created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GroupJoinRequest"];
+                    "application/json": components["schemas"]["GroupJoinRequestResponse"];
                 };
             };
             /** @description Bad Request - The group does not take join requests */
@@ -12340,60 +12245,15 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Already a member, or a request is already pending */
+            /** @description Already a member */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-        };
-    };
-    handleGroupJoinRequest: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                groupSlug: string;
-                requestId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HandleGroupJoinRequest"];
-            };
-        };
-        responses: {
-            /** @description Join request handled */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GroupJoinRequest"];
-                };
-            };
-            /** @description Authentication required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPAppException"];
-                };
-            };
-            /** @description Kontoen din venter på godkjenning fra en administrator. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPAppException"];
-                };
-            };
-            /** @description Not Found - No pending request with that ID */
-            404: {
+            /** @description Already asked within the last day */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

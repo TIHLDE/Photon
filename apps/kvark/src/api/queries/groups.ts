@@ -12,8 +12,6 @@ import type {
     UpdateGroup,
     AddGroupMember,
     UpdateGroupMemberRole,
-    HandleGroupJoinRequest,
-    CreateGroupJoinRequest,
     CreateFine,
     UpdateFine,
     BatchUpdateUserFines,
@@ -32,7 +30,6 @@ export const GroupQueryKeys = {
     detail: ["groups", "detail"] as const,
     members: ["groups", "members"] as const,
     formerMembers: ["groups", "former-members"] as const,
-    joinRequests: ["groups", "join-requests"] as const,
     fines: ["groups", "fines"] as const,
     laws: ["groups", "laws"] as const,
     forms: ["groups", "forms"] as const,
@@ -192,6 +189,11 @@ export const unarchiveGroupMutation = mutationOptions({
     },
 });
 
+export const requestToJoinGroupMutation = mutationOptions({
+    mutationFn: ({ slug }: { slug: string }) =>
+        apiClient.post("/api/groups/{slug}/join-request", { params: { slug } }),
+});
+
 // -- Members --
 
 type MemberListFilters = Omit<
@@ -295,62 +297,6 @@ export const removeGroupMemberMutation = mutationOptions({
             queryKey: [...GroupQueryKeys.formerMembers, vars.groupSlug],
             exact: false,
         });
-    },
-});
-
-// -- Join requests --
-
-export const getGroupJoinRequestsQuery = (groupSlug: string) =>
-    queryOptions({
-        queryKey: [...GroupQueryKeys.joinRequests, groupSlug],
-        queryFn: () =>
-            apiClient.get("/api/groups/{groupSlug}/join-requests", {
-                params: { groupSlug },
-            }),
-    });
-
-export const createGroupJoinRequestMutation = mutationOptions({
-    mutationFn: ({
-        groupSlug,
-        data,
-    }: {
-        groupSlug: string;
-        data: CreateGroupJoinRequest;
-    }) =>
-        apiClient.post("/api/groups/{groupSlug}/join-requests", {
-            params: { groupSlug },
-            json: data,
-        }),
-    onSuccess(_, vars, __, ctx) {
-        ctx.client.invalidateQueries(getGroupBySlugQuery(vars.groupSlug));
-    },
-});
-
-export const handleGroupJoinRequestMutation = mutationOptions({
-    mutationFn: ({
-        groupSlug,
-        requestId,
-        data,
-    }: {
-        groupSlug: string;
-        requestId: string;
-        data: HandleGroupJoinRequest;
-    }) =>
-        apiClient.patch("/api/groups/{groupSlug}/join-requests/{requestId}", {
-            params: { groupSlug, requestId },
-            json: data,
-        }),
-    // Settled, not success: a 404 means another leader already answered it.
-    onSettled(_, __, vars, ___, ctx) {
-        for (const queryKey of [
-            GroupQueryKeys.joinRequests,
-            GroupQueryKeys.members,
-        ]) {
-            ctx.client.invalidateQueries({
-                queryKey: [...queryKey, vars.groupSlug],
-                exact: false,
-            });
-        }
     },
 });
 

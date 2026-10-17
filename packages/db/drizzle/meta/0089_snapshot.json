@@ -1,5 +1,5 @@
 {
-  "id": "85e10065-7a9b-4b19-8635-38f5a88b5df3",
+  "id": "1f30f668-f67d-476a-8b27-f250fd6be7e9",
   "prevId": "220ec3ec-5f5c-44de-ad74-e1e282ac8bc1",
   "version": "7",
   "dialect": "postgresql",
@@ -5030,122 +5030,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.org_group_join_request": {
-      "name": "org_group_join_request",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "group_slug": {
-          "name": "group_slug",
-          "type": "varchar(128)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "message": {
-          "name": "message",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "org_group_join_request_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'pending'"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "group_join_request_one_pending_idx": {
-          "name": "group_join_request_one_pending_idx",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "group_slug",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"org_group_join_request\".\"status\" = 'pending'",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "org_group_join_request_user_id_auth_user_id_fk": {
-          "name": "org_group_join_request_user_id_auth_user_id_fk",
-          "tableFrom": "org_group_join_request",
-          "tableTo": "auth_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "org_group_join_request_group_slug_org_group_slug_fk": {
-          "name": "org_group_join_request_group_slug_org_group_slug_fk",
-          "tableFrom": "org_group_join_request",
-          "tableTo": "org_group",
-          "columnsFrom": [
-            "group_slug"
-          ],
-          "columnsTo": [
-            "slug"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.org_group_law": {
       "name": "org_group_law",
       "schema": "",
@@ -7167,15 +7051,6 @@
         "pending",
         "approved",
         "paid",
-        "rejected"
-      ]
-    },
-    "public.org_group_join_request_status": {
-      "name": "org_group_join_request_status",
-      "schema": "public",
-      "values": [
-        "pending",
-        "approved",
         "rejected"
       ]
     },

@@ -210,11 +210,9 @@ export const groupDetailSchema = Schema(
         }),
         viewerCanRequestToJoin: z.boolean().meta({
             description:
-                "Whether the caller can ask to join: signed in, not a member, no pending request, and the group takes join requests.",
+                "Whether the caller can ask to join: signed in, not a member, and the group takes join requests.",
         }),
-        viewerHasPendingJoinRequest: z.boolean().meta({
-            description: "Whether the caller has a pending join request here.",
-        }),
+
         viewerCanSeeOwnFines: z.boolean().meta({
             description:
                 "Whether the caller may read the fines they are party to here without taking part in the group's fine system: true for someone who has left the group but was once a member. Never true together with 'viewerCanUseFines'.",
@@ -360,6 +358,11 @@ export const membershipResponseSchema = Schema(
             .string()
             .meta({ description: "Membership update timestamp" }),
     }),
+);
+
+export const joinRequestResponseSchema = Schema(
+    "GroupJoinRequestResponse",
+    z.object({ message: z.string() }),
 );
 
 export const updateGroupResponseSchema = Schema(

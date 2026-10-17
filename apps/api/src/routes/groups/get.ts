@@ -1,5 +1,3 @@
-import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import {
     assertGroupVisible,
@@ -88,21 +86,9 @@ export const getRoute = route().get(
          */
         const leaderTitle = await readLeaderTitle(ctx, group);
 
-        const viewerHasPendingJoinRequest = Boolean(
-            userId &&
-            (await db.query.groupJoinRequest.findFirst({
-                where: and(
-                    eq(schema.groupJoinRequest.userId, userId),
-                    eq(schema.groupJoinRequest.groupSlug, slug),
-                    eq(schema.groupJoinRequest.status, "pending"),
-                ),
-                columns: { id: true },
-            })),
-        );
         const viewerCanRequestToJoin = Boolean(
             userId &&
             isOpenForJoinRequests(group) &&
-            !viewerHasPendingJoinRequest &&
             !(await isGroupMember(ctx, userId, slug)),
         );
 
@@ -113,7 +99,6 @@ export const getRoute = route().get(
             viewerCanUseFines,
             viewerCanSeeOwnFines,
             viewerCanRequestToJoin,
-            viewerHasPendingJoinRequest,
         });
     },
 );

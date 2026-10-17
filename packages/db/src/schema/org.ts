@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import {
     boolean,
     index,
@@ -478,44 +478,6 @@ export const groupMembershipHistoryRelations = relations(
         group: one(group, {
             fields: [groupMembershipHistory.groupSlug],
             references: [group.slug],
-        }),
-    }),
-);
-
-export const groupJoinRequestStatus = pgEnum("org_group_join_request_status", [
-    "pending",
-    "approved",
-    "rejected",
-]);
-
-export const groupJoinRequest = pgTable(
-    "group_join_request",
-    {
-        id: uuid("id").primaryKey().defaultRandom(),
-        userId: varchar("user_id", { length: 255 })
-            .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
-        groupSlug: varchar("group_slug", { length: 128 })
-            .notNull()
-            .references(() => group.slug, { onDelete: "cascade" }),
-        name: varchar("name", { length: 100 }).notNull(),
-        message: text("message").notNull(),
-        status: groupJoinRequestStatus("status").notNull().default("pending"),
-        ...timestamps,
-    },
-    (t) => [
-        uniqueIndex("group_join_request_one_pending_idx")
-            .on(t.userId, t.groupSlug)
-            .where(sql`${t.status} = 'pending'`),
-    ],
-);
-
-export const groupJoinRequestRelations = relations(
-    groupJoinRequest,
-    ({ one }) => ({
-        user: one(user, {
-            fields: [groupJoinRequest.userId],
-            references: [user.id],
         }),
     }),
 );

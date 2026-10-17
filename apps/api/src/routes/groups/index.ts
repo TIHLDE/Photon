@@ -11,7 +11,7 @@ import { lawsRoutes } from "./laws";
 import { createGroupFormRoute } from "./form/create";
 import { listGroupFormsRoute } from "./form/list";
 import { getRoute } from "./get";
-import { joinRequestsRoutes } from "./join-requests";
+import { joinRequestRoute } from "./join-request";
 import { listRoute } from "./list";
 import { membersRoutes } from "./members";
 import { mineRoute } from "./mine";
@@ -67,7 +67,7 @@ export const groupsRoutes = route()
     .route("/", finesRoutes)
     .route("/", lawsRoutes)
     .route("/", membersRoutes)
-    .route("/", joinRequestsRoutes)
+    .route("/", joinRequestRoute)
     .route("/", positionsRoutes)
     .route("/", createGroupFormRoute)
     .route("/", listGroupFormsRoute);
