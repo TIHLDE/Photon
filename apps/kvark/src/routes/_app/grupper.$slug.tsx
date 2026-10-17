@@ -512,6 +512,7 @@ function GroupDetail() {
                     finesActivated: values.finesActivated,
                     finesAdminId: values.finesAdminId,
                     finesInfo: values.finesInfo,
+                    acceptsJoinRequests: values.acceptsJoinRequests,
                 },
             });
             return true;
@@ -748,6 +749,11 @@ function GroupDetail() {
                         onSaveGroup={handleSaveGroup}
                         isSavingGroup={updateGroup.isPending}
                         saveGroupError={groupError}
+                        joinHref={
+                            apiGroup.leaderEmails.length > 0
+                                ? `mailto:${apiGroup.leaderEmails.join(",")}?subject=${encodeURIComponent(`Bli med i ${apiGroup.name}`)}&body=${encodeURIComponent(`Hei, jeg vil gjerne bli med i din interessegruppe, hilsen ${session?.user?.name ?? ""}`)}`
+                                : undefined
+                        }
                     />
                 }
             >

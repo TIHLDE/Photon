@@ -1,7 +1,14 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
-import { Archive, ArchiveRestore, Crown, HandCoins, Mail } from "lucide-react";
+import {
+    Archive,
+    ArchiveRestore,
+    Crown,
+    HandCoins,
+    Mail,
+    UserPlus,
+} from "lucide-react";
 import { useState } from "react";
 
 import { ConfirmDeleteDialog } from "#/components/confirm-delete-dialog";
@@ -35,6 +42,7 @@ type GroupDetailHeaderProps = {
     onSaveGroup: (values: GroupEditValues) => Promise<boolean>;
     isSavingGroup?: boolean;
     saveGroupError?: string | null;
+    joinHref?: string;
 };
 
 export function GroupDetailHeader({
@@ -50,6 +58,7 @@ export function GroupDetailHeader({
     onSaveGroup,
     isSavingGroup,
     saveGroupError,
+    joinHref,
 }: GroupDetailHeaderProps) {
     const [confirmArchive, setConfirmArchive] = useState(false);
     const isArchived = Boolean(group.archivedAt);
@@ -122,8 +131,18 @@ export function GroupDetailHeader({
                 </div>
             }
             actions={
-                canGiveFine || isAdmin || showArchive || showRestore ? (
+                joinHref ||
+                canGiveFine ||
+                isAdmin ||
+                showArchive ||
+                showRestore ? (
                     <>
+                        {joinHref ? (
+                            <Button render={<a href={joinHref} />}>
+                                <UserPlus />
+                                Bli med i denne interessegruppen
+                            </Button>
+                        ) : null}
                         {canGiveFine ? (
                             <Button onClick={onGiveFine}>
                                 <HandCoins />

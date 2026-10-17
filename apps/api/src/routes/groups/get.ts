@@ -1,5 +1,12 @@
+import { schema } from "@photon/db";
+import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { assertGroupVisible, isArchivableGroup } from "~/lib/group";
+import {
+    assertGroupVisible,
+    isArchivableGroup,
+    isGroupMember,
+    isOpenForJoinRequests,
+} from "~/lib/group";
 import { readLeaderTitle } from "~/lib/group/linked-leader";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -81,12 +88,34 @@ export const getRoute = route().get(
          */
         const leaderTitle = await readLeaderTitle(ctx, group);
 
+        const leaderEmails =
+            userId &&
+            isOpenForJoinRequests(group) &&
+            !(await isGroupMember(ctx, userId, slug))
+                ? (
+                      await db
+                          .select({ email: schema.user.email })
+                          .from(schema.groupMembership)
+                          .innerJoin(
+                              schema.user,
+                              eq(schema.user.id, schema.groupMembership.userId),
+                          )
+                          .where(
+                              and(
+                                  eq(schema.groupMembership.groupSlug, slug),
+                                  eq(schema.groupMembership.role, "leader"),
+                              ),
+                          )
+                  ).map((leader) => leader.email)
+                : [];
+
         return c.json({
             ...group,
             leaderTitle,
             archivable: isArchivableGroup(group),
             viewerCanUseFines,
             viewerCanSeeOwnFines,
+            leaderEmails,
         });
     },
 );

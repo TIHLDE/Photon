@@ -5041,6 +5041,8 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
+            /** @description Whether members can ask to join from the group page (interest groups only) */
+            acceptsJoinRequests: boolean;
             /** @description When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions. */
             archivedAt: string | null;
             /** @description Creation timestamp */
@@ -5076,6 +5078,8 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
+            /** @description Whether members can ask to join from the group page (interest groups only) */
+            acceptsJoinRequests: boolean;
             /** @description When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions. */
             archivedAt: string | null;
             /** @description Creation timestamp */
@@ -5118,6 +5122,8 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
+            /** @description Whether members can ask to join from the group page (interest groups only) */
+            acceptsJoinRequests: boolean;
             /** @description When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions. */
             archivedAt: string | null;
             /** @description Creation timestamp */
@@ -5193,6 +5199,8 @@ export interface components {
             finesAdminId?: string | null;
             /** @description Whether contract signing is required for group members */
             contractSigningRequired?: boolean;
+            /** @description Whether members can ask to join from the group page (interest groups only) */
+            acceptsJoinRequests?: boolean;
         };
         GroupDetail: {
             /** @description Group slug */
@@ -5219,6 +5227,8 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
+            /** @description Whether members can ask to join from the group page (interest groups only) */
+            acceptsJoinRequests: boolean;
             /** @description When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions. */
             archivedAt: string | null;
             /** @description Creation timestamp */
@@ -5231,6 +5241,8 @@ export interface components {
             archivable: boolean;
             /** @description Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student. */
             viewerCanUseFines: boolean;
+            /** @description The leaders' emails, for the join button. Empty unless the caller is signed in, not a member, and the group takes join requests. */
+            leaderEmails: string[];
             /** @description Whether the caller may read the fines they are party to here without taking part in the group's fine system: true for someone who has left the group but was once a member. Never true together with 'viewerCanUseFines'. */
             viewerCanSeeOwnFines: boolean;
         };
