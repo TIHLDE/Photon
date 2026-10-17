@@ -250,9 +250,8 @@ async function main() {
 
     /**
      * A reference that names no asset row of ours. Mostly external addresses,
-     * but a file whose row
-     * was deleted out from under it would look the same, so the two are not
-     * separated here.
+     * but a file whose row was deleted out from under it would look the same,
+     * so the two are not separated here.
      */
     const danglingReferences = [...referenced.keys()].filter(
         (key) => !assetKeys.has(key),
