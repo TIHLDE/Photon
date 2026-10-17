@@ -25,6 +25,22 @@ export const createFeedbackSchema = Schema(
             .min(10)
             .max(2000)
             .meta({ description: "What the idea or the bug is" }),
+        isAnonymous: z.boolean().optional().meta({
+            description:
+                "Hide the author's name from everyone else. Defaults to anonymous.",
+        }),
+    }),
+);
+
+export const feedbackCommentParamSchema = z.object({
+    id: z.uuid().meta({ description: "Feedback ID" }),
+    commentId: z.uuid().meta({ description: "Comment ID" }),
+});
+
+export const createFeedbackCommentSchema = Schema(
+    "CreateFeedbackComment",
+    z.object({
+        body: z.string().trim().min(1).max(2000),
     }),
 );
 
@@ -33,7 +49,20 @@ export const updateFeedbackSchema = Schema(
     z.object({
         title: z.string().min(2).max(100).optional(),
         description: z.string().min(10).max(2000).optional(),
+        isAnonymous: z.boolean().optional().meta({
+            description: "Author only, and only while the feedback is editable",
+        }),
         status: z.enum(feedbackStatusVariants).optional(),
+        rejectionReason: z
+            .string()
+            .trim()
+            .max(1000)
+            .nullable()
+            .optional()
+            .meta({
+                description:
+                    "Why Index rejected it. Only allowed with status 'rejected'; cleared when the status changes.",
+            }),
     }),
 );
 
@@ -57,6 +86,15 @@ export const listFeedbackQuerySchema = z.object({
 
 // ===== RESPONSE SCHEMAS =====
 
+export const feedbackAuthorSchema = Schema(
+    "FeedbackAuthor",
+    z.object({
+        id: z.string(),
+        name: z.string(),
+        image: z.string().nullable(),
+    }),
+);
+
 export const feedbackItemSchema = Schema(
     "FeedbackItem",
     z.object({
@@ -65,9 +103,13 @@ export const feedbackItemSchema = Schema(
         status: z.enum(feedbackStatusVariants),
         title: z.string(),
         description: z.string(),
+        isAnonymous: z.boolean(),
         isAuthor: z.boolean().meta({
+            description: "Whether the requesting user filed this.",
+        }),
+        author: feedbackAuthorSchema.nullable().meta({
             description:
-                "Whether the requesting user filed this. Feedback is anonymous: the author is never exposed to anyone else.",
+                "Who filed it. Always null when the feedback is anonymous.",
         }),
         upvotes: z.number(),
         downvotes: z.number(),
@@ -75,6 +117,12 @@ export const feedbackItemSchema = Schema(
             .enum(feedbackVoteValueVariants)
             .nullable()
             .meta({ description: "The requesting user's own vote, if any" }),
+        rejectionReason: z.string().nullable(),
+        isEditable: z.boolean().meta({
+            description:
+                "Whether the requesting user may edit it: they filed it, it is still open, and nobody else has voted or commented.",
+        }),
+        commentCount: z.number(),
         createdAt: z.string().meta({ description: "Creation time (ISO 8601)" }),
         updatedAt: z
             .string()
@@ -103,4 +151,26 @@ export const feedbackMessageResponseSchema = Schema(
     z.object({
         message: z.string(),
     }),
+);
+
+export const feedbackCommentSchema = Schema(
+    "FeedbackComment",
+    z.object({
+        id: z.uuid(),
+        body: z.string(),
+        isFeedbackAuthor: z.boolean().meta({
+            description: "Written by the person who filed the feedback",
+        }),
+        isMine: z.boolean(),
+        author: feedbackAuthorSchema.nullable().meta({
+            description:
+                "Null when the feedback author replies on anonymous feedback, or the user is deleted.",
+        }),
+        createdAt: z.string(),
+    }),
+);
+
+export const feedbackCommentListSchema = Schema(
+    "FeedbackCommentList",
+    z.array(feedbackCommentSchema),
 );
