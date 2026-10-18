@@ -841,12 +841,8 @@ function BreakdownCard({
             render={<button type="button" />}
             aria-pressed={active}
             onClick={onClick}
-            className={cn(
-                "cursor-pointer text-left transition-colors",
-                active
-                    ? "bg-primary/10 ring-primary"
-                    : "hover:ring-foreground/20",
-            )}
+            selected={active}
+            className="cursor-pointer text-left"
         >
             <CardContent className="flex items-start justify-between gap-2">
                 <div className="flex min-w-0 flex-col gap-0.5">
@@ -1974,7 +1970,10 @@ function PaymentsTab({
 
             {summary.flaggedCount > 0 ? (
                 <Card className="border-destructive/50">
-                    <CardContent className="flex items-center gap-3 py-4 text-sm">
+                    <CardContent
+                        textSize="sm"
+                        className="flex items-center gap-3 py-4"
+                    >
                         <TriangleAlertIcon className="size-4 shrink-0 text-destructive" />
                         <span>
                             {summary.flaggedCount === 1
@@ -2015,7 +2014,10 @@ function PaymentsTab({
                                     {/* Standardtriggeren toppstiller innholdet;
                                         her er raden to linjer høy, så pila
                                         skal stå midt i den. */}
-                                    <AccordionTrigger className="items-center hover:no-underline">
+                                    <AccordionTrigger
+                                        underlineOnHover={false}
+                                        className="items-center"
+                                    >
                                         <div className="flex flex-1 flex-col gap-2 pr-3 sm:flex-row sm:items-center sm:justify-between">
                                             <div className="flex flex-col">
                                                 <span>{group.user.name}</span>
