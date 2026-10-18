@@ -192,6 +192,18 @@ The repo has **one long-lived branch: `main`**. There is no `dev` branch.
 - **Error handling**: Use appropriate HTTP status codes
 - **Middleware**: Chain middleware using Hono patterns
 
+### Frontend (apps/kvark)
+
+**Components come from `@tihlde/ui`, and kvark never restyles them.** The rules are enforced by [`@shadcn/lint`](https://github.com/shadcn-ui/lint), configured in `apps/kvark/.oxlintrc.json` and run by `bun run lint`.
+
+- `className` on a `@tihlde/ui` component may only set layout and spacing. For anything else, use a variant, or add one in `packages/ui`.
+- Colors must be theme tokens (`text-muted-foreground`, `bg-destructive`), never the raw palette (`bg-red-500`).
+- Theme tokens such as `text-sm` and `text-muted-foreground` are fine on plain elements.
+- No arbitrary values (`p-[13px]`), no inline `style`, no classes Tailwind cannot generate.
+- The surrounding code is not the standard: kvark still has older findings, shown as lint warnings. Don't copy them.
+- Read `apps/kvark/AGENTS.md` before changing the frontend. It is not loaded automatically when files are read through the shell.
+- A Claude hook lints each edited kvark file and reports findings back immediately. Fix the ones in the code you changed.
+
 ### Database
 
 - **ORM**: Drizzle exclusively
@@ -352,6 +364,7 @@ When server is running:
 9. **Follow existing patterns** in the codebase
 10. **Create migrations** for schema changes (`bun run db:generate`)
 11. **Use GitHub CLI (`gh`)** for GitHub operations
+12. **Never restyle `@tihlde/ui` components** - `bun run lint` checks kvark with `@shadcn/lint` (see Frontend above)
 
 ## Quick Start for Claude
 

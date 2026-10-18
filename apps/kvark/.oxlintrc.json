@@ -1,6 +1,18 @@
 {
     "$schema": "./node_modules/oxlint/configuration_schema.json",
     "extends": ["../../.oxlintrc.json"],
+    "jsPlugins": ["@shadcn/lint"],
+    "rules": {
+        "shadcn/no-restyle": ["warn", { "allow": ["layout", "spacing"] }],
+        "shadcn/no-raw-colors": "warn",
+        "shadcn/no-arbitrary-values": "warn",
+        "shadcn/no-inline-styles": "warn",
+        "shadcn/no-unknown-classes": [
+            "warn",
+            { "allow": ["nopan", "nodrag", "ph-no-capture"] }
+        ],
+        "shadcn/require-static-classes": "warn"
+    },
     "overrides": [
         {
             "files": ["src/**"],

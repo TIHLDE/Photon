@@ -98,6 +98,7 @@
     "devDependencies": {
         "@changesets/changelog-github": "^0.5.2",
         "@changesets/cli": "^2.31.1",
+        "@shadcn/lint": "^0.2.1",
         "@tihlde/sdk": "workspace:*",
         "@types/bun": "catalog:",
         "oxfmt": "catalog:",
