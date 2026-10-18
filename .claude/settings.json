@@ -7,6 +7,10 @@
           {
             "type": "command",
             "command": "bun format:fix"
+          },
+          {
+            "type": "command",
+            "command": "f=$(bun -e 'console.log((await Bun.stdin.json()).tool_input?.file_path ?? \"\")'); case \"$f\" in */apps/kvark/src/*) \"$CLAUDE_PROJECT_DIR\"/node_modules/.bin/oxlint --deny-warnings \"$f\" >&2 || exit 2 ;; esac"
           }
         ]
       }
