@@ -8394,6 +8394,10 @@ export interface operations {
                 expired?: boolean;
                 /** @description Whether to include only events with open sign-ups */
                 openSignUp?: boolean;
+                /** @description Only return events starting at or after this instant (ISO 8601). Combine with startBefore to fetch a date range, e.g. the weeks a calendar shows. */
+                startFrom?: string;
+                /** @description Only return events starting before this instant (ISO 8601, exclusive). */
+                startBefore?: string;
                 /** @description Only return events organised by this group. Omit to return events from every organizer. */
                 organizerGroupSlug?: string;
                 /** @description How to order the result. 'upcoming' puts ongoing and future events first, soonest first, with past events after them most-recent-first. 'newest' and 'oldest' sort every event by start time, descending and ascending respectively. Omit to keep the legacy default: ascending when expired=false, descending otherwise. */

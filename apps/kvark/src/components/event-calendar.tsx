@@ -15,7 +15,7 @@ import {
 } from "date-fns";
 import { nb } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { formatInOslo } from "#/lib/date";
 import { cn } from "#/lib/utils";
@@ -30,23 +30,32 @@ export type CalendarEvent = {
 
 type EventCalendarProps = {
     events: CalendarEvent[];
+    month: Date;
+    onMonthChange: (month: Date) => void;
 };
 
 const WEEKDAY_LABELS = ["man", "tir", "ons", "tor", "fre", "lør", "søn"];
 
 /**
- * Månedskalender over arrangementene som er lastet inn. Rutenettet starter
- * alltid på mandag og fylles ut med dagene fra nabomånedene, slik at ukene blir
- * hele.
+ * Dagene rutenettet for `month` viser. Det starter alltid på mandag og fylles ut
+ * med dagene fra nabomånedene, slik at ukene blir hele.
  */
-export function EventCalendar({ events }: EventCalendarProps) {
-    const [month, setMonth] = useState(() => startOfMonth(new Date()));
+export function calendarGridRange(month: Date): { start: Date; end: Date } {
+    return {
+        start: startOfWeek(startOfMonth(month), { weekStartsOn: 1 }),
+        end: endOfWeek(endOfMonth(month), { weekStartsOn: 1 }),
+    };
+}
 
-    const days = useMemo(() => {
-        const start = startOfWeek(startOfMonth(month), { weekStartsOn: 1 });
-        const end = endOfWeek(endOfMonth(month), { weekStartsOn: 1 });
-        return eachDayOfInterval({ start, end });
-    }, [month]);
+export function EventCalendar({
+    events,
+    month,
+    onMonthChange,
+}: EventCalendarProps) {
+    const days = useMemo(
+        () => eachDayOfInterval(calendarGridRange(month)),
+        [month],
+    );
 
     const eventsByDay = useMemo(() => {
         const map = new Map<string, CalendarEvent[]>();
@@ -69,7 +78,7 @@ export function EventCalendar({ events }: EventCalendarProps) {
                     variant="outline"
                     size="icon"
                     aria-label="Forrige måned"
-                    onClick={() => setMonth((m) => addMonths(m, -1))}
+                    onClick={() => onMonthChange(addMonths(month, -1))}
                 >
                     <ChevronLeft />
                 </Button>
@@ -80,7 +89,7 @@ export function EventCalendar({ events }: EventCalendarProps) {
                     variant="outline"
                     size="icon"
                     aria-label="Neste måned"
-                    onClick={() => setMonth((m) => addMonths(m, 1))}
+                    onClick={() => onMonthChange(addMonths(month, 1))}
                 >
                     <ChevronRight />
                 </Button>

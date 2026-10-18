@@ -36,6 +36,8 @@ type EventFiltersProps = {
     onChange: (next: EventFiltersValue) => void;
     /** Rendered last under "Alternativer". */
     extraOptions?: ReactNode;
+    /** Kalenderen viser både tidligere og kommende, så valget gjelder ikke der. */
+    hidePastOption?: boolean;
 };
 
 export function EventFilters({
@@ -43,6 +45,7 @@ export function EventFilters({
     categories,
     onChange,
     extraOptions,
+    hidePastOption = false,
 }: EventFiltersProps) {
     const pills = useMemo<FilterPill[]>(() => {
         const next: FilterPill[] = [];
@@ -61,7 +64,7 @@ export function EventFilters({
                 clear: () => onChange({ ...value, category: "all" }),
             });
         }
-        if (value.showPast) {
+        if (value.showPast && !hidePastOption) {
             next.push({
                 key: "showPast",
                 label: "Tidligere",
@@ -76,7 +79,7 @@ export function EventFilters({
             });
         }
         return next;
-    }, [value, categories, onChange]);
+    }, [value, categories, onChange, hidePastOption]);
 
     return (
         <FilterShell
@@ -117,14 +120,16 @@ export function EventFilters({
                         <span className="text-sm font-medium">
                             Alternativer
                         </span>
-                        <FilterCheckboxOption
-                            title="Tidligere"
-                            description="Vis kun tidligere arrangementer"
-                            checked={value.showPast}
-                            onCheckedChange={(showPast) =>
-                                onChange({ ...value, showPast })
-                            }
-                        />
+                        {hidePastOption ? null : (
+                            <FilterCheckboxOption
+                                title="Tidligere"
+                                description="Vis kun tidligere arrangementer"
+                                checked={value.showPast}
+                                onCheckedChange={(showPast) =>
+                                    onChange({ ...value, showPast })
+                                }
+                            />
+                        )}
                         <FilterCheckboxOption
                             title="Åpen påmelding"
                             description="Vis kun arrangementer med åpen påmelding"

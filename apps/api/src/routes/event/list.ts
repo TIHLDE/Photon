@@ -91,6 +91,8 @@ export const listRoute = route().get(
             category,
             organizerGroupSlug,
             ordering,
+            startFrom,
+            startBefore,
         } = c.req.valid("query");
 
         // Members-only events are hidden from callers who are not members.
@@ -108,6 +110,12 @@ export const listRoute = route().get(
                     : undefined,
                 organizerGroupSlug
                     ? eq(schema.event.organizerGroupSlug, organizerGroupSlug)
+                    : undefined,
+                startFrom
+                    ? gte(schema.event.start, new Date(startFrom))
+                    : undefined,
+                startBefore
+                    ? lt(schema.event.start, new Date(startBefore))
                     : undefined,
                 expired != null
                     ? expired
