@@ -391,10 +391,7 @@ function Hero({ banners }: { banners?: ReactNode }) {
                     <section className="container mx-auto flex w-full flex-1 flex-col items-center justify-center gap-6 px-4 py-16 text-center" />
                 }
             >
-                <div
-                    className="flex items-center"
-                    style={{ color: "var(--color-logo, currentColor)" }}
-                >
+                <div className="flex items-center text-logo">
                     <TihldeLogo variant="full" className="h-14 w-auto" />
                 </div>
                 <p className="max-w-2xl text-balance">

@@ -3,7 +3,10 @@
     "extends": ["../../.oxlintrc.json"],
     "jsPlugins": ["@shadcn/lint"],
     "rules": {
-        "shadcn/no-restyle": ["warn", { "allow": ["layout", "spacing"] }],
+        "shadcn/no-restyle": [
+            "warn",
+            { "allow": ["layout", "spacing", "ph-no-capture"] }
+        ],
         "shadcn/no-raw-colors": "warn",
         "shadcn/no-arbitrary-values": "warn",
         "shadcn/no-inline-styles": "warn",
