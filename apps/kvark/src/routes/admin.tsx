@@ -315,10 +315,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             {group.items.map((item) => (
                                 <SidebarMenuItem key={item.label}>
                                     <SidebarMenuButton
+                                        highlightActiveLink
                                         render={
                                             <Link
                                                 {...item.link}
-                                                className="[&.active]:bg-sidebar-primary [&.active]:text-sidebar-primary-foreground"
                                                 activeProps={{
                                                     className: "active",
                                                 }}
