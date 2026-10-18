@@ -144,7 +144,7 @@ function FormSubmissionsPage() {
             </Button>
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-2xl">{heading}</CardTitle>
+                    <CardTitle textSize="2xl">{heading}</CardTitle>
                     <CardDescription>
                         {form.event ? (
                             <>

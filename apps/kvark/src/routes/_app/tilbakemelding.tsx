@@ -498,11 +498,7 @@ function FeedbackRow({
     const update = useMutation(updateFeedbackMutation);
 
     return (
-        <Collapsible
-            open={open}
-            onOpenChange={setOpen}
-            className="rounded-lg border"
-        >
+        <Collapsible open={open} onOpenChange={setOpen} bordered>
             <CollapsibleTrigger className="flex w-full items-center justify-between gap-3 p-4 text-left">
                 <span className="flex min-w-0 items-center gap-3">
                     {item.type === "bug" ? (
@@ -531,7 +527,7 @@ function FeedbackRow({
                 </span>
             </CollapsibleTrigger>
 
-            <CollapsibleContent className="border-t p-4">
+            <CollapsibleContent divided className="p-4">
                 <p className="whitespace-pre-wrap text-muted-foreground">
                     {item.description}
                 </p>
