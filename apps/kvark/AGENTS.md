@@ -155,7 +155,7 @@ Route files are the containers: they load data, manage Suspense boundaries, wire
 
 ## Checklist Before Committing
 
-1. No color, typography, border, shadow, or animation classes added in this app.
+1. No `@tihlde/ui` component restyled beyond layout and spacing, and no raw palette colors, arbitrary values or inline styles (`bun run lint` reports them).
 2. Any new visual primitive lives in `@tihlde/ui`, not here.
 3. New reusable composition? Extracted into `src/components/`.
 4. Components receive data via props; fetching happens in routes/containers.
