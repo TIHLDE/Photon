@@ -13,11 +13,11 @@ export function GroupChip({ name, logoUrl }: GroupChipProps) {
             href="#"
             className="flex w-20 shrink-0 flex-col items-center gap-2 text-center"
         >
-            <Avatar className="size-16 rounded-xl">
+            <Avatar shape="rounded" className="size-16">
                 {logoUrl ? (
                     <AvatarImage src={avatarImageUrl(logoUrl)} alt={name} />
                 ) : null}
-                <AvatarFallback className="rounded-xl">
+                <AvatarFallback shape="rounded">
                     {name.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
             </Avatar>

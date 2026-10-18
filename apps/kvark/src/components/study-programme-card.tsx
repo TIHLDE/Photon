@@ -15,7 +15,7 @@ export function StudyProgrammeCard({
     return (
         <Card className="h-full">
             <CardHeader>
-                <CardTitle className="text-xl">{title}</CardTitle>
+                <CardTitle textSize="xl">{title}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col gap-4">
                 <p className="flex-1 text-muted-foreground">{description}</p>
