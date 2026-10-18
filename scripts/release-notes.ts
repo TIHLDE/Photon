@@ -1,9 +1,15 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { $ } from "bun";
 
-type PullRequest = { number: number; title: string; body: string };
+type PullRequest = { number: number; title: string; body: string | null };
+type Section = "Nytt" | "Forbedret" | "Fikset";
 
 const releaseTagPattern = /^\d{4}-\d{2}-\d{2}\.release-\d+$/;
+const sections: Section[] = ["Nytt", "Forbedret", "Fikset"];
+const sectionByType: Record<string, Section> = {
+    feat: "Nytt",
+    perf: "Forbedret",
+    fix: "Fikset",
+};
 
 const tag = Bun.argv[2] ?? process.env.GITHUB_REF_NAME;
 if (!tag || !releaseTagPattern.test(tag)) {
@@ -11,11 +17,11 @@ if (!tag || !releaseTagPattern.test(tag)) {
     process.exit(1);
 }
 
-const tags = (await $`git tag --list`.text())
+const previousTag = (await $`git tag --list`.text())
     .split("\n")
-    .filter((name) => releaseTagPattern.test(name))
-    .sort();
-const previousTag = tags.filter((name) => name < tag).at(-1);
+    .filter((name) => releaseTagPattern.test(name) && name < tag)
+    .sort()
+    .at(-1);
 
 const repo = (
     await $`gh repo view --json nameWithOwner -q .nameWithOwner`.text()
@@ -29,7 +35,9 @@ const generatedNotes: string = (
 
 const range = previousTag ? `${previousTag}..${tag}` : tag;
 const prNumbers = [
-    ...(await $`git log --format=%s ${range}`.text()).matchAll(/\(#(\d+)\)$/gm),
+    ...(await $`git log --reverse --format=%s ${range}`.text()).matchAll(
+        /\(#(\d+)\)$/gm,
+    ),
 ].map((match) => Number(match[1]));
 
 const pullRequests: PullRequest[] = await Promise.all(
@@ -39,66 +47,50 @@ const pullRequests: PullRequest[] = await Promise.all(
     ),
 );
 
-const instructions = `Du skriver release notes for TIHLDEs nettside (tihlde.org) og app. Leserne er vanlige studenter og medlemmer, ikke utviklere.
+function memberNote(body: string | null): string | undefined {
+    const section = body
+        ?.replace(/<!--[\s\S]*?-->/g, "")
+        .match(
+            /^##\s*For medlemmer\s*$([\s\S]*?)(?=^#{1,2}\s|(?![\s\S]))/im,
+        )?.[1]
+        .trim();
+    return section || undefined;
+}
 
-Du får en liste med pull requests som er med i denne releasen. Skriv en kort, norsk oppsummering av hva som er endret for brukerne.
+function conventionalType(title: string): string | undefined {
+    return title.match(/^(\w+)(?:\([^)]*\))?!?:/)?.[1]?.toLowerCase();
+}
 
-Regler:
-- Skriv på enkel norsk (bokmål) som alle forstår. Ingen tekniske ord som API, endepunkt, migrasjon, database, komponent, refaktorering eller CI.
-- Forklar hva brukeren nå kan gjøre, eller hva som oppfører seg annerledes, og hvor på siden det skjer. Ikke forklar hvordan det er laget.
-- Del inn i disse seksjonene, og dropp seksjoner som blir tomme: "### Nytt", "### Forbedret", "### Fikset".
-- Ett punkt per endring, én eller to setninger. Avslutt hvert punkt med PR-nummeret i parentes, f.eks. (#899). Slå sammen PR-er som handler om det samme til ett punkt med flere numre.
-- Hopp over endringer som ikke merkes for brukerne: vedlikehold, opprydding, avhengigheter, tester, bygg og intern infrastruktur.
-- Hvis ingenting merkes for brukerne, skriv bare: "Ingen synlige endringer denne gangen – bare vedlikehold bak kulissene."
-- Nevn aldri navn, brukernavn, e-postadresser eller andre personopplysninger, selv om de står i PR-ene.
-- Ikke skriv overskrift, innledning eller avslutning. Start rett på første seksjon.`;
+function withoutPrefix(title: string): string {
+    const text = title.replace(/^\w+(?:\([^)]*\))?!?:\s*/, "");
+    return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
-const pullRequestText = pullRequests
-    .map(
-        ({ number, title, body }) =>
-            `<pr number="${number}">\nTittel: ${title}\n\n${(body ?? "").slice(0, 4000)}\n</pr>`,
-    )
-    .join("\n\n");
+const entries = new Map<Section, string[]>(sections.map((s) => [s, []]));
 
-async function summarize(): Promise<string | undefined> {
-    if (pullRequests.length === 0) return undefined;
-    if (!process.env.ANTHROPIC_API_KEY) {
-        console.error(
-            "ANTHROPIC_API_KEY is not set; using GitHub's notes only",
-        );
-        return undefined;
-    }
+for (const { number, title, body } of pullRequests) {
+    const note = memberNote(body);
+    if (note === "-") continue;
 
-    try {
-        const response = await new Anthropic().beta.messages.create({
-            model: "claude-opus-5-5",
-            max_tokens: 16000,
-            betas: ["server-side-fallback-2026-07-01"],
-            fallbacks: "default",
-            system: instructions,
-            messages: [{ role: "user", content: pullRequestText }],
-        });
-
-        if (response.stop_reason !== "end_turn") {
-            console.error(`Claude stopped with ${response.stop_reason}`);
-            return undefined;
-        }
-
-        const text = response.content
-            .flatMap((block) => (block.type === "text" ? [block.text] : []))
-            .join("")
-            .trim();
-        return text || undefined;
-    } catch (error) {
-        console.error("Could not summarize the release with Claude:", error);
-        return undefined;
+    const section = sectionByType[conventionalType(title) ?? ""];
+    if (note) {
+        entries.get(section ?? "Forbedret")!.push(`${note} (#${number})`);
+    } else if (section) {
+        entries.get(section)!.push(`${withoutPrefix(title)} (#${number})`);
     }
 }
 
-const summary = await summarize();
+const summary = sections
+    .filter((section) => entries.get(section)!.length > 0)
+    .map(
+        (section) =>
+            `### ${section}\n\n${entries
+                .get(section)!
+                .map((entry) => `- ${entry.replace(/\s*\n\s*/g, " ")}`)
+                .join("\n")}`,
+    )
+    .join("\n\n");
 
 console.log(
-    summary
-        ? `${summary}\n\n<details>\n<summary>Tekniske detaljer</summary>\n\n${generatedNotes}\n\n</details>`
-        : generatedNotes,
+    `${summary || "Ingen synlige endringer denne gangen – bare vedlikehold bak kulissene."}\n\n<details>\n<summary>Tekniske detaljer</summary>\n\n${generatedNotes}\n\n</details>`,
 );
