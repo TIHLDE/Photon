@@ -42,7 +42,7 @@ export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
                             alt={user.name}
                         />
                     ) : null}
-                    <AvatarFallback className="text-2xl">
+                    <AvatarFallback textSize="2xl">
                         {initials(user.name)}
                     </AvatarFallback>
                 </Avatar>

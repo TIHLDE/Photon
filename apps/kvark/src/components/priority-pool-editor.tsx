@@ -757,7 +757,7 @@ function PriorityUserPicker({
                                         {user.name ?? user.username}
                                     </span>
                                     {user.username ? (
-                                        <CardDescription className="truncate">
+                                        <CardDescription truncate>
                                             {user.username}
                                         </CardDescription>
                                     ) : null}
