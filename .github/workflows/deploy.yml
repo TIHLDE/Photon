@@ -53,11 +53,18 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Publiser GitHub Release med generert changelog
+            - name: Setup Tools
+              uses: tihlde/tihlde-workflows/.github/setup-bun@v1
+
+            # Uten ANTHROPIC_API_KEY, eller hvis kallet feiler, blir det
+            # GitHubs vanlige PR-liste — releasen skal aldri stoppe på dette.
+            - name: Publiser GitHub Release med brukervennlig changelog
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
               run: |
+                  bun scripts/release-notes.ts "${GITHUB_REF_NAME}" > release-notes.md
                   gh release create "${GITHUB_REF_NAME}" \
                       --title "${GITHUB_REF_NAME}" \
-                      --generate-notes \
+                      --notes-file release-notes.md \
                       --verify-tag
