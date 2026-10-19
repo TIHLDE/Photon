@@ -2,7 +2,7 @@ import { schema } from "@photon/db";
 import { and, asc, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import type z from "zod";
-import { canModerateFeedback } from "~/lib/feedback/middleware";
+import { hasPermission } from "@photon/auth/rbac";
 import {
     selectFeedbackItems,
     serializeFeedbackItem,
@@ -74,7 +74,10 @@ export const listRoute = route().get(
             .limit(pageSize)
             .offset(getPageOffset(page, pageSize));
 
-        const canSeeAuthor = await canModerateFeedback(c.get("ctx"), userId);
+        const canSeeAuthor = await hasPermission(c.get("ctx"), userId, [
+            "feedback:update",
+            "feedback:manage",
+        ]);
 
         const items = rows.map((row) =>
             serializeFeedbackItem(row, userId, canSeeAuthor),
