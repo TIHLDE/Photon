@@ -125,6 +125,15 @@ export function useSiteNavItems(
                                   },
                                   {
                                       kind: "internal",
+                                      label: "Masterveiledning",
+                                      link: linkOptions({
+                                          to: "/masterveiledning",
+                                      }),
+                                      description:
+                                          "Finn en master som passer etter bacheloren",
+                                  },
+                                  {
+                                      kind: "internal",
                                       label: "QR koder",
                                       link: linkOptions({ to: "/qr-koder" }),
                                       description: "Generer dine egne QR koder",

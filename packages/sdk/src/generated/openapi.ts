@@ -2573,6 +2573,122 @@ export interface paths {
         patch: operations["updateJob"];
         trace?: never;
     };
+    "/api/master-study": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List master study entries
+         * @description Paged list of master study entries, most recently updated first. Supports search and filtering by location type, study program and financial support. Public endpoint.
+         */
+        get: operations["listMasterStudyEntries"];
+        put?: never;
+        /**
+         * Create master study entry
+         * @description Create a master study entry with optional quotes. Requires 'master-study:create' or 'master-study:manage'.
+         */
+        post: operations["createMasterStudyEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/master-study/study-programs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List study programs for master study
+         * @description Every study program an entry can be linked to, with how many entries each has. Public endpoint.
+         */
+        get: operations["listMasterStudyPrograms"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/master-study/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get master study entry
+         * @description Get one master study entry with its quotes. Public endpoint.
+         */
+        get: operations["getMasterStudyEntry"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete master study entry
+         * @description Delete a master study entry and its quotes. Requires 'master-study:delete' or 'master-study:manage'.
+         */
+        delete: operations["deleteMasterStudyEntry"];
+        options?: never;
+        head?: never;
+        /**
+         * Update master study entry
+         * @description Partly update a master study entry. Sending `quotes` replaces every quote on it. Setting `hasFinancialSupport` to false clears `financialSupport`. Requires 'master-study:update' or 'master-study:manage'.
+         */
+        patch: operations["updateMasterStudyEntry"];
+        trace?: never;
+    };
+    "/api/master-study/{entryId}/quotes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a quote
+         * @description Add one quote to the end of a master study entry. Requires 'master-study:update' or 'master-study:manage'.
+         */
+        post: operations["createMasterStudyQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/master-study/{entryId}/quotes/{quoteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a quote
+         * @description Delete one quote. Requires 'master-study:delete' or 'master-study:manage'.
+         */
+        delete: operations["deleteMasterStudyQuote"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a quote
+         * @description Edit one quote. Sending `name: null` makes it anonymous. Requires 'master-study:update' or 'master-study:manage'.
+         */
+        patch: operations["updateMasterStudyQuote"];
+        trace?: never;
+    };
     "/api/user/me/calendar": {
         parameters: {
             query?: never;
@@ -6131,6 +6247,148 @@ export interface components {
         };
         DeleteJobResponse: {
             message: string;
+        };
+        MasterStudyQuote: {
+            /**
+             * Format: uuid
+             * @description Quote ID
+             */
+            id: string;
+            /** @description Who said it; null when anonymous */
+            name: string | null;
+            /** @description The quote */
+            quote: string;
+        };
+        MasterStudyEntry: {
+            /**
+             * Format: uuid
+             * @description Entry ID
+             */
+            id: string;
+            /** @description Study program ID */
+            studyProgramId: number;
+            /** @description The bachelor programme it builds on */
+            studyProgram: {
+                id: number;
+                slug: string;
+                displayName: string;
+                /** @enum {string} */
+                type: "bachelor" | "master";
+            };
+            /** @description Navn */
+            name: string;
+            /** @description Sted */
+            location: string;
+            /** @enum {string} */
+            locationType: "innland" | "utland";
+            /** @description Link to the programme's website */
+            link: string;
+            hasFinancialSupport: boolean;
+            financialSupport: string | null;
+            subjectRequirements: string | null;
+            otherRequirements: string | null;
+            summary: string | null;
+            /** @description Søknadsfrist (ISO 8601) */
+            applicationDeadline: string | null;
+            quotes: components["schemas"]["MasterStudyQuote"][];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        CreateMasterStudyQuote: {
+            /** @description Who said it. Null for an anonymous quote */
+            name?: string | null;
+            /** @description The quote */
+            quote: string;
+        };
+        CreateMasterStudy: {
+            /** @description The bachelor programme it builds on */
+            studyProgramId: number;
+            /** @description Navn */
+            name: string;
+            /** @description Sted */
+            location: string;
+            /**
+             * @description Innland or utland
+             * @enum {string}
+             */
+            locationType: "innland" | "utland";
+            /**
+             * Format: uri
+             * @description Link to the programme's website (http or https)
+             */
+            link: string;
+            /**
+             * @description Økonomisk støtte tilgjengelig
+             * @default false
+             */
+            hasFinancialSupport: boolean;
+            /** @description Økonomisk støtte — detaljer */
+            financialSupport?: string;
+            /** @description Fagkrav */
+            subjectRequirements?: string;
+            /** @description Øvrige krav */
+            otherRequirements?: string;
+            /** @description Oppsummering */
+            summary?: string;
+            /**
+             * Format: date-time
+             * @description Søknadsfrist (ISO 8601)
+             */
+            applicationDeadline?: string;
+            /**
+             * @description Quotes from people who took it
+             * @default []
+             */
+            quotes: components["schemas"]["CreateMasterStudyQuote"][];
+        };
+        MasterStudyList: {
+            /** @description Total number of items available */
+            totalCount: number;
+            /** @description Total number of pages available */
+            pages: number;
+            /** @description The next page number that can be fetched */
+            nextPage: number | null;
+            items: components["schemas"]["MasterStudyEntry"][];
+        };
+        MasterStudyProgramList: {
+            id: number;
+            slug: string;
+            displayName: string;
+            /** @enum {string} */
+            type: "bachelor" | "master";
+            /** @description Master study entries linked to it */
+            entryCount: number;
+        }[];
+        UpdateMasterStudy: {
+            studyProgramId?: number;
+            name?: string;
+            location?: string;
+            /** @enum {string} */
+            locationType?: "innland" | "utland";
+            /**
+             * Format: uri
+             * @description Link to the programme's website (http or https)
+             */
+            link?: string;
+            hasFinancialSupport?: boolean;
+            financialSupport?: string | null;
+            subjectRequirements?: string | null;
+            otherRequirements?: string | null;
+            summary?: string | null;
+            applicationDeadline?: string | null;
+            /** @description Replaces every quote on the entry when sent */
+            quotes?: components["schemas"]["CreateMasterStudyQuote"][];
+        };
+        MasterStudyMessage: {
+            message: string;
+        };
+        UpdateMasterStudyQuote: {
+            /** @description Who said it. Null for an anonymous quote */
+            name?: string | null;
+            /** @description The quote */
+            quote?: string;
         };
         CalendarSubscription: {
             /** @description Personal iCalendar (.ics) URL the user subscribes to in their calendar app. Contains a secret token — treat it like a password. */
@@ -14208,6 +14466,401 @@ export interface operations {
                 };
             };
             /** @description Not Found - Job posting not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listMasterStudyEntries: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+                /** @description Case-insensitive match on name, location or summary */
+                search?: string;
+                /** @description Filter by innland or utland */
+                locationType?: "innland" | "utland";
+                /** @description Filter by study program ID */
+                studyProgramId?: number;
+                /** @description Filter by whether financial support is available */
+                hasFinancialSupport?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MasterStudyList"];
+                };
+            };
+        };
+    };
+    createMasterStudyEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateMasterStudy"];
+            };
+        };
+        responses: {
+            /** @description Master study entry created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MasterStudyEntry"];
+                };
+            };
+            /** @description Bad Request - Invalid input or unknown study program */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    listMasterStudyPrograms: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MasterStudyProgramList"];
+                };
+            };
+        };
+    };
+    getMasterStudyEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Master study entry ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MasterStudyEntry"];
+                };
+            };
+            /** @description Not Found - Master study entry not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteMasterStudyEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Master study entry ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Master study entry deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MasterStudyMessage"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Master study entry not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateMasterStudyEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Master study entry ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMasterStudy"];
+            };
+        };
+        responses: {
+            /** @description Master study entry updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MasterStudyEntry"];
+                };
+            };
+            /** @description Bad Request - Invalid input or unknown study program */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Master study entry not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createMasterStudyQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Master study entry ID */
+                entryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateMasterStudyQuote"];
+            };
+        };
+        responses: {
+            /** @description Quote added */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MasterStudyQuote"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Master study entry not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteMasterStudyQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Master study entry ID */
+                entryId: string;
+                /** @description Quote ID */
+                quoteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Quote deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MasterStudyMessage"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Quote not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateMasterStudyQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Master study entry ID */
+                entryId: string;
+                /** @description Quote ID */
+                quoteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMasterStudyQuote"];
+            };
+        };
+        responses: {
+            /** @description Quote updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MasterStudyQuote"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Quote not found */
             404: {
                 headers: {
                     [name: string]: unknown;

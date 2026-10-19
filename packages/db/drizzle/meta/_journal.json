@@ -624,6 +624,13 @@
       "when": 1791643920286,
       "tag": "0088_group_archived_at",
       "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1792430463574,
+      "tag": "0089_master_study",
+      "breakpoints": true
     }
   ]
 }

@@ -102,6 +102,14 @@ export const PERMISSION_REGISTRY = {
         actions: ["view", "create", "update", "delete", "manage"],
     },
 
+    /**
+     * Masterveiledning. No "view" action: the catalogue is public, so the
+     * only permissions worth handing out are the ones that edit it.
+     */
+    "master-study": {
+        actions: ["create", "update", "delete", "manage"],
+    },
+
     // Front-page banner permissions
     banners: {
         actions: ["view", "create", "update", "delete", "manage"],

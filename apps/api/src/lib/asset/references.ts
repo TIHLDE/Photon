@@ -58,6 +58,7 @@ export const NON_ASSET_COLUMNS: Record<string, string> = {
     "user_settings.linkedin_url": "external profile",
     "event_registration.allow_photo": "a consent flag, not a picture",
     "event_vipps_webhook.url": "vår egen webhook-adresse hos Vipps",
+    "master_study_entry.link": "lenke til studiets nettside",
     "auth_jwks.public_key": "signing key",
     "auth_jwks.private_key": "signing key",
     "auth_oauth_client.uri": "OAuth client metadata",

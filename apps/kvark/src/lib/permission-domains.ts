@@ -165,6 +165,11 @@ export const PERMISSION_DOMAINS: PermissionDomain[] = [
         permissions: under("toddel"),
     },
     {
+        slug: "master-study",
+        label: "Masterveiledning",
+        permissions: under("master-study"),
+    },
+    {
         slug: "galleries",
         label: "Galleri",
         permissions: under("galleries"),

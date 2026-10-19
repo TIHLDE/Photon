@@ -14,3 +14,4 @@ export * from "./banner";
 export * from "./application";
 export * from "./feedback";
 export * from "./gallery";
+export * from "./master-study";

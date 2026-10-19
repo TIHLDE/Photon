@@ -4,6 +4,7 @@ import type { AppContext } from "~/lib/ctx";
 // Import all seed modules
 import seedAuth from "./auth";
 import seedEvent from "./event";
+import { seedMasterStudies } from "./master-study";
 import seedOrg, {
     backfillGroupData,
     backfillInstitutes,
@@ -26,6 +27,7 @@ async function runBackfills(ctx: AppContext) {
     await backfillGroupData(ctx);
     await backfillInstitutes(ctx);
     await syncHsPositions(ctx);
+    await seedMasterStudies(ctx);
 }
 
 /**

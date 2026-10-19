@@ -31,6 +31,7 @@ import { feedbackRoutes } from "./routes/feedback";
 import { groupsRoutes } from "./routes/groups";
 import { instituteRoutes } from "./routes/institutes";
 import { jobRoutes } from "./routes/job";
+import { masterStudyRoutes } from "./routes/master-study";
 import { galleryRoutes } from "./routes/gallery";
 import { newsRoutes } from "./routes/news";
 import { rolesRoutes } from "./routes/roles";
@@ -102,6 +103,7 @@ export const createApp = async (variables?: Variables) => {
         .route("/toddel", toddelRoutes)
         .route("/roles", rolesRoutes)
         .route("/jobs", jobRoutes)
+        .route("/master-study", masterStudyRoutes)
         .route("/user", userRoutes);
 
     const app = new Hono<{ Variables: Variables }>()

@@ -31,6 +31,7 @@ const tags = [
     "gallery",
     "jobs",
     "laws",
+    "master-study",
     "meta",
     "news",
     "notifications",

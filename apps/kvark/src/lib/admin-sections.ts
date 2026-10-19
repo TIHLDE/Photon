@@ -45,6 +45,12 @@ export const ADMIN_SECTION_PERMISSIONS = {
         "toddel:delete",
         "toddel:manage",
     ],
+    masterveiledning: [
+        "master-study:create",
+        "master-study:update",
+        "master-study:delete",
+        "master-study:manage",
+    ],
     brukere: [
         "users:view",
         "users:create",

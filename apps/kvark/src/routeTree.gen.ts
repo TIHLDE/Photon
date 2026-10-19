@@ -39,6 +39,7 @@ import { Route as AdminBrukereRouteImport } from './routes/admin/brukere'
 import { Route as AdminGalleriRouteImport } from './routes/admin/galleri'
 import { Route as AdminGrupperRouteImport } from './routes/admin/grupper'
 import { Route as AdminKontaktskjemaRouteImport } from './routes/admin/kontaktskjema'
+import { Route as AdminMasterveiledningRouteImport } from './routes/admin/masterveiledning'
 import { Route as AdminNyheterRouteImport } from './routes/admin/nyheter'
 import { Route as AdminOpptakRouteImport } from './routes/admin/opptak'
 import { Route as AdminPrikkerRouteImport } from './routes/admin/prikker'
@@ -57,6 +58,8 @@ import { Route as AppGrupperIndexRouteImport } from './routes/_app/grupper.index
 import { Route as AppGrupperSlugRouteImport } from './routes/_app/grupper.$slug'
 import { Route as AppKokebokStudyIdRouteImport } from './routes/_app/kokebok.$studyId'
 import { Route as AppKontraktIndexRouteImport } from './routes/_app/kontrakt/index'
+import { Route as AppMasterveiledningIndexRouteImport } from './routes/_app/masterveiledning.index'
+import { Route as AppMasterveiledningIdRouteImport } from './routes/_app/masterveiledning.$id'
 import { Route as AppNyheterIndexRouteImport } from './routes/_app/nyheter.index'
 import { Route as AppNyheterSlugRouteImport } from './routes/_app/nyheter.$slug'
 import { Route as AppPlaygroundMarkdownRouteImport } from './routes/_app/playground.markdown'
@@ -229,6 +232,11 @@ const AdminKontaktskjemaRoute = AdminKontaktskjemaRouteImport.update({
   path: '/kontaktskjema',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminMasterveiledningRoute = AdminMasterveiledningRouteImport.update({
+  id: '/masterveiledning',
+  path: '/masterveiledning',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminNyheterRoute = AdminNyheterRouteImport.update({
   id: '/nyheter',
   path: '/nyheter',
@@ -317,6 +325,17 @@ const AppKokebokStudyIdRoute = AppKokebokStudyIdRouteImport.update({
 const AppKontraktIndexRoute = AppKontraktIndexRouteImport.update({
   id: '/kontrakt/',
   path: '/kontrakt/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMasterveiledningIndexRoute =
+  AppMasterveiledningIndexRouteImport.update({
+    id: '/masterveiledning/',
+    path: '/masterveiledning/',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppMasterveiledningIdRoute = AppMasterveiledningIdRouteImport.update({
+  id: '/masterveiledning/$id',
+  path: '/masterveiledning/$id',
   getParentRoute: () => AppRoute,
 } as any)
 const AppNyheterIndexRoute = AppNyheterIndexRouteImport.update({
@@ -477,6 +496,7 @@ export interface FileRoutesByFullPath {
   '/admin/galleri': typeof AdminGalleriRoute
   '/admin/grupper': typeof AdminGrupperRoute
   '/admin/kontaktskjema': typeof AdminKontaktskjemaRoute
+  '/admin/masterveiledning': typeof AdminMasterveiledningRoute
   '/admin/nyheter': typeof AdminNyheterRoute
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
@@ -490,6 +510,7 @@ export interface FileRoutesByFullPath {
   '/galleri/$slug': typeof AppGalleriSlugRouteWithChildren
   '/grupper/$slug': typeof AppGrupperSlugRouteWithChildren
   '/kokebok/$studyId': typeof AppKokebokStudyIdRouteWithChildren
+  '/masterveiledning/$id': typeof AppMasterveiledningIdRoute
   '/nyheter/$slug': typeof AppNyheterSlugRouteWithChildren
   '/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/profil/$id': typeof AppProfilIdRouteWithChildren
@@ -507,6 +528,7 @@ export interface FileRoutesByFullPath {
   '/galleri/': typeof AppGalleriIndexRoute
   '/grupper/': typeof AppGrupperIndexRoute
   '/kontrakt/': typeof AppKontraktIndexRoute
+  '/masterveiledning/': typeof AppMasterveiledningIndexRoute
   '/nyheter/': typeof AppNyheterIndexRoute
   '/admin/arrangementer/': typeof AdminArrangementerIndexRoute
   '/arrangementer/$slug/$title': typeof AppArrangementerSlugTitleRoute
@@ -548,6 +570,7 @@ export interface FileRoutesByTo {
   '/admin/galleri': typeof AdminGalleriRoute
   '/admin/grupper': typeof AdminGrupperRoute
   '/admin/kontaktskjema': typeof AdminKontaktskjemaRoute
+  '/admin/masterveiledning': typeof AdminMasterveiledningRoute
   '/admin/nyheter': typeof AdminNyheterRoute
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
@@ -560,6 +583,7 @@ export interface FileRoutesByTo {
   '/galleri/$slug': typeof AppGalleriSlugRouteWithChildren
   '/grupper/$slug': typeof AppGrupperSlugRouteWithChildren
   '/kokebok/$studyId': typeof AppKokebokStudyIdRouteWithChildren
+  '/masterveiledning/$id': typeof AppMasterveiledningIdRoute
   '/nyheter/$slug': typeof AppNyheterSlugRouteWithChildren
   '/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/sporreskjema/$id': typeof AppSporreskjemaIdRoute
@@ -576,6 +600,7 @@ export interface FileRoutesByTo {
   '/galleri': typeof AppGalleriIndexRoute
   '/grupper': typeof AppGrupperIndexRoute
   '/kontrakt': typeof AppKontraktIndexRoute
+  '/masterveiledning': typeof AppMasterveiledningIndexRoute
   '/nyheter': typeof AppNyheterIndexRoute
   '/admin/arrangementer': typeof AdminArrangementerIndexRoute
   '/arrangementer/$slug/$title': typeof AppArrangementerSlugTitleRoute
@@ -621,6 +646,7 @@ export interface FileRoutesById {
   '/admin/galleri': typeof AdminGalleriRoute
   '/admin/grupper': typeof AdminGrupperRoute
   '/admin/kontaktskjema': typeof AdminKontaktskjemaRoute
+  '/admin/masterveiledning': typeof AdminMasterveiledningRoute
   '/admin/nyheter': typeof AdminNyheterRoute
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
@@ -635,6 +661,7 @@ export interface FileRoutesById {
   '/_app/galleri/$slug': typeof AppGalleriSlugRouteWithChildren
   '/_app/grupper/$slug': typeof AppGrupperSlugRouteWithChildren
   '/_app/kokebok/$studyId': typeof AppKokebokStudyIdRouteWithChildren
+  '/_app/masterveiledning/$id': typeof AppMasterveiledningIdRoute
   '/_app/nyheter/$slug': typeof AppNyheterSlugRouteWithChildren
   '/_app/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/_app/profil/$id': typeof AppProfilIdRouteWithChildren
@@ -652,6 +679,7 @@ export interface FileRoutesById {
   '/_app/galleri/': typeof AppGalleriIndexRoute
   '/_app/grupper/': typeof AppGrupperIndexRoute
   '/_app/kontrakt/': typeof AppKontraktIndexRoute
+  '/_app/masterveiledning/': typeof AppMasterveiledningIndexRoute
   '/_app/nyheter/': typeof AppNyheterIndexRoute
   '/admin/arrangementer/': typeof AdminArrangementerIndexRoute
   '/_app/arrangementer/$slug/$title': typeof AppArrangementerSlugTitleRoute
@@ -695,6 +723,7 @@ export interface FileRouteTypes {
     | '/admin/galleri'
     | '/admin/grupper'
     | '/admin/kontaktskjema'
+    | '/admin/masterveiledning'
     | '/admin/nyheter'
     | '/admin/opptak'
     | '/admin/prikker'
@@ -708,6 +737,7 @@ export interface FileRouteTypes {
     | '/galleri/$slug'
     | '/grupper/$slug'
     | '/kokebok/$studyId'
+    | '/masterveiledning/$id'
     | '/nyheter/$slug'
     | '/playground/markdown'
     | '/profil/$id'
@@ -725,6 +755,7 @@ export interface FileRouteTypes {
     | '/galleri/'
     | '/grupper/'
     | '/kontrakt/'
+    | '/masterveiledning/'
     | '/nyheter/'
     | '/admin/arrangementer/'
     | '/arrangementer/$slug/$title'
@@ -766,6 +797,7 @@ export interface FileRouteTypes {
     | '/admin/galleri'
     | '/admin/grupper'
     | '/admin/kontaktskjema'
+    | '/admin/masterveiledning'
     | '/admin/nyheter'
     | '/admin/opptak'
     | '/admin/prikker'
@@ -778,6 +810,7 @@ export interface FileRouteTypes {
     | '/galleri/$slug'
     | '/grupper/$slug'
     | '/kokebok/$studyId'
+    | '/masterveiledning/$id'
     | '/nyheter/$slug'
     | '/playground/markdown'
     | '/sporreskjema/$id'
@@ -794,6 +827,7 @@ export interface FileRouteTypes {
     | '/galleri'
     | '/grupper'
     | '/kontrakt'
+    | '/masterveiledning'
     | '/nyheter'
     | '/admin/arrangementer'
     | '/arrangementer/$slug/$title'
@@ -838,6 +872,7 @@ export interface FileRouteTypes {
     | '/admin/galleri'
     | '/admin/grupper'
     | '/admin/kontaktskjema'
+    | '/admin/masterveiledning'
     | '/admin/nyheter'
     | '/admin/opptak'
     | '/admin/prikker'
@@ -852,6 +887,7 @@ export interface FileRouteTypes {
     | '/_app/galleri/$slug'
     | '/_app/grupper/$slug'
     | '/_app/kokebok/$studyId'
+    | '/_app/masterveiledning/$id'
     | '/_app/nyheter/$slug'
     | '/_app/playground/markdown'
     | '/_app/profil/$id'
@@ -869,6 +905,7 @@ export interface FileRouteTypes {
     | '/_app/galleri/'
     | '/_app/grupper/'
     | '/_app/kontrakt/'
+    | '/_app/masterveiledning/'
     | '/_app/nyheter/'
     | '/admin/arrangementer/'
     | '/_app/arrangementer/$slug/$title'
@@ -1104,6 +1141,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminKontaktskjemaRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/masterveiledning': {
+      id: '/admin/masterveiledning'
+      path: '/masterveiledning'
+      fullPath: '/admin/masterveiledning'
+      preLoaderRoute: typeof AdminMasterveiledningRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/nyheter': {
       id: '/admin/nyheter'
       path: '/nyheter'
@@ -1228,6 +1272,20 @@ declare module '@tanstack/react-router' {
       path: '/kontrakt'
       fullPath: '/kontrakt/'
       preLoaderRoute: typeof AppKontraktIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/masterveiledning/': {
+      id: '/_app/masterveiledning/'
+      path: '/masterveiledning'
+      fullPath: '/masterveiledning/'
+      preLoaderRoute: typeof AppMasterveiledningIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/masterveiledning/$id': {
+      id: '/_app/masterveiledning/$id'
+      path: '/masterveiledning/$id'
+      fullPath: '/masterveiledning/$id'
+      preLoaderRoute: typeof AppMasterveiledningIdRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/nyheter/': {
@@ -1517,6 +1575,7 @@ interface AppRouteChildren {
   AppBedriftStudieneRoute: typeof AppBedriftStudieneRoute
   AppGalleriSlugRoute: typeof AppGalleriSlugRouteWithChildren
   AppGrupperSlugRoute: typeof AppGrupperSlugRouteWithChildren
+  AppMasterveiledningIdRoute: typeof AppMasterveiledningIdRoute
   AppNyheterSlugRoute: typeof AppNyheterSlugRouteWithChildren
   AppPlaygroundMarkdownRoute: typeof AppPlaygroundMarkdownRoute
   AppProfilIdRoute: typeof AppProfilIdRouteWithChildren
@@ -1527,6 +1586,7 @@ interface AppRouteChildren {
   AppGalleriIndexRoute: typeof AppGalleriIndexRoute
   AppGrupperIndexRoute: typeof AppGrupperIndexRoute
   AppKontraktIndexRoute: typeof AppKontraktIndexRoute
+  AppMasterveiledningIndexRoute: typeof AppMasterveiledningIndexRoute
   AppNyheterIndexRoute: typeof AppNyheterIndexRoute
   AppSporreskjemaIdSvarRoute: typeof AppSporreskjemaIdSvarRoute
 }
@@ -1548,6 +1608,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppBedriftStudieneRoute: AppBedriftStudieneRoute,
   AppGalleriSlugRoute: AppGalleriSlugRouteWithChildren,
   AppGrupperSlugRoute: AppGrupperSlugRouteWithChildren,
+  AppMasterveiledningIdRoute: AppMasterveiledningIdRoute,
   AppNyheterSlugRoute: AppNyheterSlugRouteWithChildren,
   AppPlaygroundMarkdownRoute: AppPlaygroundMarkdownRoute,
   AppProfilIdRoute: AppProfilIdRouteWithChildren,
@@ -1558,6 +1619,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppGalleriIndexRoute: AppGalleriIndexRoute,
   AppGrupperIndexRoute: AppGrupperIndexRoute,
   AppKontraktIndexRoute: AppKontraktIndexRoute,
+  AppMasterveiledningIndexRoute: AppMasterveiledningIndexRoute,
   AppNyheterIndexRoute: AppNyheterIndexRoute,
   AppSporreskjemaIdSvarRoute: AppSporreskjemaIdSvarRoute,
 }
@@ -1622,6 +1684,7 @@ interface AdminRouteChildren {
   AdminGalleriRoute: typeof AdminGalleriRoute
   AdminGrupperRoute: typeof AdminGrupperRoute
   AdminKontaktskjemaRoute: typeof AdminKontaktskjemaRoute
+  AdminMasterveiledningRoute: typeof AdminMasterveiledningRoute
   AdminNyheterRoute: typeof AdminNyheterRoute
   AdminOpptakRoute: typeof AdminOpptakRoute
   AdminPrikkerRoute: typeof AdminPrikkerRoute
@@ -1642,6 +1705,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminGalleriRoute: AdminGalleriRoute,
   AdminGrupperRoute: AdminGrupperRoute,
   AdminKontaktskjemaRoute: AdminKontaktskjemaRoute,
+  AdminMasterveiledningRoute: AdminMasterveiledningRoute,
   AdminNyheterRoute: AdminNyheterRoute,
   AdminOpptakRoute: AdminOpptakRoute,
   AdminPrikkerRoute: AdminPrikkerRoute,

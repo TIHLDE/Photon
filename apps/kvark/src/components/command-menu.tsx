@@ -21,6 +21,7 @@ import {
     CalendarDaysIcon,
     ChartCandlestickIcon,
     GitBranchIcon,
+    GraduationCapIcon,
     HomeIcon,
     LockKeyholeIcon,
     NewspaperIcon,
@@ -116,6 +117,16 @@ const SECTIONS: CommandSection[] = [
                 icon: <BugIcon />,
                 keywords: ["bugs", "ide", "problem"],
                 action: { kind: "navigate", link: { to: "/tilbakemelding" } },
+            },
+            {
+                id: "masterveiledning",
+                label: "Masterveiledning",
+                icon: <GraduationCapIcon />,
+                keywords: ["master", "videre studier", "utveksling"],
+                action: {
+                    kind: "navigate",
+                    link: { to: "/masterveiledning" },
+                },
             },
             {
                 id: "kokebok",
