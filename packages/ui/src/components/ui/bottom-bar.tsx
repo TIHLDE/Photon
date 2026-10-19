@@ -110,6 +110,8 @@ function BottomBarItem({ className, render, ...props }: BottomBarItemProps) {
 
 type BottomBarBannerProps = React.ComponentProps<"button"> & {
     render?: useRender.RenderProp;
+    /** `warning` når noe går tapt om ingen trykker snart. */
+    variant?: "default" | "warning";
 };
 
 /**
@@ -128,14 +130,19 @@ type BottomBarBannerProps = React.ComponentProps<"button"> & {
 function BottomBarBanner({
     className,
     render,
+    variant = "default",
     ...props
 }: BottomBarBannerProps) {
     return useRender({
         render: render ?? <button type="button" />,
         props: {
             "data-slot": "bottom-bar-banner",
+            "data-variant": variant,
             className: cn(
                 "absolute inset-x-3 bottom-full mb-2 flex min-h-12 cursor-pointer items-center gap-3 rounded-xl bg-primary px-4 py-2 text-left text-primary-foreground shadow-md outline-none transition-opacity duration-100 select-none active:opacity-80 focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none [&_svg]:size-5 [&_svg]:shrink-0",
+                // Mørk tekst på gult i begge temaer: hvit tekst blir for
+                // svak mot det lyse temaets varselfarge.
+                variant === "warning" && "bg-warning text-neutral-950",
                 className,
             ),
             ...props,
@@ -167,7 +174,8 @@ function BottomBarBannerDescription({
         <span
             data-slot="bottom-bar-banner-description"
             className={cn(
-                "block truncate text-xs text-primary-foreground/80",
+                // Arver fargen fra banneret, så den passer til begge variantene.
+                "block truncate text-xs opacity-80",
                 className,
             )}
             {...props}

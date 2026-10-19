@@ -11,6 +11,7 @@ import PostHogProvider from "../integrations/posthog/provider";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import appCss from "../styles.css?url";
 import type { QueryClient } from "@tanstack/react-query";
+import { Toaster } from "@tihlde/ui/ui/sonner";
 import { TooltipProvider } from "@tihlde/ui/ui/tooltip";
 import { THEME_STORAGE_KEY, ThemeProvider } from "../integrations/theme";
 import { CommandMenu } from "#/components/command-menu";
@@ -103,6 +104,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                     <TooltipProvider>
                         <PostHogProvider>
                             {children}
+                            <Toaster />
                             <ClientOnly>
                                 <CommandMenu />
                             </ClientOnly>

@@ -82,6 +82,7 @@ import { Route as AppProfilIdMedlemskapRouteImport } from './routes/_app/profil/
 import { Route as AppProfilIdPrikkerRouteImport } from './routes/_app/profil/$id/prikker'
 import { Route as AppProfilIdSporreskjemaerRouteImport } from './routes/_app/profil/$id/sporreskjemaer'
 import { Route as AppSporreskjemaIdSvarRouteImport } from './routes/_app/sporreskjema.$id_.svar'
+import { Route as AppArrangementerSlugKameraMineRouteImport } from './routes/_app/arrangementer.$slug_.kamera_.mine'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -451,6 +452,12 @@ const AppSporreskjemaIdSvarRoute = AppSporreskjemaIdSvarRouteImport.update({
   path: '/sporreskjema/$id/svar',
   getParentRoute: () => AppRoute,
 } as any)
+const AppArrangementerSlugKameraMineRoute =
+  AppArrangementerSlugKameraMineRouteImport.update({
+    id: '/arrangementer/$slug_/kamera_/mine',
+    path: '/arrangementer/$slug/kamera/mine',
+    getParentRoute: () => AppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -522,6 +529,7 @@ export interface FileRoutesByFullPath {
   '/profil/$id/sporreskjemaer': typeof AppProfilIdSporreskjemaerRoute
   '/sporreskjema/$id/svar': typeof AppSporreskjemaIdSvarRoute
   '/profil/$id/': typeof AppProfilIdIndexRoute
+  '/arrangementer/$slug/kamera/mine': typeof AppArrangementerSlugKameraMineRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
@@ -591,6 +599,7 @@ export interface FileRoutesByTo {
   '/profil/$id/sporreskjemaer': typeof AppProfilIdSporreskjemaerRoute
   '/sporreskjema/$id/svar': typeof AppSporreskjemaIdSvarRoute
   '/profil/$id': typeof AppProfilIdIndexRoute
+  '/arrangementer/$slug/kamera/mine': typeof AppArrangementerSlugKameraMineRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -667,6 +676,7 @@ export interface FileRoutesById {
   '/_app/profil/$id/sporreskjemaer': typeof AppProfilIdSporreskjemaerRoute
   '/_app/sporreskjema/$id_/svar': typeof AppSporreskjemaIdSvarRoute
   '/_app/profil/$id/': typeof AppProfilIdIndexRoute
+  '/_app/arrangementer/$slug_/kamera_/mine': typeof AppArrangementerSlugKameraMineRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -740,6 +750,7 @@ export interface FileRouteTypes {
     | '/profil/$id/sporreskjemaer'
     | '/sporreskjema/$id/svar'
     | '/profil/$id/'
+    | '/arrangementer/$slug/kamera/mine'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -809,6 +820,7 @@ export interface FileRouteTypes {
     | '/profil/$id/sporreskjemaer'
     | '/sporreskjema/$id/svar'
     | '/profil/$id'
+    | '/arrangementer/$slug/kamera/mine'
   id:
     | '__root__'
     | '/_app'
@@ -884,6 +896,7 @@ export interface FileRouteTypes {
     | '/_app/profil/$id/sporreskjemaer'
     | '/_app/sporreskjema/$id_/svar'
     | '/_app/profil/$id/'
+    | '/_app/arrangementer/$slug_/kamera_/mine'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1406,6 +1419,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSporreskjemaIdSvarRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/arrangementer/$slug_/kamera_/mine': {
+      id: '/_app/arrangementer/$slug_/kamera_/mine'
+      path: '/arrangementer/$slug/kamera/mine'
+      fullPath: '/arrangementer/$slug/kamera/mine'
+      preLoaderRoute: typeof AppArrangementerSlugKameraMineRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -1530,6 +1550,7 @@ interface AppRouteChildren {
   AppNyheterIndexRoute: typeof AppNyheterIndexRoute
   AppArrangementerSlugKameraRoute: typeof AppArrangementerSlugKameraRoute
   AppSporreskjemaIdSvarRoute: typeof AppSporreskjemaIdSvarRoute
+  AppArrangementerSlugKameraMineRoute: typeof AppArrangementerSlugKameraMineRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -1561,6 +1582,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppNyheterIndexRoute: AppNyheterIndexRoute,
   AppArrangementerSlugKameraRoute: AppArrangementerSlugKameraRoute,
   AppSporreskjemaIdSvarRoute: AppSporreskjemaIdSvarRoute,
+  AppArrangementerSlugKameraMineRoute: AppArrangementerSlugKameraMineRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -1666,12 +1688,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
