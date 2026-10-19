@@ -1,5 +1,4 @@
 import { type ReactNode, useRef } from "react";
-import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import {
@@ -9,7 +8,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@tihlde/ui/ui/card";
-import { Camera, CircleCheck } from "lucide-react";
+import { Camera } from "lucide-react";
 
 type WrappedCameraProps = {
     eventTitle: string;
@@ -19,31 +18,6 @@ type WrappedCameraProps = {
     /** The receipt for the last photo, and anything waiting for the network. */
     status?: ReactNode;
 };
-
-/**
- * Kvitteringen for et lagret bilde. Egen komponent fordi den også må vises
- * over «ingen bilder igjen»: det siste bildet tømmer kvoten i samme øyeblikk
- * som det lagres, og uten kvitteringen vet ingen om det kom fram.
- */
-export function WrappedPhotoSaved({
-    fromCameraRoll = false,
-}: {
-    fromCameraRoll?: boolean;
-}) {
-    return (
-        <Alert>
-            <CircleCheck />
-            <AlertTitle>
-                {fromCameraRoll
-                    ? "Lagt til fra kamerarullen"
-                    : "Bildet er lagret"}
-            </AlertTitle>
-            <AlertDescription>
-                Lagt i Mine bilder – ikke sendt ennå
-            </AlertDescription>
-        </Alert>
-    );
-}
 
 /**
  * Engangskameraet uten søker: telefonens eget kamera gjennom et filfelt.
