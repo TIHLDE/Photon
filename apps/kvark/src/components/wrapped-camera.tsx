@@ -42,7 +42,9 @@ export function WrappedPhotoSaved() {
         <Alert>
             <CircleCheck />
             <AlertTitle>Bildet er lagret</AlertTitle>
-            <AlertDescription>Det er sendt til arrangøren.</AlertDescription>
+            <AlertDescription>
+                Lagt i Mine bilder – ikke sendt ennå
+            </AlertDescription>
         </Alert>
     );
 }

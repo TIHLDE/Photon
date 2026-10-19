@@ -10,7 +10,7 @@ import {
 import { Button } from "@tihlde/ui/ui/button";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 import { SwitchCamera } from "lucide-react";
-import type { Ref } from "react";
+import type { ReactNode, Ref } from "react";
 
 import {
     WrappedUploadStatus,
@@ -32,6 +32,8 @@ type WrappedViewfinderProps = {
     /** Leave the live camera for the phone's own, through a file input. */
     onUseSystemCamera: () => void;
     onRetry?: () => void;
+    /** «Mine bilder», shown above the shutter row once there are photos. */
+    myPhotos?: ReactNode;
 };
 
 /**
@@ -53,6 +55,7 @@ export function WrappedViewfinder({
     onSwitchCamera,
     onUseSystemCamera,
     onRetry,
+    myPhotos,
 }: WrappedViewfinderProps) {
     const busy =
         uploadState.status === "converting" ||
@@ -87,13 +90,17 @@ export function WrappedViewfinder({
                 ) : null}
             </CameraViewfinder>
 
-            {/* Plassen over knapperaden: status for siste bilde nå, og
-             * «Mine bilder» (#919) senere. */}
-            <div className="flex flex-col gap-2" aria-live="polite">
-                <WrappedUploadStatus
-                    uploadState={uploadState}
-                    onRetry={onRetry}
-                />
+            {/* Plassen over knapperaden: status for siste bilde, og «Mine
+             * bilder» — den eneste veien til innsending her, siden sida ikke
+             * har bunnlinje. */}
+            <div className="flex flex-col gap-2">
+                <div aria-live="polite">
+                    <WrappedUploadStatus
+                        uploadState={uploadState}
+                        onRetry={onRetry}
+                    />
+                </div>
+                {myPhotos}
             </div>
 
             <div className="grid grid-cols-3 items-center">

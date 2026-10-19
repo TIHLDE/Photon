@@ -20,7 +20,9 @@ import { SiteHeader } from "#/components/site-header";
 import { useSiteNavItems } from "#/components/site-nav-items";
 import { WrappedCameraBanner } from "#/components/wrapped-camera-banner";
 import { useEventRulesConsent } from "#/hooks/use-event-rules-consent";
+import { useNow } from "#/hooks/use-now";
 import { useSetPassword } from "#/hooks/use-set-password";
+import { cameraShortcut } from "#/lib/wrapped";
 
 export const Route = createFileRoute("/_app")({ component: AppLayout });
 
@@ -85,11 +87,19 @@ function AppLayout() {
     // Innlogget-sjekken må stå her også: en spørring som slås av beholder
     // det den sist hentet, så uten den ville forrige medlems arrangement
     // blitt stående etter utlogging.
+    //
+    // Ikke på forsida heller: der fyller kamerakortet førsteskjermen, og to
+    // snarveier til samme kamera er én for mye.
     const showCameraBanner =
         isAuthenticated &&
         !isPendingApproval &&
         openCamera !== undefined &&
-        pathname !== `/arrangementer/${openCamera.slug}/kamera`;
+        pathname !== "/" &&
+        !pathname.startsWith(`/arrangementer/${openCamera.slug}/kamera`);
+    // Usendte bilder slettes når kameraet stenger, så den siste halvtimen
+    // blir snarveien et varsel som peker til Mine bilder. Klokka tikker til
+    // stengetid, så varselet også forsvinner av seg selv.
+    const now = useNow(openCamera?.closesAt);
 
     if (immersive) {
         return (
@@ -158,7 +168,7 @@ function AppLayout() {
                         <WrappedCameraBanner
                             slug={openCamera.slug}
                             title={openCamera.title}
-                            shotsLeft={openCamera.shotsLeft}
+                            shortcut={cameraShortcut(openCamera, now)}
                         />
                     ) : null
                 }
