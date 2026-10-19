@@ -1,6 +1,6 @@
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { canModerateFeedback } from "~/lib/feedback/middleware";
+import { hasPermission } from "@photon/auth/rbac";
 import { getFeedbackItem } from "~/lib/feedback/serialize";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -33,7 +33,10 @@ export const getRoute = route().get(
             db,
             id,
             userId,
-            await canModerateFeedback(c.get("ctx"), userId),
+            await hasPermission(c.get("ctx"), userId, [
+                "feedback:update",
+                "feedback:manage",
+            ]),
         );
 
         if (!item) {

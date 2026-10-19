@@ -1,12 +1,10 @@
 import { schema } from "@photon/db";
+import { hasPermission } from "@photon/auth/rbac";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import type z from "zod";
-import {
-    canModerateFeedback,
-    isFeedbackAuthor,
-} from "~/lib/feedback/middleware";
+import { isFeedbackAuthor } from "~/lib/feedback/middleware";
 import { getFeedbackItem } from "~/lib/feedback/serialize";
 import { sendNotification } from "~/lib/notification";
 import { describeRoute } from "~/lib/openapi";
@@ -78,7 +76,10 @@ export const updateRoute = route().patch(
 
         const mayModerate =
             !c.get("isResourceOwner") ||
-            (await canModerateFeedback(c.get("ctx"), userId));
+            (await hasPermission(c.get("ctx"), userId, [
+                "feedback:update",
+                "feedback:manage",
+            ]));
 
         if (isModerating && !mayModerate) {
             throw new HTTPException(403, {
