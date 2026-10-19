@@ -16,6 +16,7 @@ import {
     fetchMyWrappedPhotoThumb,
     getMyWrappedPhotosQuery,
     getWrappedCameraQuery,
+    invalidateMine,
     myWrappedPhotoImagePath,
     uploadWrappedPhotoMutation,
 } from "#/api/queries/wrapped";
@@ -31,7 +32,7 @@ import { useNow } from "#/hooks/use-now";
 import { useObjectUrls } from "#/hooks/use-object-urls";
 import { formatInOslo } from "#/lib/date";
 import { errorStatus } from "#/lib/utils";
-import { draftWarningStartsAt, isDraftWarning } from "#/lib/wrapped";
+import { isDraftWarning } from "#/lib/wrapped";
 
 /**
  * Engangskameraet for et arrangement: /arrangementer/<slug>/kamera.
@@ -110,9 +111,9 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
         [myPhotos, event.id],
     );
     const thumbnails = useObjectUrls(newestPaths, fetchMyWrappedPhotoThumb);
-    // Klokka tikker fram til varselet skal vises, så det dukker opp uten at
-    // sida lastes på nytt.
-    const now = useNow(draftWarningStartsAt(camera.closesAt));
+    // Klokka tikker fram til kameraet stenger, så varselet om usendte bilder
+    // både dukker opp og forsvinner uten at sida lastes på nytt.
+    const now = useNow(camera.closesAt);
 
     const [uploadState, setUploadState] = useState<WrappedUploadState>({
         status: "idle",
@@ -121,17 +122,25 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
     // et dårlig nett ikke koster bildet.
     const [pending, setPending] = useState<PendingPhoto | null>(null);
 
-    // Den som venter på at kameraet skal åpne, skal ikke måtte laste sida på
-    // nytt: statusen hentes igjen i det åpningstiden passerer.
+    // Ingen skal måtte laste sida på nytt når kameraet åpner eller stenger:
+    // statusen hentes igjen i det tidspunktet passerer. Når det stenger,
+    // forsvinner også utkastene, så Mine bilder hentes på nytt samtidig.
     const waitingUntil =
-        camera.reason === "not_open_yet" ? camera.opensAt : null;
+        camera.reason === "not_open_yet"
+            ? camera.opensAt
+            : camera.isOpen
+              ? camera.closesAt
+              : null;
     useEffect(() => {
         if (!waitingUntil) return;
         const delay = new Date(waitingUntil).getTime() - Date.now() + 1000;
         if (delay > MAX_WAIT_MS) return;
-        const timer = setTimeout(() => void refetch(), Math.max(delay, 0));
+        const timer = setTimeout(
+            () => void invalidateMine(queryClient, event.id),
+            Math.max(delay, 0),
+        );
         return () => clearTimeout(timer);
-    }, [waitingUntil, refetch]);
+    }, [waitingUntil, queryClient, event.id]);
 
     async function upload(photo: PendingPhoto) {
         setUploadState({ status: "uploading" });

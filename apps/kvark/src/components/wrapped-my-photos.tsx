@@ -128,7 +128,10 @@ function MyPhotoTile({ photo }: { photo: WrappedMyPhotoTile }) {
         <Card
             size="sm"
             className="relative h-50 gap-0 overflow-hidden py-0"
-            aria-label={`Bilde ${photo.number}, ${photo.submitted ? "sendt" : "ikke sendt"}`}
+            // Uten en rolle leser ikke skjermlesere etiketten på et kort. Merkene
+            // inni blir da skjult, så etiketten sier det samme som dem.
+            role="img"
+            aria-label={`Bilde ${photo.number}, ${photo.fromCameraRoll ? "fra kamerarullen, " : ""}${photo.submitted ? "sendt" : "ikke sendt"}`}
         >
             {photo.src ? (
                 <img

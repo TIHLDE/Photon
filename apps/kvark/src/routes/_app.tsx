@@ -22,7 +22,7 @@ import { useEventRulesConsent } from "#/hooks/use-event-rules-consent";
 import { useNow } from "#/hooks/use-now";
 import { useSetPassword } from "#/hooks/use-set-password";
 import { formatInOslo } from "#/lib/date";
-import { draftWarningStartsAt, isDraftWarning } from "#/lib/wrapped";
+import { isDraftWarning } from "#/lib/wrapped";
 
 export const Route = createFileRoute("/_app")({ component: AppLayout });
 
@@ -88,9 +88,8 @@ function AppLayout() {
         !pathname.startsWith(`/arrangementer/${openCamera.slug}/kamera`);
     // Usendte bilder slettes når kameraet stenger, så den siste halvtimen
     // blir snarveien et varsel som peker til Mine bilder.
-    const now = useNow(
-        openCamera ? draftWarningStartsAt(openCamera.closesAt) : null,
-    );
+    // Klokka tikker til stengetid, så varselet også forsvinner av seg selv.
+    const now = useNow(openCamera?.closesAt);
     const draftWarning =
         openCamera &&
         isDraftWarning(openCamera.closesAt, openCamera.draftCount, now)

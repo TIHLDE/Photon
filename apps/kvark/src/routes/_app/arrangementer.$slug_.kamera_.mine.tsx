@@ -75,7 +75,7 @@ function WrappedMyPhotosPage() {
                 >
                     <ArrowLeft />
                 </Button>
-                <h1>Mine bilder</h1>
+                <h1 className="text-3xl">Mine bilder</h1>
             </div>
             <Suspense fallback={<WrappedMyPhotosSkeleton />}>
                 <WrappedMyPhotosContainer slug={slug} />
