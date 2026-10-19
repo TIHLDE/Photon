@@ -47,10 +47,30 @@ import {
     CookbookGradeLabels,
     CookbookStudyLabels,
     StudyCookbook,
+    StudyTranslation,
     type CookbookEntry,
 } from "#/data/cookbook";
+import { authQueryOptions } from "#/api/auth";
+import { getUserProfileQuery } from "#/api/queries/user";
 
 export const Route = createFileRoute("/_app/kokebok")({
+    async loader(ctx) {
+        let auth = await ctx.context.queryClient.query(authQueryOptions);
+
+        let profileData = await ctx.context.queryClient.query(
+            getUserProfileQuery(auth.user.id),
+        );
+
+        const classYear = profileData.classYear;
+        const study = profileData.groups.find(
+            (value) => StudyTranslation[value.slug] != null,
+        );
+
+        return {
+            classYear: classYear,
+            study: study ? StudyTranslation[study.slug] : null,
+        };
+    },
     component: CookbookPage,
 });
 
@@ -127,15 +147,23 @@ const columns: ColumnDef<CookbookRow>[] = [
 ];
 
 function CookbookPage() {
-    const [selectedStudy, setSelectedStudy] = useState<StudyId>("other");
-    const [selectedGrade, setSelectedGrade] = useState<GradeId | null>(null);
+    const data = Route.useLoaderData();
+
+    const [selectedStudy, setSelectedStudy] = useState<StudyId>(
+        data.study ?? "other",
+    );
+    const [selectedGrade, setSelectedGrade] = useState<GradeId | null>(
+        data.classYear ? (String(data.classYear) as GradeId) : null,
+    );
     const [sorting, setSorting] = useState<SortingState>([]);
 
     const cookbookTree = useMemo(() => getCookbookTree(), []);
+
     const entries = useMemo(
         () => getRowsForSelection(selectedStudy, selectedGrade),
         [selectedStudy, selectedGrade],
     );
+
     const table = useReactTable({
         data: entries,
         columns,

@@ -118,6 +118,13 @@ const link = (
     isOfficial: CookbookEntry["isOfficial"] = false,
 ) => new EntryBuilder("link", title, course, creator, isOfficial);
 
+export const StudyTranslation: Record<string, CookbookStudyIds> = {
+    dataingenir: "dataing",
+    "digital-forretningsutvikling": "digfor",
+    "digital-infrastruktur-og-cybersikkerhet": "digsec",
+    "digital-samhandling": "digtrans",
+};
+
 export const StudyCookbook = {
     dataing: {
         "1": [
