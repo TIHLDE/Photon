@@ -45,6 +45,15 @@ type EventOrdering = z.infer<typeof eventListFilterSchema>["ordering"];
  * asked for upcoming events only, descending otherwise.
  */
 function buildOrderBy(ordering: EventOrdering, expired: boolean | undefined) {
+    // Several events share a start time, and without a unique last key Postgres
+    // may order ties differently per query, so offset pages overlap or skip rows.
+    return [...buildPrimaryOrder(ordering, expired), asc(schema.event.id)];
+}
+
+function buildPrimaryOrder(
+    ordering: EventOrdering,
+    expired: boolean | undefined,
+) {
     switch (ordering) {
         case "newest":
             return [desc(schema.event.start)];
@@ -91,6 +100,8 @@ export const listRoute = route().get(
             category,
             organizerGroupSlug,
             ordering,
+            startFrom,
+            startBefore,
         } = c.req.valid("query");
 
         // Members-only events are hidden from callers who are not members.
@@ -108,6 +119,12 @@ export const listRoute = route().get(
                     : undefined,
                 organizerGroupSlug
                     ? eq(schema.event.organizerGroupSlug, organizerGroupSlug)
+                    : undefined,
+                startFrom
+                    ? gte(schema.event.start, new Date(startFrom))
+                    : undefined,
+                startBefore
+                    ? lt(schema.event.start, new Date(startBefore))
                     : undefined,
                 expired != null
                     ? expired

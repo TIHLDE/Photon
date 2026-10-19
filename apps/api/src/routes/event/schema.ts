@@ -568,6 +568,14 @@ export const eventListFilterSchema = PaginationSchema.extend({
         type: "boolean",
         description: "Whether to include only events with open sign-ups",
     }),
+    startFrom: z.iso.datetime({ offset: true }).optional().meta({
+        description:
+            "Only return events starting at or after this instant (ISO 8601). Combine with startBefore to fetch a date range, e.g. the weeks a calendar shows.",
+    }),
+    startBefore: z.iso.datetime({ offset: true }).optional().meta({
+        description:
+            "Only return events starting before this instant (ISO 8601, exclusive).",
+    }),
     organizerGroupSlug: z.string().optional().meta({
         description:
             "Only return events organised by this group. Omit to return events from every organizer.",

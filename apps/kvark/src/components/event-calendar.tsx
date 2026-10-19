@@ -15,7 +15,7 @@ import {
 } from "date-fns";
 import { nb } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type Dispatch, type SetStateAction, useMemo } from "react";
 
 import { formatInOslo } from "#/lib/date";
 import { cn } from "#/lib/utils";
@@ -30,23 +30,35 @@ export type CalendarEvent = {
 
 type EventCalendarProps = {
     events: CalendarEvent[];
+    month: Date;
+    onMonthChange: Dispatch<SetStateAction<Date>>;
+    /** Hentes arrangementene for `month` fortsatt, er det for tidlig å si at den er tom. */
+    isLoading?: boolean;
 };
 
 const WEEKDAY_LABELS = ["man", "tir", "ons", "tor", "fre", "lør", "søn"];
 
 /**
- * Månedskalender over arrangementene som er lastet inn. Rutenettet starter
- * alltid på mandag og fylles ut med dagene fra nabomånedene, slik at ukene blir
- * hele.
+ * Dagene rutenettet for `month` viser. Det starter alltid på mandag og fylles ut
+ * med dagene fra nabomånedene, slik at ukene blir hele.
  */
-export function EventCalendar({ events }: EventCalendarProps) {
-    const [month, setMonth] = useState(() => startOfMonth(new Date()));
+export function calendarGridRange(month: Date): { start: Date; end: Date } {
+    return {
+        start: startOfWeek(startOfMonth(month), { weekStartsOn: 1 }),
+        end: endOfWeek(endOfMonth(month), { weekStartsOn: 1 }),
+    };
+}
 
-    const days = useMemo(() => {
-        const start = startOfWeek(startOfMonth(month), { weekStartsOn: 1 });
-        const end = endOfWeek(endOfMonth(month), { weekStartsOn: 1 });
-        return eachDayOfInterval({ start, end });
-    }, [month]);
+export function EventCalendar({
+    events,
+    month,
+    onMonthChange,
+    isLoading = false,
+}: EventCalendarProps) {
+    const days = useMemo(
+        () => eachDayOfInterval(calendarGridRange(month)),
+        [month],
+    );
 
     const eventsByDay = useMemo(() => {
         const map = new Map<string, CalendarEvent[]>();
@@ -69,7 +81,7 @@ export function EventCalendar({ events }: EventCalendarProps) {
                     variant="outline"
                     size="icon"
                     aria-label="Forrige måned"
-                    onClick={() => setMonth((m) => addMonths(m, -1))}
+                    onClick={() => onMonthChange((m) => addMonths(m, -1))}
                 >
                     <ChevronLeft />
                 </Button>
@@ -80,7 +92,7 @@ export function EventCalendar({ events }: EventCalendarProps) {
                     variant="outline"
                     size="icon"
                     aria-label="Neste måned"
-                    onClick={() => setMonth((m) => addMonths(m, 1))}
+                    onClick={() => onMonthChange((m) => addMonths(m, 1))}
                 >
                     <ChevronRight />
                 </Button>
@@ -128,7 +140,7 @@ export function EventCalendar({ events }: EventCalendarProps) {
                                 {dayEvents.map((event) => (
                                     <Badge
                                         key={event.id}
-                                        className="size-1.5 min-w-0 justify-start p-0 sm:h-5 sm:w-full sm:px-2"
+                                        className="size-1.5 min-w-0 justify-start p-0 sm:h-5 sm:w-full sm:rounded-sm sm:px-2"
                                         title={event.title}
                                         aria-label={event.title}
                                         render={
@@ -149,7 +161,8 @@ export function EventCalendar({ events }: EventCalendarProps) {
                 })}
             </div>
 
-            {events.some((event) =>
+            {isLoading ||
+            events.some((event) =>
                 days.some((day) => isSameDay(new Date(event.startTime), day)),
             ) ? null : (
                 <p className="text-sm text-muted-foreground">
