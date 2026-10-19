@@ -140,7 +140,7 @@ export function EventCalendar({
                                 {dayEvents.map((event) => (
                                     <Badge
                                         key={event.id}
-                                        className="size-1.5 min-w-0 justify-start p-0 sm:h-5 sm:w-full sm:px-2"
+                                        className="size-1.5 min-w-0 justify-start p-0 sm:h-5 sm:w-full sm:rounded-sm sm:px-2"
                                         title={event.title}
                                         aria-label={event.title}
                                         render={
