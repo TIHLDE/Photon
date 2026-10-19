@@ -18,12 +18,16 @@ import { useAnyScopePermission } from "#/hooks/use-permission";
 import { getEventsQuery } from "#/api/queries/events";
 import { getNewsQuery } from "#/api/queries/news";
 import { getVisibleBannersQuery } from "#/api/queries/banners";
+import { listOpenWrappedCamerasQuery } from "#/api/queries/wrapped";
 import { EventCard } from "#/components/event-card";
 import { InfoBanner } from "#/components/info-banner";
 import { NewsCard } from "#/components/news-card";
 import { SectionError } from "#/components/section-error";
 import { TihldeLogo } from "#/components/icons/tihlde";
 import { HeroSectionBackground } from "#/components/hero-section";
+import { WrappedLiveCard } from "#/components/wrapped-live-card";
+import { useNow } from "#/hooks/use-now";
+import { cameraShortcut } from "#/lib/wrapped";
 import { formatEventDateTime } from "#/lib/event";
 import {
     ACTIVITY_CATEGORIES,
@@ -43,6 +47,9 @@ const CALENDAR_SLUGS = EVENT_CATEGORIES.map((category) => category.value);
 const EVENT_SLUGS = CALENDAR_SLUGS.filter(
     (slug) => !BEDPRES_SLUGS.includes(slug),
 );
+
+/** Ankeret «Se resten av forsiden» på kamerakortet hopper til. */
+const REST_OF_HOME_ID = "forside";
 
 /** Tre i hver spalte — resten ligger på arrangementssida. */
 const LIST_PREVIEW_COUNT = 3;
@@ -110,31 +117,54 @@ function Home() {
         "events:manage",
     ]);
     const canCreateNews = useAnyScopePermission(["news:create", "news:manage"]);
+    const liveCamera = useLiveCamera();
+    // Kortet er det snarveien i bunnlinja er på resten av sida, og må varsle
+    // om usendte bilder på samme måte: klokka tikker til stengetid.
+    const now = useNow(liveCamera?.closesAt);
+
+    // Bannere er beskjeder vi av og til har. Både mens de lastes og hvis de
+    // feiler er riktig svar det samme: ingenting.
+    const banners = (
+        <CatchBoundary
+            getResetKey={() => "banners"}
+            errorComponent={() => null}
+        >
+            <Suspense fallback={null}>
+                <BannersSection />
+            </Suspense>
+        </CatchBoundary>
+    );
 
     return (
         <>
-            {/* Bannerne bor inne i heroen, ikke foran den: de deler
-             * førsteskjermen med den i stedet for å skyve den nedover.
-             * Bannere er beskjeder vi av og til har. Både mens de lastes og
-             * hvis de feiler er riktig svar det samme: ingenting. */}
-            <Hero
-                banners={
-                    <CatchBoundary
-                        getResetKey={() => "banners"}
-                        errorComponent={() => null}
-                    >
-                        <Suspense fallback={null}>
-                            <BannersSection />
-                        </Suspense>
-                    </CatchBoundary>
-                }
-            />
+            {/* Med et åpent kamera er det det medlemmet er her for, og kortet
+             * tar heroens plass på førsteskjermen. Bannerne flytter da ned
+             * under kortet. Ellers bor de inne i heroen, ikke foran den: de
+             * deler førsteskjermen med den i stedet for å skyve den nedover. */}
+            {liveCamera ? (
+                <>
+                    <WrappedLiveCard
+                        slug={liveCamera.slug}
+                        title={liveCamera.title}
+                        closesAt={liveCamera.closesAt}
+                        shotsLeft={liveCamera.shotsLeft}
+                        shortcut={cameraShortcut(liveCamera, now)}
+                        restId={REST_OF_HOME_ID}
+                    />
+                    {banners}
+                </>
+            ) : (
+                <Hero banners={banners} />
+            )}
 
             {/* Én komponent: overskrifta står på linje med fanene og «Nytt
              * arrangement», og de styrer begge spaltene. Lista er to spalter
              * — arrangementer til venstre, bedpres til høyre — og kalenderen
              * ett bilde av alt sammen. */}
-            <section className="container mx-auto w-full px-4 py-8">
+            <section
+                id={REST_OF_HOME_ID}
+                className="container mx-auto w-full scroll-mt-14 px-4 py-8"
+            >
                 <Tabs defaultValue="list">
                     <Reveal
                         render={
@@ -240,6 +270,28 @@ function Home() {
             </section>
         </>
     );
+}
+
+/**
+ * Kameraet medlemmet kan bruke akkurat nå, eller null. Samme spørring som
+ * snarveien i `_app.tsx`, så svaret kommer fra cachen.
+ *
+ * `useQuery` og ikke Suspense: uten åpent kamera — som er nesten alltid, og
+ * alltid for den som ikke er logget inn — skal heroen stå der med en gang,
+ * uten et skjelett først. Serveren rendrer heroen; kortet kommer i nettleseren.
+ */
+function useLiveCamera() {
+    const { data: session } = useQuery(authQueryOptions);
+    const canUseCamera =
+        Boolean(session?.user) && session?.user?.isPendingApproval !== true;
+    const { data: openCameras } = useQuery({
+        ...listOpenWrappedCamerasQuery(session?.user?.id ?? ""),
+        enabled: canUseCamera,
+    });
+    // Innlogget-sjekken må stå her også: en spørring som slås av beholder det
+    // den sist hentet, så uten den ville forrige medlems kamera blitt stående
+    // etter utlogging.
+    return (canUseCamera && openCameras?.[0]) || null;
 }
 
 function BannersSection() {

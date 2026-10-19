@@ -21,8 +21,7 @@ import { WrappedCameraBanner } from "#/components/wrapped-camera-banner";
 import { useEventRulesConsent } from "#/hooks/use-event-rules-consent";
 import { useNow } from "#/hooks/use-now";
 import { useSetPassword } from "#/hooks/use-set-password";
-import { formatInOslo } from "#/lib/date";
-import { isDraftWarning } from "#/lib/wrapped";
+import { cameraShortcut } from "#/lib/wrapped";
 
 export const Route = createFileRoute("/_app")({ component: AppLayout });
 
@@ -81,23 +80,19 @@ function AppLayout() {
     // Innlogget-sjekken må stå her også: en spørring som slås av beholder
     // det den sist hentet, så uten den ville forrige medlems arrangement
     // blitt stående etter utlogging.
+    //
+    // Ikke på forsida heller: der fyller kamerakortet førsteskjermen, og to
+    // snarveier til samme kamera er én for mye.
     const showCameraBanner =
         isAuthenticated &&
         !isPendingApproval &&
         openCamera !== undefined &&
+        pathname !== "/" &&
         !pathname.startsWith(`/arrangementer/${openCamera.slug}/kamera`);
     // Usendte bilder slettes når kameraet stenger, så den siste halvtimen
-    // blir snarveien et varsel som peker til Mine bilder.
-    // Klokka tikker til stengetid, så varselet også forsvinner av seg selv.
+    // blir snarveien et varsel som peker til Mine bilder. Klokka tikker til
+    // stengetid, så varselet også forsvinner av seg selv.
     const now = useNow(openCamera?.closesAt);
-    const draftWarning =
-        openCamera &&
-        isDraftWarning(openCamera.closesAt, openCamera.draftCount, now)
-            ? {
-                  draftCount: openCamera.draftCount,
-                  until: formatInOslo(openCamera.closesAt, "HH:mm"),
-              }
-            : undefined;
 
     return (
         // The bottom padding keeps the footer clear of the fixed bottom bar,
@@ -158,8 +153,7 @@ function AppLayout() {
                         <WrappedCameraBanner
                             slug={openCamera.slug}
                             title={openCamera.title}
-                            shotsLeft={openCamera.shotsLeft}
-                            warning={draftWarning}
+                            shortcut={cameraShortcut(openCamera, now)}
                         />
                     ) : null
                 }
