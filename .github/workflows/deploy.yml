@@ -57,12 +57,17 @@ jobs:
               uses: tihlde/tihlde-workflows/.github/setup-bun@v1
 
             # Teksten kommer fra «For medlemmer»-feltet i hver PR-beskrivelse.
+            # Feiler skriptet, får releasen GitHubs vanlige liste i stedet for ingen release.
             - name: Publiser GitHub Release med brukervennlig changelog
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
-                  bun scripts/release-notes.ts "${GITHUB_REF_NAME}" > release-notes.md
+                  if bun scripts/release-notes.ts "${GITHUB_REF_NAME}" > release-notes.md; then
+                      notes=(--notes-file release-notes.md)
+                  else
+                      notes=(--generate-notes)
+                  fi
                   gh release create "${GITHUB_REF_NAME}" \
                       --title "${GITHUB_REF_NAME}" \
-                      --notes-file release-notes.md \
+                      "${notes[@]}" \
                       --verify-tag

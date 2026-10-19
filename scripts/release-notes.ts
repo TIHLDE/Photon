@@ -3,7 +3,7 @@ import { $ } from "bun";
 type PullRequest = { number: number; title: string; body: string | null };
 type Section = "Nytt" | "Forbedret" | "Fikset";
 
-const releaseTagPattern = /^\d{4}-\d{2}-\d{2}\.release-\d+$/;
+const releaseTagPattern = /^(\d{4}-\d{2}-\d{2})\.release-(\d+)$/;
 const sections: Section[] = ["Nytt", "Forbedret", "Fikset"];
 const sectionByType: Record<string, Section> = {
     feat: "Nytt",
@@ -17,10 +17,17 @@ if (!tag || !releaseTagPattern.test(tag)) {
     process.exit(1);
 }
 
+function releaseOrder(a: string, b: string): number {
+    const [, dateA, numberA] = a.match(releaseTagPattern)!;
+    const [, dateB, numberB] = b.match(releaseTagPattern)!;
+    return dateA!.localeCompare(dateB!) || Number(numberA) - Number(numberB);
+}
+
 const previousTag = (await $`git tag --list`.text())
     .split("\n")
-    .filter((name) => releaseTagPattern.test(name) && name < tag)
-    .sort()
+    .filter((name) => releaseTagPattern.test(name))
+    .filter((name) => releaseOrder(name, tag) < 0)
+    .sort(releaseOrder)
     .at(-1);
 
 const repo = (
@@ -33,12 +40,13 @@ const generatedNotes: string = (
     }`.json()
 ).body;
 
-const range = previousTag ? `${previousTag}..${tag}` : tag;
 const prNumbers = [
-    ...(await $`git log --reverse --format=%s ${range}`.text()).matchAll(
-        /\(#(\d+)\)$/gm,
+    ...new Set(
+        [...generatedNotes.matchAll(/\/pull\/(\d+)/g)].map((match) =>
+            Number(match[1]),
+        ),
     ),
-].map((match) => Number(match[1]));
+];
 
 const pullRequests: PullRequest[] = await Promise.all(
     prNumbers.map(
@@ -47,14 +55,28 @@ const pullRequests: PullRequest[] = await Promise.all(
     ),
 );
 
-function memberNote(body: string | null): string | undefined {
-    const section = body
-        ?.replace(/<!--[\s\S]*?-->/g, "")
-        .match(
-            /^##\s*For medlemmer\s*$([\s\S]*?)(?=^#{1,2}\s|(?![\s\S]))/im,
-        )?.[1]
-        .trim();
-    return section || undefined;
+function memberNotes(body: string | null): string[] {
+    const lines = (
+        body
+            ?.replace(/<!--[\s\S]*?-->/g, "")
+            .match(
+                /^##\s*For medlemmer\s*$([\s\S]*?)(?=^#{1,2}\s|(?![\s\S]))/im,
+            )?.[1] ?? ""
+    )
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+    const notes: string[] = [];
+    for (const line of lines) {
+        const bullet = line.match(/^[-*]\s+(.*)$/)?.[1];
+        if (bullet !== undefined || notes.length === 0) {
+            notes.push(bullet ?? line);
+        } else {
+            notes[notes.length - 1] += ` ${line}`;
+        }
+    }
+    return notes;
 }
 
 function conventionalType(title: string): string | undefined {
@@ -69,12 +91,14 @@ function withoutPrefix(title: string): string {
 const entries = new Map<Section, string[]>(sections.map((s) => [s, []]));
 
 for (const { number, title, body } of pullRequests) {
-    const note = memberNote(body);
-    if (note === "-") continue;
+    const notes = memberNotes(body);
+    if (notes.length === 1 && /^[-–—]$/.test(notes[0]!)) continue;
 
     const section = sectionByType[conventionalType(title) ?? ""];
-    if (note) {
-        entries.get(section ?? "Forbedret")!.push(`${note} (#${number})`);
+    if (notes.length > 0) {
+        for (const note of notes) {
+            entries.get(section ?? "Forbedret")!.push(`${note} (#${number})`);
+        }
     } else if (section) {
         entries.get(section)!.push(`${withoutPrefix(title)} (#${number})`);
     }
@@ -86,7 +110,7 @@ const summary = sections
         (section) =>
             `### ${section}\n\n${entries
                 .get(section)!
-                .map((entry) => `- ${entry.replace(/\s*\n\s*/g, " ")}`)
+                .map((entry) => `- ${entry}`)
                 .join("\n")}`,
     )
     .join("\n\n");
