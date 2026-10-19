@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { ConfirmDeleteDialog } from "#/components/confirm-delete-dialog";
 import { cn } from "#/lib/utils";
 
 type CalendarSubscriptionProps = {
@@ -34,6 +35,7 @@ export function CalendarSubscription({
     isRegenerating = false,
 }: CalendarSubscriptionProps) {
     const [open, setOpen] = useState(false);
+    const [confirmRegenerate, setConfirmRegenerate] = useState(false);
     const [copied, setCopied] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -145,13 +147,26 @@ export function CalendarSubscription({
                         variant="ghost"
                         size="sm"
                         className="self-start sm:self-auto"
-                        onClick={onRegenerate}
+                        onClick={() => setConfirmRegenerate(true)}
                         disabled={isRegenerating}
                     >
                         <RefreshCw />
                         Lag ny lenke
                     </Button>
                 </div>
+                <ConfirmDeleteDialog
+                    open={confirmRegenerate}
+                    onOpenChange={setConfirmRegenerate}
+                    title="Lage ny kalenderlenke?"
+                    description="Den gamle lenken slutter å virke. Du må oppdatere kalenderabonnementet ditt med den nye lenken."
+                    confirmLabel="Lag ny lenke"
+                    isPending={isRegenerating}
+                    onConfirm={() => {
+                        if (isRegenerating) return;
+                        setConfirmRegenerate(false);
+                        onRegenerate();
+                    }}
+                />
             </CollapsibleContent>
         </Card>
     );
