@@ -1,6 +1,7 @@
 import {
     Outlet,
     createFileRoute,
+    useMatches,
     useRouterState,
 } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -75,6 +76,12 @@ function AppLayout() {
         select: (state) => state.location.pathname,
     });
     const openCamera = openCameras?.[0];
+    // En rute som eier hele skjermen — kameraet — får verken topplinje,
+    // bunnlinje eller footer. Den har sin egen vei tilbake.
+    const immersive = useMatches({
+        select: (matches) =>
+            matches.some((match) => match.staticData.immersive === true),
+    });
     // Innlogget-sjekken må stå her også: en spørring som slås av beholder
     // det den sist hentet, så uten den ville forrige medlems arrangement
     // blitt stående etter utlogging.
@@ -83,6 +90,14 @@ function AppLayout() {
         !isPendingApproval &&
         openCamera !== undefined &&
         pathname !== `/arrangementer/${openCamera.slug}/kamera`;
+
+    if (immersive) {
+        return (
+            <main className="flex min-h-dvh flex-col">
+                <Outlet />
+            </main>
+        );
+    }
 
     return (
         // The bottom padding keeps the footer clear of the fixed bottom bar,

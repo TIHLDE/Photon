@@ -98,4 +98,12 @@ declare module "@tanstack/react-router" {
     interface Register {
         router: ReturnType<typeof getRouter>;
     }
+
+    interface StaticDataRouteOption {
+        /**
+         * The route owns the whole screen: the site header, footer and
+         * bottom bar step aside, and the route brings its own way back.
+         */
+        immersive?: boolean;
+    }
 }
