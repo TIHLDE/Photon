@@ -4,6 +4,7 @@ import {
     type CameraViewfinderState,
     CameraControlButton,
     CameraCounter,
+    CameraFlash,
     CameraShutter,
     CameraViewfinder,
 } from "@tihlde/ui/ui/camera-viewfinder";
@@ -12,11 +13,6 @@ import { Spinner } from "@tihlde/ui/ui/spinner";
 import { SwitchCamera } from "lucide-react";
 import type { ReactNode, Ref } from "react";
 
-import {
-    WrappedUploadStatus,
-    type WrappedUploadState,
-} from "#/components/wrapped-camera";
-
 type WrappedViewfinderProps = {
     viewfinderRef: Ref<CameraViewfinderHandle>;
     facingMode: CameraFacingMode;
@@ -24,14 +20,18 @@ type WrappedViewfinderProps = {
     viewfinderState: CameraViewfinderState;
     shotsLeft: number;
     shotsPerPerson: number;
-    uploadState: WrappedUploadState;
+    /** A new number per photo plays the flash again; null before the first. */
+    flashKey: number | null;
+    /** The receipt for the last photo, over the top of the preview. */
+    receipt?: ReactNode;
+    /** Photos waiting for the network, above the shutter row. */
+    waiting?: ReactNode;
     onStateChange: (state: CameraViewfinderState) => void;
     onTorchSupportChange: (supported: boolean) => void;
     onShutter: () => void;
     onSwitchCamera: () => void;
     /** Leave the live camera for the phone's own, through a file input. */
     onUseSystemCamera: () => void;
-    onRetry?: () => void;
     /** «Mine bilder», shown above the shutter row once there are photos. */
     myPhotos?: ReactNode;
 };
@@ -48,19 +48,16 @@ export function WrappedViewfinder({
     viewfinderState,
     shotsLeft,
     shotsPerPerson,
-    uploadState,
+    flashKey,
+    receipt,
+    waiting,
     onStateChange,
     onTorchSupportChange,
     onShutter,
     onSwitchCamera,
     onUseSystemCamera,
-    onRetry,
     myPhotos,
 }: WrappedViewfinderProps) {
-    const busy =
-        uploadState.status === "converting" ||
-        uploadState.status === "uploading";
-
     return (
         <>
             <CameraViewfinder
@@ -78,6 +75,13 @@ export function WrappedViewfinder({
                         {shotsLeft} / {shotsPerPerson}
                     </CameraCounter>
                 </div>
+                {flashKey !== null ? <CameraFlash key={flashKey} /> : null}
+                <div
+                    className="absolute inset-x-3 top-16 z-20 flex justify-center"
+                    aria-live="polite"
+                >
+                    {receipt}
+                </div>
                 {/* Et spørsmål om tilgang som lukkes uten svar kan bli stående
                  * ubesvart for alltid, så veien ut står her hele tiden. */}
                 {viewfinderState === "requesting" ? (
@@ -90,16 +94,11 @@ export function WrappedViewfinder({
                 ) : null}
             </CameraViewfinder>
 
-            {/* Plassen over knapperaden: status for siste bilde, og «Mine
+            {/* Plassen over knapperaden: bilder som venter på nett, og «Mine
              * bilder» — den eneste veien til innsending her, siden sida ikke
              * har bunnlinje. */}
             <div className="flex flex-col gap-2">
-                <div aria-live="polite">
-                    <WrappedUploadStatus
-                        uploadState={uploadState}
-                        onRetry={onRetry}
-                    />
-                </div>
+                {waiting}
                 {myPhotos}
             </div>
 
@@ -107,19 +106,18 @@ export function WrappedViewfinder({
                 {/* Kamerarullen (#918) kommer her. */}
                 <div className="size-13" aria-hidden />
                 <div className="flex justify-center">
+                    {/* Låses aldri mens et bilde lastes opp — bare når det
+                     * ikke er flere igjen. */}
                     <CameraShutter
-                        aria-label={busy ? "Lagrer bildet" : "Ta bilde"}
-                        disabled={busy || viewfinderState !== "live"}
+                        aria-label="Ta bilde"
+                        disabled={shotsLeft <= 0 || viewfinderState !== "live"}
                         onClick={onShutter}
-                    >
-                        {busy ? <Spinner /> : null}
-                    </CameraShutter>
+                    />
                 </div>
                 <div className="flex justify-end">
                     <CameraControlButton
                         aria-label="Bytt kamera"
                         onClick={onSwitchCamera}
-                        disabled={busy}
                     >
                         <SwitchCamera />
                     </CameraControlButton>

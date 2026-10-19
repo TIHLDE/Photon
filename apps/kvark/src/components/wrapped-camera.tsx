@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { type ReactNode, useRef } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
@@ -9,27 +9,15 @@ import {
     CardHeader,
     CardTitle,
 } from "@tihlde/ui/ui/card";
-import { Spinner } from "@tihlde/ui/ui/spinner";
-import { Camera, CircleCheck, RotateCcw, TriangleAlert } from "lucide-react";
-
-export type WrappedUploadState =
-    | { status: "idle" }
-    | { status: "converting" }
-    | { status: "uploading" }
-    | { status: "done" }
-    | { status: "failed"; message: string };
+import { Camera, CircleCheck } from "lucide-react";
 
 type WrappedCameraProps = {
     eventTitle: string;
     shotsLeft: number;
     shotsPerPerson: number;
-    uploadState: WrappedUploadState;
     onPhoto: (file: File) => void;
-    /**
-     * Bare satt når et bilde ligger klart og et nytt forsøk kan hjelpe —
-     * altså ikke når serveren har avvist selve bildet.
-     */
-    onRetry?: () => void;
+    /** The receipt for the last photo, and anything waiting for the network. */
+    status?: ReactNode;
 };
 
 /**
@@ -50,50 +38,6 @@ export function WrappedPhotoSaved() {
 }
 
 /**
- * Hvordan det gikk med siste bilde: lagret, eller feilet — med «Prøv igjen»
- * når et nytt forsøk kan hjelpe. Ingenting før første bilde eller mens det
- * jobbes.
- */
-export function WrappedUploadStatus({
-    uploadState,
-    onRetry,
-}: {
-    uploadState: WrappedUploadState;
-    onRetry?: () => void;
-}) {
-    if (uploadState.status === "done") return <WrappedPhotoSaved />;
-    if (uploadState.status !== "failed") return null;
-
-    return (
-        <Alert variant="destructive">
-            <TriangleAlert />
-            <AlertTitle>Bildet ble ikke lastet opp</AlertTitle>
-            <AlertDescription className="flex flex-col gap-2">
-                <span>{uploadState.message}</span>
-                {onRetry ? (
-                    <>
-                        <span>
-                            Bildet er tatt vare på. Et nytt forsøk koster ikke
-                            et ekstra bilde.
-                        </span>
-                        <div>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={onRetry}
-                            >
-                                <RotateCcw />
-                                Prøv igjen
-                            </Button>
-                        </div>
-                    </>
-                ) : null}
-            </AlertDescription>
-        </Alert>
-    );
-}
-
-/**
  * Engangskameraet uten søker: telefonens eget kamera gjennom et filfelt.
  * Reserven når nettleseren ikke får bruke kameraet direkte. Bildet vises
  * aldri etter at det er tatt — det er hele poenget — bare at det ble lagret.
@@ -102,14 +46,10 @@ export function WrappedCamera({
     eventTitle,
     shotsLeft,
     shotsPerPerson,
-    uploadState,
     onPhoto,
-    onRetry,
+    status,
 }: WrappedCameraProps) {
     const inputRef = useRef<HTMLInputElement>(null);
-    const busy =
-        uploadState.status === "converting" ||
-        uploadState.status === "uploading";
 
     return (
         <Card>
@@ -141,21 +81,14 @@ export function WrappedCamera({
                 <Button
                     size="lg"
                     className="w-full"
-                    disabled={busy}
+                    disabled={shotsLeft <= 0}
                     onClick={() => inputRef.current?.click()}
                 >
-                    {busy ? <Spinner /> : <Camera />}
-                    {uploadState.status === "converting"
-                        ? "Gjør klar bildet …"
-                        : uploadState.status === "uploading"
-                          ? "Laster opp …"
-                          : "Åpne kamera"}
+                    <Camera />
+                    Åpne kamera
                 </Button>
 
-                <WrappedUploadStatus
-                    uploadState={uploadState}
-                    onRetry={onRetry}
-                />
+                {status}
             </CardContent>
         </Card>
     );
