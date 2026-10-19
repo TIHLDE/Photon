@@ -54,7 +54,7 @@ export function CompanyContactForm({
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-2xl">Meld interesse</CardTitle>
+                <CardTitle textSize="2xl">Meld interesse</CardTitle>
             </CardHeader>
             <CardContent>
                 <form {...formHandlers(form)} className="flex flex-col gap-6">

@@ -393,7 +393,10 @@ function GroupFineAccordionItem({
 
     return (
         <AccordionItem value={fine.id} className="px-3">
-            <AccordionTrigger className="items-center py-2 hover:no-underline">
+            <AccordionTrigger
+                underlineOnHover={false}
+                className="items-center py-2"
+            >
                 <GroupFineRow fine={fine} />
             </AccordionTrigger>
             <AccordionContent>

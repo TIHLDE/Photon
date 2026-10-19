@@ -1,10 +1,12 @@
 import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
-import { and, eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import type z from "zod";
 import { isFeedbackAuthor } from "~/lib/feedback/middleware";
+import { getFeedbackItem } from "~/lib/feedback/serialize";
+import { sendNotification } from "~/lib/notification";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -22,7 +24,7 @@ export const updateRoute = route().patch(
         summary: "Update feedback",
         operationId: "updateFeedback",
         description:
-            "Edit a piece of feedback, or move it along its status. Requires 'feedback:update' or 'feedback:manage', or being the author. Only the permission may change the status.",
+            "Edit a piece of feedback, or move it along its status. Requires 'feedback:update' or 'feedback:manage', or being the author. Only the author may edit the title, description and anonymity, and only while it is open and nobody else has voted or commented. Only the permission may change the status or the rejection reason. Rejecting notifies the author.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -30,6 +32,11 @@ export const updateRoute = route().patch(
             description: "Feedback updated",
         })
         .forbidden({ description: "Insufficient permissions" })
+        .response({
+            statusCode: 409,
+            description:
+                "The author can no longer edit it: it has moved past open, or someone else has voted or commented",
+        })
         .notFound({ description: "Feedback not found" })
         .build(),
     requireAuth,
@@ -64,23 +71,69 @@ export const updateRoute = route().patch(
          * arrives here as the owner: the permission is re-checked rather than
          * inferred from `isResourceOwner` being false.
          */
-        if (body.status !== undefined && c.get("isResourceOwner")) {
-            const mayModerate = await hasPermission(c.get("ctx"), userId, [
+        const isModerating =
+            body.status !== undefined || body.rejectionReason !== undefined;
+
+        const mayModerate =
+            !c.get("isResourceOwner") ||
+            (await hasPermission(c.get("ctx"), userId, [
                 "feedback:update",
                 "feedback:manage",
-            ]);
+            ]));
 
-            if (!mayModerate) {
-                throw new HTTPException(403, {
+        if (isModerating && !mayModerate) {
+            throw new HTTPException(403, {
+                message:
+                    "Forbidden - changing the status requires permission: feedback:update or feedback:manage",
+            });
+        }
+
+        const editsContent =
+            body.title !== undefined ||
+            body.description !== undefined ||
+            body.isAnonymous !== undefined;
+
+        if (editsContent && existing.authorId !== userId) {
+            throw new HTTPException(403, {
+                message: "Only the author can edit the feedback itself",
+            });
+        }
+
+        /**
+         * Once someone else has voted or replied, they reacted to what was
+         * written then — and to the name, or lack of one, shown on it. Letting
+         * the author rewrite it afterwards would change what they answered.
+         * This holds for authors in Index too.
+         */
+        if (editsContent) {
+            const current = await getFeedbackItem(db, id, userId);
+
+            if (!current?.isEditable) {
+                throw new HTTPException(409, {
                     message:
-                        "Forbidden - changing the status requires permission: feedback:update or feedback:manage",
+                        "Feedback can only be edited while it is open and nobody else has voted or commented",
                 });
             }
         }
 
+        const nextStatus = body.status ?? existing.status;
+
+        if (body.rejectionReason && nextStatus !== "rejected") {
+            throw new HTTPException(400, {
+                message: "A rejection reason requires the status 'rejected'",
+            });
+        }
+
+        const rejectionReason =
+            nextStatus !== "rejected"
+                ? null
+                : body.rejectionReason !== undefined
+                  ? body.rejectionReason || null
+                  : existing.rejectionReason;
+
         const [updated] = await db
             .update(schema.feedback)
-            .set(body)
+            .set({ ...body, rejectionReason })
             .where(eq(schema.feedback.id, id))
             .returning();
 
@@ -88,39 +141,40 @@ export const updateRoute = route().patch(
             throw new HTTPException(404, { message: "Feedback not found" });
         }
 
-        const [counts] = await db
-            .select({
-                upvotes:
-                    sql<number>`count(*) filter (where ${schema.feedbackVote.value} = 'up')`.mapWith(
-                        Number,
-                    ),
-                downvotes:
-                    sql<number>`count(*) filter (where ${schema.feedbackVote.value} = 'down')`.mapWith(
-                        Number,
-                    ),
-            })
-            .from(schema.feedbackVote)
-            .where(eq(schema.feedbackVote.feedbackId, id));
+        const wasJustRejected =
+            existing.status !== "rejected" && nextStatus === "rejected";
 
-        const myVote = await db.query.feedbackVote.findFirst({
-            where: and(
-                eq(schema.feedbackVote.feedbackId, id),
-                eq(schema.feedbackVote.userId, userId),
-            ),
-        });
+        if (
+            wasJustRejected &&
+            existing.authorId &&
+            existing.authorId !== userId
+        ) {
+            try {
+                await sendNotification(
+                    {
+                        userId: existing.authorId,
+                        title: "Tilbakemeldingen din ble avvist",
+                        description: rejectionReason
+                            ? `«${existing.title}»: ${rejectionReason}`
+                            : `«${existing.title}»`,
+                        link: `/tilbakemelding?id=${id}`,
+                    },
+                    c.get("ctx"),
+                );
+            } catch (error) {
+                c.get("logger")?.error(
+                    { err: error, feedbackId: id },
+                    "Failed to send feedback rejection notification",
+                );
+            }
+        }
 
-        return c.json({
-            id: updated.id,
-            type: updated.type,
-            status: updated.status,
-            title: updated.title,
-            description: updated.description,
-            isAuthor: updated.authorId === userId,
-            upvotes: counts?.upvotes ?? 0,
-            downvotes: counts?.downvotes ?? 0,
-            myVote: myVote?.value ?? null,
-            createdAt: updated.createdAt.toISOString(),
-            updatedAt: updated.updatedAt.toISOString(),
-        } satisfies z.infer<typeof feedbackItemSchema>);
+        const item = await getFeedbackItem(db, id, userId);
+
+        if (!item) {
+            throw new HTTPException(404, { message: "Feedback not found" });
+        }
+
+        return c.json(item satisfies z.infer<typeof feedbackItemSchema>);
     },
 );

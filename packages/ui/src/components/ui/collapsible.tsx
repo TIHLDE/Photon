@@ -2,8 +2,23 @@ import { Collapsible as CollapsiblePrimitive } from "@base-ui/react/collapsible"
 
 import { cn } from "#/lib/utils";
 
-function Collapsible({ ...props }: CollapsiblePrimitive.Root.Props) {
-    return <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />;
+function Collapsible({
+    className,
+    bordered = false,
+    ...props
+}: Omit<CollapsiblePrimitive.Root.Props, "className"> & {
+    className?: string;
+    bordered?: boolean;
+}) {
+    return (
+        <CollapsiblePrimitive.Root
+            data-slot="collapsible"
+            className={
+                cn(bordered && "rounded-lg border", className) || undefined
+            }
+            {...props}
+        />
+    );
 }
 
 function CollapsibleTrigger({ ...props }: CollapsiblePrimitive.Trigger.Props) {
@@ -18,8 +33,9 @@ function CollapsibleTrigger({ ...props }: CollapsiblePrimitive.Trigger.Props) {
 function CollapsibleContent({
     className,
     children,
+    divided = false,
     ...props
-}: CollapsiblePrimitive.Panel.Props) {
+}: CollapsiblePrimitive.Panel.Props & { divided?: boolean }) {
     return (
         <CollapsiblePrimitive.Panel
             data-slot="collapsible-content"
@@ -30,7 +46,9 @@ function CollapsibleContent({
             className="h-(--collapsible-panel-height) overflow-hidden text-sm transition-[height] duration-200 ease-out data-ending-style:h-0 data-starting-style:h-0"
             {...props}
         >
-            <div className={cn(className)}>{children}</div>
+            <div className={cn(divided && "border-t", className)}>
+                {children}
+            </div>
         </CollapsiblePrimitive.Panel>
     );
 }

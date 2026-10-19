@@ -1,5 +1,5 @@
 {
-  "id": "e1a0243f-1f77-43cb-88cb-b2a5f02cec0b",
+  "id": "87c99a38-0df3-4489-8913-d8bdb8749b33",
   "prevId": "ea7845c2-0174-47ad-b6b7-1befc632cea1",
   "version": "7",
   "dialect": "postgresql",
@@ -3530,6 +3530,19 @@
           "primaryKey": false,
           "notNull": false
         },
+        "is_anonymous": {
+          "name": "is_anonymous",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "rejection_reason": {
+          "name": "rejection_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -3566,6 +3579,107 @@
         "feedback_item_author_id_auth_user_id_fk": {
           "name": "feedback_item_author_id_auth_user_id_fk",
           "tableFrom": "feedback_item",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "author_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.feedback_comment": {
+      "name": "feedback_comment",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "feedback_id": {
+          "name": "feedback_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "author_id": {
+          "name": "author_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "feedback_comment_feedback_id_created_at_idx": {
+          "name": "feedback_comment_feedback_id_created_at_idx",
+          "columns": [
+            {
+              "expression": "feedback_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "feedback_comment_feedback_id_feedback_item_id_fk": {
+          "name": "feedback_comment_feedback_id_feedback_item_id_fk",
+          "tableFrom": "feedback_comment",
+          "tableTo": "feedback_item",
+          "columnsFrom": [
+            "feedback_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "feedback_comment_author_id_auth_user_id_fk": {
+          "name": "feedback_comment_author_id_auth_user_id_fk",
+          "tableFrom": "feedback_comment",
           "tableTo": "auth_user",
           "columnsFrom": [
             "author_id"
@@ -5066,13 +5180,6 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
-        },
-        "accepts_join_requests": {
-          "name": "accepts_join_requests",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
         },
         "created_at": {
           "name": "created_at",

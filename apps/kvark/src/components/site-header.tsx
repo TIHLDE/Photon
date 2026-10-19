@@ -72,11 +72,7 @@ export function SiteHeader({
     return (
         <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur">
             <div className="container mx-auto flex h-14 items-center justify-between gap-4 px-4">
-                <Link
-                    to="/"
-                    className="flex items-center"
-                    style={{ color: "var(--color-logo, currentColor)" }}
-                >
+                <Link to="/" className="flex items-center text-logo">
                     <TihldeLogo variant="full" className="h-5 w-auto" />
                 </Link>
 

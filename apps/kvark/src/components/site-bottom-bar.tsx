@@ -103,7 +103,7 @@ export function SiteBottomBar({
                                     <Accordion key={item.label}>
                                         <AccordionItem
                                             value={item.label}
-                                            className="border-none"
+                                            bordered={false}
                                         >
                                             <AccordionTrigger>
                                                 {item.label}

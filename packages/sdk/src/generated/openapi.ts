@@ -1188,19 +1188,23 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get feedback
+         * @description A single idea or bug report. Requires authentication.
+         */
+        get: operations["getFeedback"];
         put?: never;
         post?: never;
         /**
          * Delete feedback
-         * @description Delete a piece of feedback. Requires 'feedback:delete' or 'feedback:manage', or being the author.
+         * @description Delete a piece of feedback. Requires 'feedback:delete' or 'feedback:manage', or being the author while it is still open and nobody else has voted or commented.
          */
         delete: operations["deleteFeedback"];
         options?: never;
         head?: never;
         /**
          * Update feedback
-         * @description Edit a piece of feedback, or move it along its status. Requires 'feedback:update' or 'feedback:manage', or being the author. Only the permission may change the status.
+         * @description Edit a piece of feedback, or move it along its status. Requires 'feedback:update' or 'feedback:manage', or being the author. Only the author may edit the title, description and anonymity, and only while it is open and nobody else has voted or commented. Only the permission may change the status or the rejection reason. Rejecting notifies the author.
          */
         patch: operations["updateFeedback"];
         trace?: never;
@@ -1224,6 +1228,50 @@ export interface paths {
          * @description Take back your vote on a piece of feedback.
          */
         delete: operations["deleteFeedbackVote"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/feedback/{id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List feedback comments
+         * @description Replies from Index and the author, oldest first. Visible to every logged-in member.
+         */
+        get: operations["listFeedbackComments"];
+        put?: never;
+        /**
+         * Comment on feedback
+         * @description Reply in a feedback thread. Requires 'feedback:update' or 'feedback:manage', or being the author. A reply from Index notifies the author; a reply from the author notifies the Index members in the thread.
+         */
+        post: operations["createFeedbackComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/feedback/{id}/comments/{commentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete feedback comment
+         * @description Delete a comment. Requires 'feedback:manage', or having written it.
+         */
+        delete: operations["deleteFeedbackComment"];
         options?: never;
         head?: never;
         patch?: never;
@@ -4506,6 +4554,11 @@ export interface components {
         DeleteEventReactionResponse: {
             message: string;
         };
+        FeedbackAuthor: {
+            id: string;
+            name: string;
+            image: string | null;
+        };
         FeedbackItem: {
             /**
              * Format: uuid
@@ -4518,12 +4571,19 @@ export interface components {
             status: "open" | "in_progress" | "closed" | "rejected";
             title: string;
             description: string;
-            /** @description Whether the requesting user filed this. Feedback is anonymous: the author is never exposed to anyone else. */
+            isAnonymous: boolean;
+            /** @description Whether the requesting user filed this. */
             isAuthor: boolean;
+            /** @description Who filed it. Always null when the feedback is anonymous. */
+            author: components["schemas"]["FeedbackAuthor"] | null;
             upvotes: number;
             downvotes: number;
             /** @description The requesting user's own vote, if any */
             myVote: ("up" | "down") | null;
+            rejectionReason: string | null;
+            /** @description Whether the requesting user may edit it: they filed it, it is still open, and nobody else has voted or commented. */
+            isEditable: boolean;
+            commentCount: number;
             /** @description Creation time (ISO 8601) */
             createdAt: string;
             /** @description Last update time (ISO 8601) */
@@ -4549,12 +4609,18 @@ export interface components {
             title: string;
             /** @description What the idea or the bug is */
             description: string;
+            /** @description Hide the author's name from everyone else. Defaults to anonymous. */
+            isAnonymous?: boolean;
         };
         UpdateFeedback: {
             title?: string;
             description?: string;
+            /** @description Author only, and only while the feedback is editable */
+            isAnonymous?: boolean;
             /** @enum {string} */
             status?: "open" | "in_progress" | "closed" | "rejected";
+            /** @description Why Index rejected it. Only allowed with status 'rejected'; cleared when the status changes. */
+            rejectionReason?: string | null;
         };
         FeedbackMessageResponse: {
             message: string;
@@ -4570,6 +4636,21 @@ export interface components {
              * @enum {string}
              */
             value: "up" | "down";
+        };
+        FeedbackComment: {
+            /** Format: uuid */
+            id: string;
+            body: string;
+            /** @description Written by the person who filed the feedback */
+            isFeedbackAuthor: boolean;
+            isMine: boolean;
+            /** @description Null when the feedback author replies on anonymous feedback, or the user is deleted. */
+            author: components["schemas"]["FeedbackAuthor"] | null;
+            createdAt: string;
+        };
+        FeedbackCommentList: components["schemas"]["FeedbackComment"][];
+        CreateFeedbackComment: {
+            body: string;
         };
         FormResponse: {
             /** Format: uuid */
@@ -9585,6 +9666,54 @@ export interface operations {
             };
         };
     };
+    getFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Feedback ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackItem"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Feedback not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     deleteFeedback: {
         parameters: {
             query?: never;
@@ -9626,6 +9755,13 @@ export interface operations {
             };
             /** @description Not Found - Feedback not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The author can no longer delete it: it has moved past open, or someone else has voted or commented */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9678,6 +9814,13 @@ export interface operations {
             };
             /** @description Not Found - Feedback not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The author can no longer edit it: it has moved past open, or someone else has voted or commented */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9777,6 +9920,156 @@ export interface operations {
                 };
             };
             /** @description Not Found - Feedback not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listFeedbackComments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Feedback ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackCommentList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Feedback not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createFeedbackComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Feedback ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFeedbackComment"];
+            };
+        };
+        responses: {
+            /** @description Comment created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackComment"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Feedback not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteFeedbackComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Feedback ID */
+                id: string;
+                /** @description Comment ID */
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Comment deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackMessageResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Comment not found */
             404: {
                 headers: {
                     [name: string]: unknown;

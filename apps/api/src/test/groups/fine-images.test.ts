@@ -271,13 +271,12 @@ describe("deleting a fine releases its picture", () => {
             });
 
             /**
-             * Fines carried over from Lepton store the Azure address verbatim.
-             * The asset row below is a tripwire: it is keyed by that very
-             * string, so it only disappears if the release path gave up on
-             * reading the URL and passed it on as a key of ours.
+             * A fine can store an external address verbatim. The asset row
+             * below is a tripwire: it is keyed by that very string, so it only
+             * disappears if the release path gave up on reading the URL and
+             * passed it on as a key of ours.
              */
-            const external =
-                "https://tihlde.blob.core.windows.net/media/evidence.jpg";
+            const external = "https://images.example.org/media/evidence.jpg";
             await ctx.bucket.upload(external, PICTURE, {
                 originalFilename: "evidence.jpg",
                 contentType: "image/jpeg",

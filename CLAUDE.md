@@ -40,7 +40,6 @@ Photon/
 │   │   └── drizzle/             # Generated migrations
 │   ├── email/                   # React Email templates & mailer (@photon/email)
 │   │   └── src/template/        # Email templates (.tsx)
-│   ├── lepton-migration/        # One-shot migration tool from Lepton
 │   └── tsconfig/                # Shared TypeScript configs
 ├── infra/
 │   └── docker/                  # Docker Compose files & Dockerfile
@@ -148,7 +147,7 @@ The repo has **one long-lived branch: `main`**. There is no `dev` branch.
 - All work: feature branch → PR → `main`. CI runs on the PR.
 - A release is a **tag**, not a merge: `<YYYY-MM-DD>.release-<n>` (e.g. `2026-08-08.release-1`).
 - Cut a release with `bun run cut-release` — never `git tag` by hand. The script verifies you're on `main`, that the tree is clean, and that `main` is in sync with `origin/main`. It does **not** check CI — verify that yourself before tagging, because the merge commit on `main` usually still has tests running for several minutes after the PR went in.
-- The tag triggers `deploy.yml`: build → push to GHCR → notify Drift → publish a GitHub Release with a generated changelog. The release tag is also applied to the docker image so Drift can use it as a deploy marker.
+- The tag triggers `deploy.yml`: build → push to GHCR → notify Drift → publish a GitHub Release whose changelog is built from each PR's «For medlemmer» section (see Pull Requests). The release tag is also applied to the docker image so Drift can use it as a deploy marker.
 - **The deploy runs no migrations.** The container's entrypoint is `migrate.js && index.js`, so the schema changes when the new container boots — which is minutes after the workflow reports success. "Deploy: success" is not evidence that a migration ran; check the database. The ordering is what makes enum changes safe: the migration finishes before the new code serves a request.
 - `bun run release` is something else — changesets' npm publish of `@tihlde/sdk`. Don't confuse the two.
 
@@ -167,6 +166,10 @@ The repo has **one long-lived branch: `main`**. There is no `dev` branch.
 - Use `gh pr create` to create pull requests
 - Include descriptive title and body
 - Reference related issues when applicable
+- **Every PR body must start with a `## For medlemmer` section** (from `.github/pull_request_template.md`). `scripts/release-notes.ts` copies it into the GitHub Release, so it is what members read about the change. `gh pr create --body` skips the template, so write the section yourself:
+    - One or two sentences in plain Norwegian (bokmål) about what members notice and where on the site. No technical words (API, endpoint, migration, component). Never include names or other personal data.
+    - Write `-` if members won't notice the change (refactor, chore, tests, CI, infra).
+    - Keep the section even when the rest of the body would be empty.
 
 ## Code Style & Conventions
 
@@ -192,6 +195,18 @@ The repo has **one long-lived branch: `main`**. There is no `dev` branch.
 - **OpenAPI**: Document routes using `hono-openapi`
 - **Error handling**: Use appropriate HTTP status codes
 - **Middleware**: Chain middleware using Hono patterns
+
+### Frontend (apps/kvark)
+
+**Components come from `@tihlde/ui`, and kvark never restyles them.** The rules are enforced by [`@shadcn/lint`](https://github.com/shadcn-ui/lint), configured in `apps/kvark/.oxlintrc.json` and run by `bun run lint`.
+
+- `className` on a `@tihlde/ui` component may only set layout and spacing. For anything else, use a variant, or add one in `packages/ui`.
+- Colors must be theme tokens (`text-muted-foreground`, `bg-destructive`), never the raw palette (`bg-red-500`).
+- Theme tokens such as `text-sm` and `text-muted-foreground` are fine on plain elements.
+- No arbitrary values (`p-[13px]`), no inline `style`, no classes Tailwind cannot generate.
+- The surrounding code is not the standard: kvark still has older findings, shown as lint warnings. Don't copy them.
+- Read `apps/kvark/AGENTS.md` before changing the frontend. It is not loaded automatically when files are read through the shell.
+- A Claude hook lints each edited kvark file and reports findings back immediately. Fix the ones in the code you changed.
 
 ### Database
 
@@ -353,6 +368,7 @@ When server is running:
 9. **Follow existing patterns** in the codebase
 10. **Create migrations** for schema changes (`bun run db:generate`)
 11. **Use GitHub CLI (`gh`)** for GitHub operations
+12. **Never restyle `@tihlde/ui` components** - `bun run lint` checks kvark with `@shadcn/lint` (see Frontend above)
 
 ## Quick Start for Claude
 

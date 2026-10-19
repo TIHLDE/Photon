@@ -78,12 +78,25 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     );
 }
 
-function TableCell({ className, ...props }: React.ComponentProps<"td">) {
+function TableCell({
+    className,
+    truncate = false,
+    muted = false,
+    textSize,
+    ...props
+}: React.ComponentProps<"td"> & {
+    truncate?: boolean;
+    muted?: boolean;
+    textSize?: "sm";
+}) {
     return (
         <td
             data-slot="table-cell"
             className={cn(
                 "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
+                truncate && "truncate",
+                textSize === "sm" && "text-sm",
+                muted && "text-muted-foreground",
                 className,
             )}
             {...props}

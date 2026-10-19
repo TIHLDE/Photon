@@ -78,7 +78,7 @@ export function GroupDetailHeader({
                             alt={group.name}
                         />
                     ) : null}
-                    <AvatarFallback className="text-2xl">
+                    <AvatarFallback textSize="2xl">
                         {initials(group.name)}
                     </AvatarFallback>
                 </Avatar>

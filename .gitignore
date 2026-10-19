@@ -46,3 +46,6 @@ yarn-error.log*
 .alchemy/
 .wrangler/
 .output
+
+# Local Lepton exports and dumps with member data outlive the deleted package
+packages/lepton-migration/

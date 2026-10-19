@@ -520,12 +520,14 @@ function SidebarMenuButton({
     variant = "default",
     size = "default",
     tooltip,
+    highlightActiveLink = false,
     className,
     ...props
 }: useRender.ComponentProps<"button"> &
     React.ComponentProps<"button"> & {
         isActive?: boolean;
         tooltip?: string | React.ComponentProps<typeof TooltipContent>;
+        highlightActiveLink?: boolean;
     } & VariantProps<typeof sidebarMenuButtonVariants>) {
     const { isMobile, state } = useSidebar();
     const comp = useRender({
@@ -534,6 +536,8 @@ function SidebarMenuButton({
             {
                 className: cn(
                     sidebarMenuButtonVariants({ variant, size }),
+                    highlightActiveLink &&
+                        "[&.active]:bg-sidebar-primary [&.active]:text-sidebar-primary-foreground",
                     className,
                 ),
             },

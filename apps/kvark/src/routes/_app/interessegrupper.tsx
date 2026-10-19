@@ -106,7 +106,7 @@ function InfoLinkCard({ title, description, href, icon: Icon }: InfoLink) {
             rel="noreferrer"
             target="_blank"
         >
-            <Card className="h-full transition-colors group-hover:bg-muted">
+            <Card highlightOnGroupHover className="h-full">
                 <CardContent className="flex h-full gap-3">
                     <Icon className="size-5 shrink-0" />
                     <div className="flex flex-1 flex-col gap-2">

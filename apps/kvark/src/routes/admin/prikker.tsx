@@ -231,7 +231,7 @@ function StrikesSection() {
                                                     en lang arrangementstittel
                                                     ville rent inn i nabo-
                                                     kolonnen. */}
-                                                    <TableCell className="truncate">
+                                                    <TableCell truncate>
                                                         {strike.event.title}
                                                     </TableCell>
                                                     <TableCell>
@@ -239,7 +239,7 @@ function StrikesSection() {
                                                             {strike.count}
                                                         </Badge>
                                                     </TableCell>
-                                                    <TableCell className="truncate text-muted-foreground">
+                                                    <TableCell truncate muted>
                                                         {strike.reason ?? "—"}
                                                     </TableCell>
                                                     <TableCell>

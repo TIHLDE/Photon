@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+    boolean,
     index,
     pgEnum,
     pgTable,
@@ -56,13 +57,20 @@ export const feedback = pgTable(
          * Nullable on purpose: a member leaving TIHLDE must not delete the
          * bug reports they filed. Lepton did the same (`SET NULL`).
          *
-         * Kept private: the API only ever answers whether the caller is the
-         * author, so they can edit or delete their own. Feedback is shown
-         * anonymously — no name reaches other members or moderators.
+         * Only exposed when `isAnonymous` is false. Otherwise the API answers
+         * just whether the caller is the author, so they can edit or delete
+         * their own — no name reaches other members or moderators.
          */
         authorId: text("author_id").references(() => user.id, {
             onDelete: "set null",
         }),
+        /**
+         * Defaults to true because every row filed before the choice existed
+         * was submitted under a promise of anonymity.
+         */
+        isAnonymous: boolean("is_anonymous").notNull().default(true),
+        /** Only set while the status is `rejected`; cleared when it moves on. */
+        rejectionReason: text("rejection_reason"),
         ...timestamps,
     },
     (t) => [index("feedback_item_created_at_idx").on(t.createdAt)],
@@ -99,13 +107,49 @@ export const feedbackVote = pgTable(
     (t) => [primaryKey({ columns: [t.feedbackId, t.userId] })],
 );
 
+export const feedbackComment = pgTable(
+    "feedback_comment",
+    {
+        id: uuid("id").primaryKey().defaultRandom(),
+        feedbackId: uuid("feedback_id")
+            .notNull()
+            .references(() => feedback.id, { onDelete: "cascade" }),
+        authorId: text("author_id").references(() => user.id, {
+            onDelete: "set null",
+        }),
+        body: text("body").notNull(),
+        ...timestamps,
+    },
+    (t) => [
+        index("feedback_comment_feedback_id_created_at_idx").on(
+            t.feedbackId,
+            t.createdAt,
+        ),
+    ],
+);
+
 export const feedbackRelations = relations(feedback, ({ one, many }) => ({
     author: one(user, {
         fields: [feedback.authorId],
         references: [user.id],
     }),
     votes: many(feedbackVote),
+    comments: many(feedbackComment),
 }));
+
+export const feedbackCommentRelations = relations(
+    feedbackComment,
+    ({ one }) => ({
+        feedback: one(feedback, {
+            fields: [feedbackComment.feedbackId],
+            references: [feedback.id],
+        }),
+        author: one(user, {
+            fields: [feedbackComment.authorId],
+            references: [user.id],
+        }),
+    }),
+);
 
 export const feedbackVoteRelations = relations(feedbackVote, ({ one }) => ({
     feedback: one(feedback, {
@@ -120,3 +164,4 @@ export const feedbackVoteRelations = relations(feedbackVote, ({ one }) => ({
 
 export type Feedback = typeof feedback.$inferSelect;
 export type FeedbackVote = typeof feedbackVote.$inferSelect;
+export type FeedbackComment = typeof feedbackComment.$inferSelect;
