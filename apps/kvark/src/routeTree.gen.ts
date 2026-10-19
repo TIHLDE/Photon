@@ -83,6 +83,7 @@ import { Route as AppProfilIdPrikkerRouteImport } from './routes/_app/profil/$id
 import { Route as AppProfilIdSporreskjemaerRouteImport } from './routes/_app/profil/$id/sporreskjemaer'
 import { Route as AppSporreskjemaIdSvarRouteImport } from './routes/_app/sporreskjema.$id_.svar'
 import { Route as AppArrangementerSlugKameraMineRouteImport } from './routes/_app/arrangementer.$slug_.kamera_.mine'
+import { Route as AppArrangementerSlugKameraMinePhotoIdRouteImport } from './routes/_app/arrangementer.$slug_.kamera_.mine_.$photoId'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -458,6 +459,12 @@ const AppArrangementerSlugKameraMineRoute =
     path: '/arrangementer/$slug/kamera/mine',
     getParentRoute: () => AppRoute,
   } as any)
+const AppArrangementerSlugKameraMinePhotoIdRoute =
+  AppArrangementerSlugKameraMinePhotoIdRouteImport.update({
+    id: '/arrangementer/$slug_/kamera_/mine_/$photoId',
+    path: '/arrangementer/$slug/kamera/mine/$photoId',
+    getParentRoute: () => AppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -530,6 +537,7 @@ export interface FileRoutesByFullPath {
   '/sporreskjema/$id/svar': typeof AppSporreskjemaIdSvarRoute
   '/profil/$id/': typeof AppProfilIdIndexRoute
   '/arrangementer/$slug/kamera/mine': typeof AppArrangementerSlugKameraMineRoute
+  '/arrangementer/$slug/kamera/mine/$photoId': typeof AppArrangementerSlugKameraMinePhotoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
@@ -600,6 +608,7 @@ export interface FileRoutesByTo {
   '/sporreskjema/$id/svar': typeof AppSporreskjemaIdSvarRoute
   '/profil/$id': typeof AppProfilIdIndexRoute
   '/arrangementer/$slug/kamera/mine': typeof AppArrangementerSlugKameraMineRoute
+  '/arrangementer/$slug/kamera/mine/$photoId': typeof AppArrangementerSlugKameraMinePhotoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -677,6 +686,7 @@ export interface FileRoutesById {
   '/_app/sporreskjema/$id_/svar': typeof AppSporreskjemaIdSvarRoute
   '/_app/profil/$id/': typeof AppProfilIdIndexRoute
   '/_app/arrangementer/$slug_/kamera_/mine': typeof AppArrangementerSlugKameraMineRoute
+  '/_app/arrangementer/$slug_/kamera_/mine_/$photoId': typeof AppArrangementerSlugKameraMinePhotoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -751,6 +761,7 @@ export interface FileRouteTypes {
     | '/sporreskjema/$id/svar'
     | '/profil/$id/'
     | '/arrangementer/$slug/kamera/mine'
+    | '/arrangementer/$slug/kamera/mine/$photoId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -821,6 +832,7 @@ export interface FileRouteTypes {
     | '/sporreskjema/$id/svar'
     | '/profil/$id'
     | '/arrangementer/$slug/kamera/mine'
+    | '/arrangementer/$slug/kamera/mine/$photoId'
   id:
     | '__root__'
     | '/_app'
@@ -897,6 +909,7 @@ export interface FileRouteTypes {
     | '/_app/sporreskjema/$id_/svar'
     | '/_app/profil/$id/'
     | '/_app/arrangementer/$slug_/kamera_/mine'
+    | '/_app/arrangementer/$slug_/kamera_/mine_/$photoId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1426,6 +1439,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppArrangementerSlugKameraMineRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/arrangementer/$slug_/kamera_/mine_/$photoId': {
+      id: '/_app/arrangementer/$slug_/kamera_/mine_/$photoId'
+      path: '/arrangementer/$slug/kamera/mine/$photoId'
+      fullPath: '/arrangementer/$slug/kamera/mine/$photoId'
+      preLoaderRoute: typeof AppArrangementerSlugKameraMinePhotoIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -1551,6 +1571,7 @@ interface AppRouteChildren {
   AppArrangementerSlugKameraRoute: typeof AppArrangementerSlugKameraRoute
   AppSporreskjemaIdSvarRoute: typeof AppSporreskjemaIdSvarRoute
   AppArrangementerSlugKameraMineRoute: typeof AppArrangementerSlugKameraMineRoute
+  AppArrangementerSlugKameraMinePhotoIdRoute: typeof AppArrangementerSlugKameraMinePhotoIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -1583,6 +1604,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppArrangementerSlugKameraRoute: AppArrangementerSlugKameraRoute,
   AppSporreskjemaIdSvarRoute: AppSporreskjemaIdSvarRoute,
   AppArrangementerSlugKameraMineRoute: AppArrangementerSlugKameraMineRoute,
+  AppArrangementerSlugKameraMinePhotoIdRoute:
+    AppArrangementerSlugKameraMinePhotoIdRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

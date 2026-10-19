@@ -232,8 +232,51 @@ function CarouselNext({
     );
 }
 
+/**
+ * Where you are in the carousel, as dots. Decorative: pair it with a text
+ * position («2 av 5») for screen readers.
+ */
+function CarouselDots({ className, ...props }: React.ComponentProps<"div">) {
+    const { api } = useCarousel();
+    const [count, setCount] = React.useState(0);
+    const [selected, setSelected] = React.useState(0);
+
+    React.useEffect(() => {
+        if (!api) return;
+        const update = () => {
+            setCount(api.scrollSnapList().length);
+            setSelected(api.selectedScrollSnap());
+        };
+        update();
+        api.on("select", update);
+        api.on("reInit", update);
+        return () => {
+            api.off("select", update);
+            api.off("reInit", update);
+        };
+    }, [api]);
+
+    return (
+        <div
+            aria-hidden
+            data-slot="carousel-dots"
+            className={cn("flex items-center justify-center gap-2", className)}
+            {...props}
+        >
+            {Array.from({ length: count }, (_, index) => (
+                <span
+                    key={index}
+                    data-active={index === selected || undefined}
+                    className="size-2 rounded-full bg-current opacity-40 transition-opacity data-active:opacity-100 motion-reduce:transition-none"
+                />
+            ))}
+        </div>
+    );
+}
+
 export {
     type CarouselApi,
+    CarouselDots,
     Carousel,
     CarouselContent,
     CarouselItem,

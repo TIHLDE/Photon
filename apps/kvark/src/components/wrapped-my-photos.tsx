@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import { type ReactElement, type ReactNode, cloneElement } from "react";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent, CardDescription } from "@tihlde/ui/ui/card";
@@ -32,6 +32,10 @@ type WrappedMyPhotosProps = {
     closesAt: string;
     /** Lenken tilbake til kameraet, som `<Link />`. */
     cameraLink: ReactElement;
+    /** Lenken til bildet i full skjerm, som `<Link />`. */
+    photoLink: (
+        photoId: string,
+    ) => ReactElement<{ className?: string; children?: ReactNode }>;
     isSubmitting: boolean;
     onSubmit: () => void;
 };
@@ -46,6 +50,7 @@ export function WrappedMyPhotos({
     draftCount,
     closesAt,
     cameraLink,
+    photoLink,
     isSubmitting,
     onSubmit,
 }: WrappedMyPhotosProps) {
@@ -77,11 +82,18 @@ export function WrappedMyPhotos({
 
     return (
         <div className="flex flex-col gap-4">
-            <p>Bare du ser disse til du sender dem inn.</p>
+            <p>
+                Bare du ser disse til du sender dem inn. Trykk på et bilde for å
+                se det eller slette det.
+            </p>
             <ul className="grid grid-cols-2 gap-3">
                 {photos.map((photo) => (
                     <li key={photo.id}>
-                        <MyPhotoTile photo={photo} />
+                        {cloneElement(
+                            photoLink(photo.id),
+                            { className: "block" },
+                            <MyPhotoTile photo={photo} />,
+                        )}
                     </li>
                 ))}
                 {shotsLeft > 0 ? (
