@@ -50,8 +50,53 @@ export function WrappedPhotoSaved() {
 }
 
 /**
- * Engangskameraet for ett arrangement. Bildet vises aldri etter at det er
- * tatt — det er hele poenget — bare at det ble lagret.
+ * Hvordan det gikk med siste bilde: lagret, eller feilet — med «Prøv igjen»
+ * når et nytt forsøk kan hjelpe. Ingenting før første bilde eller mens det
+ * jobbes.
+ */
+export function WrappedUploadStatus({
+    uploadState,
+    onRetry,
+}: {
+    uploadState: WrappedUploadState;
+    onRetry?: () => void;
+}) {
+    if (uploadState.status === "done") return <WrappedPhotoSaved />;
+    if (uploadState.status !== "failed") return null;
+
+    return (
+        <Alert variant="destructive">
+            <TriangleAlert />
+            <AlertTitle>Bildet ble ikke lastet opp</AlertTitle>
+            <AlertDescription className="flex flex-col gap-2">
+                <span>{uploadState.message}</span>
+                {onRetry ? (
+                    <>
+                        <span>
+                            Bildet er tatt vare på. Et nytt forsøk koster ikke
+                            et ekstra bilde.
+                        </span>
+                        <div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={onRetry}
+                            >
+                                <RotateCcw />
+                                Prøv igjen
+                            </Button>
+                        </div>
+                    </>
+                ) : null}
+            </AlertDescription>
+        </Alert>
+    );
+}
+
+/**
+ * Engangskameraet uten søker: telefonens eget kamera gjennom et filfelt.
+ * Reserven når nettleseren ikke får bruke kameraet direkte. Bildet vises
+ * aldri etter at det er tatt — det er hele poenget — bare at det ble lagret.
  */
 export function WrappedCamera({
     eventTitle,
@@ -104,38 +149,13 @@ export function WrappedCamera({
                         ? "Gjør klar bildet …"
                         : uploadState.status === "uploading"
                           ? "Laster opp …"
-                          : "Ta bilde"}
+                          : "Åpne kamera"}
                 </Button>
 
-                {uploadState.status === "done" ? <WrappedPhotoSaved /> : null}
-
-                {uploadState.status === "failed" ? (
-                    <Alert variant="destructive">
-                        <TriangleAlert />
-                        <AlertTitle>Bildet ble ikke lastet opp</AlertTitle>
-                        <AlertDescription className="flex flex-col gap-2">
-                            <span>{uploadState.message}</span>
-                            {onRetry ? (
-                                <>
-                                    <span>
-                                        Bildet er tatt vare på. Et nytt forsøk
-                                        koster ikke et ekstra bilde.
-                                    </span>
-                                    <div>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={onRetry}
-                                        >
-                                            <RotateCcw />
-                                            Prøv igjen
-                                        </Button>
-                                    </div>
-                                </>
-                            ) : null}
-                        </AlertDescription>
-                    </Alert>
-                ) : null}
+                <WrappedUploadStatus
+                    uploadState={uploadState}
+                    onRetry={onRetry}
+                />
             </CardContent>
         </Card>
     );
