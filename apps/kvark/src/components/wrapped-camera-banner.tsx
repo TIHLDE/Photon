@@ -6,10 +6,13 @@ import {
 } from "@tihlde/ui/ui/bottom-bar";
 import { Camera, ChevronRight } from "lucide-react";
 
+import { cameraShortcut } from "#/lib/wrapped";
+
 type WrappedCameraBannerProps = {
     slug: string;
     title: string;
     shotsLeft: number;
+    draftCount: number;
 };
 
 /**
@@ -20,19 +23,20 @@ export function WrappedCameraBanner({
     slug,
     title,
     shotsLeft,
+    draftCount,
 }: WrappedCameraBannerProps) {
-    const left = `${shotsLeft} ${shotsLeft === 1 ? "bilde" : "bilder"} igjen`;
+    const { action, detail } = cameraShortcut({ shotsLeft, draftCount });
 
     return (
         <BottomBarBanner
             render={<Link to="/arrangementer/$slug/kamera" params={{ slug }} />}
-            aria-label={`Ta bilde på ${title}, ${left}`}
+            aria-label={`${action} på ${title}, ${detail}`}
         >
             <Camera />
             <span className="flex min-w-0 flex-1 flex-col">
                 <BottomBarBannerTitle>{title}</BottomBarBannerTitle>
                 <BottomBarBannerDescription>
-                    Ta bilde · {left}
+                    {action} · {detail}
                 </BottomBarBannerDescription>
             </span>
             <ChevronRight />

@@ -78,10 +78,14 @@ function AppLayout() {
     // Innlogget-sjekken må stå her også: en spørring som slås av beholder
     // det den sist hentet, så uten den ville forrige medlems arrangement
     // blitt stående etter utlogging.
+    //
+    // Ikke på forsida heller: der fyller kamerakortet førsteskjermen, og to
+    // snarveier til samme kamera er én for mye.
     const showCameraBanner =
         isAuthenticated &&
         !isPendingApproval &&
         openCamera !== undefined &&
+        pathname !== "/" &&
         pathname !== `/arrangementer/${openCamera.slug}/kamera`;
 
     return (
@@ -144,6 +148,7 @@ function AppLayout() {
                             slug={openCamera.slug}
                             title={openCamera.title}
                             shotsLeft={openCamera.shotsLeft}
+                            draftCount={openCamera.draftCount}
                         />
                     ) : null
                 }
