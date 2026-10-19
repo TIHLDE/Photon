@@ -5,7 +5,7 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
-import type { QueryParamsHelper } from "@tihlde/sdk/types";
+import type { QueryParamsHelper } from "#/api/types";
 
 const NotificationQueryKeys = {
     listInfinite: ["notifications", "list-infinite"] as const,

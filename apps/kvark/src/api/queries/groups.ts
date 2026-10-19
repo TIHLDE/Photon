@@ -6,7 +6,7 @@ import {
 import { apiClient } from "#/api/api-client";
 import { authQueryOptions } from "#/api/auth";
 import { fetchPrivateObjectUrl } from "#/lib/assets";
-import type { QueryParamsHelper } from "@tihlde/sdk/types";
+import type { QueryParamsHelper } from "#/api/types";
 import type {
     CreateGroup,
     UpdateGroup,

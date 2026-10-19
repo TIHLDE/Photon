@@ -71,10 +71,12 @@ type NSpell = {
 };
 
 /**
- * Hvor de kopierte ordbokfilene ligger. `apps/kvark/scripts/copy-dictionary.ts`
- * legger dem her før dev og build.
+ * Ordboka hentes fra jsDelivr, låst til en eksakt versjon av `dictionary-nb`.
+ * jsDelivr komprimerer filene (5,3 MB blir rundt 1,4 MB over nett), svarer med
+ * CORS for alle og cacher dem som uforanderlige.
  */
-const DEFAULT_DICTIONARY_URL = "/dictionaries/nb";
+const DEFAULT_DICTIONARY_URL =
+    "https://cdn.jsdelivr.net/npm/dictionary-nb@3.0.0";
 
 let pending: Promise<Speller | null> | null = null;
 
@@ -98,8 +100,8 @@ async function createSpeller(baseUrl: string): Promise<Speller> {
     // imot dem som tekst.
     const [{ default: nspell }, aff, dic] = await Promise.all([
         import("nspell"),
-        fetchDictionaryFile(`${baseUrl}/index.aff.txt`),
-        fetchDictionaryFile(`${baseUrl}/index.dic.txt`),
+        fetchDictionaryFile(`${baseUrl}/index.aff`),
+        fetchDictionaryFile(`${baseUrl}/index.dic`),
     ]);
 
     const spell = nspell(aff, dic) as unknown as NSpell;

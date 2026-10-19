@@ -6,9 +6,10 @@
         "#/*": "./src/*"
     },
     "scripts": {
-        "dev": "bun run scripts/copy-dictionary.ts && vite dev --port 3000",
-        "build": "bun run scripts/copy-dictionary.ts && vite build && bun run scripts/upload-sourcemaps.ts",
+        "dev": "bun run codegen && vite dev --port 3000",
+        "build": "bun run codegen && vite build && bun run scripts/upload-sourcemaps.ts",
         "preview": "vite preview",
+        "codegen": "photon-codegen src/api/generated",
         "typecheck": "tsc --noEmit",
         "format": "oxfmt .",
         "lint": "oxlint .",
@@ -42,7 +43,6 @@
         "cn": "catalog:frontend",
         "date-fns": "catalog:",
         "date-fns-tz": "catalog:",
-        "dictionary-nb": "^3.0.0",
         "emoji-picker-react": "^4.22.3",
         "es-toolkit": "catalog:",
         "jsqr": "^1.4.0",
@@ -60,6 +60,7 @@
         "zod": "catalog:"
     },
     "devDependencies": {
+        "@photon/codegen": "workspace:*",
         "@tailwindcss/typography": "catalog:frontend",
         "@tanstack/devtools-vite": "catalog:frontend",
         "@types/node": "catalog:",

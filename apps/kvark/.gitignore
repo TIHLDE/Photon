@@ -12,5 +12,3 @@ dist-ssr
 __unconfig*
 todos.json
 .tmp
-# Ordboka kopieres inn av scripts/copy-dictionary.ts
-public/dictionaries/

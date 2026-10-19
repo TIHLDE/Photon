@@ -6,7 +6,7 @@ import {
 import { apiClient } from "#/api/api-client";
 import { EventQueryKeys } from "#/api/queries/events";
 import { GroupQueryKeys } from "#/api/queries/groups";
-import type { QueryParamsHelper } from "@tihlde/sdk/types";
+import type { QueryParamsHelper } from "#/api/types";
 import type { CreateForm, UpdateForm, CreateSubmission } from "@tihlde/sdk";
 
 const FormQueryKeys = {

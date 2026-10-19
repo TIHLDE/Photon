@@ -1,0 +1,23 @@
+{
+    "name": "@photon/fetch-client",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "exports": {
+        ".": "./src/index.ts"
+    },
+    "scripts": {
+        "typecheck": "tsc --noEmit",
+        "test": "bun test ./test.test.ts"
+    },
+    "dependencies": {
+        "ky": "^2.0.2",
+        "openapi-typescript-helpers": "^0.1.0"
+    },
+    "devDependencies": {
+        "@photon/tsconfig": "workspace:*",
+        "@types/bun": "catalog:",
+        "@types/node": "catalog:",
+        "typescript": "catalog:"
+    }
+}
