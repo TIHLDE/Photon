@@ -5,6 +5,7 @@ import {
     enableCamera,
     register,
     sessionCookie,
+    submitPhotos,
     uploadPhoto,
 } from "./helpers";
 
@@ -106,7 +107,12 @@ describe("the cameras open for a member right now", () => {
                 "Møtet",
             ]);
 
-            await uploadPhoto(ctx, await sessionCookie(ctx, member), party.id);
+            const cookie = await sessionCookie(ctx, member);
+            await uploadPhoto(ctx, cookie, party.id);
+            // An unsent draft keeps the camera listed: it is the way back to it.
+            expect(await titles()).toContain("Festen");
+
+            await submitPhotos(ctx, cookie, party.id);
 
             expect(await titles()).toEqual(["Hele dagen", "Snart", "Møtet"]);
         },

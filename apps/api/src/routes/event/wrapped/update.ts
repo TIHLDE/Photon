@@ -5,7 +5,7 @@ import { HTTPAppException } from "~/lib/errors";
 import { requireEventAccess } from "~/lib/event/access";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { WRAPPED_ARRANGER_PERMISSIONS } from "~/lib/wrapped";
+import { WRAPPED_ARRANGER_PERMISSIONS, submittedOnly } from "~/lib/wrapped";
 import { requireAuth } from "~/middleware/auth";
 import {
     photoParamSchema,
@@ -44,9 +44,11 @@ export const updateWrappedPhotoRoute = route().patch(
         const { eventId, photoId } = c.req.valid("param");
         const { selected } = c.req.valid("json");
 
+        // A draft answers like a missing photo: it is the member's alone.
         const where = and(
             eq(schema.wrappedPhoto.id, photoId),
             eq(schema.wrappedPhoto.eventId, eventId),
+            submittedOnly(),
         );
 
         const existing = await db.query.wrappedPhoto.findFirst({

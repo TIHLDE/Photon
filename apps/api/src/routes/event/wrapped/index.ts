@@ -1,3 +1,7 @@
+export { deleteMyWrappedPhotoRoute } from "./mine-delete";
+export { getMyWrappedPhotoImageRoute } from "./mine-image";
+export { getMyWrappedPhotosRoute } from "./mine-list";
+export { submitMyWrappedPhotosRoute } from "./mine-submit";
 export { getWrappedPhotoImageRoute } from "./image";
 export { listWrappedPhotosRoute } from "./list";
 export { listOpenWrappedCamerasRoute } from "./open";

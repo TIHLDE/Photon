@@ -46,7 +46,9 @@ export const uploadWrappedPhotoRoute = route().post(
         operationId: "uploadWrappedPhoto",
         description: `Upload one photo to the event's disposable camera. The caller must hold a spot on the event, the camera must be on and inside its window, and the caller must have photos left.
 
-The photo is stored hidden: the response carries the new counts and never a URL, and nothing serves the image until the organizer publishes it.
+The photo is stored as the caller's draft: the organizer sees it only once the caller submits it (\`submitMyWrappedPhotos\`), and drafts not submitted before the camera closes are discarded. The response carries the new counts and never a URL.
+
+Pass \`source=camera_roll\` for a photo picked from the phone's camera roll. It costs a shot like any other.
 
 **Usage:**
 Send the file as multipart/form-data with a field named "file". JPEG, PNG and WebP only, at most ${MAX_FILE_SIZE / 1024 / 1024}MB. The image is re-encoded to WebP, scaled to fit within ${IMAGE_MAX_DIMENSION}x${IMAGE_MAX_DIMENSION} px and stripped of metadata.
@@ -90,7 +92,7 @@ Pass \`idempotencyKey\`, a UUID the client makes up per photo. If an upload's an
         const logger = c.get("logger");
         const user = c.get("user");
         const { eventId } = c.req.valid("param");
-        const { idempotencyKey } = c.req.valid("query");
+        const { idempotencyKey, source } = c.req.valid("query");
         const owner = { eventId, userId: user.id };
 
         const status = await getCameraStatus(ctx, eventId, user.id);
@@ -181,6 +183,7 @@ Pass \`idempotencyKey\`, a UUID the client makes up per photo. If an upload's an
                 ...owner,
                 assetKey: key,
                 id: idempotencyKey,
+                source,
             });
         } catch (error) {
             await deleteAsset(bucket, key);
@@ -230,7 +233,7 @@ Pass \`idempotencyKey\`, a UUID the client makes up per photo. If an upload's an
         await bucket.promoteAsset(key);
 
         logger.info(
-            { eventId, photoId: photo.id, shotsUsed: photo.shotsUsed },
+            { eventId, photoId: photo.id, shotsUsed: photo.shotsUsed, source },
             "Wrapped photo uploaded",
         );
 

@@ -10,10 +10,11 @@ import {
     enableCamera,
     register,
     sessionCookie,
+    submitPhotos,
     uploadPhoto,
 } from "./helpers";
 
-/** An event with one photographer who has taken `count` photos. */
+/** An event with one photographer who has taken and submitted `count` photos. */
 async function eventWithPhotos(ctx: IntegrationTestContext, count: number) {
     const event = await createOngoingEvent(ctx);
     await enableCamera(ctx, event.id);
@@ -24,6 +25,7 @@ async function eventWithPhotos(ctx: IntegrationTestContext, count: number) {
     for (let i = 0; i < count; i++) {
         await uploadPhoto(ctx, cookie, event.id);
     }
+    await submitPhotos(ctx, cookie, event.id);
 
     const organizer = await ctx.utils.createTestUser();
     await ctx.utils.giveUserPermissions(organizer, ["events:update"]);
@@ -157,12 +159,13 @@ describe("wrapped photo selection", () => {
             })
                 .png()
                 .toBuffer();
-            await uploadPhoto(
-                ctx,
-                await sessionCookie(ctx, photographer),
-                event.id,
-                { type: "image/png", name: "fest.png", content },
-            );
+            const cookie = await sessionCookie(ctx, photographer);
+            await uploadPhoto(ctx, cookie, event.id, {
+                type: "image/png",
+                name: "fest.png",
+                content,
+            });
+            await submitPhotos(ctx, cookie, event.id);
             const [photo] = await ctx.db.query.wrappedPhoto.findMany();
             const param = { eventId: event.id, photoId: photo!.id };
 

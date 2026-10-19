@@ -16,6 +16,13 @@ import { event } from "./event";
 const pgTable = pgTableCreator((name) => `wrapped_${name}`);
 
 /**
+ * Where a photo came from: shot with the camera screen, or picked from the
+ * phone's camera roll. Both cost a shot; the organizer sees which is which.
+ */
+export const wrappedPhotoSources = ["camera", "camera_roll"] as const;
+export type WrappedPhotoSource = (typeof wrappedPhotoSources)[number];
+
+/**
  * The disposable camera of one arrangement.
  *
  * Its own table rather than columns on `event`: the camera is an add-on most
@@ -56,6 +63,10 @@ export const wrappedCameraRelations = relations(wrappedCamera, ({ one }) => ({
  * Hidden until the organizer publishes: `assetKey` is the raw storage key of a
  * private asset, never a URL, so nothing that renders URLs can leak it and the
  * open asset route never serves it.
+ *
+ * A photo is the member's private draft until they submit it. Only submitted
+ * photos reach the organizer. Drafts still left when the camera closes are
+ * discarded, never submitted on the member's behalf.
  */
 export const wrappedPhoto = pgTable(
     "photo",
@@ -75,12 +86,23 @@ export const wrappedPhoto = pgTable(
 
         assetKey: text("asset_key").notNull().unique(),
 
+        source: text("source", { enum: wrappedPhotoSources })
+            .notNull()
+            .default("camera"),
+
+        /** Set when the member submits the photo; null means a draft. */
+        submittedAt: timestamp("submitted_at"),
+
         /** Set when the organizer picks the photo; null means not picked. */
         selectedAt: timestamp("selected_at"),
 
         ...timestamps,
     },
     (t) => [
+        check(
+            "wrapped_photo_source_valid",
+            sql`${t.source} in ('camera', 'camera_roll')`,
+        ),
         /**
          * The quota check counts one member's photos for one event on every
          * upload, and the organizer's list reads by event — both are served by
