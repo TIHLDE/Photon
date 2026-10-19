@@ -19,7 +19,10 @@ import { SiteHeader } from "#/components/site-header";
 import { useSiteNavItems } from "#/components/site-nav-items";
 import { WrappedCameraBanner } from "#/components/wrapped-camera-banner";
 import { useEventRulesConsent } from "#/hooks/use-event-rules-consent";
+import { useNow } from "#/hooks/use-now";
 import { useSetPassword } from "#/hooks/use-set-password";
+import { formatInOslo } from "#/lib/date";
+import { isDraftWarning } from "#/lib/wrapped";
 
 export const Route = createFileRoute("/_app")({ component: AppLayout });
 
@@ -82,7 +85,19 @@ function AppLayout() {
         isAuthenticated &&
         !isPendingApproval &&
         openCamera !== undefined &&
-        pathname !== `/arrangementer/${openCamera.slug}/kamera`;
+        !pathname.startsWith(`/arrangementer/${openCamera.slug}/kamera`);
+    // Usendte bilder slettes når kameraet stenger, så den siste halvtimen
+    // blir snarveien et varsel som peker til Mine bilder.
+    // Klokka tikker til stengetid, så varselet også forsvinner av seg selv.
+    const now = useNow(openCamera?.closesAt);
+    const draftWarning =
+        openCamera &&
+        isDraftWarning(openCamera.closesAt, openCamera.draftCount, now)
+            ? {
+                  draftCount: openCamera.draftCount,
+                  until: formatInOslo(openCamera.closesAt, "HH:mm"),
+              }
+            : undefined;
 
     return (
         // The bottom padding keeps the footer clear of the fixed bottom bar,
@@ -144,6 +159,7 @@ function AppLayout() {
                             slug={openCamera.slug}
                             title={openCamera.title}
                             shotsLeft={openCamera.shotsLeft}
+                            warning={draftWarning}
                         />
                     ) : null
                 }
