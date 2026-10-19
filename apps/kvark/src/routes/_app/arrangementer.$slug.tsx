@@ -610,8 +610,11 @@ function EventDetailPage() {
                                                           <Badge
                                                               key={label}
                                                               variant="secondary"
+                                                              className="h-auto"
                                                           >
-                                                              {label}
+                                                              <span className="whitespace-normal wrap-anywhere">
+                                                                  {label}
+                                                              </span>
                                                           </Badge>
                                                       ),
                                                   )}

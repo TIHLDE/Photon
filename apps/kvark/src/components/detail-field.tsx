@@ -25,7 +25,7 @@ export function DetailField({
                     {Icon ? <Icon className="size-4 shrink-0" /> : null}
                     <span className="truncate">{label}</span>
                 </div>
-                <div className="flex min-w-0 items-center gap-2">
+                <div className="flex min-w-0 max-w-full items-center gap-2">
                     <span className="min-w-0 text-right wrap-anywhere">
                         {value}
                     </span>
