@@ -102,3 +102,17 @@ export function uploadPhoto(
         headers: { Cookie: cookie },
     });
 }
+
+/** Submit the member's drafts — all of them, or the listed ones. */
+export function submitPhotos(
+    ctx: IntegrationTestContext,
+    cookie: string,
+    eventId: string,
+    photoIds?: string[],
+) {
+    return ctx.app.request(`/api/event/${eventId}/wrapped/photos/mine/submit`, {
+        method: "POST",
+        body: JSON.stringify(photoIds ? { photoIds } : {}),
+        headers: { Cookie: cookie, "Content-Type": "application/json" },
+    });
+}

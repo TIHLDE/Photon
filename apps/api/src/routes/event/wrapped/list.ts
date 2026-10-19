@@ -5,7 +5,7 @@ import type z from "zod";
 import { requireEventAccess } from "~/lib/event/access";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { WRAPPED_ARRANGER_PERMISSIONS } from "~/lib/wrapped";
+import { WRAPPED_ARRANGER_PERMISSIONS, submittedOnly } from "~/lib/wrapped";
 import { requireAuth } from "~/middleware/auth";
 import {
     PaginationSchema,
@@ -23,7 +23,7 @@ export const listWrappedPhotosRoute = route().get(
         summary: "List the photos taken at an event",
         operationId: "listWrappedPhotos",
         description:
-            "Every photo taken with the event's camera, for the organizer to pick from. Requires 'events:update' or 'events:manage', globally or for the arranging group — nobody else sees a photo before it is published.",
+            "Every photo members have submitted from the event's camera, for the organizer to pick from. Drafts are never listed. Requires 'events:update' or 'events:manage', globally or for the arranging group — nobody else sees a photo before it is published.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -45,7 +45,11 @@ export const listWrappedPhotosRoute = route().get(
         const { eventId } = c.req.valid("param");
         const { page, pageSize } = c.req.valid("query");
 
-        const where = eq(schema.wrappedPhoto.eventId, eventId);
+        // Submitted only, counts included: a draft is the member's alone.
+        const where = and(
+            eq(schema.wrappedPhoto.eventId, eventId),
+            submittedOnly(),
+        );
         const [totalCount, selectedCount] = await Promise.all([
             db.$count(schema.wrappedPhoto, where),
             db.$count(

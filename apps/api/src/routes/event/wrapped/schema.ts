@@ -1,6 +1,7 @@
 import z from "zod";
 import { Schema } from "~/lib/openapi";
 import { PagniationResponseSchema } from "~/middleware/pagination";
+import { wrappedPhotoSources } from "@photon/db/schema";
 import { MAX_SHOTS_PER_PERSON, cameraBlockedReasons } from "~/lib/wrapped";
 
 export const eventIdParamSchema = z.object({
@@ -59,6 +60,10 @@ export const wrappedCameraSchema = Schema(
             description:
                 "Why the caller cannot take a photo, or null when they can. The first that applies, in the order of the enum.",
         }),
+        draftCount: z.number().int().meta({
+            description:
+                "The caller's photos not yet submitted. Always 0 once the camera has closed: unsubmitted drafts are discarded then.",
+        }),
         canManage: z.boolean().meta({
             description: "Whether the caller arranges the event",
         }),
@@ -82,7 +87,13 @@ export const setWrappedCameraSchema = Schema(
     }),
 );
 
+const photoSourceSchema = z.enum(wrappedPhotoSources).meta({
+    description:
+        "Where the photo came from: the camera screen, or the phone's camera roll. Both cost a shot.",
+});
+
 export const uploadWrappedPhotoQuerySchema = z.object({
+    source: photoSourceSchema.default("camera"),
     idempotencyKey: z.uuid().optional().meta({
         description:
             "An id the client makes up for this photo (a UUID). Sending the same photo again under the same key never costs a second photo, so a retry after a lost answer is safe.",
@@ -108,6 +119,7 @@ export const wrappedPhotoSchema = Schema(
         selected: z.boolean().meta({
             description: "Whether the organizer has picked the photo",
         }),
+        source: photoSourceSchema,
         uploadedBy: z.object({
             id: z.string(),
             name: z.string(),
@@ -155,8 +167,62 @@ export const openWrappedCamerasSchema = Schema(
             }),
             shotsPerPerson: z.number().int(),
             shotsLeft: z.number().int().meta({
-                description: "Photos the caller has left. Always at least 1.",
+                description:
+                    "Photos the caller has left. 0 only when drafts are waiting to be submitted.",
+            }),
+            draftCount: z.number().int().meta({
+                description: "The caller's photos not yet submitted",
             }),
         }),
     ),
+);
+
+export const myWrappedPhotoSchema = Schema(
+    "MyWrappedPhoto",
+    z.object({
+        id: z.uuid().meta({ description: "Photo ID" }),
+        source: photoSourceSchema,
+        submitted: z.boolean().meta({
+            description:
+                "Whether the caller has submitted the photo to the organizer. A draft is seen by nobody else.",
+        }),
+        createdAt: z.iso.datetime().meta({
+            description: "When the photo was taken",
+        }),
+    }),
+);
+
+export const myWrappedPhotoListSchema = Schema(
+    "MyWrappedPhotoList",
+    z.array(myWrappedPhotoSchema),
+);
+
+export const submitMyWrappedPhotosSchema = Schema(
+    "SubmitMyWrappedPhotos",
+    z.object({
+        photoIds: z.array(z.uuid()).max(MAX_SHOTS_PER_PERSON).optional().meta({
+            description:
+                "The drafts to submit. Omit to submit all of them. Ids that are not the caller's drafts are ignored.",
+        }),
+    }),
+);
+
+export const submitMyWrappedPhotosResponseSchema = Schema(
+    "MyWrappedPhotosSubmitted",
+    z.object({
+        submittedCount: z.number().int().meta({
+            description: "Drafts this request submitted",
+        }),
+        draftCount: z.number().int().meta({
+            description: "Drafts the caller still has",
+        }),
+    }),
+);
+
+export const deleteMyWrappedPhotoResponseSchema = Schema(
+    "MyWrappedPhotoDeleted",
+    z.object({
+        shotsUsed: z.number().int(),
+        shotsLeft: z.number().int(),
+    }),
 );

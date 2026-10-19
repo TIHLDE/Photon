@@ -28,11 +28,15 @@ import { listStrikesByUserRoute } from "./strike/list-by-user";
 import { listStrikesRoute } from "./strike/list";
 import { updateRoute } from "./update";
 import {
+    deleteMyWrappedPhotoRoute,
+    getMyWrappedPhotoImageRoute,
+    getMyWrappedPhotosRoute,
     getWrappedCameraRoute,
     getWrappedPhotoImageRoute,
     listOpenWrappedCamerasRoute,
     listWrappedPhotosRoute,
     setWrappedCameraRoute,
+    submitMyWrappedPhotosRoute,
     updateWrappedPhotoRoute,
     uploadWrappedPhotoRoute,
 } from "./wrapped";
@@ -94,4 +98,9 @@ export const eventRoutes = route()
     .route("/", uploadWrappedPhotoRoute)
     .route("/", listWrappedPhotosRoute)
     .route("/", getWrappedPhotoImageRoute)
-    .route("/", updateWrappedPhotoRoute);
+    .route("/", updateWrappedPhotoRoute)
+    // Wrapped: medlemmets egne bilder (utkast, innsending, sletting)
+    .route("/", getMyWrappedPhotosRoute)
+    .route("/", getMyWrappedPhotoImageRoute)
+    .route("/", submitMyWrappedPhotosRoute)
+    .route("/", deleteMyWrappedPhotoRoute);

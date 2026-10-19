@@ -1,4 +1,5 @@
 import { schema } from "@photon/db";
+import type { WrappedPhotoSource } from "@photon/db/schema";
 import { eq, sql } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 import { type CameraBlockedReason, readShootState } from "./index";
@@ -8,6 +9,25 @@ export type PhotoInsertResult =
     | { rejected: CameraBlockedReason | "event_not_found" | "key_in_use" };
 
 type PhotoOwner = { eventId: string; userId: string };
+
+type Transaction = Parameters<
+    Parameters<AppContext["db"]["transaction"]>[0]
+>[0];
+
+/**
+ * Serialize everything that changes one member's photo count at one event:
+ * uploads, deletes and submits. Held until the transaction ends. Members
+ * shooting at the same event never wait on each other — only on their own
+ * second tap.
+ */
+export async function lockMemberPhotos(
+    tx: Transaction,
+    { eventId, userId }: PhotoOwner,
+): Promise<void> {
+    await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended(${`wrapped:${eventId}:${userId}`}, 0))`,
+    );
+}
 
 /**
  * Whether `id` is already a photo, and whose.
@@ -42,25 +62,27 @@ export async function findPhotoReplay(
  * file takes as long as the client wants it to, so by the time it is stored
  * the camera may have been turned off, closed, or given a lower limit.
  *
- * So everything is asked again here, behind an advisory lock that makes the
- * check and the insert a single step per member and event. The lock is
- * released when the transaction ends, and members shooting at the same event
- * never wait on each other — only on their own second tap.
+ * So everything is asked again here, behind {@link lockMemberPhotos}, which
+ * makes the check and the insert a single step per member and event.
+ *
+ * The photo is stored as a draft: only the member sees it until they submit.
  *
  * `id` is the client's own id for the photo. A second attempt under the same
  * id finds the first and answers with it instead of inserting again.
  */
 export function insertPhotoIfAllowed(
     db: AppContext["db"],
-    photo: PhotoOwner & { assetKey: string; id?: string },
+    photo: PhotoOwner & {
+        assetKey: string;
+        id?: string;
+        source?: WrappedPhotoSource;
+    },
     now: Date = new Date(),
 ): Promise<PhotoInsertResult> {
-    const { eventId, userId, assetKey, id } = photo;
+    const { eventId, userId, assetKey, id, source } = photo;
 
     return db.transaction(async (tx) => {
-        await tx.execute(
-            sql`select pg_advisory_xact_lock(hashtextextended(${`wrapped:${eventId}:${userId}`}, 0))`,
-        );
+        await lockMemberPhotos(tx, photo);
 
         const state = await readShootState(tx, eventId, userId, now);
         if (!state) return { rejected: "event_not_found" };
@@ -82,7 +104,7 @@ export function insertPhotoIfAllowed(
 
         const [row] = await tx
             .insert(schema.wrappedPhoto)
-            .values({ id, eventId, uploadedById: userId, assetKey })
+            .values({ id, eventId, uploadedById: userId, assetKey, source })
             .returning({ id: schema.wrappedPhoto.id });
         if (!row) throw new Error("Insert returned no row");
 

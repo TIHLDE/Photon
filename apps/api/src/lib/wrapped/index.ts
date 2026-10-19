@@ -1,6 +1,16 @@
 import { schema } from "@photon/db";
 import type { RegistrationStatus } from "@photon/db/schema";
-import { and, count, eq, gte, inArray, lte } from "drizzle-orm";
+import {
+    type SQL,
+    and,
+    count,
+    eq,
+    gte,
+    inArray,
+    isNotNull,
+    isNull,
+    lte,
+} from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 import {
     DEFAULT_STATUSES,
@@ -47,6 +57,8 @@ export type CameraStatus = {
     shotsLeft: number;
     canShoot: boolean;
     reason: CameraBlockedReason | null;
+    /** The caller's photos not yet submitted. Always 0 once the camera has closed. */
+    draftCount: number;
     canManage: boolean;
 };
 
@@ -92,6 +104,31 @@ export function holdsSpot(status: RegistrationStatus | undefined): boolean {
     );
 }
 
+/**
+ * Photos the member has submitted. The organizer only ever sees these: every
+ * organizer query goes through this condition.
+ */
+export function submittedOnly(): SQL {
+    return isNotNull(schema.wrappedPhoto.submittedAt);
+}
+
+/**
+ * The member's own photos they may still see: all of them while the camera is
+ * open, only the submitted ones after it has closed. Drafts left at closing
+ * are discarded — by {@link discardExpiredDrafts}, and until that has run,
+ * by this condition.
+ */
+export function visibleToOwner(
+    closesAt: Date,
+    now: Date = new Date(),
+): SQL | undefined {
+    return now > closesAt ? submittedOnly() : undefined;
+}
+
+/**
+ * Every photo the member holds at the event, drafts included: a draft costs a
+ * shot until it is deleted.
+ */
 export function countPhotosBy(
     db: Pick<Reader, "$count">,
     eventId: string,
@@ -130,7 +167,9 @@ export async function readShootState(
     });
     if (!event) return null;
 
-    const [camera, registration, shotsUsed] = await Promise.all([
+    const { opensAt, closesAt } = cameraWindow(event);
+
+    const [camera, registration, shotsUsed, draftCount] = await Promise.all([
         db.query.wrappedCamera.findFirst({
             where: eq(schema.wrappedCamera.eventId, eventId),
         }),
@@ -142,12 +181,21 @@ export async function readShootState(
             columns: { status: true },
         }),
         countPhotosBy(db, eventId, userId),
+        now > closesAt
+            ? 0
+            : db.$count(
+                  schema.wrappedPhoto,
+                  and(
+                      eq(schema.wrappedPhoto.eventId, eventId),
+                      eq(schema.wrappedPhoto.uploadedById, userId),
+                      isNull(schema.wrappedPhoto.submittedAt),
+                  ),
+              ),
     ]);
 
     const enabled = camera?.enabled ?? false;
     const shotsPerPerson = camera?.shotsPerPerson ?? DEFAULT_SHOTS_PER_PERSON;
     const shotsLeft = Math.max(0, shotsPerPerson - shotsUsed);
-    const { opensAt, closesAt } = cameraWindow(event);
 
     const reason = blockedReason({
         enabled,
@@ -168,6 +216,7 @@ export async function readShootState(
         shotsLeft,
         canShoot: reason === null,
         reason,
+        draftCount,
     };
 }
 
@@ -198,11 +247,12 @@ export type OpenCamera = {
     closesAt: Date;
     shotsPerPerson: number;
     shotsLeft: number;
+    draftCount: number;
 };
 
 /**
- * The cameras `userId` can take a photo with right now: turned on, inside
- * their window, at an event they hold a spot on, with photos left.
+ * The cameras `userId` can use right now: turned on, inside their window, at
+ * an event they hold a spot on, with photos left or drafts to submit.
  *
  * Ordered by how much it is "the event you are at": events under way come
  * first, the one that started last on top — at 22:30 the party that began at
@@ -258,6 +308,8 @@ export async function listOpenCameras(
         .select({
             eventId: schema.wrappedPhoto.eventId,
             photos: count(),
+            // `count(column)` skips nulls, so this counts the submitted ones.
+            submitted: count(schema.wrappedPhoto.submittedAt),
         })
         .from(schema.wrappedPhoto)
         .where(
@@ -270,28 +322,36 @@ export async function listOpenCameras(
             ),
         )
         .groupBy(schema.wrappedPhoto.eventId);
-    const usedByEvent = new Map(used.map((row) => [row.eventId, row.photos]));
+    const usedByEvent = new Map(used.map((row) => [row.eventId, row]));
 
     // 0: under way, 1: camera open ahead of the event, 2: event over.
     const rank = (camera: { start: Date; end: Date }) =>
         now < camera.start ? 1 : now > camera.end ? 2 : 0;
 
-    return cameras
-        .map((camera) => ({
-            ...camera,
-            closesAt: cameraWindow(camera).closesAt,
-            shotsLeft: Math.max(
-                0,
-                camera.shotsPerPerson - (usedByEvent.get(camera.eventId) ?? 0),
-            ),
-        }))
-        .filter((camera) => camera.shotsLeft > 0)
-        .sort((a, b) => {
-            if (rank(a) !== rank(b)) return rank(a) - rank(b);
-            // Under way: the one that started last. Ahead: the one that starts
-            // first. Over: the one that ended last.
-            if (rank(a) === 0) return b.start.getTime() - a.start.getTime();
-            if (rank(a) === 1) return a.start.getTime() - b.start.getTime();
-            return b.end.getTime() - a.end.getTime();
-        });
+    return (
+        cameras
+            .map((camera) => {
+                const used = usedByEvent.get(camera.eventId);
+                return {
+                    ...camera,
+                    closesAt: cameraWindow(camera).closesAt,
+                    shotsLeft: Math.max(
+                        0,
+                        camera.shotsPerPerson - (used?.photos ?? 0),
+                    ),
+                    draftCount: (used?.photos ?? 0) - (used?.submitted ?? 0),
+                };
+            })
+            // A camera with no shots left still matters while drafts wait to be
+            // submitted: that is the only way back to them.
+            .filter((camera) => camera.shotsLeft > 0 || camera.draftCount > 0)
+            .sort((a, b) => {
+                if (rank(a) !== rank(b)) return rank(a) - rank(b);
+                // Under way: the one that started last. Ahead: the one that starts
+                // first. Over: the one that ended last.
+                if (rank(a) === 0) return b.start.getTime() - a.start.getTime();
+                if (rank(a) === 1) return a.start.getTime() - b.start.getTime();
+                return b.end.getTime() - a.end.getTime();
+            })
+    );
 }

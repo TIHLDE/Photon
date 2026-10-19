@@ -1142,7 +1142,7 @@ export interface paths {
         };
         /**
          * List the photos taken at an event
-         * @description Every photo taken with the event's camera, for the organizer to pick from. Requires 'events:update' or 'events:manage', globally or for the arranging group — nobody else sees a photo before it is published.
+         * @description Every photo members have submitted from the event's camera, for the organizer to pick from. Drafts are never listed. Requires 'events:update' or 'events:manage', globally or for the arranging group — nobody else sees a photo before it is published.
          */
         get: operations["listWrappedPhotos"];
         put?: never;
@@ -1150,7 +1150,9 @@ export interface paths {
          * Upload a photo taken with the event's camera
          * @description Upload one photo to the event's disposable camera. The caller must hold a spot on the event, the camera must be on and inside its window, and the caller must have photos left.
          *
-         *     The photo is stored hidden: the response carries the new counts and never a URL, and nothing serves the image until the organizer publishes it.
+         *     The photo is stored as the caller's draft: the organizer sees it only once the caller submits it (`submitMyWrappedPhotos`), and drafts not submitted before the camera closes are discarded. The response carries the new counts and never a URL.
+         *
+         *     Pass `source=camera_roll` for a photo picked from the phone's camera roll. It costs a shot like any other.
          *
          *     **Usage:**
          *     Send the file as multipart/form-data with a field named "file". JPEG, PNG and WebP only, at most 50MB. The image is re-encoded to WebP, scaled to fit within 2560x2560 px and stripped of metadata.
@@ -1176,7 +1178,7 @@ export interface paths {
         };
         /**
          * Get the image of a photo taken at an event
-         * @description The image bytes of one photo, for the organizer. Pass `w` for a smaller WebP variant; it is generated on first request and kept. This is the only route that serves a photo before it is published: the asset is private and the open asset route answers 404 for it. Requires 'events:update' or 'events:manage', globally or for the arranging group.
+         * @description The image bytes of one submitted photo, for the organizer. Pass `w` for a smaller WebP variant; it is generated on first request and kept. This is the only route that serves a photo before it is published: the asset is private and the open asset route answers 404 for it. Requires 'events:update' or 'events:manage', globally or for the arranging group.
          */
         get: operations["getWrappedPhotoImage"];
         put?: never;
@@ -1205,6 +1207,86 @@ export interface paths {
          * @description Mark one of the event's photos as picked for publishing, or undo it. Requires 'events:update' or 'events:manage', globally or for the arranging group.
          */
         patch: operations["updateWrappedPhoto"];
+        trace?: never;
+    };
+    "/api/event/{eventId}/wrapped/photos/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List my photos from the event's camera
+         * @description The caller's own photos at this event, oldest first, drafts and submitted alike. Once the camera has closed, drafts are gone and only submitted photos are listed. Never carries a URL: fetch the image with `getMyWrappedPhotoImage`.
+         */
+        get: operations["getMyWrappedPhotos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/wrapped/photos/mine/{photoId}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the image of one of my photos
+         * @description The image bytes of one of the caller's own photos at this event. Pass `w` for a smaller WebP variant. Answers 404 for anyone else's photo, a deleted one, or a draft left when the camera closed.
+         */
+        get: operations["getMyWrappedPhotoImage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/wrapped/photos/mine/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit my drafts to the organizer
+         * @description Submit the listed drafts, or all of them when `photoIds` is omitted. Submitted photos are what the organizer picks from. Safe to repeat: a photo already submitted, or an id that is not one of the caller's drafts, changes nothing. Only while the camera is open — after it closes, drafts are discarded.
+         */
+        post: operations["submitMyWrappedPhotos"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/wrapped/photos/mine/{photoId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete one of my drafts
+         * @description Delete one of the caller's drafts, image and all. This gives the shot back. A submitted photo cannot be deleted, and nothing can once the camera has closed.
+         */
+        delete: operations["deleteMyWrappedPhoto"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/feedback": {
@@ -3719,8 +3801,10 @@ export interface components {
              */
             closesAt: string;
             shotsPerPerson: number;
-            /** @description Photos the caller has left. Always at least 1. */
+            /** @description Photos the caller has left. 0 only when drafts are waiting to be submitted. */
             shotsLeft: number;
+            /** @description The caller's photos not yet submitted */
+            draftCount: number;
         }[];
         UpdateFavoriteResponse: {
             success: boolean;
@@ -4494,6 +4578,8 @@ export interface components {
             canShoot: boolean;
             /** @description Why the caller cannot take a photo, or null when they can. The first that applies, in the order of the enum. */
             reason: ("disabled" | "not_open_yet" | "closed" | "not_registered" | "no_shots_left") | null;
+            /** @description The caller's photos not yet submitted. Always 0 once the camera has closed: unsubmitted drafts are discarded then. */
+            draftCount: number;
             /** @description Whether the caller arranges the event */
             canManage: boolean;
         };
@@ -4525,6 +4611,11 @@ export interface components {
             createdAt: string;
             /** @description Whether the organizer has picked the photo */
             selected: boolean;
+            /**
+             * @description Where the photo came from: the camera screen, or the phone's camera roll. Both cost a shot.
+             * @enum {string}
+             */
+            source: "camera" | "camera_roll";
             uploadedBy: {
                 id: string;
                 name: string;
@@ -4547,6 +4638,40 @@ export interface components {
         UpdateWrappedPhoto: {
             /** @description Pick the photo, or take it out of the selection */
             selected: boolean;
+        };
+        MyWrappedPhoto: {
+            /**
+             * Format: uuid
+             * @description Photo ID
+             */
+            id: string;
+            /**
+             * @description Where the photo came from: the camera screen, or the phone's camera roll. Both cost a shot.
+             * @enum {string}
+             */
+            source: "camera" | "camera_roll";
+            /** @description Whether the caller has submitted the photo to the organizer. A draft is seen by nobody else. */
+            submitted: boolean;
+            /**
+             * Format: date-time
+             * @description When the photo was taken
+             */
+            createdAt: string;
+        };
+        MyWrappedPhotoList: components["schemas"]["MyWrappedPhoto"][];
+        MyWrappedPhotosSubmitted: {
+            /** @description Drafts this request submitted */
+            submittedCount: number;
+            /** @description Drafts the caller still has */
+            draftCount: number;
+        };
+        SubmitMyWrappedPhotos: {
+            /** @description The drafts to submit. Omit to submit all of them. Ids that are not the caller's drafts are ignored. */
+            photoIds?: string[];
+        };
+        MyWrappedPhotoDeleted: {
+            shotsUsed: number;
+            shotsLeft: number;
         };
         FeedbackItem: {
             /**
@@ -9429,6 +9554,8 @@ export interface operations {
     uploadWrappedPhoto: {
         parameters: {
             query?: {
+                /** @description Where the photo came from: the camera screen, or the phone's camera roll. Both cost a shot. */
+                source?: "camera" | "camera_roll";
                 /** @description An id the client makes up for this photo (a UUID). Sending the same photo again under the same key never costs a second photo, so a retry after a lost answer is safe. */
                 idempotencyKey?: string;
             };
@@ -9598,6 +9725,221 @@ export interface operations {
             };
             /** @description Not Found - Photo not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getMyWrappedPhotos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyWrappedPhotoList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getMyWrappedPhotoImage: {
+        parameters: {
+            query?: {
+                /** @description Width of a resized WebP variant: 480 for a grid tile, 1920 for a lightbox. Omit for the stored photo. */
+                w?: "480" | "1920";
+            };
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+                /** @description Photo ID */
+                photoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The image */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Photo not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    submitMyWrappedPhotos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitMyWrappedPhotos"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyWrappedPhotosSubmitted"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict - the camera has closed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteMyWrappedPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+                /** @description Photo ID */
+                photoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. The caller's new counts. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyWrappedPhotoDeleted"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Photo not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict - the photo is already submitted, or the camera has closed */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -14,6 +14,7 @@ import {
 } from "./event/resolve-queue";
 import { startPushNotificationWorker } from "./notification/push";
 import { setupWebhooks } from "./vipps";
+import { discardExpiredDrafts } from "./wrapped/drafts";
 
 /**
  * Start cron job to resolve pending event registrations
@@ -174,6 +175,35 @@ function startPaymentDeadlineSweepCron(ctx: AppContext): void {
 }
 
 /**
+ * Start cron job that discards wrapped drafts nobody submitted before their
+ * camera closed: the row and the stored file. Runs every 5 minutes — the
+ * drafts are already hidden from everyone once the camera closes, so this
+ * only decides how soon the files leave storage.
+ */
+function startWrappedDraftDiscardCron(ctx: AppContext): void {
+    let running = false;
+
+    cron.schedule("*/5 * * * *", async () => {
+        if (running) return;
+        running = true;
+        try {
+            const discarded = await discardExpiredDrafts(ctx);
+            if (discarded > 0) {
+                console.log(
+                    `📷 Discarded ${discarded} unsubmitted wrapped draft(s)`,
+                );
+            }
+        } catch (error) {
+            console.error("Error in wrapped draft discard cron:", error);
+        } finally {
+            running = false;
+        }
+    });
+
+    console.log("⏰ Wrapped draft discard cron started (runs every 5 minutes)");
+}
+
+/**
  * Initialize all background workers and cron jobs
  * Called once when the application starts
  */
@@ -230,4 +260,7 @@ export function startBackgroundJobs(ctx: AppContext): void {
 
     // Start the sweep that enforces deadlines the queue lost
     startPaymentDeadlineSweepCron(ctx);
+
+    // Start the cron that discards wrapped drafts left when a camera closes
+    startWrappedDraftDiscardCron(ctx);
 }
