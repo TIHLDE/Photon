@@ -4,12 +4,13 @@ import {
     type CameraViewfinderState,
     CameraControlButton,
     CameraCounter,
+    CameraRollButton,
     CameraShutter,
     CameraViewfinder,
 } from "@tihlde/ui/ui/camera-viewfinder";
 import { Button } from "@tihlde/ui/ui/button";
 import { Spinner } from "@tihlde/ui/ui/spinner";
-import { SwitchCamera } from "lucide-react";
+import { Images, SwitchCamera } from "lucide-react";
 import type { ReactNode, Ref } from "react";
 
 import {
@@ -31,6 +32,8 @@ type WrappedViewfinderProps = {
     onSwitchCamera: () => void;
     /** Leave the live camera for the phone's own, through a file input. */
     onUseSystemCamera: () => void;
+    /** Open the phone's photo picker; the photo costs a shot like any other. */
+    onPickFromCameraRoll: () => void;
     onRetry?: () => void;
     /** «Mine bilder», shown above the shutter row once there are photos. */
     myPhotos?: ReactNode;
@@ -54,6 +57,7 @@ export function WrappedViewfinder({
     onShutter,
     onSwitchCamera,
     onUseSystemCamera,
+    onPickFromCameraRoll,
     onRetry,
     myPhotos,
 }: WrappedViewfinderProps) {
@@ -104,8 +108,15 @@ export function WrappedViewfinder({
             </div>
 
             <div className="grid grid-cols-3 items-center">
-                {/* Kamerarullen (#918) kommer her. */}
-                <div className="size-13" aria-hidden />
+                <div>
+                    <CameraRollButton
+                        aria-label="Velg fra kamerarullen"
+                        disabled={busy || shotsLeft === 0}
+                        onClick={onPickFromCameraRoll}
+                    >
+                        <Images />
+                    </CameraRollButton>
+                </div>
                 <div className="flex justify-center">
                     <CameraShutter
                         aria-label={busy ? "Lagrer bildet" : "Ta bilde"}

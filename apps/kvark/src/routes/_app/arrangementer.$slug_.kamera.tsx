@@ -12,7 +12,7 @@ import {
     type CameraViewfinderState,
     CameraControlButton,
 } from "@tihlde/ui/ui/camera-viewfinder";
-import { isHeicFile } from "@tihlde/ui/lib/heic";
+import { convertHeicToJpeg, isHeicFile } from "@tihlde/ui/lib/heic";
 import { compressImageFile } from "@tihlde/ui/lib/image-compression";
 import { Flashlight, FlashlightOff, Images } from "lucide-react";
 
@@ -25,12 +25,17 @@ import {
     invalidateMine,
     myWrappedPhotoImagePath,
     uploadWrappedPhotoMutation,
+    type WrappedPhotoSource,
 } from "#/api/queries/wrapped";
 import {
     WrappedCamera,
     WrappedPhotoSaved,
     type WrappedUploadState,
 } from "#/components/wrapped-camera";
+import {
+    WrappedCameraRollConfirm,
+    WrappedCameraRollInput,
+} from "#/components/wrapped-camera-roll";
 import { WrappedCameraFallback } from "#/components/wrapped-camera-fallback";
 import { WrappedCameraScreen } from "#/components/wrapped-camera-screen";
 import { WrappedCameraSkeleton } from "#/components/wrapped-camera-skeleton";
@@ -97,7 +102,17 @@ const SHUTTER_COOLDOWN_MS = 600;
 const UPLOADABLE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 /** Et bilde som er gjort klart, med nøkkelen som følger det i hvert forsøk. */
-type PendingPhoto = { file: File; idempotencyKey: string };
+type PendingPhoto = {
+    file: File;
+    idempotencyKey: string;
+    source: WrappedPhotoSource;
+};
+
+/**
+ * Bildet fra kamerarullen som venter på «Legg til». `src` er null mens et
+ * HEIC-bilde gjøres om til JPEG — Chrome kan ikke vise HEIC.
+ */
+type PickedPhoto = { file: File; src: string } | { file: null; src: null };
 
 /** `setTimeout` regner i 32 bit, og ingen venter et døgn på samme side. */
 const MAX_WAIT_MS = 24 * 60 * 60 * 1000;
@@ -143,6 +158,19 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
     const [useSystemCamera, setUseSystemCamera] = useState(false);
     const lastShutterAt = useRef(0);
 
+    const cameraRollRef = useRef<HTMLInputElement>(null);
+    const [picked, setPicked] = useState<PickedPhoto | null>(null);
+    // Hvert valg får et nummer, så et HEIC-bilde som blir ferdig konvertert
+    // etter at noen trykket avbryt eller valgte et annet, ikke dukker opp.
+    const pickId = useRef(0);
+    // Forhåndsvisningen er en lokal URL som holder bildet i minnet til den
+    // slippes.
+    const pickedSrc = picked?.src;
+    useEffect(() => {
+        if (!pickedSrc) return;
+        return () => URL.revokeObjectURL(pickedSrc);
+    }, [pickedSrc]);
+
     // Ingen skal måtte laste sida på nytt når kameraet åpner eller stenger:
     // statusen hentes igjen i det tidspunktet passerer. Når det stenger,
     // forsvinner også utkastene, så Mine bilder hentes på nytt samtidig.
@@ -174,7 +202,10 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
                 console.info("[wrapped] lastet opp", result.id);
             }
             setPending(null);
-            setUploadState({ status: "done" });
+            setUploadState({
+                status: "done",
+                fromCameraRoll: photo.source === "camera_roll",
+            });
             // Svaret har tellerne, så de vises med en gang; statusen hentes
             // likevel på nytt for resten av feltene.
             queryClient.setQueryData(cameraQuery.queryKey, (previous) =>
@@ -218,7 +249,10 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
         }
     }
 
-    async function handlePhoto(file: File) {
+    async function handlePhoto(
+        file: File,
+        source: WrappedPhotoSource = "camera",
+    ) {
         setPending(null);
         // HEIC-filer har ofte tom `type`, så de slippes gjennom på filnavnet.
         if (!file.type.startsWith("image/") && !isHeicFile(file)) {
@@ -258,8 +292,77 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
             return;
         }
 
-        await upload({ file: prepared, idempotencyKey: crypto.randomUUID() });
+        await upload({
+            file: prepared,
+            idempotencyKey: crypto.randomUUID(),
+            source,
+        });
     }
+
+    async function pickFromCameraRoll(file: File) {
+        const id = ++pickId.current;
+        // Komprimeringen ville flatet ut en GIF til ett bilde, og API-et tar
+        // uansett bare stillbilder.
+        if (file.type === "image/gif" || file.type.startsWith("video/")) {
+            setPicked(null);
+            setUploadState({
+                status: "failed",
+                message:
+                    "GIF-er og videoer støttes ikke. Velg et vanlig bilde.",
+            });
+            return;
+        }
+        // HEIC-filer har ofte tom `type`, så de slippes gjennom på filnavnet.
+        if (!file.type.startsWith("image/") && !isHeicFile(file)) {
+            setPicked(null);
+            setUploadState({
+                status: "failed",
+                message: "Filen må være et bilde.",
+            });
+            return;
+        }
+
+        setPicked({ file: null, src: null });
+        try {
+            const readable = await convertHeicToJpeg(file);
+            if (id !== pickId.current) return;
+            setPicked({ file: readable, src: URL.createObjectURL(readable) });
+        } catch (error) {
+            if (id !== pickId.current) return;
+            console.error(
+                "Klargjøring av bilde fra kamerarullen feilet",
+                error,
+            );
+            setPicked(null);
+            setUploadState({
+                status: "failed",
+                message:
+                    error instanceof Error
+                        ? error.message
+                        : "Fikk ikke lest bildet. Velg et annet.",
+            });
+        }
+    }
+
+    function cancelPick() {
+        pickId.current++;
+        setPicked(null);
+    }
+
+    function confirmPick() {
+        if (!picked?.file) return;
+        const { file } = picked;
+        cancelPick();
+        void handlePhoto(file, "camera_roll");
+    }
+
+    const openCameraRoll = () => cameraRollRef.current?.click();
+    const cameraRollInput = (
+        <WrappedCameraRollInput
+            ref={cameraRollRef}
+            onPick={(file) => void pickFromCameraRoll(file)}
+        />
+    );
 
     async function shoot() {
         const pressedAt = Date.now();
@@ -340,6 +443,25 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
         );
     }
 
+    if (picked) {
+        return (
+            <>
+                <WrappedCameraRollConfirm
+                    src={picked.src}
+                    shotsLeft={camera.shotsLeft}
+                    onCancel={cancelPick}
+                    onConfirm={confirmPick}
+                    onPickAnother={openCameraRoll}
+                />
+                {cameraRollInput}
+            </>
+        );
+    }
+
+    const busy =
+        uploadState.status === "converting" ||
+        uploadState.status === "uploading";
+
     const retry =
         pending && uploadState.status === "failed"
             ? () => void upload(pending)
@@ -366,6 +488,15 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
                     onPhoto={(file) => void handlePhoto(file)}
                     onRetry={retry}
                 />
+                <Button
+                    variant="outline"
+                    disabled={busy || camera.shotsLeft === 0}
+                    onClick={openCameraRoll}
+                >
+                    <Images />
+                    Velg fra kamerarullen
+                </Button>
+                {cameraRollInput}
                 {myPhotosStrip}
                 {organizerLink}
             </WrappedCameraScreen>
@@ -408,9 +539,11 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
                     )
                 }
                 onUseSystemCamera={() => setUseSystemCamera(true)}
+                onPickFromCameraRoll={openCameraRoll}
                 onRetry={retry}
                 myPhotos={myPhotosStrip}
             />
+            {cameraRollInput}
         </WrappedCameraScreen>
     );
 }

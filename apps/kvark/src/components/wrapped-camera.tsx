@@ -16,7 +16,7 @@ export type WrappedUploadState =
     | { status: "idle" }
     | { status: "converting" }
     | { status: "uploading" }
-    | { status: "done" }
+    | { status: "done"; fromCameraRoll?: boolean }
     | { status: "failed"; message: string };
 
 type WrappedCameraProps = {
@@ -37,11 +37,19 @@ type WrappedCameraProps = {
  * over «ingen bilder igjen»: det siste bildet tømmer kvoten i samme øyeblikk
  * som det lagres, og uten kvitteringen vet ingen om det kom fram.
  */
-export function WrappedPhotoSaved() {
+export function WrappedPhotoSaved({
+    fromCameraRoll = false,
+}: {
+    fromCameraRoll?: boolean;
+}) {
     return (
         <Alert>
             <CircleCheck />
-            <AlertTitle>Bildet er lagret</AlertTitle>
+            <AlertTitle>
+                {fromCameraRoll
+                    ? "Lagt til fra kamerarullen"
+                    : "Bildet er lagret"}
+            </AlertTitle>
             <AlertDescription>
                 Lagt i Mine bilder – ikke sendt ennå
             </AlertDescription>
@@ -61,7 +69,11 @@ export function WrappedUploadStatus({
     uploadState: WrappedUploadState;
     onRetry?: () => void;
 }) {
-    if (uploadState.status === "done") return <WrappedPhotoSaved />;
+    if (uploadState.status === "done") {
+        return (
+            <WrappedPhotoSaved fromCameraRoll={uploadState.fromCameraRoll} />
+        );
+    }
     if (uploadState.status !== "failed") return null;
 
     return (

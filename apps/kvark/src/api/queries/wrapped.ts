@@ -14,6 +14,7 @@ export type WrappedCameraStatus = components["schemas"]["WrappedCamera"];
 export type WrappedCameraReason = NonNullable<WrappedCameraStatus["reason"]>;
 export type WrappedUploadResult = components["schemas"]["WrappedPhotoUploaded"];
 export type MyWrappedPhoto = components["schemas"]["MyWrappedPhoto"];
+export type WrappedPhotoSource = MyWrappedPhoto["source"];
 
 const WrappedQueryKeys = {
     camera: ["wrapped", "camera"] as const,
@@ -109,9 +110,12 @@ export const uploadWrappedPhotoMutation = mutationOptions({
         eventId,
         file,
         idempotencyKey,
+        source,
     }: {
         eventId: string;
         file: File;
+        /** Kamerarullen koster et bilde på samme måte som kameraet. */
+        source: WrappedPhotoSource;
         /**
          * Én UUID per bilde, den samme i hvert forsøk. Kom svaret aldri fram
          * forrige gang, kjenner API-et igjen bildet og trekker ikke et nytt.
@@ -123,7 +127,7 @@ export const uploadWrappedPhotoMutation = mutationOptions({
         try {
             return await apiClient.post("/api/event/{eventId}/wrapped/photos", {
                 params: { eventId },
-                searchParams: { idempotencyKey },
+                searchParams: { idempotencyKey, source },
                 body: formData,
             } as never);
         } catch (error) {
