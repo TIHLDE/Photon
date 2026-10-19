@@ -26,6 +26,8 @@ import { SectionError } from "#/components/section-error";
 import { TihldeLogo } from "#/components/icons/tihlde";
 import { HeroSectionBackground } from "#/components/hero-section";
 import { WrappedLiveCard } from "#/components/wrapped-live-card";
+import { useNow } from "#/hooks/use-now";
+import { cameraShortcut } from "#/lib/wrapped";
 import { formatEventDateTime } from "#/lib/event";
 import {
     ACTIVITY_CATEGORIES,
@@ -116,6 +118,9 @@ function Home() {
     ]);
     const canCreateNews = useAnyScopePermission(["news:create", "news:manage"]);
     const liveCamera = useLiveCamera();
+    // Kortet er det snarveien i bunnlinja er på resten av sida, og må varsle
+    // om usendte bilder på samme måte: klokka tikker til stengetid.
+    const now = useNow(liveCamera?.closesAt);
 
     // Bannere er beskjeder vi av og til har. Både mens de lastes og hvis de
     // feiler er riktig svar det samme: ingenting.
@@ -143,7 +148,7 @@ function Home() {
                         title={liveCamera.title}
                         closesAt={liveCamera.closesAt}
                         shotsLeft={liveCamera.shotsLeft}
-                        draftCount={liveCamera.draftCount}
+                        shortcut={cameraShortcut(liveCamera, now)}
                         restId={REST_OF_HOME_ID}
                     />
                     {banners}

@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
     useMutation,
@@ -13,7 +13,11 @@ import { ArrowLeft, Images } from "lucide-react";
 import { authClientWithRedirect } from "#/api/auth";
 import { getEventByIdQuery } from "#/api/queries/events";
 import {
+    fetchMyWrappedPhotoThumb,
+    getMyWrappedPhotosQuery,
     getWrappedCameraQuery,
+    invalidateMine,
+    myWrappedPhotoImagePath,
     uploadWrappedPhotoMutation,
 } from "#/api/queries/wrapped";
 import {
@@ -23,7 +27,12 @@ import {
 } from "#/components/wrapped-camera";
 import { WrappedCameraSkeleton } from "#/components/wrapped-camera-skeleton";
 import { WrappedCameraUnavailable } from "#/components/wrapped-camera-unavailable";
+import { WrappedMyPhotosStrip } from "#/components/wrapped-my-photos-strip";
+import { useNow } from "#/hooks/use-now";
+import { useObjectUrls } from "#/hooks/use-object-urls";
+import { formatInOslo } from "#/lib/date";
 import { errorStatus } from "#/lib/utils";
+import { isDraftWarning } from "#/lib/wrapped";
 
 /**
  * Engangskameraet for et arrangement: /arrangementer/<slug>/kamera.
@@ -38,9 +47,14 @@ export const Route = createFileRoute("/_app/arrangementer/$slug_/kamera")({
         const event = await context.queryClient.ensureQueryData(
             getEventByIdQuery(params.slug),
         );
-        await context.queryClient.ensureQueryData(
-            getWrappedCameraQuery(event.id),
-        );
+        await Promise.all([
+            context.queryClient.ensureQueryData(
+                getWrappedCameraQuery(event.id),
+            ),
+            context.queryClient.ensureQueryData(
+                getMyWrappedPhotosQuery(event.id),
+            ),
+        ]);
     },
 });
 
@@ -82,7 +96,24 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
     const { data: event } = useSuspenseQuery(getEventByIdQuery(slug));
     const cameraQuery = getWrappedCameraQuery(event.id);
     const { data: camera, refetch } = useSuspenseQuery(cameraQuery);
+    const { data: myPhotos } = useSuspenseQuery(
+        getMyWrappedPhotosQuery(event.id),
+    );
     const uploadPhoto = useMutation(uploadWrappedPhotoMutation);
+
+    // De to nyeste bildene, nyeste først, som miniatyrer i snarveien.
+    const newestPaths = useMemo(
+        () =>
+            myPhotos
+                .slice(-2)
+                .reverse()
+                .map((photo) => myWrappedPhotoImagePath(event.id, photo.id)),
+        [myPhotos, event.id],
+    );
+    const thumbnails = useObjectUrls(newestPaths, fetchMyWrappedPhotoThumb);
+    // Klokka tikker fram til kameraet stenger, så varselet om usendte bilder
+    // både dukker opp og forsvinner uten at sida lastes på nytt.
+    const now = useNow(camera.closesAt);
 
     const [uploadState, setUploadState] = useState<WrappedUploadState>({
         status: "idle",
@@ -91,17 +122,25 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
     // et dårlig nett ikke koster bildet.
     const [pending, setPending] = useState<PendingPhoto | null>(null);
 
-    // Den som venter på at kameraet skal åpne, skal ikke måtte laste sida på
-    // nytt: statusen hentes igjen i det åpningstiden passerer.
+    // Ingen skal måtte laste sida på nytt når kameraet åpner eller stenger:
+    // statusen hentes igjen i det tidspunktet passerer. Når det stenger,
+    // forsvinner også utkastene, så Mine bilder hentes på nytt samtidig.
     const waitingUntil =
-        camera.reason === "not_open_yet" ? camera.opensAt : null;
+        camera.reason === "not_open_yet"
+            ? camera.opensAt
+            : camera.isOpen
+              ? camera.closesAt
+              : null;
     useEffect(() => {
         if (!waitingUntil) return;
         const delay = new Date(waitingUntil).getTime() - Date.now() + 1000;
         if (delay > MAX_WAIT_MS) return;
-        const timer = setTimeout(() => void refetch(), Math.max(delay, 0));
+        const timer = setTimeout(
+            () => void invalidateMine(queryClient, event.id),
+            Math.max(delay, 0),
+        );
         return () => clearTimeout(timer);
-    }, [waitingUntil, refetch]);
+    }, [waitingUntil, queryClient, event.id]);
 
     async function upload(photo: PendingPhoto) {
         setUploadState({ status: "uploading" });
@@ -219,6 +258,29 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
         </Button>
     ) : null;
 
+    // Også når kameraet ikke kan brukes: den som har brukt opp bildene sine,
+    // må fortsatt kunne sende dem inn.
+    const myPhotosStrip =
+        myPhotos.length > 0 ? (
+            <WrappedMyPhotosStrip
+                link={
+                    <Link
+                        to="/arrangementer/$slug/kamera/mine"
+                        params={{ slug }}
+                    />
+                }
+                thumbnails={newestPaths.flatMap(
+                    (path) => thumbnails.get(path) ?? [],
+                )}
+                draftCount={camera.draftCount}
+                warningUntil={
+                    isDraftWarning(camera.closesAt, camera.draftCount, now)
+                        ? formatInOslo(camera.closesAt, "HH:mm")
+                        : undefined
+                }
+            />
+        ) : null;
+
     if (!camera.canShoot && camera.reason) {
         return (
             <>
@@ -227,6 +289,7 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
                     reason={camera.reason}
                     opensAt={camera.opensAt}
                 />
+                {myPhotosStrip}
                 {organizerLink}
             </>
         );
@@ -246,6 +309,7 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
                         : undefined
                 }
             />
+            {myPhotosStrip}
             {organizerLink}
         </>
     );

@@ -88,13 +88,23 @@ function LiveCardTitle({ className, ...props }: React.ComponentProps<"h2">) {
     );
 }
 
-/** The card's call to action, drawn as a large button across its foot. */
-function LiveCardAction({ className, ...props }: React.ComponentProps<"span">) {
+/**
+ * The card's call to action, drawn as a large button across its foot.
+ * `warning` when something is lost unless the member acts soon.
+ */
+function LiveCardAction({
+    className,
+    variant = "default",
+    ...props
+}: React.ComponentProps<"span"> & { variant?: "default" | "warning" }) {
     return (
         <span
             data-slot="live-card-action"
+            data-variant={variant}
             className={cn(
                 "flex min-h-16 w-full items-center justify-center gap-3 rounded-2xl bg-primary px-4 text-lg font-semibold text-primary-foreground transition-opacity duration-100 group-active/live-card:opacity-90 motion-reduce:transition-none [&_svg]:size-6 [&_svg]:shrink-0",
+                // Mørk tekst på gult i begge temaer, som varselet i bunnlinja.
+                variant === "warning" && "bg-warning text-neutral-950",
                 className,
             )}
             {...props}

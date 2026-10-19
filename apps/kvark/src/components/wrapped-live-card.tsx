@@ -9,34 +9,35 @@ import {
     LiveCardMeta,
     LiveCardTitle,
 } from "@tihlde/ui/ui/live-card";
-import { ArrowDown, Camera, Send } from "lucide-react";
+import { ArrowDown, Camera, Send, TriangleAlert } from "lucide-react";
 
 import { formatOsloDateTime } from "#/lib/date";
-import { cameraShortcut } from "#/lib/wrapped";
+import type { CameraShortcut } from "#/lib/wrapped";
 
 type WrappedLiveCardProps = {
     slug: string;
     title: string;
     closesAt: string;
     shotsLeft: number;
-    draftCount: number;
+    shortcut: CameraShortcut;
     /** Id of the section below, for «Se resten av forsiden». */
     restId: string;
 };
 
 /**
  * The first screen of the home page while the member has an open camera: the
- * event, when the camera closes, and one tap to it. The whole card is the link.
+ * event, when the camera closes, and one tap to it — or to Mine bilder when
+ * sending in is what is left. The whole card is the link.
  */
 export function WrappedLiveCard({
     slug,
     title,
     closesAt,
     shotsLeft,
-    draftCount,
+    shortcut,
     restId,
 }: WrappedLiveCardProps) {
-    const { action, detail } = cameraShortcut({ shotsLeft, draftCount });
+    const { action, detail, target, warning } = shortcut;
     const closesAtTime = formatOsloDateTime(closesAt, {
         hour: "2-digit",
         minute: "2-digit",
@@ -50,7 +51,17 @@ export function WrappedLiveCard({
         <div className="container mx-auto flex min-h-[calc(100dvh_-_3.5rem_-_4rem_-_env(safe-area-inset-bottom))] w-full flex-col gap-2 px-4 pt-4 pb-2 lg:min-h-0 lg:py-8">
             <LiveCard
                 render={
-                    <Link to="/arrangementer/$slug/kamera" params={{ slug }} />
+                    target === "mine" ? (
+                        <Link
+                            to="/arrangementer/$slug/kamera/mine"
+                            params={{ slug }}
+                        />
+                    ) : (
+                        <Link
+                            to="/arrangementer/$slug/kamera"
+                            params={{ slug }}
+                        />
+                    )
                 }
                 aria-label={`${action} på ${title}, ${detail}`}
                 className="flex-1 lg:min-h-[32rem]"
@@ -66,8 +77,14 @@ export function WrappedLiveCard({
                         className="max-h-[40dvh] max-w-sm"
                     />
                 </div>
-                <LiveCardAction>
-                    {shotsLeft === 0 && draftCount > 0 ? <Send /> : <Camera />}
+                <LiveCardAction variant={warning ? "warning" : "default"}>
+                    {warning ? (
+                        <TriangleAlert />
+                    ) : target === "mine" ? (
+                        <Send />
+                    ) : (
+                        <Camera />
+                    )}
                     {action} · {detail}
                 </LiveCardAction>
             </LiveCard>

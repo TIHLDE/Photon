@@ -11,6 +11,10 @@ const alertVariants = cva(
                 default: "bg-card text-card-foreground",
                 destructive:
                     "bg-card text-destructive *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current",
+                // Noe som snart blir for sent: fargen sitter i kanten og
+                // ikonet, så teksten holder kontrasten.
+                warning:
+                    "border-warning bg-warning/10 text-card-foreground *:data-[slot=alert-description]:text-card-foreground/80 *:[svg]:text-warning",
             },
         },
         defaultVariants: {
