@@ -141,6 +141,12 @@ function WrappedMyPhotosContainer({ slug }: { slug: string }) {
             cameraLink={
                 <Link to="/arrangementer/$slug/kamera" params={{ slug }} />
             }
+            photoLink={(photoId) => (
+                <Link
+                    to="/arrangementer/$slug/kamera/mine/$photoId"
+                    params={{ slug, photoId }}
+                />
+            )}
             isSubmitting={submit.isPending}
             onSubmit={handleSubmit}
         />

@@ -76,6 +76,11 @@ export function fetchMyWrappedPhotoThumb(path: string): Promise<string> {
     return fetchPrivateObjectUrl(`${path}?w=480`);
 }
 
+/** Det samme bildet i full skjerm. */
+export function fetchMyWrappedPhotoLarge(path: string): Promise<string> {
+    return fetchPrivateObjectUrl(`${path}?w=1920`);
+}
+
 export function myWrappedPhotoImagePath(eventId: string, photoId: string) {
     return `api/event/${eventId}/wrapped/photos/mine/${photoId}/image`;
 }
@@ -88,6 +93,39 @@ export const submitMyWrappedPhotosMutation = mutationOptions({
             json: {},
         }),
     onSuccess(_, { eventId }, __, ctx) {
+        return invalidateMine(ctx.client, eventId);
+    },
+});
+
+/**
+ * Sletter et utkast, og gir bildet tilbake. `keepalive`, så slettingen kommer
+ * fram også når den sendes i det fanen lukkes.
+ */
+export const deleteMyWrappedPhotoMutation = mutationOptions({
+    mutationFn: ({ eventId, photoId }: { eventId: string; photoId: string }) =>
+        apiClient.delete("/api/event/{eventId}/wrapped/photos/mine/{photoId}", {
+            params: { eventId, photoId },
+            keepalive: true,
+        }),
+    onSuccess(result, { eventId }, __, ctx) {
+        // Tellerne fra svaret vises med en gang; resten hentes på nytt.
+        ctx.client.setQueryData(
+            getWrappedCameraQuery(eventId).queryKey,
+            (previous) =>
+                previous
+                    ? {
+                          ...previous,
+                          shotsUsed: result.shotsUsed,
+                          shotsLeft: result.shotsLeft,
+                          draftCount: Math.max(previous.draftCount - 1, 0),
+                      }
+                    : previous,
+        );
+        return invalidateMine(ctx.client, eventId);
+    },
+    // 409 betyr at bildet fortsatt finnes (sendt inn, eller kameraet har
+    // stengt), så lista hentes på nytt og viser det igjen.
+    onError(_, { eventId }, __, ctx) {
         return invalidateMine(ctx.client, eventId);
     },
 });
