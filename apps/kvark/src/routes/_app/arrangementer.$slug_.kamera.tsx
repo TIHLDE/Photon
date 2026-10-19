@@ -1,10 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import {
-    useMutation,
-    useQueryClient,
-    useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
 import {
     type CameraFacingMode,
@@ -13,7 +9,7 @@ import {
     CameraControlButton,
 } from "@tihlde/ui/ui/camera-viewfinder";
 import { convertHeicToJpeg, isHeicFile } from "@tihlde/ui/lib/heic";
-import { compressImageFile } from "@tihlde/ui/lib/image-compression";
+import { toast } from "@tihlde/ui/ui/sonner";
 import { Flashlight, FlashlightOff, Images } from "lucide-react";
 
 import { authClientWithRedirect } from "#/api/auth";
@@ -24,14 +20,9 @@ import {
     getWrappedCameraQuery,
     invalidateMine,
     myWrappedPhotoImagePath,
-    uploadWrappedPhotoMutation,
     type WrappedPhotoSource,
 } from "#/api/queries/wrapped";
-import {
-    WrappedCamera,
-    WrappedPhotoSaved,
-    type WrappedUploadState,
-} from "#/components/wrapped-camera";
+import { WrappedCamera, WrappedPhotoSaved } from "#/components/wrapped-camera";
 import {
     WrappedCameraRollConfirm,
     WrappedCameraRollInput,
@@ -41,11 +32,13 @@ import { WrappedCameraScreen } from "#/components/wrapped-camera-screen";
 import { WrappedCameraSkeleton } from "#/components/wrapped-camera-skeleton";
 import { WrappedCameraUnavailable } from "#/components/wrapped-camera-unavailable";
 import { WrappedMyPhotosStrip } from "#/components/wrapped-my-photos-strip";
+import { WrappedShotReceipt } from "#/components/wrapped-shot-receipt";
+import { WrappedUploadWaiting } from "#/components/wrapped-upload-waiting";
 import { WrappedViewfinder } from "#/components/wrapped-viewfinder";
 import { useNow } from "#/hooks/use-now";
 import { useObjectUrls } from "#/hooks/use-object-urls";
+import { useWrappedUploadQueue } from "#/hooks/use-wrapped-upload-queue";
 import { formatInOslo } from "#/lib/date";
-import { errorStatus } from "#/lib/utils";
 import { isDraftWarning } from "#/lib/wrapped";
 
 /**
@@ -98,15 +91,8 @@ function WrappedCameraPage() {
  */
 const SHUTTER_COOLDOWN_MS = 600;
 
-/** Det API-et tar imot. Alt annet avvises der, så det stoppes her. */
-const UPLOADABLE_TYPES = ["image/jpeg", "image/png", "image/webp"];
-
-/** Et bilde som er gjort klart, med nøkkelen som følger det i hvert forsøk. */
-type PendingPhoto = {
-    file: File;
-    idempotencyKey: string;
-    source: WrappedPhotoSource;
-};
+/** Hvor lenge «Knips!» står før den forsvinner av seg selv. */
+const RECEIPT_MS = 2500;
 
 /**
  * Bildet fra kamerarullen som venter på «Legg til». `src` er null mens et
@@ -125,7 +111,6 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
     const { data: myPhotos } = useSuspenseQuery(
         getMyWrappedPhotosQuery(event.id),
     );
-    const uploadPhoto = useMutation(uploadWrappedPhotoMutation);
 
     // De to nyeste bildene, nyeste først, som miniatyrer i snarveien.
     const newestPaths = useMemo(
@@ -141,12 +126,56 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
     // både dukker opp og forsvinner uten at sida lastes på nytt.
     const now = useNow(camera.closesAt);
 
-    const [uploadState, setUploadState] = useState<WrappedUploadState>({
-        status: "idle",
+    // Kvitteringen for siste bilde, med det som var igjen etter det. Ny
+    // nøkkel per bilde, så blitsen og kortet spilles av på nytt hver gang.
+    const [receipt, setReceipt] = useState<{
+        key: number;
+        shotsLeft: number;
+        fromCameraRoll: boolean;
+    } | null>(null);
+    const [flashKey, setFlashKey] = useState<number | null>(null);
+    // Det siste bildet tømmer kvoten i samme øyeblikk som det kommer fram,
+    // og «ingen bilder igjen»-skjermen må kunne si at det gjorde det.
+    const [lastArrived, setLastArrived] = useState(false);
+
+    const queue = useWrappedUploadQueue({
+        eventId: event.id,
+        onUploaded(result) {
+            setLastArrived(true);
+            // Svaret har tellerne, så de vises med en gang; statusen hentes
+            // likevel på nytt for resten av feltene.
+            queryClient.setQueryData(cameraQuery.queryKey, (previous) =>
+                previous
+                    ? {
+                          ...previous,
+                          shotsUsed: result.shotsUsed,
+                          shotsLeft: result.shotsLeft,
+                      }
+                    : previous,
+            );
+            void queryClient.invalidateQueries({
+                queryKey: cameraQuery.queryKey,
+            });
+        },
+        // 403/409: statusen vi viste var utdatert. Grunnen hentes fra
+        // serveren og vises i stedet for en egen feilmelding.
+        onStale: () => void refetch(),
+        onRejected: (message) =>
+            toast.error("Bildet ble ikke lastet opp", { description: message }),
     });
-    // Det ferdig konverterte bildet holdes i minnet til det er lastet opp, så
-    // et dårlig nett ikke koster bildet.
-    const [pending, setPending] = useState<PendingPhoto | null>(null);
+    // Bilder som er trykket, men ikke ferdig fanget fra søkeren ennå. JPEG-en
+    // tar et øyeblikk å lage, og kvitteringen skal ikke vente på den.
+    const [capturing, setCapturing] = useState(0);
+    // Telleren går ned i det utløseren trykkes, ikke når bildet er lastet
+    // opp: det serveren har talt, minus det som er på vei. Et svar eller en
+    // ny henting kan da aldri dytte tallet opp igjen mens bilder venter.
+    const shotsLeft = Math.max(0, camera.shotsLeft - queue.count - capturing);
+
+    useEffect(() => {
+        if (!receipt) return;
+        const timer = setTimeout(() => setReceipt(null), RECEIPT_MS);
+        return () => clearTimeout(timer);
+    }, [receipt]);
 
     const viewfinderRef = useRef<CameraViewfinderHandle>(null);
     const [viewfinderState, setViewfinderState] =
@@ -191,112 +220,26 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
         return () => clearTimeout(timer);
     }, [waitingUntil, queryClient, event.id]);
 
-    async function upload(photo: PendingPhoto) {
-        setUploadState({ status: "uploading" });
-        try {
-            const result = await uploadPhoto.mutateAsync({
-                eventId: event.id,
-                ...photo,
-            });
-            if (import.meta.env.DEV) {
-                console.info("[wrapped] lastet opp", result.id);
-            }
-            setPending(null);
-            setUploadState({
-                status: "done",
-                fromCameraRoll: photo.source === "camera_roll",
-            });
-            // Svaret har tellerne, så de vises med en gang; statusen hentes
-            // likevel på nytt for resten av feltene.
-            queryClient.setQueryData(cameraQuery.queryKey, (previous) =>
-                previous
-                    ? {
-                          ...previous,
-                          shotsUsed: result.shotsUsed,
-                          shotsLeft: result.shotsLeft,
-                      }
-                    : previous,
-            );
-            await queryClient.invalidateQueries({
-                queryKey: cameraQuery.queryKey,
-            });
-        } catch (error) {
-            console.error("Opplasting av kamerabilde feilet", error);
-            const status =
-                error instanceof Error ? errorStatus(error.cause) : undefined;
-            // 403/409: statusen vi viste var utdatert. Grunnen hentes fra
-            // serveren og vises i stedet for en egen feilmelding.
-            if (status === 403 || status === 409) {
-                setPending(null);
-                setUploadState({ status: "idle" });
-                await refetch();
-                return;
-            }
-            // Uten statuskode kom vi aldri fram, og 5xx er serverens feil:
-            // da kan samme bilde sendes på nytt, og nøkkelen sørger for at
-            // det ikke koster et ekstra om det første forsøket likevel kom
-            // fram. Alt annet har serveren avvist, og et nytt forsøk med det
-            // samme bildet får samme svar.
-            const retryable = status === undefined || status >= 500;
-            setPending(retryable ? photo : null);
-            setUploadState({
-                status: "failed",
-                message:
-                    error instanceof Error
-                        ? error.message
-                        : "Noe gikk galt under opplastingen.",
-            });
-        }
+    /**
+     * Si fra med en gang, så det aldri er tvil om at bildet ble tatt. Blitsen
+     * hører til søkeren; et bilde fra kamerarullen får kortet og vibrasjonen.
+     */
+    function acknowledge(source: WrappedPhotoSource = "camera") {
+        setLastArrived(false);
+        navigator.vibrate?.(40);
+        const key = Date.now();
+        if (source === "camera") setFlashKey(key);
+        setReceipt({
+            key,
+            shotsLeft: Math.max(0, shotsLeft - 1),
+            fromCameraRoll: source === "camera_roll",
+        });
     }
 
-    async function handlePhoto(
-        file: File,
-        source: WrappedPhotoSource = "camera",
-    ) {
-        setPending(null);
-        // HEIC-filer har ofte tom `type`, så de slippes gjennom på filnavnet.
-        if (!file.type.startsWith("image/") && !isHeicFile(file)) {
-            setUploadState({
-                status: "failed",
-                message: "Filen må være et bilde.",
-            });
-            return;
-        }
-
-        setUploadState({ status: "converting" });
-        let prepared: File;
-        try {
-            // Konverterer også HEIC til JPEG før den komprimerer.
-            prepared = await compressImageFile(file);
-        } catch (error) {
-            console.error("Klargjøring av kamerabilde feilet", error);
-            setUploadState({
-                status: "failed",
-                message:
-                    error instanceof Error
-                        ? error.message
-                        : "Fikk ikke lest bildet. Prøv å ta det på nytt.",
-            });
-            return;
-        }
-
-        if (!UPLOADABLE_TYPES.includes(prepared.type)) {
-            console.warn("Kamerabilde i et format API-et ikke tar", {
-                type: prepared.type,
-            });
-            setUploadState({
-                status: "failed",
-                message:
-                    "Kameraet tar bare vanlige bilder. Ta et nytt bilde med kameraet på telefonen.",
-            });
-            return;
-        }
-
-        await upload({
-            file: prepared,
-            idempotencyKey: crypto.randomUUID(),
-            source,
-        });
+    /** Fra filfeltet: bildet finnes allerede. */
+    function took(file: File) {
+        acknowledge();
+        queue.enqueue(file);
     }
 
     async function pickFromCameraRoll(file: File) {
@@ -305,9 +248,8 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
         // uansett bare stillbilder.
         if (file.type === "image/gif" || file.type.startsWith("video/")) {
             setPicked(null);
-            setUploadState({
-                status: "failed",
-                message:
+            toast.error("Bildet ble ikke lagt til", {
+                description:
                     "GIF-er og videoer støttes ikke. Velg et vanlig bilde.",
             });
             return;
@@ -315,9 +257,8 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
         // HEIC-filer har ofte tom `type`, så de slippes gjennom på filnavnet.
         if (!file.type.startsWith("image/") && !isHeicFile(file)) {
             setPicked(null);
-            setUploadState({
-                status: "failed",
-                message: "Filen må være et bilde.",
+            toast.error("Bildet ble ikke lagt til", {
+                description: "Filen må være et bilde.",
             });
             return;
         }
@@ -334,9 +275,8 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
                 error,
             );
             setPicked(null);
-            setUploadState({
-                status: "failed",
-                message:
+            toast.error("Bildet ble ikke lagt til", {
+                description:
                     error instanceof Error
                         ? error.message
                         : "Fikk ikke lest bildet. Velg et annet.",
@@ -350,10 +290,12 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
     }
 
     function confirmPick() {
-        if (!picked?.file) return;
+        if (!picked?.file || shotsLeft <= 0) return;
         const { file } = picked;
         cancelPick();
-        void handlePhoto(file, "camera_roll");
+        // Samme kø som kameraet: egen nøkkel, venter på nett, prøver igjen.
+        acknowledge("camera_roll");
+        queue.enqueue(file, "camera_roll");
     }
 
     const openCameraRoll = () => cameraRollRef.current?.click();
@@ -367,26 +309,31 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
     async function shoot() {
         const pressedAt = Date.now();
         if (pressedAt - lastShutterAt.current < SHUTTER_COOLDOWN_MS) return;
+        if (shotsLeft <= 0) return;
         lastShutterAt.current = pressedAt;
 
-        let file: File;
+        acknowledge();
+        setCapturing((n) => n + 1);
         try {
             const viewfinder = viewfinderRef.current;
             if (!viewfinder) throw new Error("Kameraet er ikke klart ennå.");
-            file = await viewfinder.capture();
+            queue.enqueue(await viewfinder.capture());
         } catch (error) {
             console.error("Kunne ikke ta bilde med søkeren", error);
-            setUploadState({
-                status: "failed",
-                message:
-                    error instanceof Error
-                        ? error.message
-                        : "Fikk ikke tatt bildet. Prøv igjen.",
+            setReceipt(null);
+            toast.error("Fikk ikke tatt bildet", {
+                description:
+                    error instanceof Error ? error.message : "Prøv igjen.",
             });
-            return;
+        } finally {
+            setCapturing((n) => n - 1);
         }
-        await handlePhoto(file);
     }
+
+    const waiting =
+        queue.waiting && queue.count > 0 ? (
+            <WrappedUploadWaiting count={queue.count} onRetry={queue.retry} />
+        ) : null;
 
     // Den som arrangerer kan følge med på bildene mens de kommer inn. De
     // ligger i arrangementsadminen, og dette er veien dit fra telefonen.
@@ -432,7 +379,10 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
     if (!camera.canShoot && camera.reason) {
         return (
             <WrappedCameraScreen slug={slug} title={event.title}>
-                {uploadState.status === "done" ? <WrappedPhotoSaved /> : null}
+                {waiting}
+                {lastArrived && queue.count === 0 ? (
+                    <WrappedPhotoSaved />
+                ) : null}
                 <WrappedCameraUnavailable
                     reason={camera.reason}
                     opensAt={camera.opensAt}
@@ -448,7 +398,7 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
             <>
                 <WrappedCameraRollConfirm
                     src={picked.src}
-                    shotsLeft={camera.shotsLeft}
+                    shotsLeft={shotsLeft}
                     onCancel={cancelPick}
                     onConfirm={confirmPick}
                     onPickAnother={openCameraRoll}
@@ -457,15 +407,6 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
             </>
         );
     }
-
-    const busy =
-        uploadState.status === "converting" ||
-        uploadState.status === "uploading";
-
-    const retry =
-        pending && uploadState.status === "failed"
-            ? () => void upload(pending)
-            : undefined;
 
     // Uten søker — nektet tilgang, eller en nettleser som ikke har kamera —
     // står telefonens eget kamera igjen, gjennom et filfelt.
@@ -482,15 +423,25 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
                 ) : null}
                 <WrappedCamera
                     eventTitle={event.title}
-                    shotsLeft={camera.shotsLeft}
+                    shotsLeft={shotsLeft}
                     shotsPerPerson={camera.shotsPerPerson}
-                    uploadState={uploadState}
-                    onPhoto={(file) => void handlePhoto(file)}
-                    onRetry={retry}
+                    onPhoto={took}
+                    status={
+                        <>
+                            {receipt ? (
+                                <WrappedShotReceipt
+                                    key={receipt.key}
+                                    shotsLeft={receipt.shotsLeft}
+                                    fromCameraRoll={receipt.fromCameraRoll}
+                                />
+                            ) : null}
+                            {waiting}
+                        </>
+                    }
                 />
                 <Button
                     variant="outline"
-                    disabled={busy || camera.shotsLeft === 0}
+                    disabled={shotsLeft <= 0}
                     onClick={openCameraRoll}
                 >
                     <Images />
@@ -524,9 +475,19 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
                 facingMode={facingMode}
                 torch={torch}
                 viewfinderState={viewfinderState}
-                shotsLeft={camera.shotsLeft}
+                shotsLeft={shotsLeft}
                 shotsPerPerson={camera.shotsPerPerson}
-                uploadState={uploadState}
+                flashKey={flashKey}
+                receipt={
+                    receipt ? (
+                        <WrappedShotReceipt
+                            key={receipt.key}
+                            shotsLeft={receipt.shotsLeft}
+                            fromCameraRoll={receipt.fromCameraRoll}
+                        />
+                    ) : null
+                }
+                waiting={waiting}
                 onStateChange={setViewfinderState}
                 onTorchSupportChange={(supported) => {
                     setTorchSupported(supported);
@@ -540,7 +501,6 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
                 }
                 onUseSystemCamera={() => setUseSystemCamera(true)}
                 onPickFromCameraRoll={openCameraRoll}
-                onRetry={retry}
                 myPhotos={myPhotosStrip}
             />
             {cameraRollInput}

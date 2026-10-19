@@ -301,6 +301,92 @@ function CameraCounter({ className, ...props }: React.ComponentProps<"span">) {
 }
 
 /**
+ * A white flash over the preview when a photo is taken. Give it a new `key`
+ * per photo so it plays again; it fades out on its own. Left out entirely for
+ * those who ask for reduced motion.
+ */
+function CameraFlash({ className, ...props }: React.ComponentProps<"div">) {
+    return (
+        <div
+            data-slot="camera-flash"
+            aria-hidden
+            className={cn(
+                "pointer-events-none absolute inset-0 z-10 bg-white animate-out fade-out fill-mode-forwards duration-200 motion-reduce:hidden",
+                className,
+            )}
+            {...props}
+        />
+    );
+}
+
+/**
+ * The receipt for a photo: a check in a circle and a big line, over the top
+ * of the preview. It never takes taps, so it can never get between the
+ * member and the shutter.
+ */
+function CameraReceipt({
+    className,
+    children,
+    ...props
+}: React.ComponentProps<"div">) {
+    return (
+        <div
+            data-slot="camera-receipt"
+            role="status"
+            className={cn(
+                "pointer-events-none flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-black shadow-lg animate-in fade-in slide-in-from-top-2 duration-150 motion-reduce:animate-none",
+                className,
+            )}
+            {...props}
+        >
+            <span
+                aria-hidden
+                className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-black text-white"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="size-5"
+                >
+                    <path d="M5 12.5 10 17.5 19 7" />
+                </svg>
+            </span>
+            <span className="flex min-w-0 flex-col">{children}</span>
+        </div>
+    );
+}
+
+function CameraReceiptTitle({
+    className,
+    ...props
+}: React.ComponentProps<"span">) {
+    return (
+        <span
+            data-slot="camera-receipt-title"
+            className={cn("text-xl leading-tight font-bold", className)}
+            {...props}
+        />
+    );
+}
+
+function CameraReceiptDescription({
+    className,
+    ...props
+}: React.ComponentProps<"span">) {
+    return (
+        <span
+            data-slot="camera-receipt-description"
+            className={cn("text-sm text-black/70", className)}
+            {...props}
+        />
+    );
+}
+
+/**
  * The camera page's backdrop: black, like every camera, in both themes. It
  * also switches what is inside it to the dark theme, so cards and alerts on
  * it stay readable and the white shutter stands out.
@@ -332,6 +418,10 @@ export {
     CameraControlButton,
     CameraRollButton,
     CameraCounter,
+    CameraFlash,
+    CameraReceipt,
+    CameraReceiptDescription,
+    CameraReceiptTitle,
     CameraScreen,
     CameraShutter,
     CameraTitle,
