@@ -2,12 +2,21 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "#/lib/utils";
 
-function Empty({ className, ...props }: React.ComponentProps<"div">) {
+/**
+ * `size="lg"`: a whole screen saying what happens next — big enough to read
+ * at arm's length, late at night.
+ */
+function Empty({
+    className,
+    size = "default",
+    ...props
+}: React.ComponentProps<"div"> & { size?: "default" | "lg" }) {
     return (
         <div
             data-slot="empty"
+            data-size={size}
             className={cn(
-                "flex w-full min-w-0 flex-1 flex-col items-center justify-center gap-4 rounded-xl border-dashed p-6 text-center text-balance",
+                "group/empty flex w-full min-w-0 flex-1 flex-col items-center justify-center gap-4 rounded-xl border-dashed p-6 text-center text-balance",
                 className,
             )}
             {...props}
@@ -63,7 +72,7 @@ function EmptyTitle({ className, ...props }: React.ComponentProps<"div">) {
         <div
             data-slot="empty-title"
             className={cn(
-                "font-heading text-sm font-medium tracking-tight",
+                "font-heading text-sm font-medium tracking-tight group-data-[size=lg]/empty:text-[2rem]/tight group-data-[size=lg]/empty:font-bold",
                 className,
             )}
             {...props}
@@ -76,7 +85,7 @@ function EmptyDescription({ className, ...props }: React.ComponentProps<"p">) {
         <div
             data-slot="empty-description"
             className={cn(
-                "text-sm/relaxed text-muted-foreground [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-link",
+                "text-sm/relaxed text-muted-foreground group-data-[size=lg]/empty:text-lg/relaxed [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-link",
                 className,
             )}
             {...props}
@@ -89,7 +98,7 @@ function EmptyContent({ className, ...props }: React.ComponentProps<"div">) {
         <div
             data-slot="empty-content"
             className={cn(
-                "flex w-full max-w-sm min-w-0 flex-col items-center gap-2.5 text-sm text-balance",
+                "flex w-full max-w-sm min-w-0 flex-col items-center gap-2.5 text-sm text-balance group-data-[size=lg]/empty:gap-4 group-data-[size=lg]/empty:text-base",
                 className,
             )}
             {...props}

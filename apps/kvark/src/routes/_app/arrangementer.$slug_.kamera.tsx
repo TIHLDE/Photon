@@ -22,7 +22,7 @@ import {
     myWrappedPhotoImagePath,
     type WrappedPhotoSource,
 } from "#/api/queries/wrapped";
-import { WrappedCamera, WrappedPhotoSaved } from "#/components/wrapped-camera";
+import { WrappedCamera } from "#/components/wrapped-camera";
 import {
     WrappedCameraRollConfirm,
     WrappedCameraRollInput,
@@ -380,14 +380,29 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
         return (
             <WrappedCameraScreen slug={slug} title={event.title}>
                 {waiting}
-                {lastArrived && queue.count === 0 ? (
-                    <WrappedPhotoSaved />
-                ) : null}
                 <WrappedCameraUnavailable
                     reason={camera.reason}
                     opensAt={camera.opensAt}
+                    closesAt={camera.closesAt}
+                    shotsPerPerson={camera.shotsPerPerson}
+                    shotsUsed={camera.shotsUsed}
+                    draftCount={camera.draftCount}
+                    // Det siste bildet tømmer kvoten i samme øyeblikk som det
+                    // kommer fram, så kvitteringen står på «Filmen er full».
+                    lastArrived={lastArrived && queue.count === 0}
+                    eventLink={
+                        <Link to="/arrangementer/$slug" params={{ slug }} />
+                    }
+                    homeLink={<Link to="/" />}
+                    myPhotosLink={
+                        <Link
+                            to="/arrangementer/$slug/kamera/mine"
+                            params={{ slug }}
+                        />
+                    }
                 />
-                {myPhotosStrip}
+                {/* «Filmen er full» har sin egen knapp til Mine bilder. */}
+                {camera.reason === "no_shots_left" ? null : myPhotosStrip}
                 {organizerLink}
             </WrappedCameraScreen>
         );
