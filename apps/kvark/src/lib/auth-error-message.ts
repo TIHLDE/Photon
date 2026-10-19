@@ -19,6 +19,7 @@ export type AuthErrorLike = {
 };
 
 const GENERIC = "Noe gikk galt. Prøv igjen.";
+const TOO_MANY_ATTEMPTS = "For mange forsøk. Vent litt og prøv igjen.";
 
 /**
  * Keyed on Better Auth's error codes (`BASE_ERROR_CODES` plus the username
@@ -41,7 +42,7 @@ const MESSAGES: Record<string, string> = {
         "Denne brukeren har ikke passord. Logg inn med Feide.",
     ACCOUNT_NOT_FOUND: "Vi fant ingen bruker.",
     BANNED_USER: "Brukeren din er sperret. Ta kontakt med Index.",
-    TOO_MANY_ATTEMPTS: "For mange forsøk. Vent litt og prøv igjen.",
+    TOO_MANY_ATTEMPTS,
     ACCOUNT_TEMPORARILY_LOCKED:
         "For mange forsøk. Brukeren er låst en liten stund. Prøv igjen senere.",
 
@@ -113,6 +114,8 @@ const MESSAGES: Record<string, string> = {
  * carry a message but no code.
  */
 const BY_ENGLISH_MESSAGE: Record<string, string> = {
+    "too many requests": TOO_MANY_ATTEMPTS,
+    "too many requests. please try again later.": TOO_MANY_ATTEMPTS,
     "invalid username or password": MESSAGES.INVALID_USERNAME_OR_PASSWORD,
     "invalid email or password": MESSAGES.INVALID_EMAIL_OR_PASSWORD,
     "invalid password": MESSAGES.INVALID_PASSWORD,
@@ -144,16 +147,16 @@ export function authErrorMessage(
     const code = error?.code?.trim().toUpperCase();
     if (code && code in MESSAGES) return MESSAGES[code];
 
+    // Better Auth's rate limiter returns an English message without a code.
+    // Prefer the status so a future message change cannot leak through.
+    if (error?.status === 429) return TOO_MANY_ATTEMPTS;
+
     const message = error?.message?.trim();
     if (message) {
         const known = BY_ENGLISH_MESSAGE[message.toLowerCase()];
         if (known) return known;
         // Our own backend's messages land here, and they are already Norwegian.
         return message;
-    }
-
-    if (error?.status === 429) {
-        return "For mange forsøk. Vent litt og prøv igjen.";
     }
 
     return fallback;
