@@ -7,7 +7,6 @@ import {
     getAllergiesQuery,
     updateUserSettingsMutation,
 } from "#/api/queries/user";
-import type { AllergySelection } from "#/components/allergy-picker";
 import { EditAllergiesDialog } from "#/components/edit-allergies-dialog";
 import { EVENT_RULES_URL } from "#/components/event-rules-consent";
 import { useSaveAllergies } from "#/hooks/use-save-allergies";
@@ -25,8 +24,8 @@ import {
 } from "@tihlde/ui/ui/field";
 import { Switch } from "@tihlde/ui/ui/switch";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
-import { AlertCircle, Check } from "lucide-react";
-import { Suspense, useState } from "react";
+import { AlertCircle } from "lucide-react";
+import { Suspense } from "react";
 
 export const Route = createFileRoute("/_app/profil/$id/innstillinger")({
     component: RouteComponent,
@@ -211,7 +210,6 @@ function AllergiesCard() {
         getAllergiesQuery({ curated: true }),
     );
     const saveAllergies = useSaveAllergies();
-    const [justSaved, setJustSaved] = useState(false);
 
     const settings = session?.user.settings;
     const savedAllergies = settings?.allergies ?? [];
@@ -223,13 +221,8 @@ function AllergiesCard() {
         catalogue.map((option) => [option.slug, option.label]),
     );
 
-    async function handleSave(next: AllergySelection) {
-        await saveAllergies.save(next);
-        setJustSaved(true);
-    }
-
     return (
-        <Card>
+        <Card id="allergier" className="scroll-mt-20">
             <CardHeader>
                 <CardTitle>Allergier</CardTitle>
             </CardHeader>
@@ -257,7 +250,7 @@ function AllergiesCard() {
                 ) : hasAnswered ? (
                     <p className="text-sm">Ingen allergier</p>
                 ) : null}
-                <div className="flex flex-wrap items-center gap-3">
+                <div>
                     <EditAllergiesDialog
                         defaultValues={{
                             allergies: savedAllergies,
@@ -265,17 +258,8 @@ function AllergiesCard() {
                         }}
                         hasAnswered={hasAnswered}
                         options={catalogue}
-                        onSubmit={handleSave}
+                        onSubmit={saveAllergies.save}
                     />
-                    {justSaved ? (
-                        <p
-                            role="status"
-                            className="flex items-center gap-2 text-sm"
-                        >
-                            <Check className="size-4" />
-                            Svaret er lagret
-                        </p>
-                    ) : null}
                 </div>
             </CardContent>
         </Card>
@@ -284,7 +268,7 @@ function AllergiesCard() {
 
 function AllergiesCardSkeleton() {
     return (
-        <Card>
+        <Card id="allergier" className="scroll-mt-20">
             <CardHeader>
                 <CardTitle>Allergier</CardTitle>
             </CardHeader>
