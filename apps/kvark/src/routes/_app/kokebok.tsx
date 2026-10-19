@@ -56,11 +56,11 @@ import { getUserProfileQuery } from "#/api/queries/user";
 export const Route = createFileRoute("/_app/kokebok")({
     async loader(ctx) {
         let auth = await ctx.context.queryClient.query(authQueryOptions);
-    
+
         let profileData = await ctx.context.queryClient.query(
             getUserProfileQuery(auth.user.id),
         );
-    
+
         const classYear = profileData.classYear;
         const study = profileData.groups.find(
             (value) => StudyTranslation[value.slug] != null,
