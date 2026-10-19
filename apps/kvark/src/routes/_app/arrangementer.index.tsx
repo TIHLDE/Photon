@@ -323,7 +323,11 @@ function EventList({ filters }: { filters: EventListFilters }) {
 function EventCalendarView({ filters }: { filters: EventListFilters }) {
     const [month, setMonth] = useState(() => startOfMonth(new Date()));
     const { start, end } = calendarGridRange(month);
-    const { data: events = [] } = useQuery({
+    const {
+        data: events = [],
+        isPending,
+        isPlaceholderData,
+    } = useQuery({
         ...getEventsInRangeQuery({
             search: filters.search,
             category: filters.category,
@@ -338,6 +342,7 @@ function EventCalendarView({ filters }: { filters: EventListFilters }) {
         <EventCalendar
             month={month}
             onMonthChange={setMonth}
+            isLoading={isPending || isPlaceholderData}
             events={events.map((event) => ({
                 id: event.id,
                 slug: event.slug,

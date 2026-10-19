@@ -78,6 +78,71 @@ describe("event list start date range", () => {
     );
 
     integrationTest(
+        "startFrom is inclusive",
+        async ({ ctx }) => {
+            await ctx.utils.setupEventCategories();
+
+            const start = new Date(Date.now() - 3 * DAY);
+            const event = await ctx.utils.createTestEvent({
+                slug: `inclusive-${start.getTime()}`,
+                start,
+                end: new Date(start.getTime() + 60 * 60 * 1000),
+            });
+
+            const client = ctx.utils.client();
+            const response = await client.api.event.$get({
+                query: {
+                    startFrom: start.toISOString(),
+                    startBefore: new Date(start.getTime() + 1).toISOString(),
+                },
+            });
+            const body = await response.json();
+            expect(body.items.map((e) => e.id)).toEqual([event.id]);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "pages through a range larger than one page",
+        async ({ ctx }) => {
+            await ctx.utils.setupEventCategories();
+
+            const start = new Date(Date.now() - 2 * DAY);
+            const created = [];
+            for (let i = 0; i < 7; i++) {
+                created.push(
+                    await ctx.utils.createTestEvent({
+                        slug: `tie-${i}-${start.getTime()}`,
+                        start,
+                        end: new Date(start.getTime() + 60 * 60 * 1000),
+                    }),
+                );
+            }
+
+            const client = ctx.utils.client();
+            const seen: string[] = [];
+            for (let page = 0; page < 3; page++) {
+                const response = await client.api.event.$get({
+                    query: {
+                        page: String(page),
+                        pageSize: "3",
+                        startFrom: start.toISOString(),
+                        startBefore: new Date(
+                            start.getTime() + 1,
+                        ).toISOString(),
+                    },
+                });
+                const body = await response.json();
+                seen.push(...body.items.map((e) => e.id));
+            }
+
+            expect(seen).toHaveLength(7);
+            expect(new Set(seen)).toEqual(new Set(created.map((e) => e.id)));
+        },
+        500_000,
+    );
+
+    integrationTest(
         "rejects a startFrom that is not an ISO datetime",
         async ({ ctx }) => {
             const client = ctx.utils.client();

@@ -15,7 +15,7 @@ import {
 } from "date-fns";
 import { nb } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useMemo } from "react";
+import { type Dispatch, type SetStateAction, useMemo } from "react";
 
 import { formatInOslo } from "#/lib/date";
 import { cn } from "#/lib/utils";
@@ -31,7 +31,9 @@ export type CalendarEvent = {
 type EventCalendarProps = {
     events: CalendarEvent[];
     month: Date;
-    onMonthChange: (month: Date) => void;
+    onMonthChange: Dispatch<SetStateAction<Date>>;
+    /** Hentes arrangementene for `month` fortsatt, er det for tidlig å si at den er tom. */
+    isLoading?: boolean;
 };
 
 const WEEKDAY_LABELS = ["man", "tir", "ons", "tor", "fre", "lør", "søn"];
@@ -51,6 +53,7 @@ export function EventCalendar({
     events,
     month,
     onMonthChange,
+    isLoading = false,
 }: EventCalendarProps) {
     const days = useMemo(
         () => eachDayOfInterval(calendarGridRange(month)),
@@ -78,7 +81,7 @@ export function EventCalendar({
                     variant="outline"
                     size="icon"
                     aria-label="Forrige måned"
-                    onClick={() => onMonthChange(addMonths(month, -1))}
+                    onClick={() => onMonthChange((m) => addMonths(m, -1))}
                 >
                     <ChevronLeft />
                 </Button>
@@ -89,7 +92,7 @@ export function EventCalendar({
                     variant="outline"
                     size="icon"
                     aria-label="Neste måned"
-                    onClick={() => onMonthChange(addMonths(month, 1))}
+                    onClick={() => onMonthChange((m) => addMonths(m, 1))}
                 >
                     <ChevronRight />
                 </Button>
@@ -158,7 +161,8 @@ export function EventCalendar({
                 })}
             </div>
 
-            {events.some((event) =>
+            {isLoading ||
+            events.some((event) =>
                 days.some((day) => isSameDay(new Date(event.startTime), day)),
             ) ? null : (
                 <p className="text-sm text-muted-foreground">
