@@ -4,6 +4,7 @@ import { compressImageFile } from "@tihlde/ui/lib/image-compression";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
+    type WrappedPhotoSource,
     type WrappedUploadResult,
     uploadWrappedPhotoMutation,
 } from "#/api/queries/wrapped";
@@ -16,6 +17,8 @@ type QueueItem = {
     /** Også idempotensnøkkelen: den samme i hvert forsøk på dette bildet. */
     id: string;
     file: File;
+    /** Kameraet eller kamerarullen; følger bildet i hvert forsøk. */
+    source: WrappedPhotoSource;
     /** Komprimert og klar, så et nytt forsøk slipper å gjøre det igjen. */
     prepared: File | null;
 };
@@ -118,6 +121,7 @@ export function useWrappedUploadQueue({
                         eventId,
                         file,
                         idempotencyKey: item.id,
+                        source: item.source,
                     });
                     if (import.meta.env.DEV) {
                         console.info("[wrapped] lastet opp", result.id);
@@ -158,10 +162,10 @@ export function useWrappedUploadQueue({
     }, [eventId, prepare, drop, uploadPhoto]);
 
     const enqueue = useCallback(
-        (file: File) => {
+        (file: File, source: WrappedPhotoSource = "camera") => {
             items.current = [
                 ...items.current,
-                { id: crypto.randomUUID(), file, prepared: null },
+                { id: crypto.randomUUID(), file, source, prepared: null },
             ];
             setCount(items.current.length);
             // Står køen og venter på nett, får det nye bildet vente sammen

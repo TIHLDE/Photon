@@ -237,6 +237,28 @@ function CameraControlButton({
     });
 }
 
+/**
+ * The square button beside the shutter that opens the phone's photo picker.
+ * A web page cannot read the camera roll, so it holds an icon, not the
+ * latest photo.
+ */
+function CameraRollButton({
+    className,
+    ...props
+}: React.ComponentProps<"button">) {
+    return (
+        <button
+            type="button"
+            data-slot="camera-roll-button"
+            className={cn(
+                "inline-flex size-15 shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 border-white/70 bg-black/45 text-white outline-none backdrop-blur-sm transition-opacity active:opacity-70 focus-visible:ring-3 focus-visible:ring-white/60 disabled:pointer-events-none disabled:opacity-40 motion-reduce:transition-none [&_svg]:size-7",
+                className,
+            )}
+            {...props}
+        />
+    );
+}
+
 /** The big shutter: a white ring around a white disc. */
 function CameraShutter({
     className,
@@ -394,6 +416,7 @@ function CameraTitle({ className, ...props }: React.ComponentProps<"h1">) {
 
 export {
     CameraControlButton,
+    CameraRollButton,
     CameraCounter,
     CameraFlash,
     CameraReceipt,

@@ -8,6 +8,7 @@ import {
     type CameraViewfinderState,
     CameraControlButton,
 } from "@tihlde/ui/ui/camera-viewfinder";
+import { convertHeicToJpeg, isHeicFile } from "@tihlde/ui/lib/heic";
 import { toast } from "@tihlde/ui/ui/sonner";
 import { Flashlight, FlashlightOff, Images } from "lucide-react";
 
@@ -19,8 +20,13 @@ import {
     getWrappedCameraQuery,
     invalidateMine,
     myWrappedPhotoImagePath,
+    type WrappedPhotoSource,
 } from "#/api/queries/wrapped";
 import { WrappedCamera, WrappedPhotoSaved } from "#/components/wrapped-camera";
+import {
+    WrappedCameraRollConfirm,
+    WrappedCameraRollInput,
+} from "#/components/wrapped-camera-roll";
 import { WrappedCameraFallback } from "#/components/wrapped-camera-fallback";
 import { WrappedCameraScreen } from "#/components/wrapped-camera-screen";
 import { WrappedCameraSkeleton } from "#/components/wrapped-camera-skeleton";
@@ -88,6 +94,12 @@ const SHUTTER_COOLDOWN_MS = 600;
 /** Hvor lenge «Knips!» står før den forsvinner av seg selv. */
 const RECEIPT_MS = 2500;
 
+/**
+ * Bildet fra kamerarullen som venter på «Legg til». `src` er null mens et
+ * HEIC-bilde gjøres om til JPEG — Chrome kan ikke vise HEIC.
+ */
+type PickedPhoto = { file: File; src: string } | { file: null; src: null };
+
 /** `setTimeout` regner i 32 bit, og ingen venter et døgn på samme side. */
 const MAX_WAIT_MS = 24 * 60 * 60 * 1000;
 
@@ -119,6 +131,7 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
     const [receipt, setReceipt] = useState<{
         key: number;
         shotsLeft: number;
+        fromCameraRoll: boolean;
     } | null>(null);
     const [flashKey, setFlashKey] = useState<number | null>(null);
     // Det siste bildet tømmer kvoten i samme øyeblikk som det kommer fram,
@@ -174,6 +187,19 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
     const [useSystemCamera, setUseSystemCamera] = useState(false);
     const lastShutterAt = useRef(0);
 
+    const cameraRollRef = useRef<HTMLInputElement>(null);
+    const [picked, setPicked] = useState<PickedPhoto | null>(null);
+    // Hvert valg får et nummer, så et HEIC-bilde som blir ferdig konvertert
+    // etter at noen trykket avbryt eller valgte et annet, ikke dukker opp.
+    const pickId = useRef(0);
+    // Forhåndsvisningen er en lokal URL som holder bildet i minnet til den
+    // slippes.
+    const pickedSrc = picked?.src;
+    useEffect(() => {
+        if (!pickedSrc) return;
+        return () => URL.revokeObjectURL(pickedSrc);
+    }, [pickedSrc]);
+
     // Ingen skal måtte laste sida på nytt når kameraet åpner eller stenger:
     // statusen hentes igjen i det tidspunktet passerer. Når det stenger,
     // forsvinner også utkastene, så Mine bilder hentes på nytt samtidig.
@@ -194,13 +220,20 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
         return () => clearTimeout(timer);
     }, [waitingUntil, queryClient, event.id]);
 
-    /** Si fra med en gang, så det aldri er tvil om at bildet ble tatt. */
-    function acknowledge() {
+    /**
+     * Si fra med en gang, så det aldri er tvil om at bildet ble tatt. Blitsen
+     * hører til søkeren; et bilde fra kamerarullen får kortet og vibrasjonen.
+     */
+    function acknowledge(source: WrappedPhotoSource = "camera") {
         setLastArrived(false);
         navigator.vibrate?.(40);
         const key = Date.now();
-        setFlashKey(key);
-        setReceipt({ key, shotsLeft: Math.max(0, shotsLeft - 1) });
+        if (source === "camera") setFlashKey(key);
+        setReceipt({
+            key,
+            shotsLeft: Math.max(0, shotsLeft - 1),
+            fromCameraRoll: source === "camera_roll",
+        });
     }
 
     /** Fra filfeltet: bildet finnes allerede. */
@@ -208,6 +241,70 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
         acknowledge();
         queue.enqueue(file);
     }
+
+    async function pickFromCameraRoll(file: File) {
+        const id = ++pickId.current;
+        // Komprimeringen ville flatet ut en GIF til ett bilde, og API-et tar
+        // uansett bare stillbilder.
+        if (file.type === "image/gif" || file.type.startsWith("video/")) {
+            setPicked(null);
+            toast.error("Bildet ble ikke lagt til", {
+                description:
+                    "GIF-er og videoer støttes ikke. Velg et vanlig bilde.",
+            });
+            return;
+        }
+        // HEIC-filer har ofte tom `type`, så de slippes gjennom på filnavnet.
+        if (!file.type.startsWith("image/") && !isHeicFile(file)) {
+            setPicked(null);
+            toast.error("Bildet ble ikke lagt til", {
+                description: "Filen må være et bilde.",
+            });
+            return;
+        }
+
+        setPicked({ file: null, src: null });
+        try {
+            const readable = await convertHeicToJpeg(file);
+            if (id !== pickId.current) return;
+            setPicked({ file: readable, src: URL.createObjectURL(readable) });
+        } catch (error) {
+            if (id !== pickId.current) return;
+            console.error(
+                "Klargjøring av bilde fra kamerarullen feilet",
+                error,
+            );
+            setPicked(null);
+            toast.error("Bildet ble ikke lagt til", {
+                description:
+                    error instanceof Error
+                        ? error.message
+                        : "Fikk ikke lest bildet. Velg et annet.",
+            });
+        }
+    }
+
+    function cancelPick() {
+        pickId.current++;
+        setPicked(null);
+    }
+
+    function confirmPick() {
+        if (!picked?.file || shotsLeft <= 0) return;
+        const { file } = picked;
+        cancelPick();
+        // Samme kø som kameraet: egen nøkkel, venter på nett, prøver igjen.
+        acknowledge("camera_roll");
+        queue.enqueue(file, "camera_roll");
+    }
+
+    const openCameraRoll = () => cameraRollRef.current?.click();
+    const cameraRollInput = (
+        <WrappedCameraRollInput
+            ref={cameraRollRef}
+            onPick={(file) => void pickFromCameraRoll(file)}
+        />
+    );
 
     async function shoot() {
         const pressedAt = Date.now();
@@ -296,6 +393,21 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
         );
     }
 
+    if (picked) {
+        return (
+            <>
+                <WrappedCameraRollConfirm
+                    src={picked.src}
+                    shotsLeft={shotsLeft}
+                    onCancel={cancelPick}
+                    onConfirm={confirmPick}
+                    onPickAnother={openCameraRoll}
+                />
+                {cameraRollInput}
+            </>
+        );
+    }
+
     // Uten søker — nektet tilgang, eller en nettleser som ikke har kamera —
     // står telefonens eget kamera igjen, gjennom et filfelt.
     if (
@@ -320,12 +432,22 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
                                 <WrappedShotReceipt
                                     key={receipt.key}
                                     shotsLeft={receipt.shotsLeft}
+                                    fromCameraRoll={receipt.fromCameraRoll}
                                 />
                             ) : null}
                             {waiting}
                         </>
                     }
                 />
+                <Button
+                    variant="outline"
+                    disabled={shotsLeft <= 0}
+                    onClick={openCameraRoll}
+                >
+                    <Images />
+                    Velg fra kamerarullen
+                </Button>
+                {cameraRollInput}
                 {myPhotosStrip}
                 {organizerLink}
             </WrappedCameraScreen>
@@ -361,6 +483,7 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
                         <WrappedShotReceipt
                             key={receipt.key}
                             shotsLeft={receipt.shotsLeft}
+                            fromCameraRoll={receipt.fromCameraRoll}
                         />
                     ) : null
                 }
@@ -377,8 +500,10 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
                     )
                 }
                 onUseSystemCamera={() => setUseSystemCamera(true)}
+                onPickFromCameraRoll={openCameraRoll}
                 myPhotos={myPhotosStrip}
             />
+            {cameraRollInput}
         </WrappedCameraScreen>
     );
 }

@@ -10,17 +10,22 @@ import {
  */
 export function WrappedShotReceipt({
     shotsLeft,
+    fromCameraRoll = false,
     className,
 }: {
     shotsLeft: number;
+    /** Valgt fra kamerarullen, ikke tatt med kameraet. */
+    fromCameraRoll?: boolean;
     className?: string;
 }) {
     return (
         <CameraReceipt className={className}>
             <CameraReceiptTitle>
-                {shotsLeft === 0
-                    ? "Knips! Siste bilde!"
-                    : `Knips! ${shotsLeft} igjen`}
+                {fromCameraRoll
+                    ? `Lagt til fra kamerarullen · ${shotsLeft} igjen`
+                    : shotsLeft === 0
+                      ? "Knips! Siste bilde!"
+                      : `Knips! ${shotsLeft} igjen`}
             </CameraReceiptTitle>
             <CameraReceiptDescription>
                 Lagt i Mine bilder – ikke sendt ennå
