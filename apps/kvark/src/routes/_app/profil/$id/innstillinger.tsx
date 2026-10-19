@@ -7,14 +7,14 @@ import {
     getAllergiesQuery,
     updateUserSettingsMutation,
 } from "#/api/queries/user";
-import {
-    AllergyPicker,
-    type AllergySelection,
-} from "#/components/allergy-picker";
+import type { AllergySelection } from "#/components/allergy-picker";
+import { EditAllergiesDialog } from "#/components/edit-allergies-dialog";
 import { EVENT_RULES_URL } from "#/components/event-rules-consent";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useSaveAllergies } from "#/hooks/use-save-allergies";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
+import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 import {
@@ -24,8 +24,9 @@ import {
     FieldLabel,
 } from "@tihlde/ui/ui/field";
 import { Switch } from "@tihlde/ui/ui/switch";
-import { AlertCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Skeleton } from "@tihlde/ui/ui/skeleton";
+import { AlertCircle, Check } from "lucide-react";
+import { Suspense, useState } from "react";
 
 export const Route = createFileRoute("/_app/profil/$id/innstillinger")({
     component: RouteComponent,
@@ -117,7 +118,9 @@ function RouteComponent() {
                 </CardContent>
             </Card>
             <EventRulesCard />
-            <AllergiesCard />
+            <Suspense fallback={<AllergiesCardSkeleton />}>
+                <AllergiesCard />
+            </Suspense>
         </div>
     );
 }
@@ -200,52 +203,29 @@ function EventRulesCard() {
 /**
  * Allergiene medlemmet oppgir om seg selv.
  *
- * Egen komponent framfor enda et felt i Personvern-kortet: dette er den eneste
- * seksjonen med et lagre-steg, fordi et halvskrevet fritekstfelt ikke skal
- * sendes av gårde slik bryterne gjør.
+ * Kortet viser bare lagrede opplysninger. Utkastet lever i redigeringsdialogen.
  */
 function AllergiesCard() {
-    const { data: session } = useQuery(authQueryOptions);
-    const { data: catalogue } = useQuery(getAllergiesQuery({ curated: true }));
-    const updateSettings = useMutation(updateUserSettingsMutation);
+    const { data: session } = useSuspenseQuery(authQueryOptions);
+    const { data: catalogue } = useSuspenseQuery(
+        getAllergiesQuery({ curated: true }),
+    );
+    const saveAllergies = useSaveAllergies();
+    const [justSaved, setJustSaved] = useState(false);
 
     const settings = session?.user.settings;
     const savedAllergies = settings?.allergies ?? [];
     const savedCustom = settings?.customAllergies ?? [];
     const hasAnswered = settings?.allergiesConfirmedAt != null;
 
-    const [selection, setSelection] = useState<AllergySelection>({
-        allergies: savedAllergies,
-        customAllergies: savedCustom,
-    });
-
-    // Sesjonen lastes etter første render, så utvalget må følge etter når den
-    // kommer inn. Nøkkelen sammenligner innhold, ikke referanse — arrayene er
-    // nye objekter ved hver henting.
-    const savedKey = `${savedAllergies.join(",")}|${savedCustom.join(",")}`;
-    // biome-ignore lint/correctness/useExhaustiveDependencies: savedKey er
-    // innholdssammenligningen; å avhenge av arrayene ville løpt hver render.
-    useEffect(() => {
-        setSelection({
-            allergies: savedAllergies,
-            customAllergies: savedCustom,
-        });
-    }, [savedKey]);
+    const hasAllergies = savedAllergies.length + savedCustom.length > 0;
+    const labels = new Map(
+        catalogue.map((option) => [option.slug, option.label]),
+    );
 
     async function handleSave(next: AllergySelection) {
-        try {
-            await updateSettings.mutateAsync({
-                data: {
-                    allergies: next.allergies,
-                    customAllergies: next.customAllergies,
-                },
-            });
-            // Allergiene leses av sesjonen, ikke av en egen spørring.
-            await invalidateAuth();
-        } catch {
-            // Feilen vises fra `updateSettings.isError`. Fanges likevel, ellers
-            // blir et mislykket lagringsforsøk en ubehandlet rejection.
-        }
+        await saveAllergies.save(next);
+        setJustSaved(true);
     }
 
     return (
@@ -254,61 +234,64 @@ function AllergiesCard() {
                 <CardTitle>Allergier</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-                <Field>
-                    <FieldContent>
-                        <FieldLabel>Mine allergier</FieldLabel>
-                        <FieldDescription>
-                            Velg fra lista, eller skriv inn dine egne. Deles med
-                            arrangøren for arrangementer du melder deg på, slik
-                            at de kan ta hensyn til det når de bestiller mat.
-                        </FieldDescription>
-                    </FieldContent>
-                </Field>
-
-                <AllergyPicker
-                    options={catalogue ?? []}
-                    value={selection}
-                    onChange={setSelection}
-                    disabled={updateSettings.isPending}
-                />
-
-                <div className="flex flex-wrap gap-2">
-                    <Button
-                        type="button"
-                        disabled={updateSettings.isPending}
-                        onClick={() => handleSave(selection)}
-                    >
-                        Lagre allergier
-                    </Button>
-                    {/* «Ingen allergier» var å lagre et tomt felt — et svar
-                        ingen gjettet at de kunne gi. Nå er det en knapp, og
-                        den forsvinner så snart spørsmålet er besvart. */}
-                    {!hasAnswered ? (
-                        <Button
-                            type="button"
-                            variant="outline"
-                            disabled={updateSettings.isPending}
-                            onClick={() =>
-                                handleSave({
-                                    allergies: [],
-                                    customAllergies: [],
-                                })
-                            }
+                <p className="text-sm text-muted-foreground">
+                    Deles med arrangøren for arrangementer du melder deg på,
+                    slik at de kan ta hensyn når de bestiller mat.
+                </p>
+                {!hasAnswered ? (
+                    <Badge variant="outline">Ikke besvart</Badge>
+                ) : null}
+                {hasAllergies ? (
+                    <div className="flex flex-wrap gap-2">
+                        {savedAllergies.map((slug) => (
+                            <Badge key={slug} variant="secondary">
+                                {labels.get(slug) ?? slug}
+                            </Badge>
+                        ))}
+                        {savedCustom.map((label) => (
+                            <Badge key={`custom:${label}`} variant="secondary">
+                                {label}
+                            </Badge>
+                        ))}
+                    </div>
+                ) : hasAnswered ? (
+                    <p className="text-sm">Ingen allergier</p>
+                ) : null}
+                <div className="flex flex-wrap items-center gap-3">
+                    <EditAllergiesDialog
+                        defaultValues={{
+                            allergies: savedAllergies,
+                            customAllergies: savedCustom,
+                        }}
+                        hasAnswered={hasAnswered}
+                        options={catalogue}
+                        onSubmit={handleSave}
+                    />
+                    {justSaved ? (
+                        <p
+                            role="status"
+                            className="flex items-center gap-2 text-sm"
                         >
-                            Jeg har ingen
-                        </Button>
+                            <Check className="size-4" />
+                            Svaret er lagret
+                        </p>
                     ) : null}
                 </div>
+            </CardContent>
+        </Card>
+    );
+}
 
-                {updateSettings.isError ? (
-                    <Alert variant="destructive">
-                        <AlertCircle className="size-4" />
-                        <AlertTitle>Allergiene ble ikke lagret</AlertTitle>
-                        <AlertDescription>
-                            Prøv på nytt. Står det seg, gi beskjed til TIHLDE.
-                        </AlertDescription>
-                    </Alert>
-                ) : null}
+function AllergiesCardSkeleton() {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Allergier</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-9 w-24" />
             </CardContent>
         </Card>
     );
