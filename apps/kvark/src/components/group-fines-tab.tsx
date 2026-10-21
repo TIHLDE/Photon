@@ -1,6 +1,11 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card } from "@tihlde/ui/ui/card";
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@tihlde/ui/ui/collapsible";
 import { Empty, EmptyDescription, EmptyTitle } from "@tihlde/ui/ui/empty";
 import {
     Select,
@@ -10,7 +15,8 @@ import {
     SelectValue,
 } from "@tihlde/ui/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
-import { ChevronRight, X } from "lucide-react";
+import { ChevronDown, ChevronRight, X } from "lucide-react";
+import { useState } from "react";
 
 import { GroupFineAccordion } from "#/components/group-fine-accordion";
 import { GroupFineStatCard } from "#/components/group-fine-stat-card";
@@ -18,7 +24,7 @@ import { GroupPageHeader } from "#/components/group-page-header";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import type { Fine, FineStatistics, FineStatus, FineUser } from "#/lib/group";
-import { initials } from "#/lib/utils";
+import { cn, initials } from "#/lib/utils";
 
 import { avatarImageUrl } from "#/lib/assets";
 
@@ -133,6 +139,9 @@ export function GroupFinesTab({
     const notApproved = statistics?.notApproved ?? 0;
     const approvedNotPaid = statistics?.approvedNotPaid ?? 0;
     const paid = statistics?.paid ?? 0;
+    // Noen grupper har lange botregler. Lukket som standard, så bøtene står
+    // øverst og ikke under en skjermlengde med tekst.
+    const [rulesOpen, setRulesOpen] = useState(false);
 
     return (
         <div className="flex flex-col gap-6">
@@ -149,7 +158,23 @@ export function GroupFinesTab({
                 lenger dine å følge. */}
             {finesInfo && !ownFinesOnly ? (
                 <Card size="sm" className="p-4">
-                    <MarkdownView registry={richRegistry} source={finesInfo} />
+                    <Collapsible open={rulesOpen} onOpenChange={setRulesOpen}>
+                        <CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between gap-3 text-left">
+                            <span className="font-semibold">Botregler</span>
+                            <ChevronDown
+                                className={cn(
+                                    "size-4 shrink-0 transition-transform",
+                                    rulesOpen && "rotate-180",
+                                )}
+                            />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="pt-3">
+                            <MarkdownView
+                                registry={richRegistry}
+                                source={finesInfo}
+                            />
+                        </CollapsibleContent>
+                    </Collapsible>
                 </Card>
             ) : null}
 
