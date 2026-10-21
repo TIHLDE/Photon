@@ -54,7 +54,7 @@ async function notifyLeadersOfNewMember(
 
     const title = `Nytt medlem i ${group.name}`;
     const description = `${member?.name ?? "Noen"} har meldt seg inn i ${group.name}.`;
-    const link = `/grupper/${group.slug}`;
+    const link = `/grupper/${group.slug}?tab=medlemmer`;
 
     const results = await Promise.allSettled(
         leaders.map((leader) =>

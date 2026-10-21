@@ -49,6 +49,7 @@ type GroupDetailHeaderProps = {
      * be lederen om å bli med på e-post, eller melde seg ut.
      */
     membershipAction: "join" | "request" | "leave" | null;
+    leaderCount: number;
     onJoin: () => void;
     onLeave: () => void;
     isMembershipPending?: boolean;
@@ -70,6 +71,7 @@ export function GroupDetailHeader({
     isSavingGroup,
     saveGroupError,
     membershipAction,
+    leaderCount,
     onJoin,
     onLeave,
     isMembershipPending,
@@ -156,6 +158,8 @@ export function GroupDetailHeader({
                         {membershipAction === "join" ? (
                             <GroupSelfJoinButton
                                 groupName={group.name}
+                                leaderCount={leaderCount}
+                                hasContactEmail={Boolean(group.contactEmail)}
                                 onJoin={onJoin}
                                 isPending={isMembershipPending}
                             />

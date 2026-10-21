@@ -784,6 +784,7 @@ function GroupDetail() {
                         isSavingGroup={updateGroup.isPending}
                         saveGroupError={groupError}
                         membershipAction={membershipAction}
+                        leaderCount={leaders.length}
                         onJoin={() => changeOwnMembership(joinGroup)}
                         onLeave={() => changeOwnMembership(leaveGroup)}
                         isMembershipPending={

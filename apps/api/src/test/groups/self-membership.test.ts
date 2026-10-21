@@ -50,7 +50,9 @@ describe("joining and leaving an interest group", () => {
             expect(notifications.map((n) => n.userId).sort()).toEqual(
                 [firstLeader.id, secondLeader.id].sort(),
             );
-            expect(notifications[0]?.link).toBe(`/grupper/${group.slug}`);
+            expect(notifications[0]?.link).toBe(
+                `/grupper/${group.slug}?tab=medlemmer`,
+            );
         },
         500_000,
     );
