@@ -159,22 +159,26 @@ export function GroupFinesTab({
             {finesInfo && !ownFinesOnly ? (
                 <Card size="sm" className="p-4">
                     <Collapsible open={rulesOpen} onOpenChange={setRulesOpen}>
-                        <CollapsibleTrigger
-                            render={
-                                <button
-                                    type="button"
-                                    className="flex w-full cursor-pointer items-center gap-3 text-left"
+                        {/* Knappen ligger i overskriften, ikke omvendt: inni en
+                            knapp mister <h2> overskriftsrollen sin. */}
+                        <h2 className="font-semibold">
+                            <CollapsibleTrigger
+                                render={
+                                    <button
+                                        type="button"
+                                        className="flex w-full cursor-pointer items-center justify-between gap-3 text-left"
+                                    />
+                                }
+                            >
+                                Botregler
+                                <ChevronDown
+                                    className={cn(
+                                        "size-4 shrink-0 transition-transform",
+                                        rulesOpen && "rotate-180",
+                                    )}
                                 />
-                            }
-                        >
-                            <h2 className="flex-1 font-semibold">Botregler</h2>
-                            <ChevronDown
-                                className={cn(
-                                    "size-4 shrink-0 transition-transform",
-                                    rulesOpen && "rotate-180",
-                                )}
-                            />
-                        </CollapsibleTrigger>
+                            </CollapsibleTrigger>
+                        </h2>
                         <CollapsibleContent className="pt-3">
                             <MarkdownView
                                 registry={richRegistry}
