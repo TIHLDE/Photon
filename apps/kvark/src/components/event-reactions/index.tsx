@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { Event } from "@tihlde/sdk";
+import type { Event } from "@photon/codegen";
 import { FieldError } from "@tihlde/ui/ui/field";
 import { useMemo, useState } from "react";
 

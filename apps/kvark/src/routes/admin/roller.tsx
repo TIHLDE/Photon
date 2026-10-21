@@ -2,7 +2,7 @@ import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { isGroupScopablePermission } from "@photon/auth/rbac/registry";
 import { union } from "es-toolkit";
-import type { Group, GroupPosition } from "@tihlde/sdk";
+import type { Group, GroupPosition } from "@photon/codegen";
 import {
     Accordion,
     AccordionContent,

@@ -4,8 +4,12 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
-import type { QueryParamsHelper } from "#/api/types";
-import type { CreateNews, UpdateNews, CreateNewsReaction } from "@tihlde/sdk";
+import type { QueryParamsHelper } from "@photon/codegen";
+import type {
+    CreateNews,
+    UpdateNews,
+    CreateNewsReaction,
+} from "@photon/codegen";
 
 const NewsQueryKeys = {
     listInfinite: ["news", "list-infinite"] as const,
@@ -29,7 +33,7 @@ export const getNewsQuery = (
         queryKey: [...NewsQueryKeys.list, page, pageSize, filters],
         queryFn: () =>
             apiClient.get("/api/news", {
-                searchParams: {
+                query: {
                     page,
                     pageSize,
                     ...filters,
@@ -45,7 +49,7 @@ export const getNewsInfiniteQuery = (
         queryKey: [...NewsQueryKeys.listInfinite, pageSize, filters],
         queryFn: ({ pageParam }) =>
             apiClient.get("/api/news", {
-                searchParams: {
+                query: {
                     page: pageParam,
                     pageSize,
                     ...filters,
@@ -60,14 +64,14 @@ export const getNewsByIdQuery = (newsId: string) =>
         queryKey: [...NewsQueryKeys.detail, newsId],
         queryFn: () =>
             apiClient.get("/api/news/{id}", {
-                params: { id: newsId },
+                path: { id: newsId },
             }),
     });
 
 export const createNewsMutation = mutationOptions({
     mutationFn: ({ data }: { data: CreateNews }) =>
         apiClient.post("/api/news", {
-            json: data,
+            body: data,
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
@@ -84,8 +88,8 @@ export const createNewsMutation = mutationOptions({
 export const updateNewsMutation = mutationOptions({
     mutationFn: ({ newsId, data }: { newsId: string; data: UpdateNews }) =>
         apiClient.patch("/api/news/{id}", {
-            params: { id: newsId },
-            json: data,
+            path: { id: newsId },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries(getNewsByIdQuery(vars.newsId));
@@ -103,7 +107,7 @@ export const updateNewsMutation = mutationOptions({
 export const deleteNewsMutation = mutationOptions({
     mutationFn: ({ newsId }: { newsId: string }) =>
         apiClient.delete("/api/news/{id}", {
-            params: { id: newsId },
+            path: { id: newsId },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries(getNewsByIdQuery(vars.newsId));
@@ -129,8 +133,8 @@ export const createNewsReactionMutation = mutationOptions({
         data: CreateNewsReaction;
     }) =>
         apiClient.post("/api/news/{id}/reactions", {
-            params: { id: newsId },
-            json: data,
+            path: { id: newsId },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries(getNewsByIdQuery(vars.newsId));
@@ -140,7 +144,7 @@ export const createNewsReactionMutation = mutationOptions({
 export const deleteNewsReactionMutation = mutationOptions({
     mutationFn: ({ newsId }: { newsId: string }) =>
         apiClient.delete("/api/news/{id}/reactions", {
-            params: { id: newsId },
+            path: { id: newsId },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries(getNewsByIdQuery(vars.newsId));

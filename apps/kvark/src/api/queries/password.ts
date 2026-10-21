@@ -10,5 +10,5 @@ import { apiClient } from "#/api/api-client";
  */
 export const setPasswordMutation = mutationOptions({
     mutationFn: ({ newPassword }: { newPassword: string }) =>
-        apiClient.post("/api/user/me/password", { json: { newPassword } }),
+        apiClient.post("/api/user/me/password", { body: { newPassword } }),
 });

@@ -39,7 +39,11 @@ import {
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
-import type { Event, EventPaymentAdmin, UpdateEventSchema } from "@tihlde/sdk";
+import type {
+    Event,
+    EventPaymentAdmin,
+    UpdateEventSchema,
+} from "@photon/codegen";
 import {
     Accordion,
     AccordionContent,

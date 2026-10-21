@@ -16,6 +16,24 @@ export const uploadRoute = route().post(
     describeRoute({
         tags: ["assets"],
         summary: "Upload a file",
+        requestBody: {
+            required: true,
+            content: {
+                "multipart/form-data": {
+                    schema: {
+                        type: "object",
+                        required: ["file"],
+                        properties: {
+                            file: { type: "string", format: "binary" },
+                            visibility: {
+                                type: "string",
+                                enum: ["public", "private"],
+                            },
+                        },
+                    },
+                },
+            },
+        },
         operationId: "uploadAsset",
         description: `Upload a file to staging. The file will be automatically cleaned up after 2 days if not promoted.
 

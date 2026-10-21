@@ -9,8 +9,9 @@
         "dev": "bun run codegen && vite dev --port 3000",
         "build": "bun run codegen && vite build && bun run scripts/upload-sourcemaps.ts",
         "preview": "vite preview",
-        "codegen": "photon-codegen src/api/generated",
+        "codegen": "photon-codegen",
         "typecheck": "tsc --noEmit",
+        "test": "bun test ./scripts/api-client.test.ts",
         "format": "oxfmt .",
         "lint": "oxlint .",
         "lint:fix": "oxlint --fix ."
@@ -18,6 +19,7 @@
     "dependencies": {
         "@better-auth/oauth-provider": "catalog:backend",
         "@photon/auth": "workspace:*",
+        "@photon/codegen": "workspace:*",
         "@photon/email": "workspace:*",
         "@posthog/react": "^1.7.0",
         "@t3-oss/env-core": "^0.13.10",
@@ -34,7 +36,6 @@
         "@tanstack/react-start": "catalog:frontend",
         "@tanstack/react-table": "catalog:frontend",
         "@tanstack/router-plugin": "catalog:frontend",
-        "@tihlde/sdk": "workspace:*",
         "@tihlde/ui": "workspace:*",
         "@tiptap/react": "catalog:frontend",
         "@xyflow/react": "^12.10.2",
@@ -46,10 +47,8 @@
         "emoji-picker-react": "^4.22.3",
         "es-toolkit": "catalog:",
         "jsqr": "^1.4.0",
-        "ky": "^2.0.2",
         "lucide-react": "catalog:frontend",
         "nitro": "latest",
-        "openapi-typescript-helpers": "^0.1.0",
         "posthog-js": "^1.358.1",
         "react": "catalog:frontend",
         "react-dom": "catalog:frontend",
@@ -60,7 +59,6 @@
         "zod": "catalog:"
     },
     "devDependencies": {
-        "@photon/codegen": "workspace:*",
         "@tailwindcss/typography": "catalog:frontend",
         "@tanstack/devtools-vite": "catalog:frontend",
         "@types/node": "catalog:",

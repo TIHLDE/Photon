@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
-import type { NewsListItem } from "@tihlde/sdk";
+import type { NewsListItem } from "@photon/codegen";
 import { RichEditor } from "@tihlde/ui/complex/markdown";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";

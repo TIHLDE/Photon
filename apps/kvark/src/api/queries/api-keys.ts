@@ -4,12 +4,12 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
-import type { QueryParamsHelper } from "#/api/types";
+import type { QueryParamsHelper } from "@photon/codegen";
 import type {
     CreateApiKey,
     UpdateApiKey,
     ValidateApiKeyInput,
-} from "@tihlde/sdk";
+} from "@photon/codegen";
 
 const ApiKeyQueryKeys = {
     listInfinite: ["api-keys", "list-infinite"] as const,
@@ -52,14 +52,14 @@ export const getApiKeyByIdQuery = (apiKeyId: string) =>
         queryKey: [...ApiKeyQueryKeys.detail, apiKeyId],
         queryFn: () =>
             apiClient.get("/api/api-keys/{id}", {
-                params: { id: apiKeyId },
+                path: { id: apiKeyId },
             }),
     });
 
 export const createApiKeyMutation = mutationOptions({
     mutationFn: ({ data }: { data: CreateApiKey }) =>
         apiClient.post("/api/api-keys", {
-            json: data,
+            body: data,
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
@@ -82,8 +82,8 @@ export const updateApiKeyMutation = mutationOptions({
         data: UpdateApiKey;
     }) =>
         apiClient.patch("/api/api-keys/{id}", {
-            params: { id: apiKeyId },
-            json: data,
+            path: { id: apiKeyId },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries(getApiKeyByIdQuery(vars.apiKeyId));
@@ -101,7 +101,7 @@ export const updateApiKeyMutation = mutationOptions({
 export const deleteApiKeyMutation = mutationOptions({
     mutationFn: ({ apiKeyId }: { apiKeyId: string }) =>
         apiClient.delete("/api/api-keys/{id}", {
-            params: { id: apiKeyId },
+            path: { id: apiKeyId },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries(getApiKeyByIdQuery(vars.apiKeyId));
@@ -119,7 +119,7 @@ export const deleteApiKeyMutation = mutationOptions({
 export const regenerateApiKeyMutation = mutationOptions({
     mutationFn: ({ apiKeyId }: { apiKeyId: string }) =>
         apiClient.post("/api/api-keys/{id}/regenerate", {
-            params: { id: apiKeyId },
+            path: { id: apiKeyId },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries(getApiKeyByIdQuery(vars.apiKeyId));
@@ -129,6 +129,6 @@ export const regenerateApiKeyMutation = mutationOptions({
 export const validateApiKeyMutation = mutationOptions({
     mutationFn: ({ data }: { data: ValidateApiKeyInput }) =>
         apiClient.post("/api/api-keys/validate", {
-            json: data,
+            body: data,
         }),
 });

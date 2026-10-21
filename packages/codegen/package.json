@@ -2,20 +2,18 @@
     "name": "@photon/codegen",
     "version": "0.0.0",
     "private": true,
-    "bin": {
-        "photon-codegen": "./src/cli.ts"
-    },
     "type": "module",
-    "scripts": {
-        "typecheck": "tsc --noEmit"
+    "exports": {
+        ".": "./src/generated/index.ts"
     },
-    "dependencies": {
-        "openapi-typescript": "^7.13.0",
-        "typescript": "npm:@typescript/typescript6@^6.0.2"
+    "scripts": {
+        "codegen": "bun src/cli.ts",
+        "typecheck": "tsc --noEmit"
     },
     "devDependencies": {
         "@photon/tsconfig": "workspace:*",
         "@types/bun": "catalog:",
-        "@types/node": "catalog:"
+        "@types/node": "catalog:",
+        "typed-openapi": "^4.1.0"
     }
 }

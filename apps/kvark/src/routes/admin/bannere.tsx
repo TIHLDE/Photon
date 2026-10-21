@@ -5,7 +5,7 @@ import { addDays } from "date-fns";
 import { nb } from "date-fns/locale";
 import { Suspense, useEffect, useState } from "react";
 
-import type { Banner } from "@tihlde/sdk";
+import type { Banner } from "@photon/codegen";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";

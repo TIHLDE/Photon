@@ -3,7 +3,6 @@ name: "build -> push -> deploy"
 # Deploy trigges av en release-tag, ikke av push til en branch.
 # Tag-format: <dato>.release-<n>, f.eks. 2026-08-08.release-1.
 # Bruk `bun run cut-release` (scripts/cut-release.sh) for å lage taggen.
-# (`bun run release` er changesets' npm-publisering av @tihlde/sdk — noe annet.)
 on:
     push:
         tags:

@@ -1,5 +1,5 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
-import type { CreateGroupPosition, UpdateGroupPosition } from "@tihlde/sdk";
+import type { CreateGroupPosition, UpdateGroupPosition } from "@photon/codegen";
 import { apiClient } from "#/api/api-client";
 
 const RoleQueryKeys = {
@@ -21,7 +21,7 @@ export const searchUsersQuery = (q: string, groupSlug?: string) =>
         queryKey: [...RoleQueryKeys.userSearch, q, groupSlug ?? null],
         queryFn: () =>
             apiClient.get("/api/user/search", {
-                searchParams: groupSlug ? { q, groupSlug } : { q },
+                query: groupSlug ? { q, groupSlug } : { q },
             }),
         staleTime: 30_000,
     });
@@ -33,7 +33,7 @@ export const getGroupPositionsQuery = (groupSlug: string) =>
         queryKey: [...RoleQueryKeys.positions, groupSlug],
         queryFn: () =>
             apiClient.get("/api/groups/{groupSlug}/positions", {
-                params: { groupSlug },
+                path: { groupSlug },
             }),
     });
 
@@ -46,8 +46,8 @@ export const createPositionMutation = mutationOptions({
         data: CreateGroupPosition;
     }) =>
         apiClient.post("/api/groups/{groupSlug}/positions", {
-            params: { groupSlug },
-            json: data,
+            path: { groupSlug },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -67,8 +67,8 @@ export const updatePositionMutation = mutationOptions({
         data: UpdateGroupPosition;
     }) =>
         apiClient.patch("/api/groups/{groupSlug}/positions/{positionId}", {
-            params: { groupSlug, positionId },
-            json: data,
+            path: { groupSlug, positionId },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -86,7 +86,7 @@ export const deletePositionMutation = mutationOptions({
         positionId: string;
     }) =>
         apiClient.delete("/api/groups/{groupSlug}/positions/{positionId}", {
-            params: { groupSlug, positionId },
+            path: { groupSlug, positionId },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -107,7 +107,7 @@ export const getLeaderPermissionsQuery = (groupSlug: string) =>
         queryKey: [...RoleQueryKeys.leaderPermissions, groupSlug],
         queryFn: () =>
             apiClient.get("/api/groups/{groupSlug}/leader-permissions", {
-                params: { groupSlug },
+                path: { groupSlug },
             }),
     });
 
@@ -126,8 +126,8 @@ export const updateLeaderPermissionsMutation = mutationOptions({
         title?: string | null;
     }) =>
         apiClient.patch("/api/groups/{groupSlug}/leader-permissions", {
-            params: { groupSlug },
-            json: { permissions, globalPermissions, title },
+            path: { groupSlug },
+            body: { permissions, globalPermissions, title },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -149,8 +149,8 @@ export const assignPositionMutation = mutationOptions({
         apiClient.post(
             "/api/groups/{groupSlug}/positions/{positionId}/holders",
             {
-                params: { groupSlug, positionId },
-                json: { userId },
+                path: { groupSlug, positionId },
+                body: { userId },
             },
         ),
     onSuccess(_, vars, __, ctx) {
@@ -173,7 +173,7 @@ export const unassignPositionMutation = mutationOptions({
         apiClient.delete(
             "/api/groups/{groupSlug}/positions/{positionId}/holders/{userId}",
             {
-                params: { groupSlug, positionId, userId },
+                path: { groupSlug, positionId, userId },
             },
         ),
     onSuccess(_, vars, __, ctx) {
@@ -196,7 +196,7 @@ export const getMemberPermissionsQuery = (groupSlug: string) =>
         queryKey: [...RoleQueryKeys.memberPermissions, groupSlug],
         queryFn: () =>
             apiClient.get("/api/groups/{groupSlug}/member-permissions", {
-                params: { groupSlug },
+                path: { groupSlug },
             }),
     });
 
@@ -211,8 +211,8 @@ export const updateMemberPermissionsMutation = mutationOptions({
         globalPermissions: string[];
     }) =>
         apiClient.patch("/api/groups/{groupSlug}/member-permissions", {
-            params: { groupSlug },
-            json: { permissions, globalPermissions },
+            path: { groupSlug },
+            body: { permissions, globalPermissions },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({

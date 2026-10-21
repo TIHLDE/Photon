@@ -4,8 +4,8 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
-import type { QueryParamsHelper } from "#/api/types";
-import type { CreateJob, UpdateJob } from "@tihlde/sdk";
+import type { QueryParamsHelper } from "@photon/codegen";
+import type { CreateJob, UpdateJob } from "@photon/codegen";
 
 const JobQueryKeys = {
     listInfinite: ["jobs", "list-infinite"] as const,
@@ -29,7 +29,7 @@ export const getJobsQuery = (
         queryKey: [...JobQueryKeys.list, page, pageSize, filters],
         queryFn: () =>
             apiClient.get("/api/jobs", {
-                searchParams: {
+                query: {
                     page,
                     pageSize,
                     ...filters,
@@ -45,7 +45,7 @@ export const getJobsInfiniteQuery = (
         queryKey: [...JobQueryKeys.listInfinite, pageSize, filters],
         queryFn: ({ pageParam }) =>
             apiClient.get("/api/jobs", {
-                searchParams: {
+                query: {
                     page: pageParam,
                     pageSize,
                     ...filters,
@@ -60,14 +60,14 @@ export const getJobByIdQuery = (jobId: string) =>
         queryKey: [...JobQueryKeys.detail, jobId],
         queryFn: () =>
             apiClient.get("/api/jobs/{id}", {
-                params: { id: jobId },
+                path: { id: jobId },
             }),
     });
 
 export const createJobMutation = mutationOptions({
     mutationFn: ({ data }: { data: CreateJob }) =>
         apiClient.post("/api/jobs", {
-            json: data,
+            body: data,
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
@@ -84,8 +84,8 @@ export const createJobMutation = mutationOptions({
 export const updateJobMutation = mutationOptions({
     mutationFn: ({ jobId, data }: { jobId: string; data: UpdateJob }) =>
         apiClient.patch("/api/jobs/{id}", {
-            params: { id: jobId },
-            json: data,
+            path: { id: jobId },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries(getJobByIdQuery(vars.jobId));
@@ -103,7 +103,7 @@ export const updateJobMutation = mutationOptions({
 export const deleteJobMutation = mutationOptions({
     mutationFn: ({ jobId }: { jobId: string }) =>
         apiClient.delete("/api/jobs/{id}", {
-            params: { id: jobId },
+            path: { id: jobId },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries(getJobByIdQuery(vars.jobId));

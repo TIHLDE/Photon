@@ -1,7 +1,7 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
-import { HTTPError } from "ky";
+import { TypedStatusError } from "@photon/codegen";
 import { apiClient } from "#/api/api-client";
-import type { CreateContract, SignContract } from "@tihlde/sdk";
+import type { CreateContract, SignContract } from "@photon/codegen";
 
 const ContractQueryKeys = {
     active: ["contracts", "active"] as const,
@@ -20,7 +20,7 @@ export const getActiveContractQuery = () =>
                 return await apiClient.get("/api/contracts/active");
             } catch (error) {
                 if (
-                    error instanceof HTTPError &&
+                    error instanceof TypedStatusError &&
                     error.response.status === 404
                 ) {
                     return null;
@@ -48,13 +48,13 @@ export const getGroupSignaturesQuery = (groupSlug: string) =>
         queryKey: [...ContractQueryKeys.groupSignatures, groupSlug],
         queryFn: () =>
             apiClient.get("/api/contracts/groups/{groupSlug}/signatures", {
-                params: { groupSlug },
+                path: { groupSlug },
             }),
     });
 
 export const signContractMutation = mutationOptions({
     mutationFn: (data: SignContract) =>
-        apiClient.post("/api/contracts/sign", { json: data }),
+        apiClient.post("/api/contracts/sign", { body: data }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
             queryKey: [...ContractQueryKeys.mySignature],
@@ -65,7 +65,7 @@ export const signContractMutation = mutationOptions({
 
 export const createContractMutation = mutationOptions({
     mutationFn: (data: CreateContract) =>
-        apiClient.post("/api/contracts", { json: data }),
+        apiClient.post("/api/contracts", { body: data }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
             queryKey: [...ContractQueryKeys.list],
@@ -76,7 +76,7 @@ export const createContractMutation = mutationOptions({
 
 export const activateContractMutation = mutationOptions({
     mutationFn: ({ id }: { id: string }) =>
-        apiClient.patch("/api/contracts/{id}/activate", { params: { id } }),
+        apiClient.patch("/api/contracts/{id}/activate", { path: { id } }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
             queryKey: [...ContractQueryKeys.list],
@@ -99,7 +99,7 @@ export const revokeSignatureMutation = mutationOptions({
     }) =>
         apiClient.delete(
             "/api/contracts/groups/{groupSlug}/signatures/{userId}",
-            { params: { groupSlug, userId } },
+            { path: { groupSlug, userId } },
         ),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({

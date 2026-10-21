@@ -4,7 +4,10 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
-import type { UpdateUserSettingsInput, OnboardUserInput } from "@tihlde/sdk";
+import type {
+    UpdateUserSettingsInput,
+    OnboardUserInput,
+} from "@photon/codegen";
 
 const UserQueryKeys = {
     settings: ["user", "settings"] as const,
@@ -44,7 +47,7 @@ export const getUsersInfiniteQuery = (
         queryKey: [...UserQueryKeys.listInfinite, pageSize, filters],
         queryFn: ({ pageParam }) =>
             apiClient.get("/api/user", {
-                searchParams: {
+                query: {
                     page: pageParam,
                     pageSize,
                     ...(filters.search ? { search: filters.search } : {}),
@@ -70,7 +73,7 @@ export const getUserProfileQuery = (userId: string) =>
     queryOptions({
         queryKey: [...UserQueryKeys.profile, userId],
         queryFn: () =>
-            apiClient.get("/api/user/{id}", { params: { id: userId } }),
+            apiClient.get("/api/user/{id}", { path: { id: userId } }),
     });
 
 export const getUserSettingsQuery = () =>
@@ -82,7 +85,7 @@ export const getUserSettingsQuery = () =>
 export const createUserSettingsMutation = mutationOptions({
     mutationFn: ({ data }: { data: OnboardUserInput }) =>
         apiClient.post("/api/user/me/settings", {
-            json: data,
+            body: data,
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
@@ -95,7 +98,7 @@ export const createUserSettingsMutation = mutationOptions({
 export const updateUserSettingsMutation = mutationOptions({
     mutationFn: ({ data }: { data: UpdateUserSettingsInput }) =>
         apiClient.patch("/api/user/me/settings", {
-            json: data,
+            body: data,
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
@@ -135,7 +138,7 @@ export const getAllergiesQuery = (options?: { curated?: boolean }) =>
         queryKey: [...UserQueryKeys.allergies, options?.curated ?? false],
         queryFn: () =>
             apiClient.get("/api/user/allergy", {
-                searchParams: options?.curated ? { curated: "true" } : {},
+                query: options?.curated ? { curated: "true" } : {},
             }),
     });
 
@@ -148,7 +151,7 @@ export const getUserAllergiesQuery = (userId: string) =>
         queryKey: [...UserQueryKeys.userAllergies, userId],
         queryFn: () =>
             apiClient.get("/api/user/{id}/allergies", {
-                params: { id: userId },
+                path: { id: userId },
             }),
     });
 
@@ -161,8 +164,8 @@ export const updateUserAllergiesMutation = mutationOptions({
         allergies: string[];
     }) =>
         apiClient.put("/api/user/{id}/allergies", {
-            params: { id: userId },
-            json: { allergies },
+            path: { id: userId },
+            body: { allergies },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -189,8 +192,8 @@ export const updateUserStatusMutation = mutationOptions({
         reason?: string;
     }) =>
         apiClient.patch("/api/user/{id}/status", {
-            params: { id: userId },
-            json: { isActive, ...(reason ? { reason } : {}) },
+            path: { id: userId },
+            body: { isActive, ...(reason ? { reason } : {}) },
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
@@ -220,8 +223,8 @@ export const updateUserBaselineRoleMutation = mutationOptions({
         role: "member" | "alumni";
     }) =>
         apiClient.patch("/api/user/{id}/baseline-role", {
-            params: { id: userId },
-            json: { role },
+            path: { id: userId },
+            body: { role },
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
@@ -248,8 +251,8 @@ export const approveUserMutation = mutationOptions({
         role: "member" | "alumni";
     }) =>
         apiClient.post("/api/user/{id}/approve", {
-            params: { id: userId },
-            json: { role },
+            path: { id: userId },
+            body: { role },
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
@@ -268,7 +271,7 @@ export const approveUserMutation = mutationOptions({
  */
 export const deleteUserMutation = mutationOptions({
     mutationFn: ({ userId }: { userId: string }) =>
-        apiClient.delete("/api/user/{id}", { params: { id: userId } }),
+        apiClient.delete("/api/user/{id}", { path: { id: userId } }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
             queryKey: [...UserQueryKeys.listInfinite],
@@ -298,8 +301,8 @@ export const updateUserStudyMutation = mutationOptions({
         studyProgramSlug: string | null;
     }) =>
         apiClient.patch("/api/user/{id}/study", {
-            params: { id: userId },
-            json: { studyProgramSlug },
+            path: { id: userId },
+            body: { studyProgramSlug },
         }),
     onSuccess(_, __, ___, ctx) {
         // Studiet vises både i admin-lista og på profilen.
@@ -337,8 +340,8 @@ export const updateUserStudyYearMutation = mutationOptions({
         studyProgramSlug?: string | null;
     }) =>
         apiClient.patch("/api/user/{id}/study-year", {
-            params: { id: userId },
-            json: { startYear, studyProgramSlug },
+            path: { id: userId },
+            body: { startYear, studyProgramSlug },
         }),
     onSuccess(_, __, ___, ctx) {
         // Kullet vises både i admin-lista og på profilen.

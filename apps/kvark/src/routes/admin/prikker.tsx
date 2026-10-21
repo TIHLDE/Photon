@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { DotSquareIcon, PlusIcon, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import type { Strike } from "@tihlde/sdk";
+import type { Strike } from "@photon/codegen";
 import {
     Accordion,
     AccordionContent,

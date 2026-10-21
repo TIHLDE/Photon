@@ -8,7 +8,7 @@ import type {
     CreateGalleryPictures,
     UpdateGallery,
     UpdateGalleryPicture,
-} from "@tihlde/sdk";
+} from "@photon/codegen";
 import { apiClient } from "#/api/api-client";
 
 const GalleryQueryKeys = {
@@ -29,7 +29,7 @@ export const getGalleriesQuery = (
         queryKey: [...GalleryQueryKeys.list, page, pageSize],
         queryFn: () =>
             apiClient.get("/api/galleries", {
-                searchParams: { page, pageSize },
+                query: { page, pageSize },
             }),
     });
 
@@ -40,7 +40,7 @@ export const getGalleriesInfiniteQuery = (
         queryKey: [...GalleryQueryKeys.listInfinite, pageSize],
         queryFn: ({ pageParam }) =>
             apiClient.get("/api/galleries", {
-                searchParams: { page: pageParam, pageSize },
+                query: { page: pageParam, pageSize },
             }),
         initialPageParam: 0,
         getNextPageParam: (lastPage) => lastPage.nextPage,
@@ -50,7 +50,7 @@ export const getGalleryQuery = (slug: string) =>
     queryOptions({
         queryKey: [...GalleryQueryKeys.detail, slug],
         queryFn: () =>
-            apiClient.get("/api/galleries/{slug}", { params: { slug } }),
+            apiClient.get("/api/galleries/{slug}", { path: { slug } }),
     });
 
 /**
@@ -65,8 +65,8 @@ export const getGalleryPicturesInfiniteQuery = (
         queryKey: [...GalleryQueryKeys.pictures, slug, pageSize],
         queryFn: ({ pageParam }) =>
             apiClient.get("/api/galleries/{slug}/pictures", {
-                params: { slug },
-                searchParams: { page: pageParam, pageSize },
+                path: { slug },
+                query: { page: pageParam, pageSize },
             }),
         initialPageParam: 0,
         getNextPageParam: (lastPage) => lastPage.nextPage,
@@ -74,7 +74,7 @@ export const getGalleryPicturesInfiniteQuery = (
 
 export const createGalleryMutation = mutationOptions({
     mutationFn: ({ data }: { data: CreateGallery }) =>
-        apiClient.post("/api/galleries", { json: data }),
+        apiClient.post("/api/galleries", { body: data }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
             queryKey: [...GalleryQueryKeys.list],
@@ -90,8 +90,8 @@ export const createGalleryMutation = mutationOptions({
 export const updateGalleryMutation = mutationOptions({
     mutationFn: ({ slug, data }: { slug: string; data: UpdateGallery }) =>
         apiClient.patch("/api/galleries/{slug}", {
-            params: { slug },
-            json: data,
+            path: { slug },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries(getGalleryQuery(vars.slug));
@@ -108,7 +108,7 @@ export const updateGalleryMutation = mutationOptions({
 
 export const deleteGalleryMutation = mutationOptions({
     mutationFn: ({ slug }: { slug: string }) =>
-        apiClient.delete("/api/galleries/{slug}", { params: { slug } }),
+        apiClient.delete("/api/galleries/{slug}", { path: { slug } }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
             queryKey: [...GalleryQueryKeys.list],
@@ -130,8 +130,8 @@ export const createGalleryPicturesMutation = mutationOptions({
         data: CreateGalleryPictures;
     }) =>
         apiClient.post("/api/galleries/{slug}/pictures", {
-            params: { slug },
-            json: data,
+            path: { slug },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -153,8 +153,8 @@ export const updateGalleryPictureMutation = mutationOptions({
         data: UpdateGalleryPicture;
     }) =>
         apiClient.patch("/api/galleries/{slug}/pictures/{pictureId}", {
-            params: { slug, pictureId },
-            json: data,
+            path: { slug, pictureId },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -167,7 +167,7 @@ export const updateGalleryPictureMutation = mutationOptions({
 export const deleteGalleryPictureMutation = mutationOptions({
     mutationFn: ({ slug, pictureId }: { slug: string; pictureId: string }) =>
         apiClient.delete("/api/galleries/{slug}/pictures/{pictureId}", {
-            params: { slug, pictureId },
+            path: { slug, pictureId },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({

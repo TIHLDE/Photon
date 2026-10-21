@@ -14,7 +14,7 @@ import { MarkdownView } from "@tihlde/ui/complex/markdown";
 import { Separator } from "@tihlde/ui/ui/separator";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 import { ArrowLeft, CheckCircle2, TriangleAlert } from "lucide-react";
-import type { FormDetail } from "@tihlde/sdk";
+import type { FormDetail } from "@photon/codegen";
 import { z } from "zod";
 
 import { authClientWithRedirect } from "#/api/auth";

@@ -6,7 +6,7 @@ import type {
     FineUserList,
     Law as ApiLaw,
     GroupFormList,
-} from "@tihlde/sdk";
+} from "@photon/codegen";
 import { formatInOslo, formatOsloDate } from "#/lib/date";
 
 type ApiFineUser = FineUserList["users"][number];

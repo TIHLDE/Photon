@@ -149,7 +149,6 @@ The repo has **one long-lived branch: `main`**. There is no `dev` branch.
 - Cut a release with `bun run cut-release` — never `git tag` by hand. The script verifies you're on `main`, that the tree is clean, and that `main` is in sync with `origin/main`. It does **not** check CI — verify that yourself before tagging, because the merge commit on `main` usually still has tests running for several minutes after the PR went in.
 - The tag triggers `deploy.yml`: build → push to GHCR → notify Drift → publish a GitHub Release whose changelog is built from each PR's «For medlemmer» section (see Pull Requests). The release tag is also applied to the docker image so Drift can use it as a deploy marker.
 - **The deploy runs no migrations.** The container's entrypoint is `migrate.js && index.js`, so the schema changes when the new container boots — which is minutes after the workflow reports success. "Deploy: success" is not evidence that a migration ran; check the database. The ordering is what makes enum changes safe: the migration finishes before the new code serves a request.
-- `bun run release` is something else — changesets' npm publish of `@tihlde/sdk`. Don't confuse the two.
 
 ### Commit Message Convention
 

@@ -4,7 +4,7 @@ import {
     useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import type { Gallery } from "@tihlde/sdk";
+import type { Gallery } from "@photon/codegen";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Button } from "@tihlde/ui/ui/button";
 import {

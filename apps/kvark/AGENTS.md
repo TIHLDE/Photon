@@ -8,7 +8,7 @@ This document defines the rules for AI agents (and humans) contributing to the K
 - **Data**: TanStack Query (+ SSR integration via `@tanstack/react-router-ssr-query`)
 - **Forms**: TanStack Form
 - **Tables**: TanStack Table
-- **API Client**: `@tihlde/sdk` (workspace package)
+- **API Client**: `typed-openapi` generated client from `@photon/codegen`
 - **UI Kit**: `@tihlde/ui` (workspace package — ShadCN-based)
 - **Styling**: Tailwind CSS v4 (theme tokens only; `@tihlde/ui` components are never restyled)
 - **Auth**: Better Auth
@@ -67,7 +67,7 @@ If a composition will appear more than once, extract it into `src/components/`.
 
 Presentation components MUST NOT:
 
-- Fetch data (no `useQuery`, no `fetch`, no SDK calls inside)
+- Fetch data (no `useQuery`, no `fetch`, no API client calls inside)
 - Mutate data (no `useMutation` inside)
 - Read from global stores beyond trivial UI state
 - Know about routes, auth state, or the network
@@ -114,10 +114,10 @@ Pair TanStack Router and TanStack Query with Suspense aggressively.
 
 ### 6. Data layer
 
-- All server data goes through `@tihlde/sdk`, wrapped in TanStack Query.
+- All server data goes through `apiClient` from `#/api/api-client`, wrapped in TanStack Query. Types come from `@photon/codegen`; regenerate with `bun run codegen`.
 - Define query options (`queryOptions({ queryKey, queryFn })`) colocated with the feature under `src/api/` so they are reusable between loaders and components.
 - Mutations invalidate the relevant query keys; do not manually edit cache unless there is a clear reason.
-- Never call the SDK directly inside a dumb component.
+- Never call the API client directly inside a dumb component.
 
 ### 7. Datoer og klokkeslett
 
@@ -129,7 +129,7 @@ Pair TanStack Router and TanStack Query with Suspense aggressively.
 
 ```
 src/
-├── api/            # queryOptions + mutation helpers wrapping @tihlde/sdk
+├── api/            # app-specific API configuration + queryOptions and mutations
 ├── components/     # reusable local components (dumb, compose @tihlde/ui)
 ├── integrations/   # third-party glue (posthog, query client, etc.)
 ├── lib/            # pure utilities (no React, no network)

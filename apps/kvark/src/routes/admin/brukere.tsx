@@ -44,7 +44,7 @@ import {
     TableHeader,
     TableRow,
 } from "@tihlde/ui/ui/table";
-import type { Group, GroupMember, UserListItem } from "@tihlde/sdk";
+import type { Group, GroupMember, UserListItem } from "@photon/codegen";
 
 import {
     addGroupMemberMutation,

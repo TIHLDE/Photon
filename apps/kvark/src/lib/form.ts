@@ -3,7 +3,7 @@ import type {
     FormStatistics,
     SubmissionList,
     UpdateForm,
-} from "@tihlde/sdk";
+} from "@photon/codegen";
 import { formatInOslo } from "#/lib/date";
 import { uniqBy } from "es-toolkit";
 

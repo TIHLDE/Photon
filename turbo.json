@@ -84,6 +84,7 @@
             "interactive": true
         },
         "db:check-order": {},
+        "codegen": { "cache": false },
         "db:generate": { "cache": false },
         "db:migrate": {
             "dependsOn": ["@photon/docker#dev:up"],

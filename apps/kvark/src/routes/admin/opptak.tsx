@@ -28,7 +28,7 @@ import {
     TableHeader,
     TableRow,
 } from "@tihlde/ui/ui/table";
-import type { Contract } from "@tihlde/sdk";
+import type { Contract } from "@photon/codegen";
 import type { PlacementFields } from "@tihlde/ui/complex/pdf-placement";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { CheckCircle2, Upload, XCircle, Zap } from "lucide-react";

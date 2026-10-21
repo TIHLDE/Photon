@@ -6,8 +6,8 @@ import {
 import { apiClient } from "#/api/api-client";
 import { EventQueryKeys } from "#/api/queries/events";
 import { GroupQueryKeys } from "#/api/queries/groups";
-import type { QueryParamsHelper } from "#/api/types";
-import type { CreateForm, UpdateForm, CreateSubmission } from "@tihlde/sdk";
+import type { QueryParamsHelper } from "@photon/codegen";
+import type { CreateForm, UpdateForm, CreateSubmission } from "@photon/codegen";
 
 const FormQueryKeys = {
     listInfinite: ["forms", "list-infinite"] as const,
@@ -54,7 +54,7 @@ export const getFormByIdQuery = (formId: string) =>
         queryKey: [...FormQueryKeys.detail, formId],
         queryFn: () =>
             apiClient.get("/api/forms/{id}", {
-                params: { id: formId },
+                path: { id: formId },
             }),
     });
 
@@ -63,14 +63,14 @@ export const getFormStatisticsQuery = (formId: string) =>
         queryKey: [...FormQueryKeys.statistics, formId],
         queryFn: () =>
             apiClient.get("/api/forms/{id}/statistics", {
-                params: { id: formId },
+                path: { id: formId },
             }),
     });
 
 export const createFormMutation = mutationOptions({
     mutationFn: ({ data }: { data: CreateForm }) =>
         apiClient.post("/api/forms", {
-            json: data,
+            body: data,
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
@@ -87,8 +87,8 @@ export const createFormMutation = mutationOptions({
 export const updateFormMutation = mutationOptions({
     mutationFn: ({ formId, data }: { formId: string; data: UpdateForm }) =>
         apiClient.patch("/api/forms/{id}", {
-            params: { id: formId },
-            json: data,
+            path: { id: formId },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries(getFormByIdQuery(vars.formId));
@@ -121,7 +121,7 @@ export const updateFormMutation = mutationOptions({
 export const deleteFormMutation = mutationOptions({
     mutationFn: ({ formId }: { formId: string }) =>
         apiClient.delete("/api/forms/{id}", {
-            params: { id: formId },
+            path: { id: formId },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries(getFormByIdQuery(vars.formId));
@@ -170,7 +170,7 @@ export const getFormSubmissionsQuery = (
         ],
         queryFn: () =>
             apiClient.get("/api/forms/{formId}/submissions", {
-                params: { formId },
+                path: { formId },
             }),
     });
 
@@ -186,7 +186,7 @@ export const getOwnFormSubmissionsQuery = (formId: string) =>
         queryKey: [...FormQueryKeys.submissions, formId, "me"],
         queryFn: () =>
             apiClient.get("/api/forms/{formId}/submissions/me", {
-                params: { formId },
+                path: { formId },
             }),
     });
 
@@ -198,7 +198,7 @@ export const getFormSubmissionByIdQuery = (
         queryKey: [...FormQueryKeys.submissions, formId, submissionId],
         queryFn: () =>
             apiClient.get("/api/forms/{formId}/submissions/{id}", {
-                params: { formId, id: submissionId },
+                path: { formId, id: submissionId },
             }),
     });
 
@@ -207,7 +207,7 @@ export const downloadFormSubmissionsQuery = (formId: string) =>
         queryKey: [...FormQueryKeys.submissions, formId, "download"],
         queryFn: () =>
             apiClient.get("/api/forms/{formId}/submissions/download", {
-                params: { formId },
+                path: { formId },
             }),
         enabled: false,
     });
@@ -221,8 +221,8 @@ export const createSubmissionMutation = mutationOptions({
         data: CreateSubmission;
     }) =>
         apiClient.post("/api/forms/{formId}/submissions", {
-            params: { formId },
-            json: data,
+            path: { formId },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -253,7 +253,7 @@ export const createSubmissionMutation = mutationOptions({
 export const deleteAllSubmissionsMutation = mutationOptions({
     mutationFn: ({ formId }: { formId: string }) =>
         apiClient.delete("/api/forms/{formId}/submissions", {
-            params: { formId },
+            path: { formId },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({

@@ -6,7 +6,7 @@ import { BookOpenIcon, PencilIcon, PlusIcon, Trash2 } from "lucide-react";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
-import type { ToddelIssue } from "@tihlde/sdk";
+import type { ToddelIssue } from "@photon/codegen";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 import {

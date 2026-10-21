@@ -5,7 +5,7 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
-import type { QueryParamsHelper } from "#/api/types";
+import type { QueryParamsHelper } from "@photon/codegen";
 
 const NotificationQueryKeys = {
     listInfinite: ["notifications", "list-infinite"] as const,
@@ -29,7 +29,7 @@ export const getNotificationsQuery = (
         queryKey: [...NotificationQueryKeys.list, page, pageSize, filters],
         queryFn: () =>
             apiClient.get("/api/notification", {
-                searchParams: {
+                query: {
                     page,
                     pageSize,
                     ...filters,
@@ -46,7 +46,7 @@ export const getUnreadNotificationCountQuery = () =>
         queryKey: NotificationQueryKeys.unreadCount,
         queryFn: () =>
             apiClient.get("/api/notification", {
-                searchParams: { page: 0, pageSize: 1, isRead: false },
+                query: { page: 0, pageSize: 1, isRead: false },
             }),
         select: (data) => data.totalCount,
     });
@@ -59,7 +59,7 @@ export const getNotificationsInfiniteQuery = (
         queryKey: [...NotificationQueryKeys.listInfinite, pageSize, filters],
         queryFn: ({ pageParam }) =>
             apiClient.get("/api/notification", {
-                searchParams: {
+                query: {
                     page: pageParam,
                     pageSize,
                     ...filters,
@@ -92,7 +92,7 @@ function invalidateNotifications(client: QueryClient) {
 export const deleteNotificationMutation = mutationOptions({
     mutationFn: ({ notificationId }: { notificationId: string }) =>
         apiClient.delete("/api/notification/{id}", {
-            params: { id: notificationId },
+            path: { id: notificationId },
         }),
     onSuccess(_, __, ___, ctx) {
         invalidateNotifications(ctx.client);
@@ -108,8 +108,8 @@ export const markNotificationReadMutation = mutationOptions({
         isRead?: boolean;
     }) =>
         apiClient.patch("/api/notification/{id}/read", {
-            params: { id: notificationId },
-            json: { isRead },
+            path: { id: notificationId },
+            body: { isRead },
         }),
     onSuccess(_, __, ___, ctx) {
         invalidateNotifications(ctx.client);

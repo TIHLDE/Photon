@@ -88,22 +88,14 @@
         "docker:fresh": "turbo dev:fresh --filter=@photon/docker",
         "docker:prod": "turbo prod:up --filter=@photon/docker",
         "docker:prod:down": "turbo prod:down --filter=@photon/docker",
-        "sdk:generate": "turbo codegen --filter=@tihlde/sdk",
-        "sdk:update": "turbo build --filter=@tihlde/sdk && changeset",
-        "changeset": "changeset",
-        "version-packages": "changeset version",
-        "release": "turbo build --filter=@tihlde/sdk && changeset publish",
+        "codegen": "turbo codegen --filter=@photon/codegen",
         "cut-release": "bun scripts/cut-release.ts"
     },
     "devDependencies": {
-        "@changesets/changelog-github": "^0.5.2",
-        "@changesets/cli": "^2.31.1",
         "@shadcn/lint": "^0.2.1",
-        "@tihlde/sdk": "workspace:*",
         "@types/bun": "catalog:",
         "oxfmt": "catalog:",
         "oxlint": "catalog:",
-        "ts-morph": "^27.0.2",
         "turbo": "^2.10.13",
         "typescript": "catalog:"
     },

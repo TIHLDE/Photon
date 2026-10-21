@@ -68,7 +68,7 @@ import { Separator } from "@tihlde/ui/ui/separator";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Switch } from "@tihlde/ui/ui/switch";
 import { Textarea } from "@tihlde/ui/ui/textarea";
-import type { FeedbackComment, FeedbackItem } from "@tihlde/sdk";
+import type { FeedbackComment, FeedbackItem } from "@photon/codegen";
 import {
     Bug,
     ChevronDown,

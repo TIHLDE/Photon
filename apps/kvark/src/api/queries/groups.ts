@@ -6,7 +6,7 @@ import {
 import { apiClient } from "#/api/api-client";
 import { authQueryOptions } from "#/api/auth";
 import { fetchPrivateObjectUrl } from "#/lib/assets";
-import type { QueryParamsHelper } from "#/api/types";
+import type { QueryParamsHelper } from "@photon/codegen";
 import type {
     CreateGroup,
     UpdateGroup,
@@ -18,7 +18,7 @@ import type {
     CreateLaw,
     UpdateLaw,
     CreateGroupForm,
-} from "@tihlde/sdk";
+} from "@photon/codegen";
 
 // Eksportert fordi et gruppeskjema også oppdateres gjennom /api/forms, og den
 // mutasjonen må kunne invalidere gruppas skjemaliste.
@@ -74,7 +74,7 @@ export const getArchivedGroupsQuery = (userId: string | undefined) =>
         enabled: Boolean(userId),
         queryFn: () =>
             apiClient.get("/api/groups", {
-                searchParams: { archived: "true" },
+                query: { archived: "true" },
             }),
     });
 
@@ -89,14 +89,14 @@ export const getGroupBySlugQuery = (slug: string) =>
         queryKey: [...GroupQueryKeys.detail, slug],
         queryFn: () =>
             apiClient.get("/api/groups/{slug}", {
-                params: { slug },
+                path: { slug },
             }),
     });
 
 export const createGroupMutation = mutationOptions({
     mutationFn: ({ data }: { data: CreateGroup }) =>
         apiClient.post("/api/groups", {
-            json: data,
+            body: data,
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
@@ -117,8 +117,8 @@ export const createGroupMutation = mutationOptions({
 export const updateGroupMutation = mutationOptions({
     mutationFn: ({ slug, data }: { slug: string; data: UpdateGroup }) =>
         apiClient.patch("/api/groups/{slug}", {
-            params: { slug },
-            json: data,
+            path: { slug },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries(getGroupBySlugQuery(vars.slug));
@@ -136,8 +136,8 @@ export const updateGroupMutation = mutationOptions({
 export const deleteGroupMutation = mutationOptions({
     mutationFn: ({ slug, confirm }: { slug: string; confirm: string }) =>
         apiClient.delete("/api/groups/{slug}", {
-            params: { slug },
-            searchParams: { confirm },
+            path: { slug },
+            query: { confirm },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries(getGroupBySlugQuery(vars.slug));
@@ -175,7 +175,7 @@ function invalidateAfterArchiveChange(
 
 export const archiveGroupMutation = mutationOptions({
     mutationFn: ({ slug }: { slug: string }) =>
-        apiClient.post("/api/groups/{slug}/archive", { params: { slug } }),
+        apiClient.post("/api/groups/{slug}/archive", { path: { slug } }),
     onSuccess(_, vars, __, ctx) {
         invalidateAfterArchiveChange(vars.slug, ctx.client);
     },
@@ -183,7 +183,7 @@ export const archiveGroupMutation = mutationOptions({
 
 export const unarchiveGroupMutation = mutationOptions({
     mutationFn: ({ slug }: { slug: string }) =>
-        apiClient.post("/api/groups/{slug}/unarchive", { params: { slug } }),
+        apiClient.post("/api/groups/{slug}/unarchive", { path: { slug } }),
     onSuccess(_, vars, __, ctx) {
         invalidateAfterArchiveChange(vars.slug, ctx.client);
     },
@@ -212,7 +212,7 @@ export const getGroupMembersQuery = (
         ],
         queryFn: () =>
             apiClient.get("/api/groups/{groupSlug}/members", {
-                params: { groupSlug },
+                path: { groupSlug },
             }),
     });
 
@@ -225,7 +225,7 @@ export const getGroupFormerMembersQuery = (groupSlug: string) =>
         queryKey: [...GroupQueryKeys.formerMembers, groupSlug],
         queryFn: () =>
             apiClient.get("/api/groups/{groupSlug}/members/history", {
-                params: { groupSlug },
+                path: { groupSlug },
             }),
     });
 
@@ -238,8 +238,8 @@ export const addGroupMemberMutation = mutationOptions({
         data: AddGroupMember;
     }) =>
         apiClient.post("/api/groups/{groupSlug}/members", {
-            params: { groupSlug },
-            json: data,
+            path: { groupSlug },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -260,8 +260,8 @@ export const updateGroupMemberRoleMutation = mutationOptions({
         data: UpdateGroupMemberRole;
     }) =>
         apiClient.patch("/api/groups/{groupSlug}/members/{userId}", {
-            params: { groupSlug, userId },
-            json: data,
+            path: { groupSlug, userId },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -280,7 +280,7 @@ export const removeGroupMemberMutation = mutationOptions({
         userId: string;
     }) =>
         apiClient.delete("/api/groups/{groupSlug}/members/{userId}", {
-            params: { groupSlug, userId },
+            path: { groupSlug, userId },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -329,8 +329,8 @@ export const getGroupFinesInfiniteQuery = (
         ],
         queryFn: ({ pageParam }) =>
             apiClient.get("/api/groups/{groupSlug}/fines", {
-                params: { groupSlug },
-                searchParams: definedParams({
+                path: { groupSlug },
+                query: definedParams({
                     page: pageParam,
                     pageSize,
                     ...filters,
@@ -365,8 +365,8 @@ export const getGroupFineUsersInfiniteQuery = (
         ],
         queryFn: ({ pageParam }) =>
             apiClient.get("/api/groups/{groupSlug}/fines/users", {
-                params: { groupSlug },
-                searchParams: definedParams({
+                path: { groupSlug },
+                query: definedParams({
                     page: pageParam,
                     pageSize,
                     ...filters,
@@ -385,7 +385,7 @@ export const getGroupFineStatisticsQuery = (groupSlug: string) =>
         queryKey: [...GroupQueryKeys.fines, groupSlug, "statistics"],
         queryFn: () =>
             apiClient.get("/api/groups/{groupSlug}/fines/statistics", {
-                params: { groupSlug },
+                path: { groupSlug },
             }),
     });
 
@@ -394,7 +394,7 @@ export const getGroupFineByIdQuery = (groupSlug: string, fineId: string) =>
         queryKey: [...GroupQueryKeys.fines, groupSlug, fineId],
         queryFn: () =>
             apiClient.get("/api/groups/{groupSlug}/fines/{fineId}", {
-                params: { groupSlug, fineId },
+                path: { groupSlug, fineId },
             }),
     });
 
@@ -420,8 +420,8 @@ export const createFineMutation = mutationOptions({
         data: CreateFine;
     }) =>
         apiClient.post("/api/groups/{groupSlug}/fines", {
-            params: { groupSlug },
-            json: data,
+            path: { groupSlug },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -442,8 +442,8 @@ export const updateFineMutation = mutationOptions({
         data: UpdateFine;
     }) =>
         apiClient.patch("/api/groups/{groupSlug}/fines/{fineId}", {
-            params: { groupSlug, fineId },
-            json: data,
+            path: { groupSlug, fineId },
+            body: data,
         }),
     // Returnert, så `mutateAsync` først løses når listene er hentet på nytt:
     // forsvarsfeltet bytter til visning og skal da vise den nye teksten.
@@ -471,8 +471,8 @@ export const batchUpdateUserFinesMutation = mutationOptions({
         data: BatchUpdateUserFines;
     }) =>
         apiClient.patch("/api/groups/{groupSlug}/fines/users/{userId}/batch", {
-            params: { groupSlug, userId },
-            json: data,
+            path: { groupSlug, userId },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -491,7 +491,7 @@ export const deleteFineMutation = mutationOptions({
         fineId: string;
     }) =>
         apiClient.delete("/api/groups/{groupSlug}/fines/{fineId}", {
-            params: { groupSlug, fineId },
+            path: { groupSlug, fineId },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries(
@@ -511,15 +511,15 @@ export const getGroupLawsQuery = (groupSlug: string) =>
         queryKey: [...GroupQueryKeys.laws, groupSlug],
         queryFn: () =>
             apiClient.get("/api/groups/{groupSlug}/laws", {
-                params: { groupSlug },
+                path: { groupSlug },
             }),
     });
 
 export const createLawMutation = mutationOptions({
     mutationFn: ({ groupSlug, data }: { groupSlug: string; data: CreateLaw }) =>
         apiClient.post("/api/groups/{groupSlug}/laws", {
-            params: { groupSlug },
-            json: data,
+            path: { groupSlug },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -540,8 +540,8 @@ export const updateLawMutation = mutationOptions({
         data: UpdateLaw;
     }) =>
         apiClient.patch("/api/groups/{groupSlug}/laws/{lawId}", {
-            params: { groupSlug, lawId },
-            json: data,
+            path: { groupSlug, lawId },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -554,7 +554,7 @@ export const updateLawMutation = mutationOptions({
 export const deleteLawMutation = mutationOptions({
     mutationFn: ({ groupSlug, lawId }: { groupSlug: string; lawId: string }) =>
         apiClient.delete("/api/groups/{groupSlug}/laws/{lawId}", {
-            params: { groupSlug, lawId },
+            path: { groupSlug, lawId },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -571,15 +571,15 @@ export const getGroupFormsQuery = (slug: string) =>
         queryKey: [...GroupQueryKeys.forms, slug],
         queryFn: () =>
             apiClient.get("/api/groups/{slug}/forms", {
-                params: { slug },
+                path: { slug },
             }),
     });
 
 export const createGroupFormMutation = mutationOptions({
     mutationFn: ({ slug, data }: { slug: string; data: CreateGroupForm }) =>
         apiClient.post("/api/groups/{slug}/forms", {
-            params: { slug },
-            json: data,
+            path: { slug },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({

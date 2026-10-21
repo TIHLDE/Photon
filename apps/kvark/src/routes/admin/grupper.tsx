@@ -51,7 +51,7 @@ import type {
     GroupSignatureList,
     GroupSignatureMember,
     GroupWithMemberCount,
-} from "@tihlde/sdk";
+} from "@photon/codegen";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import {

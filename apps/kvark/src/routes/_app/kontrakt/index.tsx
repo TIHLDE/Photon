@@ -1,6 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import type { ActiveContract } from "@tihlde/sdk";
+import type { ActiveContract } from "@photon/codegen";
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Card,

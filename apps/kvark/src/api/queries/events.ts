@@ -5,7 +5,7 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
-import type { QueryParamsHelper } from "#/api/types";
+import type { QueryParamsHelper } from "@photon/codegen";
 import type {
     CreateEventSchema,
     UpdateEventSchema,
@@ -15,7 +15,7 @@ import type {
     UpdateFavoriteEvent,
     CreateEventReaction,
     EventMessageContent,
-} from "@tihlde/sdk";
+} from "@photon/codegen";
 
 export const EventQueryKeys = {
     allergies: ["events", "allergies"] as const,
@@ -51,7 +51,7 @@ export const getEventsQuery = (
         queryKey: [...EventQueryKeys.list, page, pageSize, filters],
         queryFn: () =>
             apiClient.get("/api/event", {
-                searchParams: {
+                query: {
                     page,
                     pageSize,
                     ...filters,
@@ -74,13 +74,13 @@ export const getEventsInRangeQuery = (
         queryKey: [...EventQueryKeys.list, "range", filters],
         queryFn: async () => {
             const firstPage = await apiClient.get("/api/event", {
-                searchParams: { page: 0, pageSize: MAX_PAGE_SIZE, ...filters },
+                query: { page: 0, pageSize: MAX_PAGE_SIZE, ...filters },
             });
             const items = [...firstPage.items];
             let nextPage = firstPage.nextPage;
             while (nextPage != null) {
                 const page = await apiClient.get("/api/event", {
-                    searchParams: {
+                    query: {
                         page: nextPage,
                         pageSize: MAX_PAGE_SIZE,
                         ...filters,
@@ -101,7 +101,7 @@ export const getEventsInfiniteQuery = (
         queryKey: [...EventQueryKeys.listInfinite, pageSize, filters],
         queryFn: ({ pageParam }) =>
             apiClient.get("/api/event", {
-                searchParams: {
+                query: {
                     page: pageParam,
                     pageSize,
                     ...filters,
@@ -116,7 +116,7 @@ export const getEventByIdQuery = (eventId: string) =>
         queryKey: [...EventQueryKeys.detail, eventId],
         queryFn: () =>
             apiClient.get(`/api/event/{eventId}`, {
-                params: { eventId },
+                path: { eventId },
             }),
     });
 
@@ -163,8 +163,8 @@ export const updateEventMutation = mutationOptions({
         data: UpdateEventSchema;
     }) =>
         apiClient.put("/api/event/{id}", {
-            params: { id: eventId },
-            json: data,
+            path: { id: eventId },
+            body: data,
         }),
     onSuccess(_, __, ___, ctx) {
         // En tittelendring gir dessuten ny slug, så hele detail-nøkkelen må
@@ -184,7 +184,7 @@ export const updateEventMutation = mutationOptions({
 export const deleteEventMutation = mutationOptions({
     mutationFn: ({ eventId }: { eventId: string }) =>
         apiClient.delete(`/api/event/{eventId}`, {
-            params: { eventId: eventId },
+            path: { eventId: eventId },
         }),
     onSuccess(_, __, ___, ctx) {
         invalidateEventDetails(ctx.client);
@@ -202,7 +202,7 @@ export const deleteEventMutation = mutationOptions({
 export const createEventMutation = mutationOptions({
     mutationFn: ({ data }: { data: CreateEventSchema }) =>
         apiClient.post("/api/event", {
-            json: data,
+            body: data,
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
@@ -248,7 +248,7 @@ export const getMyEventHistoryQuery = (
         queryKey: [...EventQueryKeys.myHistory, page, pageSize] as const,
         queryFn: () =>
             apiClient.get("/api/event/my-registrations", {
-                searchParams: { page, pageSize },
+                query: { page, pageSize },
             }),
     });
 
@@ -263,7 +263,7 @@ export const getMyEventHistoryInfiniteQuery = (
         queryKey: [...EventQueryKeys.myHistoryInfinite, pageSize] as const,
         queryFn: ({ pageParam }) =>
             apiClient.get("/api/event/my-registrations", {
-                searchParams: { page: pageParam, pageSize },
+                query: { page: pageParam, pageSize },
             }),
         initialPageParam: 0,
         getNextPageParam: (lastPage) => lastPage.nextPage,
@@ -278,8 +278,8 @@ export const updateFavoriteEventMutation = mutationOptions({
         data: UpdateFavoriteEvent;
     }) =>
         apiClient.put("/api/event/favorite/{id}", {
-            params: { id: eventId },
-            json: data,
+            path: { id: eventId },
+            body: data,
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
@@ -300,8 +300,8 @@ export const createEventReactionMutation = mutationOptions({
         data: CreateEventReaction;
     }) =>
         apiClient.post("/api/event/{eventId}/reactions", {
-            params: { eventId },
-            json: data,
+            path: { eventId },
+            body: data,
         }),
     onSuccess(_, __, ___, ctx) {
         invalidateEventDetails(ctx.client);
@@ -311,7 +311,7 @@ export const createEventReactionMutation = mutationOptions({
 export const deleteEventReactionMutation = mutationOptions({
     mutationFn: ({ eventId }: { eventId: string }) =>
         apiClient.delete("/api/event/{eventId}/reactions", {
-            params: { eventId },
+            path: { eventId },
         }),
     onSuccess(_, __, ___, ctx) {
         invalidateEventDetails(ctx.client);
@@ -341,8 +341,8 @@ export const getEventRegistrationsQuery = (
         ],
         queryFn: () =>
             apiClient.get("/api/event/{eventId}/registration", {
-                params: { eventId },
-                searchParams: {
+                path: { eventId },
+                query: {
                     page,
                     pageSize,
                     ...filters,
@@ -372,8 +372,8 @@ export const getEventRegistrationsInfiniteQuery = (
         ] as const,
         queryFn: ({ pageParam }) =>
             apiClient.get("/api/event/{eventId}/registration", {
-                params: { eventId },
-                searchParams: { page: pageParam, pageSize, ...filters },
+                path: { eventId },
+                query: { page: pageParam, pageSize, ...filters },
             }),
         initialPageParam: 0,
         getNextPageParam: (lastPage) => lastPage.nextPage,
@@ -384,8 +384,8 @@ export const registerForEventMutation = mutationOptions({
     // (`allowsPhotosByDefault`), som medlemmene styrer fra profilen sin.
     mutationFn: ({ eventId }: { eventId: string }) =>
         apiClient.post("/api/event/{eventId}/registration", {
-            params: { eventId },
-            json: {},
+            path: { eventId },
+            body: {},
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -407,8 +407,8 @@ export const adminAddRegistrationMutation = mutationOptions({
     // sperrene, men svarer fortsatt 409 på en som allerede står på lista.
     mutationFn: ({ eventId, userId }: { eventId: string; userId: string }) =>
         apiClient.post("/api/event/{eventId}/registration/{userId}", {
-            params: { eventId, userId },
-            json: {},
+            path: { eventId, userId },
+            body: {},
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -422,7 +422,7 @@ export const adminAddRegistrationMutation = mutationOptions({
 export const unregisterFromEventMutation = mutationOptions({
     mutationFn: ({ eventId }: { eventId: string }) =>
         apiClient.delete("/api/event/{eventId}/registration", {
-            params: { eventId },
+            path: { eventId },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -451,8 +451,8 @@ export const setAttendanceMutation = mutationOptions({
         apiClient.patch(
             "/api/event/{eventId}/registration/{userId}/attendance",
             {
-                params: { eventId, userId },
-                json: { attended },
+                path: { eventId, userId },
+                body: { attended },
             },
         ),
     onSuccess(_, vars, __, ctx) {
@@ -474,8 +474,8 @@ export const createEventPaymentMutation = mutationOptions({
         data: CreatePaymentBody;
     }) =>
         apiClient.post("/api/event/{eventId}/payment", {
-            params: { eventId },
-            json: data,
+            path: { eventId },
+            body: data,
         }),
 });
 
@@ -487,7 +487,7 @@ export const createEventPaymentMutation = mutationOptions({
 export const confirmEventPaymentMutation = mutationOptions({
     mutationFn: ({ eventId }: { eventId: string }) =>
         apiClient.post("/api/event/{eventId}/payment/confirm", {
-            params: { eventId },
+            path: { eventId },
         }),
 });
 
@@ -517,8 +517,8 @@ export const getEventPaymentsInfiniteQuery = (
         ] as const,
         queryFn: ({ pageParam }) =>
             apiClient.get("/api/event/{eventId}/payments", {
-                params: { eventId },
-                searchParams: { page: pageParam, pageSize, ...filters },
+                path: { eventId },
+                query: { page: pageParam, pageSize, ...filters },
             }),
         initialPageParam: 0,
         getNextPageParam: (lastPage) => lastPage.nextPage,
@@ -533,7 +533,7 @@ export const refundEventPaymentMutation = mutationOptions({
         paymentId: string;
     }) =>
         apiClient.post("/api/event/{eventId}/payments/{paymentId}/refund", {
-            params: { eventId, paymentId },
+            path: { eventId, paymentId },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -555,7 +555,7 @@ export const getEventFormsQuery = (eventId: string) =>
         queryKey: [...EventQueryKeys.forms, eventId],
         queryFn: () =>
             apiClient.get("/api/event/{eventId}/forms", {
-                params: { eventId },
+                path: { eventId },
             }),
     });
 
@@ -567,7 +567,7 @@ export const getEventFormByTypeQuery = (
         queryKey: [...EventQueryKeys.forms, eventId, type],
         queryFn: () =>
             apiClient.get("/api/event/{eventId}/forms/{type}", {
-                params: { eventId, type },
+                path: { eventId, type },
             }),
     });
 
@@ -580,8 +580,8 @@ export const createEventFormMutation = mutationOptions({
         data: CreateEventForm;
     }) =>
         apiClient.post("/api/event/{eventId}/forms", {
-            params: { eventId },
-            json: data,
+            path: { eventId },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -606,7 +606,7 @@ export const getStrikesByMemberQuery = (
         ] as const,
         queryFn: () =>
             apiClient.get("/api/event/strikes/members", {
-                searchParams: { page, pageSize },
+                query: { page, pageSize },
             }),
     });
 
@@ -624,7 +624,7 @@ export const getStrikesQuery = (
         ] as const,
         queryFn: () =>
             apiClient.get("/api/event/strikes", {
-                searchParams: {
+                query: {
                     page,
                     pageSize,
                     ...(userId ? { userId } : {}),
@@ -634,7 +634,7 @@ export const getStrikesQuery = (
 
 export const createStrikeMutation = mutationOptions({
     mutationFn: ({ data }: { data: CreateStrike }) =>
-        apiClient.post("/api/event/strikes", { json: data }),
+        apiClient.post("/api/event/strikes", { body: data }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
             queryKey: EventQueryKeys.strikes,
@@ -646,7 +646,7 @@ export const createStrikeMutation = mutationOptions({
 export const deleteStrikeMutation = mutationOptions({
     mutationFn: ({ strikeId }: { strikeId: string }) =>
         apiClient.delete("/api/event/strikes/{strikeId}", {
-            params: { strikeId },
+            path: { strikeId },
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
@@ -667,7 +667,7 @@ export const getEventAllergiesQuery = (eventId: string) =>
         queryKey: [...EventQueryKeys.allergies, eventId],
         queryFn: () =>
             apiClient.get("/api/event/{eventId}/allergies", {
-                params: { eventId },
+                path: { eventId },
             }),
     });
 
@@ -678,7 +678,7 @@ export const getEventMessagesQuery = (eventId: string) =>
         queryKey: [...EventQueryKeys.messages, eventId],
         queryFn: () =>
             apiClient.get("/api/event/{eventId}/messages", {
-                params: { eventId },
+                path: { eventId },
             }),
         // Antallet står i bekreftelsen før sending, så det må være ferskt.
         staleTime: 0,
@@ -693,8 +693,8 @@ export const sendEventMessageMutation = mutationOptions({
         data: EventMessageContent;
     }) =>
         apiClient.post("/api/event/{eventId}/messages", {
-            params: { eventId },
-            json: data,
+            path: { eventId },
+            body: data,
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
@@ -712,7 +712,7 @@ export const testEventMessageMutation = mutationOptions({
         data: EventMessageContent;
     }) =>
         apiClient.post("/api/event/{eventId}/messages/test", {
-            params: { eventId },
-            json: data,
+            path: { eventId },
+            body: data,
         }),
 });

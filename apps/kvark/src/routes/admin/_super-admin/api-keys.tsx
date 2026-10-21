@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Suspense, useState } from "react";
 
-import type { ApiKey } from "@tihlde/sdk";
+import type { ApiKey } from "@photon/codegen";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent, CardFooter } from "@tihlde/ui/ui/card";

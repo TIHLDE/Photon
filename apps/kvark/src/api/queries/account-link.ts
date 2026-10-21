@@ -1,6 +1,6 @@
 import { mutationOptions } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
-import type { AccountLinkHelp } from "@tihlde/sdk";
+import type { AccountLinkHelp } from "@photon/codegen";
 
 /**
  * Last resort for a member migrated from Lepton who can reach their old
@@ -12,7 +12,7 @@ import type { AccountLinkHelp } from "@tihlde/sdk";
 export const requestAccountLinkHelpMutation = mutationOptions({
     mutationFn: ({ data }: { data: AccountLinkHelp }) =>
         apiClient.post("/api/account-link/help", {
-            json: data,
+            body: data,
         }),
 });
 

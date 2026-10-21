@@ -1,4 +1,4 @@
-import type { Event } from "@tihlde/sdk";
+import type { Event } from "@photon/codegen";
 
 export type EventReactionItem = Event["reactions"][number];
 

@@ -1,6 +1,6 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
-import type { CreateBanner, UpdateBanner } from "@tihlde/sdk";
+import type { CreateBanner, UpdateBanner } from "@photon/codegen";
 
 const BannerQueryKeys = {
     list: ["banners", "list"] as const,
@@ -27,7 +27,7 @@ export const getVisibleBannersQuery = () =>
 export const createBannerMutation = mutationOptions({
     mutationFn: ({ data }: { data: CreateBanner }) =>
         apiClient.post("/api/banners", {
-            json: data,
+            body: data,
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({ queryKey: ["banners"], exact: false });
@@ -43,8 +43,8 @@ export const updateBannerMutation = mutationOptions({
         data: UpdateBanner;
     }) =>
         apiClient.patch("/api/banners/{id}", {
-            params: { id: bannerId },
-            json: data,
+            path: { id: bannerId },
+            body: data,
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({ queryKey: ["banners"], exact: false });
@@ -54,7 +54,7 @@ export const updateBannerMutation = mutationOptions({
 export const deleteBannerMutation = mutationOptions({
     mutationFn: ({ bannerId }: { bannerId: string }) =>
         apiClient.delete("/api/banners/{id}", {
-            params: { id: bannerId },
+            path: { id: bannerId },
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({ queryKey: ["banners"], exact: false });

@@ -3,7 +3,7 @@ import {
     queryOptions,
     useMutation,
 } from "@tanstack/react-query";
-import { HTTPError } from "ky";
+import { TypedStatusError } from "@photon/codegen";
 import { apiClient } from "#/api/api-client";
 import { assetPublicUrl } from "#/lib/assets";
 
@@ -17,7 +17,7 @@ export const getAssetQuery = (key: string) =>
         queryKey: [...AssetQueryKeys.detail, key],
         queryFn: () =>
             apiClient.get("/api/assets/{key}", {
-                params: { key },
+                path: { key },
             }),
     });
 
@@ -26,7 +26,7 @@ export const getAssetMetadataQuery = (key: string) =>
         queryKey: [...AssetQueryKeys.metadata, key],
         queryFn: () =>
             apiClient.get("/api/assets/metadata/{key}", {
-                params: { key },
+                path: { key },
             }),
     });
 
@@ -44,7 +44,7 @@ function uploadErrorMessage(error: unknown, formData: FormData): string {
             ? ` (${(file.size / 1024 / 1024).toFixed(1)} MB)`
             : "";
 
-    if (error instanceof HTTPError && error.response.status === 413) {
+    if (error instanceof TypedStatusError && error.response.status === 413) {
         return `${name}${size} er for stor til å lastes opp. Prøv en mindre fil.`;
     }
 
@@ -58,9 +58,19 @@ function uploadErrorMessage(error: unknown, formData: FormData): string {
 export const uploadAssetMutation = mutationOptions({
     mutationFn: async ({ formData }: { formData: FormData }) => {
         try {
+            const file = formData.get("file");
+            const visibility = formData.get("visibility");
+            if (!(file instanceof File)) throw new Error("No file provided");
+            if (
+                visibility !== null &&
+                visibility !== "public" &&
+                visibility !== "private"
+            ) {
+                throw new Error("Invalid asset visibility");
+            }
             return await apiClient.post("/api/assets", {
-                body: formData,
-            } as never);
+                body: { file, ...(visibility ? { visibility } : {}) },
+            });
         } catch (error) {
             throw new Error(uploadErrorMessage(error, formData), {
                 cause: error,

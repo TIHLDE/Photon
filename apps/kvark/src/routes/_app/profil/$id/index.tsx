@@ -15,7 +15,7 @@ import type { ProfileLink } from "#/components/profile-header";
 import { isPrivateGroupType, isRealMembership } from "#/lib/group";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import type { SignatureStatus } from "@tihlde/sdk";
+import type { SignatureStatus } from "@photon/codegen";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Button } from "@tihlde/ui/ui/button";
 import {

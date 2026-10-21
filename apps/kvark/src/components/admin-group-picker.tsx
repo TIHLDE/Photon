@@ -5,7 +5,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@tihlde/ui/ui/select";
-import type { Group } from "@tihlde/sdk";
+import type { Group } from "@photon/codegen";
 
 type AdminGroupPickerProps = {
     groups: Group[];

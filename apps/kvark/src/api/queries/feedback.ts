@@ -4,13 +4,13 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
-import type { QueryParamsHelper } from "@tihlde/sdk/types";
+import type { QueryParamsHelper } from "@photon/codegen";
 import type {
     CreateFeedback,
     CreateFeedbackComment,
     UpdateFeedback,
     VoteFeedback,
-} from "@tihlde/sdk";
+} from "@photon/codegen";
 
 const FeedbackQueryKeys = {
     all: ["feedback"] as const,
@@ -36,7 +36,7 @@ export const getFeedbackQuery = (
         queryKey: [...FeedbackQueryKeys.list, page, pageSize, filters],
         queryFn: () =>
             apiClient.get("/api/feedback", {
-                searchParams: { page, pageSize, ...filters },
+                query: { page, pageSize, ...filters },
             }),
     });
 
@@ -48,7 +48,7 @@ export const getFeedbackInfiniteQuery = (
         queryKey: [...FeedbackQueryKeys.listInfinite, pageSize, filters],
         queryFn: ({ pageParam }) =>
             apiClient.get("/api/feedback", {
-                searchParams: { page: pageParam, pageSize, ...filters },
+                query: { page: pageParam, pageSize, ...filters },
             }),
         initialPageParam: 0,
         getNextPageParam: (lastPage) => lastPage.nextPage,
@@ -59,7 +59,7 @@ export const getFeedbackItemQuery = (feedbackId: string) =>
         queryKey: FeedbackQueryKeys.detail(feedbackId),
         queryFn: () =>
             apiClient.get("/api/feedback/{id}", {
-                params: { id: feedbackId },
+                path: { id: feedbackId },
             }),
     });
 
@@ -68,7 +68,7 @@ export const getFeedbackCommentsQuery = (feedbackId: string) =>
         queryKey: FeedbackQueryKeys.comments(feedbackId),
         queryFn: () =>
             apiClient.get("/api/feedback/{id}/comments", {
-                params: { id: feedbackId },
+                path: { id: feedbackId },
             }),
     });
 
@@ -81,8 +81,8 @@ export const createFeedbackCommentMutation = mutationOptions({
         data: CreateFeedbackComment;
     }) =>
         apiClient.post("/api/feedback/{id}/comments", {
-            params: { id: feedbackId },
-            json: data,
+            path: { id: feedbackId },
+            body: data,
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
@@ -101,7 +101,7 @@ export const deleteFeedbackCommentMutation = mutationOptions({
         commentId: string;
     }) =>
         apiClient.delete("/api/feedback/{id}/comments/{commentId}", {
-            params: { id: feedbackId, commentId },
+            path: { id: feedbackId, commentId },
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
@@ -113,7 +113,7 @@ export const deleteFeedbackCommentMutation = mutationOptions({
 
 export const createFeedbackMutation = mutationOptions({
     mutationFn: ({ data }: { data: CreateFeedback }) =>
-        apiClient.post("/api/feedback", { json: data }),
+        apiClient.post("/api/feedback", { body: data }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
             queryKey: FeedbackQueryKeys.all,
@@ -131,8 +131,8 @@ export const updateFeedbackMutation = mutationOptions({
         data: UpdateFeedback;
     }) =>
         apiClient.patch("/api/feedback/{id}", {
-            params: { id: feedbackId },
-            json: data,
+            path: { id: feedbackId },
+            body: data,
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
@@ -145,7 +145,7 @@ export const updateFeedbackMutation = mutationOptions({
 export const deleteFeedbackMutation = mutationOptions({
     mutationFn: ({ feedbackId }: { feedbackId: string }) =>
         apiClient.delete("/api/feedback/{id}", {
-            params: { id: feedbackId },
+            path: { id: feedbackId },
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
@@ -164,8 +164,8 @@ export const voteFeedbackMutation = mutationOptions({
         data: VoteFeedback;
     }) =>
         apiClient.put("/api/feedback/{id}/vote", {
-            params: { id: feedbackId },
-            json: data,
+            path: { id: feedbackId },
+            body: data,
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
@@ -178,7 +178,7 @@ export const voteFeedbackMutation = mutationOptions({
 export const deleteFeedbackVoteMutation = mutationOptions({
     mutationFn: ({ feedbackId }: { feedbackId: string }) =>
         apiClient.delete("/api/feedback/{id}/vote", {
-            params: { id: feedbackId },
+            path: { id: feedbackId },
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
