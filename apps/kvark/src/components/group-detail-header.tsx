@@ -1,7 +1,14 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
-import { Archive, ArchiveRestore, Crown, HandCoins, Mail } from "lucide-react";
+import {
+    Archive,
+    ArchiveRestore,
+    Crown,
+    HandCoins,
+    LogOut,
+    Mail,
+} from "lucide-react";
 import { useState } from "react";
 
 import { ConfirmDeleteDialog } from "#/components/confirm-delete-dialog";
@@ -12,6 +19,7 @@ import {
     type GroupEditValues,
 } from "#/components/group-edit-dialog";
 import { GroupJoinDialog } from "#/components/group-join-dialog";
+import { GroupSelfJoinButton } from "#/components/group-self-join-button";
 import type { ComboboxMember } from "#/components/user-combobox";
 import type { Group } from "#/lib/group";
 import { initials } from "#/lib/utils";
@@ -36,8 +44,14 @@ type GroupDetailHeaderProps = {
     onSaveGroup: (values: GroupEditValues) => Promise<boolean>;
     isSavingGroup?: boolean;
     saveGroupError?: string | null;
-    /** Om knappen for å be om å bli med i gruppa skal vises. */
-    canRequestJoin: boolean;
+    /**
+     * Hva den innloggede kan gjøre med sitt eget medlemskap: bli med selv,
+     * be lederen om å bli med på e-post, eller melde seg ut.
+     */
+    membershipAction: "join" | "request" | "leave" | null;
+    onJoin: () => void;
+    onLeave: () => void;
+    isMembershipPending?: boolean;
     /** Navnet til den innloggede, som e-posten om å bli med signeres med. */
     viewerName?: string;
 };
@@ -55,10 +69,14 @@ export function GroupDetailHeader({
     onSaveGroup,
     isSavingGroup,
     saveGroupError,
-    canRequestJoin,
+    membershipAction,
+    onJoin,
+    onLeave,
+    isMembershipPending,
     viewerName,
 }: GroupDetailHeaderProps) {
     const [confirmArchive, setConfirmArchive] = useState(false);
+    const [confirmLeave, setConfirmLeave] = useState(false);
     const isArchived = Boolean(group.archivedAt);
     const showRestore = canArchive && isArchived;
     const showArchive = canArchive && !isArchived && Boolean(group.archivable);
@@ -129,18 +147,49 @@ export function GroupDetailHeader({
                 </div>
             }
             actions={
-                canRequestJoin ||
+                membershipAction ||
                 canGiveFine ||
                 isAdmin ||
                 showArchive ||
                 showRestore ? (
                     <>
-                        {canRequestJoin && group.contactEmail ? (
+                        {membershipAction === "join" ? (
+                            <GroupSelfJoinButton
+                                groupName={group.name}
+                                onJoin={onJoin}
+                                isPending={isMembershipPending}
+                            />
+                        ) : null}
+                        {membershipAction === "request" ? (
                             <GroupJoinDialog
                                 groupName={group.name}
                                 contactEmail={group.contactEmail}
                                 senderName={viewerName}
                             />
+                        ) : null}
+                        {membershipAction === "leave" ? (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setConfirmLeave(true)}
+                                    disabled={isMembershipPending}
+                                >
+                                    <LogOut />
+                                    Meld deg ut
+                                </Button>
+                                <ConfirmDeleteDialog
+                                    open={confirmLeave}
+                                    onOpenChange={setConfirmLeave}
+                                    title={`Melde deg ut av «${group.name}»?`}
+                                    description="Du kan bli med igjen senere."
+                                    confirmLabel="Meld deg ut"
+                                    onConfirm={() => {
+                                        setConfirmLeave(false);
+                                        onLeave();
+                                    }}
+                                    isPending={isMembershipPending}
+                                />
+                            </>
                         ) : null}
                         {canGiveFine ? (
                             <Button onClick={onGiveFine}>

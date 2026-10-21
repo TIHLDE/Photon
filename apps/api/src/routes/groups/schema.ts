@@ -196,6 +196,10 @@ export const groupDetailSchema = Schema(
             description:
                 "Whether this group may be archived at all. False for Hovedstyret and for groups whose roster follows Feide.",
         }),
+        selfJoinable: z.boolean().meta({
+            description:
+                "Whether a signed-in member can join this group themselves (POST /groups/{slug}/join). True for active interest groups that grant their members no permissions.",
+        }),
         viewerCanUseFines: z.boolean().meta({
             description:
                 "Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student.",

@@ -49,6 +49,8 @@ import {
     getGroupLawsQuery,
     getGroupMembersQuery,
     removeGroupMemberMutation,
+    joinGroupMutation,
+    leaveGroupMutation,
     updateFineMutation,
     updateGroupMemberRoleMutation,
     updateGroupMutation,
@@ -188,13 +190,13 @@ function GroupDetail() {
     const [editingFine, setEditingFine] = useState<Fine | null>(null);
     const [editFineError, setEditFineError] = useState<string | null>(null);
     const [groupError, setGroupError] = useState<string | null>(null);
-    const [archiveFailure, setArchiveFailure] = useState<{
+    const [headerFailure, setHeaderFailure] = useState<{
         slug: string;
         message: string;
     } | null>(null);
     // Siden monteres ikke på nytt når man går til en annen gruppe.
-    const archiveError =
-        archiveFailure?.slug === slug ? archiveFailure.message : null;
+    const headerError =
+        headerFailure?.slug === slug ? headerFailure.message : null;
     const [formDialogOpen, setFormDialogOpen] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
     const [editingForm, setEditingForm] = useState<Form | null>(null);
@@ -214,6 +216,8 @@ function GroupDetail() {
 
     const updateMemberRole = useMutation(updateGroupMemberRoleMutation);
     const removeMember = useMutation(removeGroupMemberMutation);
+    const joinGroup = useMutation(joinGroupMutation);
+    const leaveGroup = useMutation(leaveGroupMutation);
     const addMember = useMutation(addGroupMemberMutation);
     const updateGroup = useMutation(updateGroupMutation);
     const archiveGroup = useMutation(archiveGroupMutation);
@@ -367,15 +371,23 @@ function GroupDetail() {
         () => sortMembersByName((apiMembers ?? []).map(mapMember)),
         [apiMembers],
     );
-    // Interessegrupper uten påmelding tar opp nye medlemmer på e-post, så
-    // innloggede som ikke allerede er med får en knapp som skriver den for dem.
     const viewerId = session?.user?.id;
-    const canRequestJoin =
-        apiGroup.type.toUpperCase() === "INTERESTGROUP" &&
-        Boolean(apiGroup.contactEmail) &&
-        !isArchived &&
-        Boolean(viewerId) &&
-        !members.some((member) => member.id === viewerId);
+    const viewerMembership = members.find((member) => member.id === viewerId);
+    const isInterestGroup = apiGroup.type.toUpperCase() === "INTERESTGROUP";
+    // En gruppe som gir medlemmene tilganger tar ikke opp hvem som helst, så
+    // der må man fortsatt be lederen om å bli med.
+    const membershipAction =
+        !viewerId || !isInterestGroup || isArchived
+            ? null
+            : viewerMembership
+              ? viewerMembership.role === "leader"
+                  ? null
+                  : "leave"
+              : apiGroup.selfJoinable
+                ? "join"
+                : apiGroup.contactEmail
+                  ? "request"
+                  : null;
     const leaders = useMemo(
         () => members.filter((m) => m.role === "leader"),
         [members],
@@ -724,14 +736,28 @@ function GroupDetail() {
         }
     }
 
+    async function changeOwnMembership(
+        mutation: typeof joinGroup | typeof leaveGroup,
+    ) {
+        setHeaderFailure(null);
+        try {
+            await mutation.mutateAsync({ groupSlug: slug });
+        } catch (error) {
+            setHeaderFailure({
+                slug,
+                message: await extractErrorMessage(error),
+            });
+        }
+    }
+
     async function changeArchived(
         mutation: typeof archiveGroup | typeof unarchiveGroup,
     ) {
-        setArchiveFailure(null);
+        setHeaderFailure(null);
         try {
             await mutation.mutateAsync({ slug });
         } catch (error) {
-            setArchiveFailure({
+            setHeaderFailure({
                 slug,
                 message: await extractErrorMessage(error),
             });
@@ -757,7 +783,12 @@ function GroupDetail() {
                         onSaveGroup={handleSaveGroup}
                         isSavingGroup={updateGroup.isPending}
                         saveGroupError={groupError}
-                        canRequestJoin={canRequestJoin}
+                        membershipAction={membershipAction}
+                        onJoin={() => changeOwnMembership(joinGroup)}
+                        onLeave={() => changeOwnMembership(leaveGroup)}
+                        isMembershipPending={
+                            joinGroup.isPending || leaveGroup.isPending
+                        }
                         viewerName={session?.user?.name}
                     />
                 }
@@ -769,9 +800,9 @@ function GroupDetail() {
                 />
 
                 <DetailLayoutContent>
-                    {archiveError ? (
+                    {headerError ? (
                         <Alert variant="destructive">
-                            <AlertDescription>{archiveError}</AlertDescription>
+                            <AlertDescription>{headerError}</AlertDescription>
                         </Alert>
                     ) : null}
                     {activeTab === "om" ? <GroupOmTab group={group} /> : null}

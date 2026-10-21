@@ -34,6 +34,7 @@ export type Group = {
     finesAdminId?: string | null;
     archivedAt?: string | null;
     archivable?: boolean;
+    selfJoinable?: boolean;
 };
 
 export const HS_GROUP_SLUG = "hs";
@@ -338,6 +339,7 @@ export function mapGroup(group: ApiGroup, leader?: string): Group {
         finesAdminId: group.finesAdminId ?? null,
         archivedAt: group.archivedAt,
         archivable: group.archivable,
+        selfJoinable: group.selfJoinable,
     };
 }
 

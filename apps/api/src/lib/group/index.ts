@@ -478,6 +478,26 @@ export function allowsMultipleLeaders(type: string): boolean {
 }
 
 /**
+ * Om man kan melde seg inn i gruppa selv, uten at en leder legger en til.
+ *
+ * Interessegrupper er åpne for alle. Unntaket er en gruppe som gir medlemmene
+ * tilganger: selvinnmelding ville latt hvem som helst skaffe seg dem.
+ */
+export function isSelfJoinable(group: {
+    type: string;
+    archivedAt: Date | null;
+    memberPermissions: string[];
+    memberGlobalPermissions: string[];
+}): boolean {
+    return (
+        group.type.toLowerCase() === "interestgroup" &&
+        group.archivedAt === null &&
+        group.memberPermissions.length === 0 &&
+        group.memberGlobalPermissions.length === 0
+    );
+}
+
+/**
  * Whether a group may be archived at all.
  *
  * Hovedstyret may not: its members run TIHLDE through what the group grants,

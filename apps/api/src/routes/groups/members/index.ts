@@ -3,6 +3,7 @@ import { addMemberRoute } from "./add";
 import { listFormerMembersRoute } from "./history";
 import { listMembersRoute } from "./list";
 import { removeMemberRoute } from "./remove";
+import { joinGroupRoute, leaveGroupRoute } from "./self";
 import { updateMemberRoleRoute } from "./update";
 
 export const membersRoutes = route()
@@ -12,4 +13,6 @@ export const membersRoutes = route()
     .route("/", listMembersRoute)
     .route("/", addMemberRoute)
     .route("/", updateMemberRoleRoute)
-    .route("/", removeMemberRoute);
+    .route("/", removeMemberRoute)
+    .route("/", joinGroupRoute)
+    .route("/", leaveGroupRoute);
