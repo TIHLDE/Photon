@@ -638,13 +638,6 @@
       "when": 1792245609160,
       "tag": "0090_feedback_comments",
       "breakpoints": true
-    },
-    {
-      "idx": 91,
-      "version": "7",
-      "when": 1792404833320,
-      "tag": "0091_group_accepts_join_requests",
-      "breakpoints": true
     }
   ]
 }

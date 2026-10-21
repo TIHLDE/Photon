@@ -1,1 +1,0 @@
-ALTER TABLE "org_group" ADD COLUMN "accepts_join_requests" boolean DEFAULT false NOT NULL;

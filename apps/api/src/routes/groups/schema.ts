@@ -103,10 +103,6 @@ export const updateGroupSchema = Schema(
             description:
                 "Whether contract signing is required for group members",
         }),
-        acceptsJoinRequests: z.boolean().optional().meta({
-            description:
-                "Whether members can ask to join from the group page (interest groups only)",
-        }),
     }),
 );
 
@@ -170,10 +166,6 @@ export const groupSchema = Schema(
         contractSigningRequired: z.boolean().meta({
             description: "Whether contract signing is required",
         }),
-        acceptsJoinRequests: z.boolean().meta({
-            description:
-                "Whether members can ask to join from the group page (interest groups only)",
-        }),
         archivedAt: z.string().nullable().meta({
             description:
                 "When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions.",
@@ -208,11 +200,6 @@ export const groupDetailSchema = Schema(
             description:
                 "Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student.",
         }),
-        leaderEmails: z.array(z.string()).meta({
-            description:
-                "The leaders' emails, for the join button. Empty unless the caller is signed in, not a member, and the group takes join requests.",
-        }),
-
         viewerCanSeeOwnFines: z.boolean().meta({
             description:
                 "Whether the caller may read the fines they are party to here without taking part in the group's fine system: true for someone who has left the group but was once a member. Never true together with 'viewerCanUseFines'.",

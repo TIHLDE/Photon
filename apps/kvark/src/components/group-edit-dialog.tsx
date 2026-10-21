@@ -60,7 +60,6 @@ export type GroupEditValues = {
     finesActivated: boolean;
     finesAdminId: string | null;
     finesInfo: string;
-    acceptsJoinRequests: boolean;
 };
 
 type GroupEditDialogProps = {
@@ -91,9 +90,6 @@ export function GroupEditDialog({
     );
     const [finesAdmin, setFinesAdmin] = useState<ComboboxMember | null>(null);
     const [finesInfo, setFinesInfo] = useState(group.finesInfo ?? "");
-    const [acceptsJoinRequests, setAcceptsJoinRequests] = useState(
-        group.acceptsJoinRequests ?? false,
-    );
 
     // Dialogen blir stående montert, så feltene må hentes inn på nytt hver
     // gang den åpnes — ellers viser den det du skrev og angret på sist.
@@ -106,7 +102,6 @@ export function GroupEditDialog({
         setSubtype(groupSubtypeValue(group.subtype));
         setFinesActivated(group.finesActivated ?? false);
         setFinesInfo(group.finesInfo ?? "");
-        setAcceptsJoinRequests(group.acceptsJoinRequests ?? false);
         setFinesAdmin(
             members.find((member) => member.id === group.finesAdminId) ?? null,
         );
@@ -133,7 +128,6 @@ export function GroupEditDialog({
             finesActivated,
             finesAdminId: finesAdmin?.id ?? null,
             finesInfo,
-            acceptsJoinRequests,
         });
         if (saved) setOpen(false);
     }
@@ -276,19 +270,6 @@ export function GroupEditDialog({
                                         Idrettsgrupper får sin egen seksjon i
                                         organisasjonskartet.
                                     </FieldDescription>
-                                </Field>
-                            ) : null}
-
-                            {hasSubtype ? (
-                                <Field orientation="horizontal">
-                                    <FieldLabel htmlFor="accepts-join-requests">
-                                        Aktiver påmelding til interessegruppen
-                                    </FieldLabel>
-                                    <Switch
-                                        id="accepts-join-requests"
-                                        checked={acceptsJoinRequests}
-                                        onCheckedChange={setAcceptsJoinRequests}
-                                    />
                                 </Field>
                             ) : null}
 

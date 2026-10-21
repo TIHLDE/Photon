@@ -38,23 +38,30 @@ export function DetailHeader({
     actions,
 }: DetailHeaderProps) {
     return (
-        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-4 gap-y-3 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-stretch">
+        // På mobil er tekstkolonnen `contents`, så tittelen står ved siden av
+        // avataren og resten får hver sin hele linje under. Fra md står
+        // knappene til høyre, men får aldri mer enn halve bredden: som en
+        // `auto`-kolonne i et grid tok de all plassen de ville ha, og tittelen
+        // ble presset ned til én bokstav per linje.
+        <div className="flex flex-wrap items-start gap-x-4 gap-y-3 md:flex-nowrap">
             {avatar}
-            {/* Lange, ubrytelige gruppenavn (Forvaltningsgruppen) må kunne
-                brytes, ellers presser de headeren ut av skjermen på mobil. */}
-            <div className="min-w-0 wrap-anywhere">{title}</div>
-            {subtitle ? (
-                <div className="col-span-2 min-w-0 md:col-span-1 md:col-start-2">
-                    {subtitle}
+            <div className="contents md:flex md:min-w-0 md:flex-1 md:flex-col md:gap-3">
+                {/* Lange, ubrytelige gruppenavn (Forvaltningsgruppen) må kunne
+                    brytes, ellers presser de headeren ut av skjermen på mobil. */}
+                <div className="min-w-0 flex-1 wrap-anywhere md:flex-none">
+                    {title}
                 </div>
-            ) : null}
-            {badges ? (
-                <div className="col-span-2 flex flex-wrap items-center gap-2 md:col-span-1 md:col-start-2">
-                    {badges}
-                </div>
-            ) : null}
+                {subtitle ? (
+                    <div className="w-full min-w-0">{subtitle}</div>
+                ) : null}
+                {badges ? (
+                    <div className="flex w-full flex-wrap items-center gap-2">
+                        {badges}
+                    </div>
+                ) : null}
+            </div>
             {actions ? (
-                <div className="col-span-2 flex flex-wrap items-center gap-2 md:col-span-1 md:col-start-3 md:row-start-1 md:justify-end">
+                <div className="flex w-full flex-wrap items-center gap-2 md:w-auto md:max-w-1/2 md:shrink-0 md:justify-end">
                     {actions}
                 </div>
             ) : null}

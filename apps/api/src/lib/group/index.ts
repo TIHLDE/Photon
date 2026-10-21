@@ -458,18 +458,6 @@ export function isSubgroupType(type: string): boolean {
     return type.toLowerCase() === "subgroup";
 }
 
-export function isOpenForJoinRequests(group: {
-    type: string;
-    archivedAt: Date | null;
-    acceptsJoinRequests: boolean;
-}): boolean {
-    return (
-        group.type.toLowerCase() === "interestgroup" &&
-        !group.archivedAt &&
-        group.acceptsJoinRequests
-    );
-}
-
 /**
  * Om gruppa kan ha flere ledere samtidig.
  *

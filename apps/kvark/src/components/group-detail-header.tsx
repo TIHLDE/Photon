@@ -1,14 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
-import {
-    Archive,
-    ArchiveRestore,
-    Crown,
-    HandCoins,
-    Mail,
-    UserPlus,
-} from "lucide-react";
+import { Archive, ArchiveRestore, Crown, HandCoins, Mail } from "lucide-react";
 import { useState } from "react";
 
 import { ConfirmDeleteDialog } from "#/components/confirm-delete-dialog";
@@ -18,6 +11,7 @@ import {
     GroupEditDialog,
     type GroupEditValues,
 } from "#/components/group-edit-dialog";
+import { GroupJoinDialog } from "#/components/group-join-dialog";
 import type { ComboboxMember } from "#/components/user-combobox";
 import type { Group } from "#/lib/group";
 import { initials } from "#/lib/utils";
@@ -42,7 +36,10 @@ type GroupDetailHeaderProps = {
     onSaveGroup: (values: GroupEditValues) => Promise<boolean>;
     isSavingGroup?: boolean;
     saveGroupError?: string | null;
-    joinHref?: string;
+    /** Om knappen for å be om å bli med i gruppa skal vises. */
+    canRequestJoin: boolean;
+    /** Navnet til den innloggede, som e-posten om å bli med signeres med. */
+    viewerName?: string;
 };
 
 export function GroupDetailHeader({
@@ -58,7 +55,8 @@ export function GroupDetailHeader({
     onSaveGroup,
     isSavingGroup,
     saveGroupError,
-    joinHref,
+    canRequestJoin,
+    viewerName,
 }: GroupDetailHeaderProps) {
     const [confirmArchive, setConfirmArchive] = useState(false);
     const isArchived = Boolean(group.archivedAt);
@@ -71,7 +69,7 @@ export function GroupDetailHeader({
             // blåser opp raden headeren strekker seg etter, så avataren ble
             // merkbart større idet et bilde ble lagt til.
             avatar={
-                <Avatar className="size-16 shrink-0 md:row-span-3 md:size-24">
+                <Avatar className="size-16 shrink-0 md:size-24">
                     {group.logoUrl ? (
                         <AvatarImage
                             src={avatarImageUrl(group.logoUrl)}
@@ -131,17 +129,18 @@ export function GroupDetailHeader({
                 </div>
             }
             actions={
-                joinHref ||
+                canRequestJoin ||
                 canGiveFine ||
                 isAdmin ||
                 showArchive ||
                 showRestore ? (
                     <>
-                        {joinHref ? (
-                            <Button render={<a href={joinHref} />}>
-                                <UserPlus />
-                                Bli med i denne interessegruppen
-                            </Button>
+                        {canRequestJoin && group.contactEmail ? (
+                            <GroupJoinDialog
+                                groupName={group.name}
+                                contactEmail={group.contactEmail}
+                                senderName={viewerName}
+                            />
                         ) : null}
                         {canGiveFine ? (
                             <Button onClick={onGiveFine}>

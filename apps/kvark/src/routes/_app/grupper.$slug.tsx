@@ -367,6 +367,13 @@ function GroupDetail() {
         () => sortMembersByName((apiMembers ?? []).map(mapMember)),
         [apiMembers],
     );
+    // Interessegrupper uten påmelding tar opp nye medlemmer på e-post, så
+    // alle som ikke allerede er med får en knapp som skriver den for dem.
+    const canRequestJoin =
+        apiGroup.type.toUpperCase() === "INTERESTGROUP" &&
+        Boolean(apiGroup.contactEmail) &&
+        !isArchived &&
+        !members.some((member) => member.id === session?.user?.id);
     const leaders = useMemo(
         () => members.filter((m) => m.role === "leader"),
         [members],
@@ -512,7 +519,6 @@ function GroupDetail() {
                     finesActivated: values.finesActivated,
                     finesAdminId: values.finesAdminId,
                     finesInfo: values.finesInfo,
-                    acceptsJoinRequests: values.acceptsJoinRequests,
                 },
             });
             return true;
@@ -749,11 +755,8 @@ function GroupDetail() {
                         onSaveGroup={handleSaveGroup}
                         isSavingGroup={updateGroup.isPending}
                         saveGroupError={groupError}
-                        joinHref={
-                            apiGroup.leaderEmails.length > 0
-                                ? `mailto:${apiGroup.leaderEmails.join(",")}?subject=${encodeURIComponent(`Bli med i ${apiGroup.name}`)}&body=${encodeURIComponent(`Hei, jeg vil gjerne bli med i din interessegruppe, hilsen ${session?.user?.name ?? ""}`)}`
-                                : undefined
-                        }
+                        canRequestJoin={canRequestJoin}
+                        viewerName={session?.user?.name}
                     />
                 }
             >
