@@ -115,8 +115,8 @@ function MasterStudyDetailPage() {
                                 label="Rediger masterstudie"
                                 render={
                                     <Link
-                                        to="/admin/masterveiledning"
-                                        search={{ rediger: entry.id }}
+                                        to="/admin/masterveiledning/$studyId"
+                                        params={{ studyId: entry.id }}
                                     />
                                 }
                             />

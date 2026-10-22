@@ -43,3 +43,15 @@ export function formatMasterStudyDate(value: string): string {
         year: "numeric",
     });
 }
+
+/**
+ * Only the three programmes the page is organised by. Drift and
+ * Informasjonsbehandling are closed programmes still in the table.
+ */
+export function selectableMasterStudyPrograms<T extends { slug: string }>(
+    programs: T[],
+): T[] {
+    return MASTER_STUDY_PROGRAMS.flatMap((program) =>
+        programs.filter((p) => p.slug === program.slug),
+    );
+}
