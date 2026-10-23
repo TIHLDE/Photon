@@ -92,6 +92,14 @@ export const contactRoute = route().post(
             eventTypes: body.eventTypes,
             semesters: body.semesters,
             comment: body.comment || null,
+            phone: body.phone || null,
+            companyType: body.companyType,
+            hasTrondheimOffice: body.hasTrondheimOffice ?? null,
+            about: body.about,
+            themes: body.themes,
+            classLevels: body.classLevels,
+            participants: body.participants || null,
+            extras: body.extras,
         });
 
         // Non-fatal from here on: the enquiry is already saved and visible in
@@ -113,6 +121,14 @@ export const contactRoute = route().post(
                     eventTypes: body.eventTypes,
                     semesters: body.semesters,
                     comment: body.comment || undefined,
+                    phone: body.phone || undefined,
+                    companyType: body.companyType,
+                    hasTrondheimOffice: body.hasTrondheimOffice,
+                    about: body.about,
+                    themes: body.themes,
+                    classLevels: body.classLevels,
+                    participants: body.participants || undefined,
+                    extras: body.extras,
                     logoUrl: `${env.WEBSITE_URL}/logo512.png`,
                 },
             );

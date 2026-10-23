@@ -17,6 +17,14 @@ export interface CompanyContactEmailProps {
     eventTypes: string[];
     semesters: string[];
     comment?: string;
+    phone?: string;
+    companyType: string;
+    hasTrondheimOffice?: boolean;
+    about: string;
+    themes?: string[];
+    classLevels?: string[];
+    participants?: string;
+    extras?: string[];
     logoUrl: string;
 }
 
@@ -27,8 +35,33 @@ export const CompanyContactEmail = ({
     eventTypes = ["Bedriftspresentasjon"],
     semesters = ["Høst 2026"],
     comment,
+    phone,
+    companyType = "Start-up",
+    hasTrondheimOffice,
+    about = "Vi lager programvare for norske kommuner.",
+    themes = [],
+    classLevels = [],
+    participants,
+    extras = [],
     logoUrl,
 }: CompanyContactEmailProps) => {
+    const details = [
+        ["Bedriftstype", companyType],
+        [
+            "Kontorer i Trondheim",
+            hasTrondheimOffice !== undefined &&
+                (hasTrondheimOffice ? "Ja" : "Nei"),
+        ],
+        ["Om bedriften", about],
+        ["Ønskede arrangementer", eventTypes.join(", ")],
+        ["Aktuelle semestre", semesters.join(", ")],
+        ["Klassetrinn", classLevels.join(", ")],
+        ["Antall deltagere", participants],
+        ["Temaer", themes.join(", ")],
+        ["Samarbeid og annet", extras.join(", ")],
+        ["Kommentar", comment],
+    ] as const;
+
     return (
         <Html>
             <Head />
@@ -45,18 +78,16 @@ export const CompanyContactEmail = ({
                         Ny henvendelse fra {company}
                     </Heading>
                     <Text style={emailStyles.paragraph}>
-                        Kontaktperson: {contactName} ({contactEmail})
+                        Kontaktperson: {contactName} ({contactEmail}
+                        {phone && `, ${phone}`})
                     </Text>
-                    <Text style={emailStyles.paragraph}>
-                        Ønskede arrangementer: {eventTypes.join(", ")}
-                    </Text>
-                    <Text style={emailStyles.paragraph}>
-                        Aktuelle semestre: {semesters.join(", ")}
-                    </Text>
-                    {comment && (
-                        <Text style={emailStyles.paragraph}>
-                            Kommentar: {comment}
-                        </Text>
+                    {details.map(
+                        ([label, value]) =>
+                            value && (
+                                <Text key={label} style={emailStyles.paragraph}>
+                                    {label}: {value}
+                                </Text>
+                            ),
                     )}
                 </Container>
                 <Text style={emailStyles.footer}>Levert av INDEX</Text>

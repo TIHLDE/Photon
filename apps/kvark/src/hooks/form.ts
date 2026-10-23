@@ -7,6 +7,7 @@ import {
 import {
     AccountNumber,
     Checkbox,
+    CheckboxCards,
     CheckboxGroup,
     Combobox,
     DatePicker,
@@ -24,8 +25,10 @@ import {
     RadioGroup,
     Select,
     Switch,
+    SwitchCard,
     Textarea,
     TimePicker,
+    ToggleGroup,
 } from "#/components/form/field";
 import { InputField, PasswordField } from "#/components/form/basic-fields";
 import { FormErrors } from "#/components/form/form-errors";
@@ -112,9 +115,12 @@ const {
         Number,
         Checkbox,
         CheckboxGroup,
+        CheckboxCards,
         Switch,
+        SwitchCard,
         Select,
         RadioGroup,
+        ToggleGroup,
         Combobox,
         DatePicker,
         DateRangePicker,

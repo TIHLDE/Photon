@@ -3370,6 +3370,14 @@ export interface components {
                 eventTypes: string[];
                 semesters: string[];
                 comment: string | null;
+                phone: string | null;
+                companyType: string | null;
+                hasTrondheimOffice: boolean | null;
+                about: string | null;
+                themes: string[];
+                classLevels: string[];
+                participants: string | null;
+                extras: string[];
             } | null;
         };
         UpdateApplicationStatus: {
@@ -3553,6 +3561,31 @@ export interface components {
              * @description Email address to reply to
              */
             contactEmail: string;
+            /** @description Phone number to reach the contact on */
+            phone?: string;
+            /** @description Kind of company, e.g. size or sector */
+            companyType: string;
+            /** @description Whether the company has offices in Trondheim fit for a visit */
+            hasTrondheimOffice?: boolean;
+            /** @description What the company is and works with */
+            about: string;
+            /**
+             * @description Topics the company could talk about
+             * @default []
+             */
+            themes: string[];
+            /**
+             * @description Year groups the company wants to reach
+             * @default []
+             */
+            classLevels: string[];
+            /** @description Expected number of participants */
+            participants?: string;
+            /**
+             * @description Collaborations with other linjeforeninger and other extras
+             * @default []
+             */
+            extras: string[];
             /** @description Event formats the company is interested in */
             eventTypes: string[];
             /** @description Semesters the company is available in */

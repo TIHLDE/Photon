@@ -11,6 +11,14 @@ const SUBMISSION = {
     eventTypes: ["Bedriftspresentasjon", "Kurs/workshop"],
     semesters: ["Høst 2026"],
     comment: "Vi ønsker kontakt om høstsemesteret.",
+    phone: "+47 123 45 678",
+    companyType: "Start-up",
+    hasTrondheimOffice: true,
+    about: "Vi lager programvare for kommuner.",
+    themes: ["Cybersikkerhet"],
+    classLevels: ["2. klasse", "3. klasse"],
+    participants: "20-30",
+    extras: ["Samarbeid med Online linjeforening"],
 };
 
 /**
@@ -53,8 +61,47 @@ describe("Henvendelser fra bedrift", () => {
                 SUBMISSION.semesters,
             );
             expect(stored?.companyContact?.comment).toBe(SUBMISSION.comment);
+            expect(stored?.companyContact).toMatchObject({
+                phone: SUBMISSION.phone,
+                companyType: SUBMISSION.companyType,
+                hasTrondheimOffice: true,
+                about: SUBMISSION.about,
+                themes: SUBMISSION.themes,
+                classLevels: SUBMISSION.classLevels,
+                participants: SUBMISSION.participants,
+                extras: SUBMISSION.extras,
+            });
         },
     );
+
+    integrationTest("the optional fields can be left out", async ({ ctx }) => {
+        const response = await publicClient(
+            ctx,
+            "203.0.113.14",
+        ).api.company.contact.$post({
+            json: {
+                company: SUBMISSION.company,
+                contactName: SUBMISSION.contactName,
+                contactEmail: SUBMISSION.contactEmail,
+                companyType: SUBMISSION.companyType,
+                about: SUBMISSION.about,
+                eventTypes: SUBMISSION.eventTypes,
+                semesters: SUBMISSION.semesters,
+            },
+        });
+
+        expect(response.status).toBe(200);
+
+        const stored = await ctx.db.query.applicationCompanyContact.findFirst();
+        expect(stored).toMatchObject({
+            phone: null,
+            hasTrondheimOffice: null,
+            participants: null,
+            themes: [],
+            classLevels: [],
+            extras: [],
+        });
+    });
 
     integrationTest(
         "only company-contact handlers see it in the admin inbox",
