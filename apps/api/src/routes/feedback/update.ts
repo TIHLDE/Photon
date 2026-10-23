@@ -1,5 +1,5 @@
-import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
+import { hasPermission } from "@photon/auth/rbac";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
@@ -169,7 +169,7 @@ export const updateRoute = route().patch(
             }
         }
 
-        const item = await getFeedbackItem(db, id, userId);
+        const item = await getFeedbackItem(db, id, userId, mayModerate);
 
         if (!item) {
             throw new HTTPException(404, { message: "Feedback not found" });

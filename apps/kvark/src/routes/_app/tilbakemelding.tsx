@@ -219,7 +219,10 @@ function VoteButtons({ item }: { item: FeedbackItem }) {
 
 function authorLabel(item: FeedbackItem): string {
     if (item.isAuthor) return item.isAnonymous ? "Din · anonym" : "Din";
-    return item.author?.name ?? "Anonym";
+    if (!item.author) return "Anonym";
+    // Only Index gets the name of anonymous feedback. The marker reminds them
+    // that everyone else sees it as anonymous.
+    return item.isAnonymous ? `${item.author.name} · anonym` : item.author.name;
 }
 
 function CommentAuthorAvatar({
@@ -681,6 +684,10 @@ function FeedbackRow({
     );
 }
 
+// Matches the API's limit on `description`, which also holds the reproduction steps.
+const DESCRIPTION_MAX_LENGTH = 2000;
+const REPRODUCTION_STEPS_HEADING = "\n\nSlik får du feilen til å skje igjen:\n";
+
 function FeedbackFormDialog({
     type,
     item,
@@ -694,7 +701,8 @@ function FeedbackFormDialog({
 }) {
     const [title, setTitle] = useState(item?.title ?? "");
     const [description, setDescription] = useState(item?.description ?? "");
-    const [isAnonymous, setIsAnonymous] = useState(item?.isAnonymous ?? true);
+    const [reproductionSteps, setReproductionSteps] = useState("");
+    const [isAnonymous, setIsAnonymous] = useState(item?.isAnonymous ?? false);
     const [error, setError] = useState<string | null>(null);
     const [wasOpen, setWasOpen] = useState(open);
 
@@ -702,11 +710,21 @@ function FeedbackFormDialog({
     const update = useMutation(updateFeedbackMutation);
     const isPending = create.isPending || update.isPending;
     const isBug = type === "bug";
+    // Reproduction steps are only asked for on new bugs: once saved they
+    // are part of the description, so editing shows them there.
+    const askForReproductionSteps = isBug && !item;
+    const reproductionStepsMaxLength = Math.max(
+        0,
+        DESCRIPTION_MAX_LENGTH -
+            description.length -
+            REPRODUCTION_STEPS_HEADING.length,
+    );
 
     function reset() {
         setTitle(item?.title ?? "");
         setDescription(item?.description ?? "");
-        setIsAnonymous(item?.isAnonymous ?? true);
+        setReproductionSteps("");
+        setIsAnonymous(item?.isAnonymous ?? false);
         setError(null);
     }
 
@@ -728,8 +746,18 @@ function FeedbackFormDialog({
                     data: { title, description, isAnonymous },
                 });
             } else {
+                const trimmedReproductionSteps = askForReproductionSteps
+                    ? reproductionSteps.trim()
+                    : "";
                 await create.mutateAsync({
-                    data: { type, title, description, isAnonymous },
+                    data: {
+                        type,
+                        title,
+                        description: trimmedReproductionSteps
+                            ? `${description}${REPRODUCTION_STEPS_HEADING}${trimmedReproductionSteps}`
+                            : description,
+                        isAnonymous,
+                    },
                 });
             }
             onOpenChange(false);
@@ -790,7 +818,7 @@ function FeedbackFormDialog({
                                 id="feedback-description"
                                 required
                                 minLength={10}
-                                maxLength={2000}
+                                maxLength={DESCRIPTION_MAX_LENGTH}
                                 rows={5}
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
@@ -802,6 +830,29 @@ function FeedbackFormDialog({
                                     : "Hva ønsker du, og hvorfor?"}
                             </FieldDescription>
                         </Field>
+                        {askForReproductionSteps && (
+                            <Field>
+                                <FieldLabel htmlFor="feedback-reproduction-steps">
+                                    Hvordan får vi feilen til å skje igjen?
+                                </FieldLabel>
+                                <Textarea
+                                    id="feedback-reproduction-steps"
+                                    maxLength={reproductionStepsMaxLength}
+                                    rows={4}
+                                    value={reproductionSteps}
+                                    onChange={(e) =>
+                                        setReproductionSteps(e.target.value)
+                                    }
+                                    placeholder={
+                                        "1. Gå til ...\n2. Trykk på ...\n3. Se at ..."
+                                    }
+                                />
+                                <FieldDescription>
+                                    Valgfritt steg. Hjelper Index å finne feilen
+                                    raskere.
+                                </FieldDescription>
+                            </Field>
+                        )}
                         <Field orientation="horizontal">
                             <FieldContent>
                                 <FieldLabel htmlFor="feedback-anonymous">

@@ -50,6 +50,36 @@ describe("Feedback anonymity, comments and rejection", () => {
             });
             expect(single.status).toBe(200);
             expect((await single.json()).author).toBeNull();
+
+            // Index handles the reports, so anonymity does not hide the
+            // author from them.
+            const moderator = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(moderator, ["feedback:update"]);
+            const moderatorClient = await ctx.utils.clientForUser(moderator);
+
+            const moderatorList = await (
+                await moderatorClient.api.feedback.$get({ query: {} })
+            ).json();
+            const moderatorView = moderatorList.items.find(
+                (item) => item.id === anonymous.id,
+            );
+            expect(moderatorView?.isAnonymous).toBe(true);
+            expect(moderatorView?.author?.id).toBe(author.id);
+
+            const moderatorSingle = await (
+                await moderatorClient.api.feedback[":id"].$get({
+                    param: { id: anonymous.id },
+                })
+            ).json();
+            expect(moderatorSingle.author?.name).toBe(author.name);
+
+            const moderatorUpdate = await (
+                await moderatorClient.api.feedback[":id"].$patch({
+                    param: { id: anonymous.id },
+                    json: { status: "in_progress" },
+                })
+            ).json();
+            expect(moderatorUpdate.author?.id).toBe(author.id);
         },
         500_000,
     );

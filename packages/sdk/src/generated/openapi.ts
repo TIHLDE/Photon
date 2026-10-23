@@ -4599,7 +4599,7 @@ export interface components {
             isAnonymous: boolean;
             /** @description Whether the requesting user filed this. */
             isAuthor: boolean;
-            /** @description Who filed it. Always null when the feedback is anonymous. */
+            /** @description Who filed it. Null when the feedback is anonymous, unless the requesting user has 'feedback:update' or 'feedback:manage'. */
             author: components["schemas"]["FeedbackAuthor"] | null;
             upvotes: number;
             downvotes: number;
@@ -4634,13 +4634,13 @@ export interface components {
             title: string;
             /** @description What the idea or the bug is */
             description: string;
-            /** @description Hide the author's name from everyone else. Defaults to anonymous. */
+            /** @description Hide the author's name from other members. Index ('feedback:update' or 'feedback:manage') still sees it. Defaults to anonymous. */
             isAnonymous?: boolean;
         };
         UpdateFeedback: {
             title?: string;
             description?: string;
-            /** @description Author only, and only while the feedback is editable */
+            /** @description Author only, and only while the feedback is editable. Index still sees the name. */
             isAnonymous?: boolean;
             /** @enum {string} */
             status?: "open" | "in_progress" | "closed" | "rejected";
