@@ -85,12 +85,60 @@ export const STUDY_PROGRAMMES = [
 
 export const COMPANY_EVENT_TYPES = [
     "Bedriftspresentasjon",
+    "Lunsjpresentasjon",
     "Kurs/Workshop",
+    "Frokostforedrag",
     "Bedriftsbesøk",
     "Annonse",
     "Insta-takeover",
     "Bedriftsekskursjon",
     "Annet",
+] as const;
+
+export const COMPANY_TYPES = [
+    "Liten konsulentbedrift (< ~50)",
+    "Medium konsulentbedrift (< 400)",
+    "Stor konsulentbedrift (> 400)",
+    "In-house",
+    "Start-up",
+    "Statlig",
+    "Annet",
+] as const;
+
+/** Topics close to what TIHLDE's study programmes cover. */
+export const COMPANY_THEMES = [
+    "Cybersikkerhet",
+    "Kunstig intelligens og maskinlæring",
+    "Sky, drift og DevOps",
+    "Front- og backend-utvikling",
+    "Data og analyse",
+    "Digital forretningsutvikling og produktledelse",
+    "Digital transformasjon",
+    "Prosjektledelse og smidig utvikling",
+] as const;
+
+export const CLASS_LEVELS = [
+    "1. klasse",
+    "2. klasse",
+    "3. klasse",
+    "4. klasse",
+    "5. klasse",
+] as const;
+
+export const PARTICIPANT_RANGES = [
+    "0-10",
+    "10-20",
+    "20-30",
+    "30-40",
+    "40-50",
+    "50-60",
+    "60+",
+] as const;
+
+export const COMPANY_EXTRAS = [
+    "Samarbeid med Online linjeforening",
+    "Samarbeid med Abakus linjeforening",
+    "Profilering på sosiale medier",
 ] as const;
 
 /**
