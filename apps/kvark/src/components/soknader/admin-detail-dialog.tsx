@@ -96,26 +96,14 @@ function detailFields(application: ApplicationDetail): Field[] {
 
     if (application.companyContact) {
         const contact = application.companyContact;
-        const office =
-            contact.hasTrondheimOffice === null
-                ? ""
-                : contact.hasTrondheimOffice
-                  ? "Ja"
-                  : "Nei";
         return [
             { label: "Bedrift", value: contact.company },
-            { label: "Telefon", value: contact.phone ?? "" },
-            { label: "Bedriftstype", value: contact.companyType ?? "" },
-            { label: "Kontorer i Trondheim", value: office },
-            { label: "Om bedriften", value: contact.about ?? "" },
             { label: "Arrangementer", value: contact.eventTypes.join(", ") },
             { label: "Semester", value: contact.semesters.join(", ") },
-            { label: "Klassetrinn", value: contact.classLevels.join(", ") },
-            { label: "Antall deltagere", value: contact.participants ?? "" },
-            { label: "Temaer", value: contact.themes.join(", ") },
-            { label: "Samarbeid og annet", value: contact.extras.join(", ") },
-            { label: "Kommentar", value: contact.comment ?? "" },
-        ].filter((row) => row.value);
+            ...(contact.comment
+                ? [{ label: "Kommentar", value: contact.comment }]
+                : []),
+        ];
     }
 
     return [];

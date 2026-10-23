@@ -92,14 +92,6 @@ export const contactRoute = route().post(
             eventTypes: body.eventTypes,
             semesters: body.semesters,
             comment: body.comment || null,
-            phone: body.phone || null,
-            companyType: body.companyType,
-            hasTrondheimOffice: body.hasTrondheimOffice ?? null,
-            about: body.about,
-            themes: body.themes,
-            classLevels: body.classLevels,
-            participants: body.participants || null,
-            extras: body.extras,
         });
 
         // Non-fatal from here on: the enquiry is already saved and visible in

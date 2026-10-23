@@ -1,6 +1,5 @@
 import { relations } from "drizzle-orm";
 import {
-    boolean,
     index,
     integer,
     numeric,
@@ -233,15 +232,6 @@ export const applicationCompanyContact = pgTable(
         /** Which semesters they asked about, e.g. "Høst 2026". */
         semesters: text("semesters").array().notNull(),
         comment: text("comment"),
-        // Nullable because enquiries sent before these fields existed lack them.
-        phone: text("phone"),
-        companyType: text("company_type"),
-        hasTrondheimOffice: boolean("has_trondheim_office"),
-        about: text("about"),
-        themes: text("themes").array().notNull().default([]),
-        classLevels: text("class_levels").array().notNull().default([]),
-        participants: text("participants"),
-        extras: text("extras").array().notNull().default([]),
     },
 );
 

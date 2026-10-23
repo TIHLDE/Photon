@@ -3370,14 +3370,6 @@ export interface components {
                 eventTypes: string[];
                 semesters: string[];
                 comment: string | null;
-                phone: string | null;
-                companyType: string | null;
-                hasTrondheimOffice: boolean | null;
-                about: string | null;
-                themes: string[];
-                classLevels: string[];
-                participants: string | null;
-                extras: string[];
             } | null;
         };
         UpdateApplicationStatus: {

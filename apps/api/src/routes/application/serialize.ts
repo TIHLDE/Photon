@@ -130,15 +130,6 @@ export function serializeApplicationDetail(
                   eventTypes: application.companyContact.eventTypes,
                   semesters: application.companyContact.semesters,
                   comment: application.companyContact.comment,
-                  phone: application.companyContact.phone,
-                  companyType: application.companyContact.companyType,
-                  hasTrondheimOffice:
-                      application.companyContact.hasTrondheimOffice,
-                  about: application.companyContact.about,
-                  themes: application.companyContact.themes,
-                  classLevels: application.companyContact.classLevels,
-                  participants: application.companyContact.participants,
-                  extras: application.companyContact.extras,
               }
             : null,
     };

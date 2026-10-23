@@ -1,6 +1,6 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
-import { describe, expect } from "vitest";
+import { describe, expect, vi } from "vitest";
 import type { IntegrationTestContext } from "~/test/config/integration";
 import { integrationTest } from "~/test/config/integration";
 
@@ -61,7 +61,24 @@ describe("Henvendelser fra bedrift", () => {
                 SUBMISSION.semesters,
             );
             expect(stored?.companyContact?.comment).toBe(SUBMISSION.comment);
-            expect(stored?.companyContact).toMatchObject({
+        },
+    );
+
+    integrationTest(
+        "the details are sent in the company contact email",
+        async ({ ctx }) => {
+            const sendEmailTemplate = vi.spyOn(ctx.email, "sendEmailTemplate");
+
+            const response = await publicClient(
+                ctx,
+                "203.0.113.14",
+            ).api.company.contact.$post({ json: SUBMISSION });
+            expect(response.status).toBe(200);
+
+            const call = sendEmailTemplate.mock.calls.find(
+                ([, template]) => template === "CompanyContactEmail",
+            );
+            expect(call?.[2]).toMatchObject({
                 phone: SUBMISSION.phone,
                 companyType: SUBMISSION.companyType,
                 hasTrondheimOffice: true,
@@ -77,7 +94,7 @@ describe("Henvendelser fra bedrift", () => {
     integrationTest("the optional fields can be left out", async ({ ctx }) => {
         const response = await publicClient(
             ctx,
-            "203.0.113.14",
+            "203.0.113.15",
         ).api.company.contact.$post({
             json: {
                 company: SUBMISSION.company,
@@ -91,16 +108,6 @@ describe("Henvendelser fra bedrift", () => {
         });
 
         expect(response.status).toBe(200);
-
-        const stored = await ctx.db.query.applicationCompanyContact.findFirst();
-        expect(stored).toMatchObject({
-            phone: null,
-            hasTrondheimOffice: null,
-            participants: null,
-            themes: [],
-            classLevels: [],
-            extras: [],
-        });
     });
 
     integrationTest(
