@@ -1,5 +1,9 @@
 import { HTTPException } from "hono/http-exception";
-import { assertGroupVisible, isArchivableGroup } from "~/lib/group";
+import {
+    assertGroupVisible,
+    isArchivableGroup,
+    isSelfJoinable,
+} from "~/lib/group";
 import { readLeaderTitle } from "~/lib/group/linked-leader";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -85,6 +89,7 @@ export const getRoute = route().get(
             ...group,
             leaderTitle,
             archivable: isArchivableGroup(group),
+            selfJoinable: isSelfJoinable(group),
             viewerCanUseFines,
             viewerCanSeeOwnFines,
         });

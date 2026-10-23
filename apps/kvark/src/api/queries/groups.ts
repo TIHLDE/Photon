@@ -295,6 +295,49 @@ export const removeGroupMemberMutation = mutationOptions({
     },
 });
 
+function invalidateAfterOwnMembershipChange(
+    slug: string,
+    client: { invalidateQueries: (filters: object) => unknown },
+) {
+    client.invalidateQueries({ queryKey: authQueryOptions.queryKey });
+    for (const queryKey of [
+        GroupQueryKeys.members,
+        GroupQueryKeys.formerMembers,
+    ]) {
+        client.invalidateQueries({
+            queryKey: [...queryKey, slug],
+            exact: false,
+        });
+    }
+    for (const queryKey of [
+        GroupQueryKeys.list,
+        GroupQueryKeys.listInfinite,
+        GroupQueryKeys.mine,
+    ]) {
+        client.invalidateQueries({ queryKey: [...queryKey], exact: false });
+    }
+}
+
+export const joinGroupMutation = mutationOptions({
+    mutationFn: ({ groupSlug }: { groupSlug: string }) =>
+        apiClient.post("/api/groups/{groupSlug}/join", {
+            params: { groupSlug },
+        }),
+    onSuccess(_, vars, __, ctx) {
+        invalidateAfterOwnMembershipChange(vars.groupSlug, ctx.client);
+    },
+});
+
+export const leaveGroupMutation = mutationOptions({
+    mutationFn: ({ groupSlug }: { groupSlug: string }) =>
+        apiClient.post("/api/groups/{groupSlug}/leave", {
+            params: { groupSlug },
+        }),
+    onSuccess(_, vars, __, ctx) {
+        invalidateAfterOwnMembershipChange(vars.groupSlug, ctx.client);
+    },
+});
+
 // -- Fines --
 
 type FineListFilters = Omit<

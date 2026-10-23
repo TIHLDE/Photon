@@ -37,3 +37,21 @@ export function notificationHref(link: string | null): string | undefined {
 export function isExternalNotificationHref(href: string | undefined): boolean {
     return href !== undefined && /^https?:\/\//i.test(href);
 }
+
+/**
+ * TanStack Router-ens `to` tar bare en sti: en spørring i den blir en del av
+ * stien, så `/grupper/x?tab=boter` landet på feil fane. Del lenken opp i
+ * stien og søkeparameterne den skal navigere med.
+ */
+export function splitInternalHref(href: string): {
+    pathname: string;
+    search: Record<string, string>;
+    hash: string | undefined;
+} {
+    const url = new URL(href, "http://kvark.invalid");
+    return {
+        pathname: url.pathname,
+        search: Object.fromEntries(url.searchParams),
+        hash: url.hash ? url.hash.slice(1) : undefined,
+    };
+}
