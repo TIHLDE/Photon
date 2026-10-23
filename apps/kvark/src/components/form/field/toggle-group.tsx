@@ -19,7 +19,7 @@ export function ToggleGroup({ options, multiple = false }: ToggleGroupProps) {
 
     return (
         <ToggleGroupRoot
-            variant="outline"
+            variant="choice"
             size="lg"
             spacing={2}
             multiple={multiple}

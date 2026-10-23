@@ -24,6 +24,7 @@ export function SwitchCard({ title }: SwitchCardProps) {
                     <FieldTitle>{title}</FieldTitle>
                 </FieldContent>
                 <SwitchPrimitive
+                    variant="contrast"
                     id={id}
                     name={field.name}
                     checked={field.state.value}
