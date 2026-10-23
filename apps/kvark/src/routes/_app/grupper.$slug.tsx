@@ -48,6 +48,7 @@ import {
     getGroupFormsQuery,
     getGroupLawsQuery,
     getGroupMembersQuery,
+    leaveGroupMutation,
     removeGroupMemberMutation,
     updateFineMutation,
     updateGroupMemberRoleMutation,
@@ -91,6 +92,7 @@ import {
     type Fine,
     type Form,
     allowsNonMemberLeader,
+    isPrivateGroupType,
     mapFine,
     mapFineUser,
     mapForm,
@@ -218,6 +220,7 @@ function GroupDetail() {
     const updateGroup = useMutation(updateGroupMutation);
     const archiveGroup = useMutation(archiveGroupMutation);
     const unarchiveGroup = useMutation(unarchiveGroupMutation);
+    const leaveGroup = useMutation(leaveGroupMutation);
     const createFine = useMutation(createFineMutation);
     const { uploadImage, isUploading } = useImageUploader();
     const updateFine = useMutation(updateFineMutation);
@@ -301,6 +304,8 @@ function GroupDetail() {
     const canSeeOwnFines =
         !canViewFines && Boolean(apiGroup.viewerCanSeeOwnFines);
     const finesTabVisible = canViewFines || canSeeOwnFines;
+    // Egen-visningen har bare den flate lista, uansett hva URL-en sier.
+    const fineGrouping = canSeeOwnFines ? "alle" : botVisning;
 
     // Filtrene går til serveren, ikke gjennom en ferdiglastet liste: en gruppe
     // med noen tusen bøter skal ikke lastes ned i sin helhet for å vise 25.
@@ -376,6 +381,11 @@ function GroupDetail() {
         !isArchived &&
         Boolean(viewerId) &&
         !members.some((member) => member.id === viewerId);
+    // Bare interessegrupper kan forlates på egen hånd; ellers spør man lederen.
+    const canLeave =
+        apiGroup.type.toUpperCase() === "INTERESTGROUP" &&
+        !isArchived &&
+        members.some((member) => member.id === viewerId);
     const leaders = useMemo(
         () => members.filter((m) => m.role === "leader"),
         [members],
@@ -724,6 +734,22 @@ function GroupDetail() {
         }
     }
 
+    async function handleLeave() {
+        setArchiveFailure(null);
+        try {
+            await leaveGroup.mutateAsync({ groupSlug: slug });
+            // En privat gruppe er stengt for den som ikke lenger er med.
+            if (isPrivateGroupType(apiGroup.type)) {
+                await navigate({ to: "/grupper" });
+            }
+        } catch (error) {
+            setArchiveFailure({
+                slug,
+                message: await extractErrorMessage(error),
+            });
+        }
+    }
+
     async function changeArchived(
         mutation: typeof archiveGroup | typeof unarchiveGroup,
     ) {
@@ -759,6 +785,9 @@ function GroupDetail() {
                         saveGroupError={groupError}
                         canRequestJoin={canRequestJoin}
                         viewerName={session?.user?.name}
+                        canLeave={canLeave}
+                        onLeave={handleLeave}
+                        isLeavePending={leaveGroup.isPending}
                     />
                 }
             >
@@ -882,7 +911,7 @@ function GroupDetail() {
                             statistics={apiFineStatistics}
                             memberCount={members.length}
                             finesInfo={group.finesInfo}
-                            grouping={canSeeOwnFines ? "alle" : botVisning}
+                            grouping={fineGrouping}
                             onGroupingChange={(botVisning) =>
                                 navigate({
                                     search: (prev) => ({
@@ -922,17 +951,17 @@ function GroupDetail() {
                                 })
                             }
                             hasMore={
-                                botVisning === "alle"
+                                fineGrouping === "alle"
                                     ? hasMoreFines
                                     : hasMoreFineUsers
                             }
                             isLoadingMore={
-                                botVisning === "alle"
+                                fineGrouping === "alle"
                                     ? isLoadingMoreFines
                                     : isLoadingMoreFineUsers
                             }
                             onLoadMore={() => {
-                                if (botVisning === "alle") {
+                                if (fineGrouping === "alle") {
                                     void fetchMoreFines();
                                 } else {
                                     void fetchMoreFineUsers();

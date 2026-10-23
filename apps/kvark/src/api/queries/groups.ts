@@ -295,6 +295,33 @@ export const removeGroupMemberMutation = mutationOptions({
     },
 });
 
+export const leaveGroupMutation = mutationOptions({
+    mutationFn: ({ groupSlug }: { groupSlug: string }) =>
+        apiClient.post("/api/groups/{groupSlug}/leave", {
+            params: { groupSlug },
+        }),
+    onSuccess(_, vars, __, ctx) {
+        ctx.client.invalidateQueries(getGroupBySlugQuery(vars.groupSlug));
+        // Det gruppen gir medlemmene sine av tilganger ligger i sesjonen.
+        ctx.client.invalidateQueries({ queryKey: authQueryOptions.queryKey });
+        // Botlista snevres inn til ens egne bøter når man ikke lenger er med.
+        for (const queryKey of [
+            GroupQueryKeys.members,
+            GroupQueryKeys.formerMembers,
+            GroupQueryKeys.fines,
+        ]) {
+            ctx.client.invalidateQueries({
+                queryKey: [...queryKey, vars.groupSlug],
+                exact: false,
+            });
+        }
+        ctx.client.invalidateQueries({
+            queryKey: [...GroupQueryKeys.mine],
+            exact: false,
+        });
+    },
+});
+
 // -- Fines --
 
 type FineListFilters = Omit<

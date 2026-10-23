@@ -1,7 +1,14 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
-import { Archive, ArchiveRestore, Crown, HandCoins, Mail } from "lucide-react";
+import {
+    Archive,
+    ArchiveRestore,
+    Crown,
+    HandCoins,
+    LogOut,
+    Mail,
+} from "lucide-react";
 import { useState } from "react";
 
 import { ConfirmDeleteDialog } from "#/components/confirm-delete-dialog";
@@ -40,6 +47,10 @@ type GroupDetailHeaderProps = {
     canRequestJoin: boolean;
     /** Navnet til den innloggede, som e-posten om å bli med signeres med. */
     viewerName?: string;
+    /** Om den innloggede kan melde seg ut av gruppa på egen hånd. */
+    canLeave: boolean;
+    onLeave: () => void;
+    isLeavePending?: boolean;
 };
 
 export function GroupDetailHeader({
@@ -57,8 +68,12 @@ export function GroupDetailHeader({
     saveGroupError,
     canRequestJoin,
     viewerName,
+    canLeave,
+    onLeave,
+    isLeavePending,
 }: GroupDetailHeaderProps) {
     const [confirmArchive, setConfirmArchive] = useState(false);
+    const [confirmLeave, setConfirmLeave] = useState(false);
     const isArchived = Boolean(group.archivedAt);
     const showRestore = canArchive && isArchived;
     const showArchive = canArchive && !isArchived && Boolean(group.archivable);
@@ -130,6 +145,7 @@ export function GroupDetailHeader({
             }
             actions={
                 canRequestJoin ||
+                canLeave ||
                 canGiveFine ||
                 isAdmin ||
                 showArchive ||
@@ -187,6 +203,30 @@ export function GroupDetailHeader({
                                         onArchive();
                                     }}
                                     isPending={isArchivePending}
+                                />
+                            </>
+                        ) : null}
+                        {canLeave ? (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setConfirmLeave(true)}
+                                    disabled={isLeavePending}
+                                >
+                                    <LogOut />
+                                    Forlat gruppen
+                                </Button>
+                                <ConfirmDeleteDialog
+                                    open={confirmLeave}
+                                    onOpenChange={setConfirmLeave}
+                                    title={`Forlate «${group.name}»?`}
+                                    description="Du mister tilgangen og vervene du har i gruppen. For å bli med igjen må en leder legge deg til."
+                                    confirmLabel="Forlat gruppen"
+                                    onConfirm={() => {
+                                        setConfirmLeave(false);
+                                        onLeave();
+                                    }}
+                                    isPending={isLeavePending}
                                 />
                             </>
                         ) : null}
