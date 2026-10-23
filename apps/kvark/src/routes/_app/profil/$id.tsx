@@ -80,6 +80,7 @@ export const Route = createFileRoute("/_app/profil/$id")({
                 to: subrouteFor(location.pathname) ?? "/profil/$id",
                 params: { id: auth.user.username ?? auth.user.id },
                 search: location.search,
+                hash: location.hash,
                 replace: true,
             });
         }

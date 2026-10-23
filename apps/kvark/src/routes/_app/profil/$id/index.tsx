@@ -253,6 +253,7 @@ function AllergyBanner({ hasAnswered }: { hasAnswered: boolean }) {
                         <Link
                             to="/profil/$id/innstillinger"
                             params={{ id: "me" }}
+                            hash="allergier"
                         />
                     }
                 >
