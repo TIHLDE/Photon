@@ -4,7 +4,7 @@ import {
     CollapsibleTrigger,
 } from "@tihlde/ui/ui/collapsible";
 import { ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import type { GroupAddMemberDialogProps } from "#/components/group-add-member-dialog";
 import { GroupAddMemberDialog } from "#/components/group-add-member-dialog";
@@ -36,6 +36,8 @@ type GroupMembersTabProps = {
     leaderTransfer?: GroupAddMemberDialogProps;
     onPromote: (member: Member) => void;
     onRemove: (member: Member) => void;
+    /** Ventende forespørsler om å bli med, vist over medlemslista. */
+    joinRequests?: ReactNode;
 };
 
 export function GroupMembersTab({
@@ -48,6 +50,7 @@ export function GroupMembersTab({
     leaderTransfer,
     onPromote,
     onRemove,
+    joinRequests,
 }: GroupMembersTabProps) {
     const [showFormer, setShowFormer] = useState(false);
 
@@ -66,6 +69,8 @@ export function GroupMembersTab({
                     </div>
                 }
             />
+
+            {joinRequests}
 
             {/* Lederen ligger øverst i samme liste som resten — badgen skiller den ut. */}
             <ul className="flex flex-col gap-2">

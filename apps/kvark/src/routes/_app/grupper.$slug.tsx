@@ -49,7 +49,8 @@ import {
     getGroupLawsQuery,
     getGroupMembersQuery,
     removeGroupMemberMutation,
-    joinGroupMutation,
+    requestToJoinGroupMutation,
+    withdrawJoinRequestMutation,
     leaveGroupMutation,
     updateFineMutation,
     updateGroupMemberRoleMutation,
@@ -85,6 +86,7 @@ import {
     NewFormDialog,
     type NewFormValues,
 } from "#/components/new-form-dialog";
+import { GroupJoinRequestsPanel } from "#/components/group-join-requests-panel";
 import { GroupMembersTab } from "#/components/group-members-tab";
 import { GROUP_NAV_ITEMS, type GroupNavKey } from "#/components/group-nav";
 import { GroupOmTab } from "#/components/group-om-tab";
@@ -216,7 +218,8 @@ function GroupDetail() {
 
     const updateMemberRole = useMutation(updateGroupMemberRoleMutation);
     const removeMember = useMutation(removeGroupMemberMutation);
-    const joinGroup = useMutation(joinGroupMutation);
+    const requestToJoin = useMutation(requestToJoinGroupMutation);
+    const withdrawJoinRequest = useMutation(withdrawJoinRequestMutation);
     const leaveGroup = useMutation(leaveGroupMutation);
     const addMember = useMutation(addGroupMemberMutation);
     const updateGroup = useMutation(updateGroupMutation);
@@ -374,8 +377,6 @@ function GroupDetail() {
     const viewerId = session?.user?.id;
     const viewerMembership = members.find((member) => member.id === viewerId);
     const isInterestGroup = apiGroup.type.toUpperCase() === "INTERESTGROUP";
-    // En gruppe som gir medlemmene tilganger tar ikke opp hvem som helst, så
-    // der må man fortsatt be lederen om å bli med.
     const membershipAction =
         !viewerId || !isInterestGroup || isArchived
             ? null
@@ -383,9 +384,9 @@ function GroupDetail() {
               ? viewerMembership.role === "leader"
                   ? null
                   : "leave"
-              : apiGroup.selfJoinable
-                ? "join"
-                : apiGroup.contactEmail
+              : apiGroup.viewerHasJoinRequest
+                ? "pending"
+                : apiGroup.acceptsJoinRequests
                   ? "request"
                   : null;
     const leaders = useMemo(
@@ -737,7 +738,10 @@ function GroupDetail() {
     }
 
     async function changeOwnMembership(
-        mutation: typeof joinGroup | typeof leaveGroup,
+        mutation:
+            | typeof requestToJoin
+            | typeof withdrawJoinRequest
+            | typeof leaveGroup,
     ) {
         setHeaderFailure(null);
         try {
@@ -785,12 +789,16 @@ function GroupDetail() {
                         saveGroupError={groupError}
                         membershipAction={membershipAction}
                         leaderCount={leaders.length}
-                        onJoin={() => changeOwnMembership(joinGroup)}
+                        onRequest={() => changeOwnMembership(requestToJoin)}
+                        onWithdraw={() =>
+                            changeOwnMembership(withdrawJoinRequest)
+                        }
                         onLeave={() => changeOwnMembership(leaveGroup)}
                         isMembershipPending={
-                            joinGroup.isPending || leaveGroup.isPending
+                            requestToJoin.isPending ||
+                            withdrawJoinRequest.isPending ||
+                            leaveGroup.isPending
                         }
-                        viewerName={session?.user?.name}
                     />
                 }
             >
@@ -814,6 +822,11 @@ function GroupDetail() {
                             formerMembers={formerMembers}
                             isAdmin={canManageMembers}
                             canPromote={canManageMembers}
+                            joinRequests={
+                                canManageMembers && isInterestGroup ? (
+                                    <GroupJoinRequestsPanel groupSlug={slug} />
+                                ) : null
+                            }
                             leaderTransfer={
                                 canManageMembers && canPickLeaderOutsideGroup
                                     ? {

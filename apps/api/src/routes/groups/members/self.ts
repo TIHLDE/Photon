@@ -3,20 +3,16 @@ import { and, eq } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 import { env } from "~/lib/env";
 import { HTTPAppException } from "~/lib/errors";
-import {
-    addUserToGroup,
-    isSelfJoinable,
-    removeUserFromGroup,
-} from "~/lib/group";
+import { acceptsJoinRequests, removeUserFromGroup } from "~/lib/group";
 import { sendNotification } from "~/lib/notification";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-import { membershipResponseSchema } from "../schema";
+import { joinRequestSchema } from "../schema";
 
 type Group = typeof schema.group.$inferSelect;
 
-async function findGroup(ctx: AppContext, slug: string): Promise<Group> {
+export async function findGroup(ctx: AppContext, slug: string): Promise<Group> {
     const group = await ctx.db.query.group.findFirst({
         where: eq(schema.group.slug, slug),
     });
@@ -35,13 +31,20 @@ async function findMembership(ctx: AppContext, slug: string, userId: string) {
     });
 }
 
-async function notifyLeadersOfNewMember(
+export function joinRequestWhere(slug: string, userId: string) {
+    return and(
+        eq(schema.groupJoinRequest.groupSlug, slug),
+        eq(schema.groupJoinRequest.userId, userId),
+    );
+}
+
+async function notifyLeadersOfJoinRequest(
     ctx: AppContext,
     group: Group,
-    memberId: string,
+    requesterId: string,
 ): Promise<void> {
-    const member = await ctx.db.query.user.findFirst({
-        where: eq(schema.user.id, memberId),
+    const requester = await ctx.db.query.user.findFirst({
+        where: eq(schema.user.id, requesterId),
         columns: { name: true },
     });
     const leaders = await ctx.db.query.groupMembership.findMany({
@@ -52,8 +55,8 @@ async function notifyLeadersOfNewMember(
         columns: { userId: true },
     });
 
-    const title = `Nytt medlem i ${group.name}`;
-    const description = `${member?.name ?? "Noen"} har meldt seg inn i ${group.name}.`;
+    const title = `Ny forespørsel i ${group.name}`;
+    const description = `${requester?.name ?? "Noen"} vil bli med i ${group.name}.`;
     const link = `/grupper/${group.slug}?tab=medlemmer`;
 
     const results = await Promise.allSettled(
@@ -86,21 +89,21 @@ async function notifyLeadersOfNewMember(
     }
 }
 
-export const joinGroupRoute = route().post(
+export const requestToJoinRoute = route().post(
     "/:groupSlug/join",
     describeRoute({
         tags: ["groups"],
-        summary: "Join group",
-        operationId: "joinGroup",
+        summary: "Ask to join group",
+        operationId: "requestToJoinGroup",
         description:
-            "Join an interest group as an ordinary member. Open to anyone signed in, unless the group grants its members permissions — then a leader has to add them. The group's leaders are notified; a group without leaders gets an email at its contact address instead.",
+            "Ask to join an interest group. The group's leaders are notified and approve or decline the request; a group without leaders gets an email at its contact address instead.",
     })
         .schemaResponse({
             statusCode: 201,
-            schema: membershipResponseSchema,
-            description: "Joined the group",
+            schema: joinRequestSchema,
+            description: "Request sent",
         })
-        .badRequest({ description: "The group cannot be joined this way" })
+        .badRequest({ description: "The group does not take requests" })
         .notFound({ description: "Group not found" })
         .build(),
     requireAuth,
@@ -109,27 +112,62 @@ export const joinGroupRoute = route().post(
         const userId = c.get("user").id;
         const group = await findGroup(ctx, c.req.param("groupSlug"));
 
-        if (!isSelfJoinable(group)) {
+        if (!acceptsJoinRequests(group)) {
             throw HTTPAppException.BadRequest(
-                "Denne gruppen kan du ikke melde deg inn i selv. Kontakt lederen.",
+                "Denne gruppen tar ikke imot forespørsler",
             );
         }
         if (await findMembership(ctx, group.slug, userId)) {
             throw HTTPAppException.Conflict("Du er allerede medlem av gruppen");
         }
 
-        const membership = await addUserToGroup(ctx, userId, group.slug);
-
-        try {
-            await notifyLeadersOfNewMember(ctx, group, userId);
-        } catch (error) {
-            c.get("logger")?.error(
-                { err: error, groupSlug: group.slug },
-                "Failed to notify group leaders of new member",
+        const [request] = await ctx.db
+            .insert(schema.groupJoinRequest)
+            .values({ userId, groupSlug: group.slug })
+            .onConflictDoNothing()
+            .returning();
+        if (!request) {
+            throw HTTPAppException.Conflict(
+                "Du har allerede bedt om å bli med i gruppen",
             );
         }
 
-        return c.json(membership, 201);
+        try {
+            await notifyLeadersOfJoinRequest(ctx, group, userId);
+        } catch (error) {
+            c.get("logger")?.error(
+                { err: error, groupSlug: group.slug },
+                "Failed to notify group leaders of join request",
+            );
+        }
+
+        return c.json(request, 201);
+    },
+);
+
+export const withdrawJoinRequestRoute = route().delete(
+    "/:groupSlug/join",
+    describeRoute({
+        tags: ["groups"],
+        summary: "Withdraw join request",
+        operationId: "withdrawGroupJoinRequest",
+        description: "Withdraw the caller's pending request to join a group.",
+    })
+        .response({ statusCode: 204, description: "Request withdrawn" })
+        .notFound({ description: "No pending request" })
+        .build(),
+    requireAuth,
+    async (c) => {
+        const ctx = c.get("ctx");
+        const userId = c.get("user").id;
+        const [removed] = await ctx.db
+            .delete(schema.groupJoinRequest)
+            .where(joinRequestWhere(c.req.param("groupSlug"), userId))
+            .returning();
+        if (!removed) {
+            throw HTTPAppException.NotFound("Join request");
+        }
+        return c.body(null, 204);
     },
 );
 

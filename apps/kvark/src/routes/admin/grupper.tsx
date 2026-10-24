@@ -69,6 +69,7 @@ import { requireAdminSection } from "#/lib/admin-access";
 import { useImageUploader } from "#/api/queries/assets";
 import {
     createGroupMutation,
+    getGroupJoinRequestsQuery,
     getGroupMembersQuery,
     getGroupsQuery,
     removeGroupMemberMutation,
@@ -78,6 +79,7 @@ import {
     getGroupSignaturesQuery,
     revokeSignatureMutation,
 } from "#/api/queries/contracts";
+import { GroupJoinRequestsPanel } from "#/components/group-join-requests-panel";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminImageField } from "#/components/admin-image-field";
 import { richRegistry } from "#/components/markdown/directives/presets";
@@ -481,6 +483,11 @@ function GroupCard({
     // eller å være lederen dens.
     const canManageMembers =
         useScopedPermission("groups:manage", `group:${group.slug}`) || isLeader;
+    const { data: joinRequests } = useQuery({
+        ...getGroupJoinRequestsQuery(group.slug),
+        enabled:
+            canManageMembers && group.type.toLowerCase() === "interestgroup",
+    });
 
     async function handleSave() {
         setError(null);
@@ -541,6 +548,13 @@ function GroupCard({
                         </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
+                        {joinRequests && joinRequests.length > 0 ? (
+                            <Badge>
+                                {joinRequests.length === 1
+                                    ? "1 forespørsel"
+                                    : `${joinRequests.length} forespørsler`}
+                            </Badge>
+                        ) : null}
                         {group.contractSigningRequired && (
                             <Badge variant="secondary">Kontrakt påkrevd</Badge>
                         )}
@@ -758,6 +772,7 @@ function GroupMembersTable({
 
     return (
         <div className="flex flex-col gap-2">
+            <GroupJoinRequestsPanel groupSlug={groupSlug} enabled={enabled} />
             <h4>Medlemmer</h4>
             {!members || members.length === 0 ? (
                 <p>Ingen medlemmer i denne gruppen.</p>

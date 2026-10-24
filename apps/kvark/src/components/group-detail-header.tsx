@@ -4,6 +4,7 @@ import { Button } from "@tihlde/ui/ui/button";
 import {
     Archive,
     ArchiveRestore,
+    Clock,
     Crown,
     HandCoins,
     LogOut,
@@ -18,7 +19,6 @@ import {
     GroupEditDialog,
     type GroupEditValues,
 } from "#/components/group-edit-dialog";
-import { GroupJoinDialog } from "#/components/group-join-dialog";
 import { GroupSelfJoinButton } from "#/components/group-self-join-button";
 import type { ComboboxMember } from "#/components/user-combobox";
 import type { Group } from "#/lib/group";
@@ -45,16 +45,15 @@ type GroupDetailHeaderProps = {
     isSavingGroup?: boolean;
     saveGroupError?: string | null;
     /**
-     * Hva den innloggede kan gjøre med sitt eget medlemskap: bli med selv,
-     * be lederen om å bli med på e-post, eller melde seg ut.
+     * Hva den innloggede kan gjøre med sitt eget medlemskap: be om å bli med,
+     * trekke en ventende forespørsel, eller melde seg ut.
      */
-    membershipAction: "join" | "request" | "leave" | null;
+    membershipAction: "request" | "pending" | "leave" | null;
     leaderCount: number;
-    onJoin: () => void;
+    onRequest: () => void;
+    onWithdraw: () => void;
     onLeave: () => void;
     isMembershipPending?: boolean;
-    /** Navnet til den innloggede, som e-posten om å bli med signeres med. */
-    viewerName?: string;
 };
 
 export function GroupDetailHeader({
@@ -72,13 +71,14 @@ export function GroupDetailHeader({
     saveGroupError,
     membershipAction,
     leaderCount,
-    onJoin,
+    onRequest,
+    onWithdraw,
     onLeave,
     isMembershipPending,
-    viewerName,
 }: GroupDetailHeaderProps) {
     const [confirmArchive, setConfirmArchive] = useState(false);
     const [confirmLeave, setConfirmLeave] = useState(false);
+    const [confirmWithdraw, setConfirmWithdraw] = useState(false);
     const isArchived = Boolean(group.archivedAt);
     const showRestore = canArchive && isArchived;
     const showArchive = canArchive && !isArchived && Boolean(group.archivable);
@@ -155,21 +155,38 @@ export function GroupDetailHeader({
                 showArchive ||
                 showRestore ? (
                     <>
-                        {membershipAction === "join" ? (
+                        {membershipAction === "request" ? (
                             <GroupSelfJoinButton
                                 groupName={group.name}
                                 leaderCount={leaderCount}
                                 hasContactEmail={Boolean(group.contactEmail)}
-                                onJoin={onJoin}
+                                onJoin={onRequest}
                                 isPending={isMembershipPending}
                             />
                         ) : null}
-                        {membershipAction === "request" ? (
-                            <GroupJoinDialog
-                                groupName={group.name}
-                                contactEmail={group.contactEmail}
-                                senderName={viewerName}
-                            />
+                        {membershipAction === "pending" ? (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setConfirmWithdraw(true)}
+                                    disabled={isMembershipPending}
+                                >
+                                    <Clock />
+                                    Forespørsel sendt
+                                </Button>
+                                <ConfirmDeleteDialog
+                                    open={confirmWithdraw}
+                                    onOpenChange={setConfirmWithdraw}
+                                    title="Trekke tilbake forespørselen?"
+                                    description="Du kan sende en ny senere."
+                                    confirmLabel="Trekk tilbake"
+                                    onConfirm={() => {
+                                        setConfirmWithdraw(false);
+                                        onWithdraw();
+                                    }}
+                                    isPending={isMembershipPending}
+                                />
+                            </>
                         ) : null}
                         {membershipAction === "leave" ? (
                             <>

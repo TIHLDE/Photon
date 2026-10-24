@@ -213,6 +213,15 @@ export async function addUserToGroup(
         throw new Error(`Failed to add user ${userId} to group ${groupSlug}`);
     }
 
+    await db
+        .delete(schema.groupJoinRequest)
+        .where(
+            and(
+                eq(schema.groupJoinRequest.userId, userId),
+                eq(schema.groupJoinRequest.groupSlug, groupSlug),
+            ),
+        );
+
     // No role juggling here any more: what members of this group may do lives
     // in group.memberPermissions / memberGlobalPermissions and is read live
     // from the membership itself (getPermissionsFromMembership), so joining
@@ -477,23 +486,14 @@ export function allowsMultipleLeaders(type: string): boolean {
     return type.toLowerCase() === "interestgroup";
 }
 
-/**
- * Om man kan melde seg inn i gruppa selv, uten at en leder legger en til.
- *
- * Interessegrupper er åpne for alle. Unntaket er en gruppe som gir medlemmene
- * tilganger: selvinnmelding ville latt hvem som helst skaffe seg dem.
- */
-export function isSelfJoinable(group: {
+/** Interessegrupper er åpne for alle, så hvem som helst kan be om å bli med. */
+export function acceptsJoinRequests(group: {
     type: string;
     archivedAt: Date | null;
-    memberPermissions: string[];
-    memberGlobalPermissions: string[];
 }): boolean {
     return (
         group.type.toLowerCase() === "interestgroup" &&
-        group.archivedAt === null &&
-        group.memberPermissions.length === 0 &&
-        group.memberGlobalPermissions.length === 0
+        group.archivedAt === null
     );
 }
 

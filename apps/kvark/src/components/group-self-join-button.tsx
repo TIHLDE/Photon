@@ -45,18 +45,20 @@ export function GroupSelfJoinButton({
                 render={
                     <Button disabled={isPending}>
                         <UserPlus />
-                        Bli med
+                        Be om å bli med
                     </Button>
                 }
             />
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Bli med i {groupName}?</AlertDialogTitle>
+                    <AlertDialogTitle>
+                        Be om å bli med i {groupName}?
+                    </AlertDialogTitle>
                     {notice ? (
                         <AlertDialogDescription>
-                            {notice.notified} får beskjed om at du har blitt
-                            med. {notice.pronoun} vil gi deg nødvendige
-                            tilganger for å delta i gruppen.
+                            {notice.notified} får beskjed og godkjenner
+                            forespørselen. {notice.pronoun} vil gi deg
+                            nødvendige tilganger for å delta i gruppen.
                         </AlertDialogDescription>
                     ) : null}
                 </AlertDialogHeader>
@@ -71,7 +73,7 @@ export function GroupSelfJoinButton({
                             onJoin();
                         }}
                     >
-                        Bli med
+                        Send forespørsel
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

@@ -1,5 +1,5 @@
 import { CatchBoundary, createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import {
     BriefcaseBusinessIcon,
     CalendarIcon,
@@ -8,7 +8,7 @@ import {
     PlusIcon,
     Users2Icon,
 } from "lucide-react";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
@@ -17,11 +17,22 @@ import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Stagger } from "@tihlde/ui/ui/motion";
 
 import { AdminEmptyState } from "#/components/admin-empty-state";
+import {
+    AdminPendingJoinRequests,
+    pendingJoinRequestKey,
+    type PendingJoinRequest,
+} from "#/components/admin-pending-join-requests";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { AdminStatCard } from "#/components/admin-stat-card";
 import { getContractListQuery } from "#/api/queries/contracts";
 import { getEventsQuery } from "#/api/queries/events";
-import { getGroupsQuery } from "#/api/queries/groups";
+import {
+    approveJoinRequestMutation,
+    declineJoinRequestMutation,
+    getGroupsQuery,
+    getPendingJoinRequestsQuery,
+} from "#/api/queries/groups";
+import { extractErrorMessage } from "#/lib/api-error";
 import { getJobsQuery } from "#/api/queries/jobs";
 import { getNewsQuery } from "#/api/queries/news";
 import { SectionError } from "#/components/section-error";
@@ -55,7 +66,7 @@ function DashboardPage() {
         >
             <AdminPageHeader
                 title="Dashboard"
-                description="Oversikt over innhold og administrasjon i Kvark."
+                description="Oversikt over innhold og administrasjon av nettsiden."
                 action={
                     canCreateEvents ? (
                         <Button render={<Link to="/admin/arrangementer/ny" />}>
@@ -65,6 +76,8 @@ function DashboardPage() {
                     ) : null
                 }
             />
+
+            <PendingActions />
 
             <CatchBoundary
                 getResetKey={() => "stats"}
@@ -117,6 +130,51 @@ function CardError({ title }: { title: string }) {
                 <SectionError message="Vi fikk ikke lastet dette." />
             </CardContent>
         </Card>
+    );
+}
+
+function PendingActions() {
+    const { data } = useQuery(getPendingJoinRequestsQuery());
+    const approve = useMutation(approveJoinRequestMutation);
+    const decline = useMutation(declineJoinRequestMutation);
+    const [pendingKey, setPendingKey] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    if (!data || data.length === 0) return null;
+
+    async function answer(
+        mutation: typeof approve | typeof decline,
+        request: PendingJoinRequest,
+    ) {
+        setError(null);
+        setPendingKey(pendingJoinRequestKey(request));
+        try {
+            await mutation.mutateAsync({
+                groupSlug: request.groupSlug,
+                userId: request.userId,
+            });
+        } catch (err) {
+            setError(await extractErrorMessage(err));
+        } finally {
+            setPendingKey(null);
+        }
+    }
+
+    return (
+        <AdminPendingJoinRequests
+            requests={data.map((request) => ({
+                userId: request.userId,
+                name: request.user.name,
+                username: request.user.username,
+                image: request.user.image,
+                groupSlug: request.group.slug,
+                groupName: request.group.name,
+            }))}
+            onApprove={(request) => answer(approve, request)}
+            onDecline={(request) => answer(decline, request)}
+            pendingKey={pendingKey}
+            error={error}
+        />
     );
 }
 
