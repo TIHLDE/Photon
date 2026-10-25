@@ -350,7 +350,7 @@ export const getGroupJoinRequestsQuery = (groupSlug: string) =>
 
 export const getPendingJoinRequestsQuery = () =>
     queryOptions({
-        queryKey: [...GroupQueryKeys.joinRequests, "pending"],
+        queryKey: [...GroupQueryKeys.joinRequests, { waitingOnMe: true }],
         queryFn: () => apiClient.get("/api/groups/join-requests"),
     });
 

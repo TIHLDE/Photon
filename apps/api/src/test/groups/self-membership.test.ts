@@ -539,4 +539,27 @@ describe("join requests waiting on me", () => {
         },
         500_000,
     );
+
+    integrationTest(
+        "requests to an archived group are left out",
+        async ({ ctx }) => {
+            const { group, leaders } = await interestGroupWithLeaders(ctx, 1);
+            const requester = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(requester);
+            await client.api.groups[":groupSlug"].join.$post({
+                param: { groupSlug: group.slug },
+            });
+            await ctx.db
+                .update(schema.group)
+                .set({ archivedAt: new Date() })
+                .where(eq(schema.group.slug, group.slug));
+            const leaderClient = await ctx.utils.clientForUser(leaders[0]!);
+
+            const response =
+                await leaderClient.api.groups["join-requests"].$get();
+
+            expect(await response.json()).toEqual([]);
+        },
+        500_000,
+    );
 });

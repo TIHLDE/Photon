@@ -378,7 +378,7 @@ function GroupDetail() {
     const viewerMembership = members.find((member) => member.id === viewerId);
     const isInterestGroup = apiGroup.type.toUpperCase() === "INTERESTGROUP";
     const membershipAction =
-        !viewerId || !isInterestGroup || isArchived
+        !viewerId || !isInterestGroup || isArchived || !apiMembers
             ? null
             : viewerMembership
               ? viewerMembership.role === "leader"

@@ -222,17 +222,24 @@ export const listMyPendingJoinRequestsRoute = route().get(
                         image: true,
                     },
                 },
-                group: { columns: { slug: true, name: true } },
+                group: {
+                    columns: { slug: true, name: true, archivedAt: true },
+                },
             },
         });
         return c.json(
-            requests.map((request) => ({
-                userId: request.userId,
-                groupSlug: request.groupSlug,
-                createdAt: request.createdAt.toISOString(),
-                user: request.user,
-                group: request.group,
-            })),
+            requests
+                .filter((request) => request.group.archivedAt === null)
+                .map((request) => ({
+                    userId: request.userId,
+                    groupSlug: request.groupSlug,
+                    createdAt: request.createdAt.toISOString(),
+                    user: request.user,
+                    group: {
+                        slug: request.group.slug,
+                        name: request.group.name,
+                    },
+                })),
         );
     },
 );
