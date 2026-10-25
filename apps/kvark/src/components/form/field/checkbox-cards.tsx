@@ -31,12 +31,13 @@ export function CheckboxCards({ options }: CheckboxCardsProps) {
             aria-invalid={ctx.isInvalid}
             className="grid gap-3 sm:grid-cols-2"
         >
-            {options.map((option) => {
-                const itemId = `${ctx.inputId}-${option.value}`;
+            {options.map((option, index) => {
+                const itemId = `${ctx.inputId}-${index}`;
                 return (
                     <FieldLabel key={option.value} htmlFor={itemId}>
                         <FieldPrimitive orientation="horizontal">
                             <CheckboxPrimitive
+                                variant="contrast"
                                 id={itemId}
                                 checked={field.state.value.includes(
                                     option.value,

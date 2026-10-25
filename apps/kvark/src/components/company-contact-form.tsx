@@ -85,7 +85,10 @@ export function CompanyContactForm({
                         {(field) => (
                             <field.Field required>
                                 <field.Label>Navn på bedrift</field.Label>
-                                <field.Input placeholder="Bedrift AS" />
+                                <field.Input
+                                    variant="contrast"
+                                    placeholder="Bedrift AS"
+                                />
                                 <field.Error />
                             </field.Field>
                         )}
@@ -95,6 +98,7 @@ export function CompanyContactForm({
                             <field.Field required>
                                 <field.Label>Kontaktperson</field.Label>
                                 <field.Input
+                                    variant="contrast"
                                     autoComplete="name"
                                     placeholder="Kari Nordmann"
                                 />
@@ -107,6 +111,7 @@ export function CompanyContactForm({
                             <field.Field required>
                                 <field.Label>E-post</field.Label>
                                 <field.Input
+                                    variant="contrast"
                                     type="email"
                                     autoComplete="email"
                                     placeholder="kari@bedrift.no"
@@ -120,6 +125,7 @@ export function CompanyContactForm({
                             <field.Field>
                                 <field.Label>Telefonnummer</field.Label>
                                 <field.Input
+                                    variant="contrast"
                                     type="tel"
                                     autoComplete="tel"
                                     placeholder="+47 900 00 000"
@@ -175,6 +181,7 @@ export function CompanyContactForm({
                                     Om bedriften og hva dere jobber med
                                 </field.Label>
                                 <field.Textarea
+                                    variant="contrast"
                                     rows={5}
                                     className="min-h-32"
                                     placeholder="Skriv litt om bedriften..."
@@ -252,6 +259,7 @@ export function CompanyContactForm({
                             <field.Field>
                                 <field.Label>Kommentar</field.Label>
                                 <field.Textarea
+                                    variant="contrast"
                                     rows={5}
                                     className="min-h-32"
                                     placeholder="Fortell oss mer om hva dere ønsker..."
@@ -273,6 +281,7 @@ export function CompanyContactForm({
                     </p>
                     <form.AppForm>
                         <form.SubmitButton
+                            variant="contrast"
                             size="lg"
                             loading={
                                 <>
