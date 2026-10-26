@@ -213,6 +213,15 @@ export async function addUserToGroup(
         throw new Error(`Failed to add user ${userId} to group ${groupSlug}`);
     }
 
+    await db
+        .delete(schema.groupJoinRequest)
+        .where(
+            and(
+                eq(schema.groupJoinRequest.userId, userId),
+                eq(schema.groupJoinRequest.groupSlug, groupSlug),
+            ),
+        );
+
     // No role juggling here any more: what members of this group may do lives
     // in group.memberPermissions / memberGlobalPermissions and is read live
     // from the membership itself (getPermissionsFromMembership), so joining
@@ -475,6 +484,17 @@ export function isSubgroupType(type: string): boolean {
  */
 export function allowsMultipleLeaders(type: string): boolean {
     return type.toLowerCase() === "interestgroup";
+}
+
+/** Interessegrupper er åpne for alle, så hvem som helst kan be om å bli med. */
+export function acceptsJoinRequests(group: {
+    type: string;
+    archivedAt: Date | null;
+}): boolean {
+    return (
+        group.type.toLowerCase() === "interestgroup" &&
+        group.archivedAt === null
+    );
 }
 
 /**

@@ -408,6 +408,41 @@ export const groupMembershipRelations = relations(
 );
 
 /**
+ * Pending requests to join an interest group. A row lives only until a leader
+ * answers it: approving turns it into a membership, declining deletes it.
+ */
+export const groupJoinRequest = pgTable(
+    "group_join_request",
+    {
+        userId: varchar("user_id", { length: 255 })
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        groupSlug: varchar("group_slug", { length: 128 })
+            .notNull()
+            .references(() => group.slug, { onDelete: "cascade" }),
+        ...timestamps,
+    },
+    (t) => [
+        primaryKey({ columns: [t.userId, t.groupSlug] }),
+        index("group_join_request_group_slug_idx").on(t.groupSlug),
+    ],
+);
+
+export const groupJoinRequestRelations = relations(
+    groupJoinRequest,
+    ({ one }) => ({
+        user: one(user, {
+            fields: [groupJoinRequest.userId],
+            references: [user.id],
+        }),
+        group: one(group, {
+            fields: [groupJoinRequest.groupSlug],
+            references: [group.slug],
+        }),
+    }),
+);
+
+/**
  * Ended group memberships — the "tidligere medlemmer" list on a group page.
  *
  * `groupMembership` is the current roster and its rows are deleted outright

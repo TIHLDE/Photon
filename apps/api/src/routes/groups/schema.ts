@@ -196,6 +196,14 @@ export const groupDetailSchema = Schema(
             description:
                 "Whether this group may be archived at all. False for Hovedstyret and for groups whose roster follows Feide.",
         }),
+        acceptsJoinRequests: z.boolean().meta({
+            description:
+                "Whether a signed-in member can ask to join this group (POST /groups/{slug}/join). True for active interest groups.",
+        }),
+        viewerHasJoinRequest: z.boolean().meta({
+            description:
+                "Whether the caller has a pending request to join this group.",
+        }),
         viewerCanUseFines: z.boolean().meta({
             description:
                 "Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student.",
@@ -421,4 +429,45 @@ export const createGroupFormResponseSchema = Schema(
         updated_at: z.string().optional(),
         fields: z.array(groupFormFieldSchema).optional(),
     }),
+);
+
+export const joinRequestSchema = Schema(
+    "GroupJoinRequest",
+    z.object({
+        userId: z.string().meta({ description: "User ID" }),
+        groupSlug: z.string().meta({ description: "Group slug" }),
+        createdAt: z
+            .string()
+            .meta({ description: "When the request was sent" }),
+    }),
+);
+
+const joinRequestUserSchema = z.object({
+    id: z.string().meta({ description: "User ID" }),
+    name: z.string().meta({ description: "User display name" }),
+    username: z.string().nullable().meta({
+        description: "Username used in profile URLs",
+    }),
+    image: z
+        .string()
+        .nullable()
+        .meta({ description: "User profile image URL" }),
+});
+
+export const joinRequestListSchema = Schema(
+    "GroupJoinRequestList",
+    z.array(joinRequestSchema.extend({ user: joinRequestUserSchema })),
+);
+
+export const pendingJoinRequestListSchema = Schema(
+    "PendingGroupJoinRequestList",
+    z.array(
+        joinRequestSchema.extend({
+            user: joinRequestUserSchema,
+            group: z.object({
+                slug: z.string().meta({ description: "Group slug" }),
+                name: z.string().meta({ description: "Group name" }),
+            }),
+        }),
+    ),
 );

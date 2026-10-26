@@ -1,7 +1,15 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
-import { Archive, ArchiveRestore, Crown, HandCoins, Mail } from "lucide-react";
+import {
+    Archive,
+    ArchiveRestore,
+    Clock,
+    Crown,
+    HandCoins,
+    LogOut,
+    Mail,
+} from "lucide-react";
 import { useState } from "react";
 
 import { ConfirmDeleteDialog } from "#/components/confirm-delete-dialog";
@@ -11,7 +19,7 @@ import {
     GroupEditDialog,
     type GroupEditValues,
 } from "#/components/group-edit-dialog";
-import { GroupJoinDialog } from "#/components/group-join-dialog";
+import { GroupSelfJoinButton } from "#/components/group-self-join-button";
 import type { ComboboxMember } from "#/components/user-combobox";
 import type { Group } from "#/lib/group";
 import { initials } from "#/lib/utils";
@@ -36,10 +44,16 @@ type GroupDetailHeaderProps = {
     onSaveGroup: (values: GroupEditValues) => Promise<boolean>;
     isSavingGroup?: boolean;
     saveGroupError?: string | null;
-    /** Om knappen for å be om å bli med i gruppa skal vises. */
-    canRequestJoin: boolean;
-    /** Navnet til den innloggede, som e-posten om å bli med signeres med. */
-    viewerName?: string;
+    /**
+     * Hva den innloggede kan gjøre med sitt eget medlemskap: be om å bli med,
+     * trekke en ventende forespørsel, eller melde seg ut.
+     */
+    membershipAction: "request" | "pending" | "leave" | null;
+    leaderCount: number;
+    onRequest: () => void;
+    onWithdraw: () => void;
+    onLeave: () => void;
+    isMembershipPending?: boolean;
 };
 
 export function GroupDetailHeader({
@@ -55,10 +69,16 @@ export function GroupDetailHeader({
     onSaveGroup,
     isSavingGroup,
     saveGroupError,
-    canRequestJoin,
-    viewerName,
+    membershipAction,
+    leaderCount,
+    onRequest,
+    onWithdraw,
+    onLeave,
+    isMembershipPending,
 }: GroupDetailHeaderProps) {
     const [confirmArchive, setConfirmArchive] = useState(false);
+    const [confirmLeave, setConfirmLeave] = useState(false);
+    const [confirmWithdraw, setConfirmWithdraw] = useState(false);
     const isArchived = Boolean(group.archivedAt);
     const showRestore = canArchive && isArchived;
     const showArchive = canArchive && !isArchived && Boolean(group.archivable);
@@ -129,18 +149,68 @@ export function GroupDetailHeader({
                 </div>
             }
             actions={
-                canRequestJoin ||
+                membershipAction ||
                 canGiveFine ||
                 isAdmin ||
                 showArchive ||
                 showRestore ? (
                     <>
-                        {canRequestJoin && group.contactEmail ? (
-                            <GroupJoinDialog
+                        {membershipAction === "request" ? (
+                            <GroupSelfJoinButton
                                 groupName={group.name}
-                                contactEmail={group.contactEmail}
-                                senderName={viewerName}
+                                leaderCount={leaderCount}
+                                hasContactEmail={Boolean(group.contactEmail)}
+                                onJoin={onRequest}
+                                isPending={isMembershipPending}
                             />
+                        ) : null}
+                        {membershipAction === "pending" ? (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setConfirmWithdraw(true)}
+                                    disabled={isMembershipPending}
+                                >
+                                    <Clock />
+                                    Forespørsel sendt
+                                </Button>
+                                <ConfirmDeleteDialog
+                                    open={confirmWithdraw}
+                                    onOpenChange={setConfirmWithdraw}
+                                    title="Trekke tilbake forespørselen?"
+                                    description="Du kan sende en ny senere."
+                                    confirmLabel="Trekk tilbake"
+                                    onConfirm={() => {
+                                        setConfirmWithdraw(false);
+                                        onWithdraw();
+                                    }}
+                                    isPending={isMembershipPending}
+                                />
+                            </>
+                        ) : null}
+                        {membershipAction === "leave" ? (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setConfirmLeave(true)}
+                                    disabled={isMembershipPending}
+                                >
+                                    <LogOut />
+                                    Meld deg ut
+                                </Button>
+                                <ConfirmDeleteDialog
+                                    open={confirmLeave}
+                                    onOpenChange={setConfirmLeave}
+                                    title={`Melde deg ut av «${group.name}»?`}
+                                    description="Du kan bli med igjen senere."
+                                    confirmLabel="Meld deg ut"
+                                    onConfirm={() => {
+                                        setConfirmLeave(false);
+                                        onLeave();
+                                    }}
+                                    isPending={isMembershipPending}
+                                />
+                            </>
                         ) : null}
                         {canGiveFine ? (
                             <Button onClick={onGiveFine}>

@@ -8,6 +8,7 @@ import { createRoute } from "./create";
 import { deleteRoute } from "./delete";
 import { finesRoutes } from "./fines";
 import { lawsRoutes } from "./laws";
+import { listMyPendingJoinRequestsRoute } from "./members/join-requests";
 import { createGroupFormRoute } from "./form/create";
 import { listGroupFormsRoute } from "./form/list";
 import { getRoute } from "./get";
@@ -58,6 +59,7 @@ export const groupsRoutes = route()
     .use("/:slug/*", blockWritesWhenArchived)
     .route("/", listRoute)
     .route("/", mineRoute)
+    .route("/", listMyPendingJoinRequestsRoute)
     .route("/", archiveRoute)
     .route("/", createRoute)
     .route("/", updateRoute)

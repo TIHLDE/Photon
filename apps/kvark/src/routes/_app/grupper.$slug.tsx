@@ -49,6 +49,9 @@ import {
     getGroupLawsQuery,
     getGroupMembersQuery,
     removeGroupMemberMutation,
+    requestToJoinGroupMutation,
+    withdrawJoinRequestMutation,
+    leaveGroupMutation,
     updateFineMutation,
     updateGroupMemberRoleMutation,
     updateGroupMutation,
@@ -83,6 +86,7 @@ import {
     NewFormDialog,
     type NewFormValues,
 } from "#/components/new-form-dialog";
+import { GroupJoinRequestsPanel } from "#/components/group-join-requests-panel";
 import { GroupMembersTab } from "#/components/group-members-tab";
 import { GROUP_NAV_ITEMS, type GroupNavKey } from "#/components/group-nav";
 import { GroupOmTab } from "#/components/group-om-tab";
@@ -188,13 +192,13 @@ function GroupDetail() {
     const [editingFine, setEditingFine] = useState<Fine | null>(null);
     const [editFineError, setEditFineError] = useState<string | null>(null);
     const [groupError, setGroupError] = useState<string | null>(null);
-    const [archiveFailure, setArchiveFailure] = useState<{
+    const [headerFailure, setHeaderFailure] = useState<{
         slug: string;
         message: string;
     } | null>(null);
     // Siden monteres ikke på nytt når man går til en annen gruppe.
-    const archiveError =
-        archiveFailure?.slug === slug ? archiveFailure.message : null;
+    const headerError =
+        headerFailure?.slug === slug ? headerFailure.message : null;
     const [formDialogOpen, setFormDialogOpen] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
     const [editingForm, setEditingForm] = useState<Form | null>(null);
@@ -214,6 +218,9 @@ function GroupDetail() {
 
     const updateMemberRole = useMutation(updateGroupMemberRoleMutation);
     const removeMember = useMutation(removeGroupMemberMutation);
+    const requestToJoin = useMutation(requestToJoinGroupMutation);
+    const withdrawJoinRequest = useMutation(withdrawJoinRequestMutation);
+    const leaveGroup = useMutation(leaveGroupMutation);
     const addMember = useMutation(addGroupMemberMutation);
     const updateGroup = useMutation(updateGroupMutation);
     const archiveGroup = useMutation(archiveGroupMutation);
@@ -367,15 +374,23 @@ function GroupDetail() {
         () => sortMembersByName((apiMembers ?? []).map(mapMember)),
         [apiMembers],
     );
-    // Interessegrupper uten påmelding tar opp nye medlemmer på e-post, så
-    // innloggede som ikke allerede er med får en knapp som skriver den for dem.
     const viewerId = session?.user?.id;
-    const canRequestJoin =
-        apiGroup.type.toUpperCase() === "INTERESTGROUP" &&
-        Boolean(apiGroup.contactEmail) &&
-        !isArchived &&
-        Boolean(viewerId) &&
-        !members.some((member) => member.id === viewerId);
+    const viewerMembership = members.find((member) => member.id === viewerId);
+    const isInterestGroup = apiGroup.type.toUpperCase() === "INTERESTGROUP";
+    const membershipAction =
+        !viewerId || !isInterestGroup || isArchived || !apiMembers
+            ? null
+            : viewerMembership
+              ? // En leder kan bare gå når gruppa har en leder til.
+                viewerMembership.role === "leader" &&
+                !members.some((m) => m.role === "leader" && m.id !== viewerId)
+                  ? null
+                  : "leave"
+              : apiGroup.viewerHasJoinRequest
+                ? "pending"
+                : apiGroup.acceptsJoinRequests
+                  ? "request"
+                  : null;
     const leaders = useMemo(
         () => members.filter((m) => m.role === "leader"),
         [members],
@@ -724,14 +739,31 @@ function GroupDetail() {
         }
     }
 
+    async function changeOwnMembership(
+        mutation:
+            | typeof requestToJoin
+            | typeof withdrawJoinRequest
+            | typeof leaveGroup,
+    ) {
+        setHeaderFailure(null);
+        try {
+            await mutation.mutateAsync({ groupSlug: slug });
+        } catch (error) {
+            setHeaderFailure({
+                slug,
+                message: await extractErrorMessage(error),
+            });
+        }
+    }
+
     async function changeArchived(
         mutation: typeof archiveGroup | typeof unarchiveGroup,
     ) {
-        setArchiveFailure(null);
+        setHeaderFailure(null);
         try {
             await mutation.mutateAsync({ slug });
         } catch (error) {
-            setArchiveFailure({
+            setHeaderFailure({
                 slug,
                 message: await extractErrorMessage(error),
             });
@@ -757,8 +789,18 @@ function GroupDetail() {
                         onSaveGroup={handleSaveGroup}
                         isSavingGroup={updateGroup.isPending}
                         saveGroupError={groupError}
-                        canRequestJoin={canRequestJoin}
-                        viewerName={session?.user?.name}
+                        membershipAction={membershipAction}
+                        leaderCount={leaders.length}
+                        onRequest={() => changeOwnMembership(requestToJoin)}
+                        onWithdraw={() =>
+                            changeOwnMembership(withdrawJoinRequest)
+                        }
+                        onLeave={() => changeOwnMembership(leaveGroup)}
+                        isMembershipPending={
+                            requestToJoin.isPending ||
+                            withdrawJoinRequest.isPending ||
+                            leaveGroup.isPending
+                        }
                     />
                 }
             >
@@ -769,9 +811,9 @@ function GroupDetail() {
                 />
 
                 <DetailLayoutContent>
-                    {archiveError ? (
+                    {headerError ? (
                         <Alert variant="destructive">
-                            <AlertDescription>{archiveError}</AlertDescription>
+                            <AlertDescription>{headerError}</AlertDescription>
                         </Alert>
                     ) : null}
                     {activeTab === "om" ? <GroupOmTab group={group} /> : null}
@@ -782,6 +824,11 @@ function GroupDetail() {
                             formerMembers={formerMembers}
                             isAdmin={canManageMembers}
                             canPromote={canManageMembers}
+                            joinRequests={
+                                canManageMembers && isInterestGroup ? (
+                                    <GroupJoinRequestsPanel groupSlug={slug} />
+                                ) : null
+                            }
                             leaderTransfer={
                                 canManageMembers && canPickLeaderOutsideGroup
                                     ? {
