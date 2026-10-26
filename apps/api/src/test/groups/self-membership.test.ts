@@ -246,6 +246,63 @@ describe("asking to join an interest group", () => {
 
 describe("answering join requests", () => {
     integrationTest(
+        "a withdrawn request can no longer be approved",
+        async ({ ctx }) => {
+            const { group, leaders } = await interestGroupWithLeaders(ctx, 1);
+            const requester = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(requester);
+            const leaderClient = await ctx.utils.clientForUser(leaders[0]!);
+            await client.api.groups[":groupSlug"].join.$post({
+                param: { groupSlug: group.slug },
+            });
+            await client.api.groups[":groupSlug"].join.$delete({
+                param: { groupSlug: group.slug },
+            });
+
+            const approve = await leaderClient.api.groups[":groupSlug"][
+                "join-requests"
+            ][":userId"].approve.$post({
+                param: { groupSlug: group.slug, userId: requester.id },
+            });
+
+            expect(approve.status).toBe(404);
+            expect(
+                await membershipOf(ctx, group.slug, requester.id),
+            ).toBeUndefined();
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "a request is not approved once the group is no interest group",
+        async ({ ctx }) => {
+            const { group, leaders } = await interestGroupWithLeaders(ctx, 1);
+            const requester = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(requester);
+            const leaderClient = await ctx.utils.clientForUser(leaders[0]!);
+            await client.api.groups[":groupSlug"].join.$post({
+                param: { groupSlug: group.slug },
+            });
+            await ctx.db
+                .update(schema.group)
+                .set({ type: "STUDY" })
+                .where(eq(schema.group.slug, group.slug));
+
+            const approve = await leaderClient.api.groups[":groupSlug"][
+                "join-requests"
+            ][":userId"].approve.$post({
+                param: { groupSlug: group.slug, userId: requester.id },
+            });
+
+            expect(approve.status).toBe(400);
+            expect(
+                await membershipOf(ctx, group.slug, requester.id),
+            ).toBeUndefined();
+        },
+        500_000,
+    );
+
+    integrationTest(
         "a leader sees the request and approves it",
         async ({ ctx }) => {
             const { group, leaders } = await interestGroupWithLeaders(ctx, 1);
@@ -436,6 +493,24 @@ describe("leaving an interest group", () => {
             });
 
             expect(response.status).toBe(400);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "a leader may leave once the group has another leader",
+        async ({ ctx }) => {
+            const { group, leaders } = await interestGroupWithLeaders(ctx, 2);
+            const client = await ctx.utils.clientForUser(leaders[0]!);
+
+            const response = await client.api.groups[":groupSlug"].leave.$post({
+                param: { groupSlug: group.slug },
+            });
+
+            expect(response.status).toBe(204);
+            expect(
+                await membershipOf(ctx, group.slug, leaders[0]!.id),
+            ).toBeUndefined();
         },
         500_000,
     );

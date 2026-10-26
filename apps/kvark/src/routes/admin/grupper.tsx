@@ -69,9 +69,9 @@ import { requireAdminSection } from "#/lib/admin-access";
 import { useImageUploader } from "#/api/queries/assets";
 import {
     createGroupMutation,
-    getGroupJoinRequestsQuery,
     getGroupMembersQuery,
     getGroupsQuery,
+    getPendingJoinRequestsQuery,
     removeGroupMemberMutation,
     updateGroupMutation,
 } from "#/api/queries/groups";
@@ -483,11 +483,18 @@ function GroupCard({
     // eller å være lederen dens.
     const canManageMembers =
         useScopedPermission("groups:manage", `group:${group.slug}`) || isLeader;
-    const { data: joinRequests } = useQuery({
-        ...getGroupJoinRequestsQuery(group.slug),
-        enabled:
-            canManageMembers && group.type.toLowerCase() === "interestgroup",
+    // Én felles spørring for alle kortene i stedet for én per gruppe.
+    const canViewJoinRequests =
+        canManageMembers && group.type.toLowerCase() === "interestgroup";
+    const { data: pendingJoinRequests } = useQuery({
+        ...getPendingJoinRequestsQuery(),
+        enabled: canViewJoinRequests,
     });
+    const joinRequestCount = canViewJoinRequests
+        ? (pendingJoinRequests?.filter(
+              (request) => request.groupSlug === group.slug,
+          ).length ?? 0)
+        : 0;
 
     async function handleSave() {
         setError(null);
@@ -548,11 +555,11 @@ function GroupCard({
                         </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
-                        {joinRequests && joinRequests.length > 0 ? (
+                        {joinRequestCount > 0 ? (
                             <Badge>
-                                {joinRequests.length === 1
+                                {joinRequestCount === 1
                                     ? "1 forespørsel"
-                                    : `${joinRequests.length} forespørsler`}
+                                    : `${joinRequestCount} forespørsler`}
                             </Badge>
                         ) : null}
                         {group.contractSigningRequired && (

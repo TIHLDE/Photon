@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 import { env } from "~/lib/env";
 import { HTTPAppException } from "~/lib/errors";
@@ -131,6 +131,14 @@ export const requestToJoinRoute = route().post(
                 "Du har allerede bedt om å bli med i gruppen",
             );
         }
+        // Ble man lagt til mens forespørselen ble opprettet, ryddet ikke
+        // addUserToGroup den bort — gjør det her i stedet.
+        if (await findMembership(ctx, group.slug, userId)) {
+            await ctx.db
+                .delete(schema.groupJoinRequest)
+                .where(joinRequestWhere(group.slug, userId));
+            throw HTTPAppException.Conflict("Du er allerede medlem av gruppen");
+        }
 
         try {
             await notifyLeadersOfJoinRequest(ctx, group, userId);
@@ -178,7 +186,7 @@ export const leaveGroupRoute = route().post(
         summary: "Leave group",
         operationId: "leaveGroup",
         description:
-            "Leave an interest group. Leaders have to hand over the leadership first, so the group is never left without one by accident.",
+            "Leave an interest group. A leader may only leave while the group has another leader, so it is never left without one by accident.",
     })
         .response({ statusCode: 204, description: "Left the group" })
         .badRequest({ description: "The group cannot be left this way" })
@@ -201,9 +209,19 @@ export const leaveGroupRoute = route().post(
             throw HTTPAppException.NotFound("Membership");
         }
         if (membership.role === "leader") {
-            throw HTTPAppException.BadRequest(
-                "Gi fra deg ledervervet før du melder deg ut",
-            );
+            const otherLeader = await ctx.db.query.groupMembership.findFirst({
+                where: and(
+                    eq(schema.groupMembership.groupSlug, group.slug),
+                    eq(schema.groupMembership.role, "leader"),
+                    ne(schema.groupMembership.userId, userId),
+                ),
+                columns: { userId: true },
+            });
+            if (!otherLeader) {
+                throw HTTPAppException.BadRequest(
+                    "Gi fra deg ledervervet før du melder deg ut",
+                );
+            }
         }
 
         await removeUserFromGroup(ctx, userId, group.slug);

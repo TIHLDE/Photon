@@ -381,7 +381,9 @@ function GroupDetail() {
         !viewerId || !isInterestGroup || isArchived || !apiMembers
             ? null
             : viewerMembership
-              ? viewerMembership.role === "leader"
+              ? // En leder kan bare gå når gruppa har en leder til.
+                viewerMembership.role === "leader" &&
+                !members.some((m) => m.role === "leader" && m.id !== viewerId)
                   ? null
                   : "leave"
               : apiGroup.viewerHasJoinRequest

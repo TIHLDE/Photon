@@ -2,11 +2,12 @@ import { getPermissionGroupScopes } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { HTTPAppException } from "~/lib/errors";
-import { addUserToGroup } from "~/lib/group";
+import { acceptsJoinRequests, addUserToGroup } from "~/lib/group";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { sendNotification } from "~/lib/notification";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImageExtra } from "~/lib/user/avatar";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 import {
@@ -53,8 +54,8 @@ export const listJoinRequestsRoute = route().get(
                         id: true,
                         name: true,
                         username: true,
-                        image: true,
                     },
+                    extras: userImageExtra,
                 },
             },
         });
@@ -83,6 +84,7 @@ export const approveJoinRequestRoute = route().post(
             schema: membershipResponseSchema,
             description: "Requester is now a member",
         })
+        .badRequest({ description: "The group no longer takes requests" })
         .notFound({ description: "No pending request" })
         .build(),
     requireAuth,
@@ -92,9 +94,21 @@ export const approveJoinRequestRoute = route().post(
         const userId = c.req.param("userId");
         const group = await findGroup(ctx, c.req.param("groupSlug"));
 
-        const request = await ctx.db.query.groupJoinRequest.findFirst({
-            where: joinRequestWhere(group.slug, userId),
-        });
+        // Forespørselen kan være fra før gruppa ble arkivert eller gjort om
+        // til en annen type, og da skal den ikke kunne gi medlemskap.
+        if (!acceptsJoinRequests(group)) {
+            throw HTTPAppException.BadRequest(
+                "Denne gruppen tar ikke imot forespørsler",
+            );
+        }
+
+        // Slett forespørselen før medlemskapet opprettes, så en godkjenning
+        // som kolliderer med en tilbaketrekking eller et avslag ikke legger
+        // til noen som ikke lenger ber om det.
+        const [request] = await ctx.db
+            .delete(schema.groupJoinRequest)
+            .where(joinRequestWhere(group.slug, userId))
+            .returning();
         if (!request) {
             throw HTTPAppException.NotFound("Join request");
         }
@@ -219,8 +233,8 @@ export const listMyPendingJoinRequestsRoute = route().get(
                         id: true,
                         name: true,
                         username: true,
-                        image: true,
                     },
+                    extras: userImageExtra,
                 },
                 group: {
                     columns: { slug: true, name: true, archivedAt: true },

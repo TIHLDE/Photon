@@ -247,6 +247,11 @@ export const addGroupMemberMutation = mutationOptions({
             queryKey: [...GroupQueryKeys.members, vars.groupSlug],
             exact: false,
         });
+        // Å legge til noen besvarer også forespørselen deres.
+        ctx.client.invalidateQueries({
+            queryKey: [...GroupQueryKeys.joinRequests],
+            exact: false,
+        });
     },
 });
 
@@ -301,9 +306,18 @@ function invalidateAfterOwnMembershipChange(
     client: { invalidateQueries: (filters: object) => unknown },
 ) {
     client.invalidateQueries({ queryKey: authQueryOptions.queryKey });
+    // Detaljen har felter som avhenger av hvem som spør (bøter-tilgang).
+    client.invalidateQueries(getGroupBySlugQuery(slug));
+    // En leder som går, skal ikke lenger se gruppas forespørsler.
+    client.invalidateQueries({
+        queryKey: [...GroupQueryKeys.joinRequests],
+        exact: false,
+    });
+    // Bøtelista viser alles bøter bare til medlemmer.
     for (const queryKey of [
         GroupQueryKeys.members,
         GroupQueryKeys.formerMembers,
+        GroupQueryKeys.fines,
     ]) {
         client.invalidateQueries({
             queryKey: [...queryKey, slug],

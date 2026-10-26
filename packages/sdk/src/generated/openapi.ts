@@ -2104,7 +2104,7 @@ export interface paths {
         put?: never;
         /**
          * Leave group
-         * @description Leave an interest group. Leaders have to hand over the leadership first, so the group is never left without one by accident.
+         * @description Leave an interest group. A leader may only leave while the group has another leader, so it is never left without one by accident.
          */
         post: operations["leaveGroup"];
         delete?: never;
@@ -13109,6 +13109,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["GroupMembership"];
                 };
+            };
+            /** @description Bad Request - The group no longer takes requests */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Authentication required */
             401: {
