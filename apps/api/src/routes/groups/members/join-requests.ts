@@ -104,16 +104,18 @@ export const approveJoinRequestRoute = route().post(
 
         // Slett forespørselen før medlemskapet opprettes, så en godkjenning
         // som kolliderer med en tilbaketrekking eller et avslag ikke legger
-        // til noen som ikke lenger ber om det.
-        const [request] = await ctx.db
-            .delete(schema.groupJoinRequest)
-            .where(joinRequestWhere(group.slug, userId))
-            .returning();
-        if (!request) {
-            throw HTTPAppException.NotFound("Join request");
-        }
-
-        const membership = await addUserToGroup(ctx, userId, group.slug);
+        // til noen som ikke lenger ber om det. Feiler medlemskapet, rulles
+        // slettingen tilbake og forespørselen står fortsatt.
+        const membership = await ctx.db.transaction(async (tx) => {
+            const [request] = await tx
+                .delete(schema.groupJoinRequest)
+                .where(joinRequestWhere(group.slug, userId))
+                .returning();
+            if (!request) {
+                throw HTTPAppException.NotFound("Join request");
+            }
+            return addUserToGroup({ ...ctx, db: tx }, userId, group.slug);
+        });
 
         try {
             await sendNotification(
