@@ -768,12 +768,14 @@ function GroupDetail() {
             await mutation.mutateAsync({ slug });
 
             // Arkivering tar lederen ut av gruppen, og en privat gruppe er
-            // bare for medlemmene. Uten groups:manage er siden stengt nå, men
-            // cachen ville vist den aktive gruppen videre.
+            // bare for medlemmene. Siden kan være stengt nå, men cachen ville
+            // vist den aktive gruppen videre. Tilgangen før arkiveringen sier
+            // ikke noe sikkert om den etterpå — groups:manage kan ha kommet
+            // fra gruppen selv — så vi går alltid ut. Den som fortsatt har
+            // tilgang, finner gruppen under arkiverte grupper.
             if (
                 mutation === archiveGroup &&
-                isPrivateGroupType(apiGroup.type) &&
-                !hasGroupsManage
+                isPrivateGroupType(apiGroup.type)
             ) {
                 await navigate({ to: "/grupper" });
                 queryClient.removeQueries({
