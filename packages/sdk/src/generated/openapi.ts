@@ -1670,7 +1670,7 @@ export interface paths {
         };
         /**
          * List groups
-         * @description Retrieve the active groups, or with `archived=true` the archived ones — an archived private group only to its members and 'groups:manage'. Supports optional filtering by type and search query.
+         * @description Retrieve the active groups, or with `archived=true` the archived ones — an archived private group only to those who may open it: its members and 'groups:manage' (global or scoped to the group). Supports optional filtering by type and search query.
          */
         get: operations["listGroups"];
         put?: never;
@@ -11598,7 +11598,7 @@ export interface operations {
                 search?: string;
                 /** @description Only this group type */
                 type?: string;
-                /** @description 'true' lists the archived groups instead of the active ones. An archived private group is listed only to its members and holders of 'groups:manage'. */
+                /** @description 'true' lists the archived groups instead of the active ones. An archived private group is listed only to its members and holders of 'groups:manage', global or scoped to the group. */
                 archived?: "true" | "false";
             };
             header?: never;

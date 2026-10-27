@@ -231,7 +231,7 @@ export const listGroupsQuerySchema = z.object({
     type: z.string().optional().meta({ description: "Only this group type" }),
     archived: z.enum(["true", "false"]).default("false").meta({
         description:
-            "'true' lists the archived groups instead of the active ones. An archived private group is listed only to its members and holders of 'groups:manage'.",
+            "'true' lists the archived groups instead of the active ones. An archived private group is listed only to its members and holders of 'groups:manage', global or scoped to the group.",
     }),
 });
 

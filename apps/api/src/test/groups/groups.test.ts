@@ -681,6 +681,22 @@ describe("groups", () => {
                 expect((await forMember.json()).map((g) => g.slug)).toContain(
                     group.slug,
                 );
+
+                // A groups:manage grant scoped to this group opens the page,
+                // so the list must offer it too.
+                const scopedAdmin = await ctx.utils.createTestUser();
+                await ctx.db.insert(schema.userPermission).values({
+                    userId: scopedAdmin.id,
+                    permission: "groups:manage",
+                    scope: `group:${group.slug}`,
+                });
+                const scopedClient = await ctx.utils.clientForUser(scopedAdmin);
+                const forScoped = await scopedClient.api.groups.$get({
+                    query: { archived: "true" },
+                });
+                expect((await forScoped.json()).map((g) => g.slug)).toContain(
+                    group.slug,
+                );
             },
             500_000,
         );
