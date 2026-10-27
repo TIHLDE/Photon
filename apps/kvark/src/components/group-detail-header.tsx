@@ -252,6 +252,7 @@ export function GroupDetailHeader({
                                     title={`Arkivere «${group.name}»?`}
                                     description="Gruppen flyttes til arkiverte grupper og kan ikke endres. Alle medlemmene, også du, flyttes til tidligere medlemmer, og alle bøter i gruppen slettes for godt. Bare en administrator kan gjenopprette gruppen, og da er den tom."
                                     confirmLabel="Arkiver gruppe"
+                                    confirmationPhrase={`Jeg er helt sikker på at jeg vil arkivere ${group.name}`}
                                     onConfirm={() => {
                                         setConfirmArchive(false);
                                         onArchive();
