@@ -1,24 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import {
-    keepPreviousData,
-    useQuery,
-    useSuspenseInfiniteQuery,
-} from "@tanstack/react-query";
+import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
 import { Empty, EmptyDescription, EmptyTitle } from "@tihlde/ui/ui/empty";
 import { Stagger } from "@tihlde/ui/ui/motion";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { PlusIcon } from "lucide-react";
-import { addMilliseconds, startOfMonth } from "date-fns";
 import { useDeferredValue, useMemo, useState } from "react";
 import z from "zod";
 
-import {
-    getEventsInfiniteQuery,
-    getEventsInRangeQuery,
-} from "#/api/queries/events";
-import { calendarGridRange, EventCalendar } from "#/components/event-calendar";
+import { getEventsInfiniteQuery } from "#/api/queries/events";
 import { EventCard } from "#/components/event-card";
+import { EventMonthCalendar } from "#/components/event-month-calendar";
 import { FilterCheckboxOption } from "#/components/filter-checkbox-option";
 import {
     type Category,
@@ -260,7 +252,13 @@ function EventsPage() {
                         ) : null}
                     </div>
                     {visning === "kalender" ? (
-                        <EventCalendarView filters={listFilters} />
+                        <EventMonthCalendar
+                            filters={{
+                                search: listFilters.search,
+                                category: listFilters.category,
+                                openSignUp: listFilters.openSignUp,
+                            }}
+                        />
                     ) : (
                         <EventList filters={listFilters} />
                     )}
@@ -317,39 +315,5 @@ function EventList({ filters }: { filters: EventListFilters }) {
                 </div>
             )}
         </>
-    );
-}
-
-function EventCalendarView({ filters }: { filters: EventListFilters }) {
-    const [month, setMonth] = useState(() => startOfMonth(new Date()));
-    const { start, end } = calendarGridRange(month);
-    const {
-        data: events = [],
-        isPending,
-        isPlaceholderData,
-    } = useQuery({
-        ...getEventsInRangeQuery({
-            search: filters.search,
-            category: filters.category,
-            openSignUp: filters.openSignUp,
-            startFrom: start.toISOString(),
-            startBefore: addMilliseconds(end, 1).toISOString(),
-        }),
-        placeholderData: keepPreviousData,
-    });
-
-    return (
-        <EventCalendar
-            month={month}
-            onMonthChange={setMonth}
-            isLoading={isPending || isPlaceholderData}
-            events={events.map((event) => ({
-                id: event.id,
-                slug: event.slug,
-                title: event.title,
-                startTime: event.startTime,
-                category: event.category?.label,
-            }))}
-        />
     );
 }
