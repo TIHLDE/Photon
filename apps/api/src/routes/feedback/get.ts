@@ -1,6 +1,5 @@
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { hasPermission } from "@photon/auth/rbac";
 import { getFeedbackItem } from "~/lib/feedback/serialize";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -27,17 +26,8 @@ export const getRoute = route().get(
     async (c) => {
         const { db } = c.get("ctx");
         const { id } = c.req.valid("param");
-        const userId = c.get("user").id;
 
-        const item = await getFeedbackItem(
-            db,
-            id,
-            userId,
-            await hasPermission(c.get("ctx"), userId, [
-                "feedback:update",
-                "feedback:manage",
-            ]),
-        );
+        const item = await getFeedbackItem(db, id, c.get("user").id);
 
         if (!item) {
             throw new HTTPException(404, { message: "Feedback not found" });

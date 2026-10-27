@@ -27,7 +27,7 @@ export const createFeedbackSchema = Schema(
             .meta({ description: "What the idea or the bug is" }),
         isAnonymous: z.boolean().optional().meta({
             description:
-                "Hide the author's name from other members. Index ('feedback:update' or 'feedback:manage') still sees it. Defaults to anonymous.",
+                "Hide the author's name from other members in the frontend. The API still returns the author. Defaults to anonymous.",
         }),
     }),
 );
@@ -50,8 +50,7 @@ export const updateFeedbackSchema = Schema(
         title: z.string().min(2).max(100).optional(),
         description: z.string().min(10).max(2000).optional(),
         isAnonymous: z.boolean().optional().meta({
-            description:
-                "Author only, and only while the feedback is editable. Index still sees the name.",
+            description: "Author only, and only while the feedback is editable",
         }),
         status: z.enum(feedbackStatusVariants).optional(),
         rejectionReason: z
@@ -110,7 +109,7 @@ export const feedbackItemSchema = Schema(
         }),
         author: feedbackAuthorSchema.nullable().meta({
             description:
-                "Who filed it. Null when the feedback is anonymous, unless the requesting user has 'feedback:update' or 'feedback:manage'.",
+                "Who filed it, also when the feedback is anonymous. Clients must hide it from members when 'isAnonymous' is true.",
         }),
         upvotes: z.number(),
         downvotes: z.number(),

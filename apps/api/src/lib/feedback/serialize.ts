@@ -92,19 +92,15 @@ type FeedbackItemRow = Awaited<
 >[number];
 
 /**
- * `canSeeAnonymousAuthor` is for moderators only (see `canModerateFeedback`).
- * It defaults to false: the name is in the row either way, so leaving it out
- * must hide it, not leak it.
+ * The author is always included, also on anonymous feedback: hiding the name
+ * from members is left to the frontend, which shows it only to Index.
  */
 export function serializeFeedbackItem(
     row: FeedbackItemRow,
     userId: string,
-    canSeeAnonymousAuthor = false,
 ): SerializedFeedbackItem {
     const author =
-        (!row.isAnonymous || canSeeAnonymousAuthor) &&
-        row.authorId &&
-        row.authorName
+        row.authorId && row.authorName
             ? {
                   id: row.authorId,
                   name: row.authorName,
@@ -142,15 +138,12 @@ export async function getFeedbackItem(
     db: AppContext["db"],
     feedbackId: string,
     userId: string,
-    canSeeAnonymousAuthor = false,
 ): Promise<SerializedFeedbackItem | null> {
     const [row] = await selectFeedbackItems(db, userId).where(
         eq(schema.feedback.id, feedbackId),
     );
 
-    return row
-        ? serializeFeedbackItem(row, userId, canSeeAnonymousAuthor)
-        : null;
+    return row ? serializeFeedbackItem(row, userId) : null;
 }
 
 /**

@@ -4723,7 +4723,7 @@ export interface components {
             isAnonymous: boolean;
             /** @description Whether the requesting user filed this. */
             isAuthor: boolean;
-            /** @description Who filed it. Null when the feedback is anonymous, unless the requesting user has 'feedback:update' or 'feedback:manage'. */
+            /** @description Who filed it, also when the feedback is anonymous. Clients must hide it from members when 'isAnonymous' is true. */
             author: components["schemas"]["FeedbackAuthor"] | null;
             upvotes: number;
             downvotes: number;
@@ -4758,13 +4758,13 @@ export interface components {
             title: string;
             /** @description What the idea or the bug is */
             description: string;
-            /** @description Hide the author's name from other members. Index ('feedback:update' or 'feedback:manage') still sees it. Defaults to anonymous. */
+            /** @description Hide the author's name from other members in the frontend. The API still returns the author. Defaults to anonymous. */
             isAnonymous?: boolean;
         };
         UpdateFeedback: {
             title?: string;
             description?: string;
-            /** @description Author only, and only while the feedback is editable. Index still sees the name. */
+            /** @description Author only, and only while the feedback is editable */
             isAnonymous?: boolean;
             /** @enum {string} */
             status?: "open" | "in_progress" | "closed" | "rejected";

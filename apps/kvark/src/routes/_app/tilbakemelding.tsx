@@ -217,12 +217,13 @@ function VoteButtons({ item }: { item: FeedbackItem }) {
     );
 }
 
-function authorLabel(item: FeedbackItem): string {
+function authorLabel(item: FeedbackItem, canModerate: boolean): string {
     if (item.isAuthor) return item.isAnonymous ? "Din · anonym" : "Din";
     if (!item.author) return "Anonym";
-    // Only Index gets the name of anonymous feedback. The marker reminds them
-    // that everyone else sees it as anonymous.
-    return item.isAnonymous ? `${item.author.name} · anonym` : item.author.name;
+    // The API always sends the author, so anonymity is enforced here: only
+    // Index sees the name, with a marker that everyone else sees it as anonymous.
+    if (!item.isAnonymous) return item.author.name;
+    return canModerate ? `${item.author.name} · anonym` : "Anonym";
 }
 
 function CommentAuthorAvatar({
@@ -561,7 +562,8 @@ function FeedbackRow({
 
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-muted-foreground">
-                        {authorLabel(item)} · {formatDate(item.createdAt)}
+                        {authorLabel(item, canModerate)} ·{" "}
+                        {formatDate(item.createdAt)}
                     </p>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -686,7 +688,8 @@ function FeedbackRow({
 
 // Matches the API's limit on `description`, which also holds the reproduction steps.
 const DESCRIPTION_MAX_LENGTH = 2000;
-const REPRODUCTION_STEPS_HEADING = "\n\nSlik får du feilen til å skje igjen:\n";
+const REPRODUCTION_STEPS_HEADING =
+    "\n\nDette gjorde jeg før problemet skjedde:\n";
 
 function FeedbackFormDialog({
     type,
@@ -826,14 +829,14 @@ function FeedbackFormDialog({
                             />
                             <FieldDescription>
                                 {isBug
-                                    ? "Hvor skjedde det, og hva gjorde du rett før?"
+                                    ? "Hva er feil, og hvor på siden skjedde det?"
                                     : "Hva ønsker du, og hvorfor?"}
                             </FieldDescription>
                         </Field>
                         {askForReproductionSteps && (
                             <Field>
                                 <FieldLabel htmlFor="feedback-reproduction-steps">
-                                    Hvordan får vi feilen til å skje igjen?
+                                    Hva gjorde du før problemet skjedde?
                                 </FieldLabel>
                                 <Textarea
                                     id="feedback-reproduction-steps"
@@ -844,12 +847,13 @@ function FeedbackFormDialog({
                                         setReproductionSteps(e.target.value)
                                     }
                                     placeholder={
-                                        "1. Gå til ...\n2. Trykk på ...\n3. Se at ..."
+                                        "Jeg gikk til ..., trykket på ... og da skjedde ..."
                                     }
                                 />
                                 <FieldDescription>
-                                    Valgfritt steg. Hjelper Index å finne feilen
-                                    raskere.
+                                    Valgfritt. Fortell hva du gjorde, og hvordan
+                                    vi eventuelt kan få det samme til å skje
+                                    igjen. Da finner Index feilen raskere.
                                 </FieldDescription>
                             </Field>
                         )}
