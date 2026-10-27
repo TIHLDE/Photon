@@ -419,3 +419,57 @@ describe("replacing a fine's picture", () => {
         500_000,
     );
 });
+
+describe("archiving a group deletes its fines", () => {
+    integrationTest(
+        "the fines, their pictures and cached variants are gone, other groups keep theirs",
+        async ({ ctx }) => {
+            const { giver, group, key } = await setupFine(ctx, {
+                slug: "fine-archive-release",
+            });
+            const other = await setupFine(ctx, {
+                slug: "fine-archive-other",
+            });
+
+            const variantKey = imageVariantKey(key, 320);
+            await ctx.bucket.putObject(variantKey, PICTURE, "image/webp");
+
+            const client = await ctx.utils.clientForUser(giver);
+            const response = await client.api.groups[":slug"].archive.$post({
+                param: { slug: group.slug },
+            });
+            expect(response.status).toBe(200);
+
+            expect(
+                await ctx.db.query.fine.findMany({
+                    where: eq(schema.fine.groupSlug, group.slug),
+                }),
+            ).toEqual([]);
+            expect(await ctx.bucket.exists(key)).toBe(false);
+            expect(await ctx.bucket.getObject(variantKey)).toBeNull();
+            expect(
+                await ctx.db.query.asset.findFirst({
+                    where: eq(schema.asset.key, key),
+                }),
+            ).toBeUndefined();
+
+            const otherFine = await ctx.db.query.fine.findFirst({
+                where: eq(schema.fine.id, other.fine.id),
+            });
+            expect(otherFine).toBeDefined();
+            expect(await ctx.bucket.exists(other.key)).toBe(true);
+
+            // Gjenoppretting gir ikke botene tilbake.
+            const restored = await client.api.groups[":slug"].unarchive.$post({
+                param: { slug: group.slug },
+            });
+            expect(restored.status).toBe(200);
+            expect(
+                await ctx.db.query.fine.findMany({
+                    where: eq(schema.fine.groupSlug, group.slug),
+                }),
+            ).toEqual([]);
+        },
+        500_000,
+    );
+});

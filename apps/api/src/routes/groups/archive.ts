@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { releaseAssetUrls } from "~/lib/asset/release";
 import { HTTPAppException } from "~/lib/errors";
 import { isArchivableGroup } from "~/lib/group";
 import { isGroupLeader } from "~/lib/group/middleware";
@@ -24,7 +25,7 @@ export const archiveRoute = route()
             summary: "Archive a group",
             operationId: "archiveGroup",
             description:
-                "Archive a group. It leaves the group list but stays visible to everyone, nothing in it can be changed and it grants no permissions — but nothing is deleted, and unarchiving brings it all back. Requires being the group's leader OR holding 'groups:manage'.",
+                "Archive a group. It leaves the group list but stays visible to everyone, nothing in it can be changed and it grants no permissions. Every fine in the group is deleted, pictures included, and does not come back on restore. Requires being the group's leader OR holding 'groups:manage'.",
         })
             .schemaResponse({
                 statusCode: 200,
@@ -47,7 +48,8 @@ export const archiveRoute = route()
         access,
         async (c) => {
             const slug = c.req.param("slug");
-            const { db } = c.get("ctx");
+            const ctx = c.get("ctx");
+            const { db } = ctx;
 
             const group = await db.query.group.findFirst({
                 where: eq(schema.group.slug, slug),
@@ -65,10 +67,27 @@ export const archiveRoute = route()
                 );
             }
 
-            await db
-                .update(schema.group)
-                .set({ archivedAt: new Date() })
-                .where(eq(schema.group.slug, slug));
+            // Botene følger ikke gruppen inn i arkivet: hvem som fikk bot for
+            // hva er ikke historikk noen skal kunne lese senere.
+            const deletedFines = await db.transaction(async (tx) => {
+                await tx
+                    .update(schema.group)
+                    .set({ archivedAt: new Date() })
+                    .where(eq(schema.group.slug, slug));
+
+                return tx
+                    .delete(schema.fine)
+                    .where(eq(schema.fine.groupSlug, slug))
+                    .returning({ image: schema.fine.image });
+            });
+
+            // Etter commit: referansesjekken leser databasen. Opprydningscronen
+            // tar bare opplastinger som aldri ble brukt, så ingen andre fjerner
+            // disse bildene.
+            await releaseAssetUrls(
+                ctx,
+                deletedFines.map((fine) => fine.image),
+            );
 
             return c.json({ message: "Group archived" }, 200);
         },

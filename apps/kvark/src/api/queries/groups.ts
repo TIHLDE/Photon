@@ -178,6 +178,11 @@ function invalidateAfterArchiveChange(
     ]) {
         client.invalidateQueries({ queryKey: [...queryKey], exact: false });
     }
+    // Arkivering sletter gruppens bøter.
+    client.invalidateQueries({
+        queryKey: [...GroupQueryKeys.fines, slug],
+        exact: false,
+    });
 }
 
 export const archiveGroupMutation = mutationOptions({
