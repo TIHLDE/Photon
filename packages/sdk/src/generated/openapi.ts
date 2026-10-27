@@ -1781,7 +1781,7 @@ export interface paths {
         post?: never;
         /**
          * Delete a group
-         * @description Delete a group by its slug. Requires being the group's leader OR holding 'groups:delete' for all of TIHLDE, and repeating the slug in `confirm`. This action is irreversible and will remove all associated data, including memberships, fines, laws, forms and verv.
+         * @description Delete a group by its slug. Requires being the group's leader OR holding 'groups:delete' for all of TIHLDE, and repeating the slug in `confirm`. This action is irreversible and will remove all associated data, including memberships, fines (and their pictures), laws, forms and verv.
          */
         delete: operations["deleteGroup"];
         options?: never;
