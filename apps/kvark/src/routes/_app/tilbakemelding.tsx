@@ -217,13 +217,11 @@ function VoteButtons({ item }: { item: FeedbackItem }) {
     );
 }
 
-function authorLabel(item: FeedbackItem, canModerate: boolean): string {
+function authorLabel(item: FeedbackItem): string {
     if (item.isAuthor) return item.isAnonymous ? "Din · anonym" : "Din";
     if (!item.author) return "Anonym";
-    // The API always sends the author, so anonymity is enforced here: only
-    // Index sees the name, with a marker that everyone else sees it as anonymous.
     if (!item.isAnonymous) return item.author.name;
-    return canModerate ? `${item.author.name} · anonym` : "Anonym";
+    return "Anonym";
 }
 
 function CommentAuthorAvatar({
@@ -562,7 +560,7 @@ function FeedbackRow({
 
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-muted-foreground">
-                        {authorLabel(item, canModerate)} ·{" "}
+                        {authorLabel(item)} ·{" "}
                         {formatDate(item.createdAt)}
                     </p>
 
