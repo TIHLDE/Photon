@@ -38,7 +38,6 @@ export const listPositionsRoute = route().get(
             .select({
                 slug: schema.group.slug,
                 type: schema.group.type,
-                archivedAt: schema.group.archivedAt,
             })
             .from(schema.group)
             .where(eq(schema.group.slug, groupSlug))

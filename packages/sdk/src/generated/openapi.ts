@@ -1670,7 +1670,7 @@ export interface paths {
         };
         /**
          * List groups
-         * @description Retrieve the active groups, or with `archived=true` the archived groups the caller may open. Supports optional filtering by type and search query.
+         * @description Retrieve the active groups, or with `archived=true` the archived ones — an archived private group only to its members and 'groups:manage'. Supports optional filtering by type and search query.
          */
         get: operations["listGroups"];
         put?: never;
@@ -1736,7 +1736,7 @@ export interface paths {
         put?: never;
         /**
          * Archive a group
-         * @description Archive a group. It leaves the group list, only its members can open it, nothing in it can be changed and it grants no permissions — but nothing is deleted, and unarchiving brings it all back. Requires being the group's leader OR holding 'groups:manage'.
+         * @description Archive a group. It leaves the group list but stays visible to everyone, nothing in it can be changed and it grants no permissions — but nothing is deleted, and unarchiving brings it all back. Requires being the group's leader OR holding 'groups:manage'.
          */
         post: operations["archiveGroup"];
         delete?: never;
@@ -5271,7 +5271,7 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
-            /** @description When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions. */
+            /** @description When the group was archived, or null while it is active. An archived group stays visible to everyone, but cannot be changed, and grants no permissions. */
             archivedAt: string | null;
             /** @description Creation timestamp */
             createdAt: string;
@@ -5306,7 +5306,7 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
-            /** @description When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions. */
+            /** @description When the group was archived, or null while it is active. An archived group stays visible to everyone, but cannot be changed, and grants no permissions. */
             archivedAt: string | null;
             /** @description Creation timestamp */
             createdAt: string;
@@ -5372,7 +5372,7 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
-            /** @description When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions. */
+            /** @description When the group was archived, or null while it is active. An archived group stays visible to everyone, but cannot be changed, and grants no permissions. */
             archivedAt: string | null;
             /** @description Creation timestamp */
             createdAt: string;
@@ -5473,7 +5473,7 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
-            /** @description When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions. */
+            /** @description When the group was archived, or null while it is active. An archived group stays visible to everyone, but cannot be changed, and grants no permissions. */
             archivedAt: string | null;
             /** @description Creation timestamp */
             createdAt: string;
@@ -11598,7 +11598,7 @@ export interface operations {
                 search?: string;
                 /** @description Only this group type */
                 type?: string;
-                /** @description 'true' lists the archived groups the caller may open — the ones they are a member of, or all of them with 'groups:manage' — instead of the active ones. */
+                /** @description 'true' lists the archived groups instead of the active ones. An archived private group is listed only to its members and holders of 'groups:manage'. */
                 archived?: "true" | "false";
             };
             header?: never;

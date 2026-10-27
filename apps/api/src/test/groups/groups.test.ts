@@ -558,30 +558,21 @@ describe("groups", () => {
 
     describe("archived groups", () => {
         integrationTest(
-            "an archived group leaves the list and only its members can open it",
+            "an archived group leaves the list but stays open to everyone",
             async ({ ctx }) => {
                 const leader = await ctx.utils.createTestUser();
-                const member = await ctx.utils.createTestUser();
                 const outsider = await ctx.utils.createTestUser();
                 const leaderClient = await ctx.utils.clientForUser(leader);
-                const memberClient = await ctx.utils.clientForUser(member);
                 const outsiderClient = await ctx.utils.clientForUser(outsider);
 
                 const group = await ctx.utils.createTestGroup({
                     slug: "archive-visibility",
                 });
-                await ctx.db.insert(schema.groupMembership).values([
-                    {
-                        userId: leader.id,
-                        groupSlug: group.slug,
-                        role: "leader",
-                    },
-                    {
-                        userId: member.id,
-                        groupSlug: group.slug,
-                        role: "member",
-                    },
-                ]);
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: leader.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
 
                 const refused = await outsiderClient.api.groups[
                     ":slug"
@@ -593,75 +584,103 @@ describe("groups", () => {
                 ].archive.$post({ param: { slug: group.slug } });
                 expect(archived.status).toBe(200);
 
-                const active = await memberClient.api.groups.$get({
+                const active = await outsiderClient.api.groups.$get({
                     query: {},
                 });
                 expect((await active.json()).map((g) => g.slug)).not.toContain(
                     group.slug,
                 );
 
-                const forMember = await memberClient.api.groups.$get({
-                    query: { archived: "true" },
-                });
-                expect((await forMember.json()).map((g) => g.slug)).toEqual([
-                    group.slug,
-                ]);
-
                 const forOutsider = await outsiderClient.api.groups.$get({
                     query: { archived: "true" },
                 });
-                expect(await forOutsider.json()).toEqual([]);
+                expect((await forOutsider.json()).map((g) => g.slug)).toEqual([
+                    group.slug,
+                ]);
 
                 const signedOut = await ctx.app.request(
                     "/api/groups?archived=true",
                 );
-                expect(await signedOut.json()).toEqual([]);
-
-                const detail = await memberClient.api.groups[":slug"].$get({
-                    param: { slug: group.slug },
-                });
-                expect(detail.status).toBe(200);
-                expect((await detail.json()).archivedAt).not.toBeNull();
+                expect(
+                    ((await signedOut.json()) as { slug: string }[]).map(
+                        (g) => g.slug,
+                    ),
+                ).toEqual([group.slug]);
 
                 const outsiderDetail = await outsiderClient.api.groups[
                     ":slug"
                 ].$get({ param: { slug: group.slug } });
-                expect(outsiderDetail.status).toBe(403);
+                expect(outsiderDetail.status).toBe(200);
+                expect((await outsiderDetail.json()).archivedAt).not.toBeNull();
 
                 const outsiderMembers = await outsiderClient.api.groups[
                     ":groupSlug"
                 ].members.$get({ param: { groupSlug: group.slug } });
-                expect(outsiderMembers.status).toBe(403);
+                expect(outsiderMembers.status).toBe(200);
+
+                // Seeing an archived group is not the same as reopening it.
+                const restoreRefused = await outsiderClient.api.groups[
+                    ":slug"
+                ].unarchive.$post({ param: { slug: group.slug } });
+                expect(restoreRefused.status).toBe(403);
+
+                const stillArchived = await ctx.db.query.group.findFirst({
+                    where: eq(schema.group.slug, group.slug),
+                });
+                expect(stillArchived?.archivedAt).not.toBeNull();
             },
             500_000,
         );
 
         integrationTest(
-            "groups:manage sees every archived group",
+            "an archived private group stays members-only",
             async ({ ctx }) => {
-                const admin = await ctx.utils.createTestUser();
-                const client = await ctx.utils.clientForUser(admin);
-                await ctx.utils.giveUserPermissions(admin, ["groups:manage"]);
+                const outsider = await ctx.utils.createTestUser();
+                const member = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(outsider);
+                const memberClient = await ctx.utils.clientForUser(member);
 
                 const group = await ctx.utils.createTestGroup({
-                    slug: "archive-admin-view",
+                    slug: "archive-private",
+                    type: "PRIVATE",
                 });
                 await ctx.db
                     .update(schema.group)
                     .set({ archivedAt: new Date() })
                     .where(eq(schema.group.slug, group.slug));
-
-                const list = await client.api.groups.$get({
-                    query: { archived: "true" },
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: member.id,
+                    groupSlug: group.slug,
+                    role: "member",
                 });
-                expect((await list.json()).map((g) => g.slug)).toContain(
-                    group.slug,
-                );
 
                 const detail = await client.api.groups[":slug"].$get({
                     param: { slug: group.slug },
                 });
-                expect(detail.status).toBe(200);
+                expect(detail.status).toBe(403);
+
+                const forOutsider = await client.api.groups.$get({
+                    query: { archived: "true" },
+                });
+                expect(
+                    (await forOutsider.json()).map((g) => g.slug),
+                ).not.toContain(group.slug);
+
+                const signedOut = await ctx.app.request(
+                    "/api/groups?archived=true",
+                );
+                expect(
+                    ((await signedOut.json()) as { slug: string }[]).map(
+                        (g) => g.slug,
+                    ),
+                ).not.toContain(group.slug);
+
+                const forMember = await memberClient.api.groups.$get({
+                    query: { archived: "true" },
+                });
+                expect((await forMember.json()).map((g) => g.slug)).toContain(
+                    group.slug,
+                );
             },
             500_000,
         );

@@ -250,7 +250,7 @@ export function GroupDetailHeader({
                                     open={confirmArchive}
                                     onOpenChange={setConfirmArchive}
                                     title={`Arkivere «${group.name}»?`}
-                                    description="Gruppen skjules for alle andre enn medlemmene og kan ikke endres. Den kan gjenopprettes senere."
+                                    description="Gruppen flyttes til arkiverte grupper og kan ikke endres. Den kan gjenopprettes senere."
                                     confirmLabel="Arkiver gruppe"
                                     onConfirm={() => {
                                         setConfirmArchive(false);

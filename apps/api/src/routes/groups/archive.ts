@@ -24,7 +24,7 @@ export const archiveRoute = route()
             summary: "Archive a group",
             operationId: "archiveGroup",
             description:
-                "Archive a group. It leaves the group list, only its members can open it, nothing in it can be changed and it grants no permissions — but nothing is deleted, and unarchiving brings it all back. Requires being the group's leader OR holding 'groups:manage'.",
+                "Archive a group. It leaves the group list but stays visible to everyone, nothing in it can be changed and it grants no permissions — but nothing is deleted, and unarchiving brings it all back. Requires being the group's leader OR holding 'groups:manage'.",
         })
             .schemaResponse({
                 statusCode: 200,

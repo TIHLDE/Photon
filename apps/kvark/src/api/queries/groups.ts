@@ -68,11 +68,17 @@ export const getGroupsInfiniteQuery = (
         getNextPageParam: () => undefined,
     });
 
-export const getArchivedGroupsQuery = (userId: string | undefined) =>
+/**
+ * `userId` er `null` for en utlogget besøkende og `undefined` mens sesjonen
+ * ennå ikke er kjent.
+ */
+export const getArchivedGroupsQuery = (userId: string | null | undefined) =>
     queryOptions({
-        // Svaret avhenger av hvem som spør, og utlogging tømmer ikke cachen.
-        queryKey: [...GroupQueryKeys.archived, userId],
-        enabled: Boolean(userId),
+        // Arkiverte private grupper vises bare for medlemmene, og utlogging
+        // tømmer ikke cachen. Venter på sesjonen, så et innlogget svar aldri
+        // havner under den utloggede nøkkelen.
+        queryKey: [...GroupQueryKeys.archived, userId ?? null],
+        enabled: userId !== undefined,
         queryFn: () =>
             apiClient.get("/api/groups", {
                 searchParams: { archived: "true" },

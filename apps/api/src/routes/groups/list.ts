@@ -9,6 +9,7 @@ import {
     inArray,
     isNotNull,
     isNull,
+    notIlike,
     or,
 } from "drizzle-orm";
 import { validator } from "hono-openapi";
@@ -24,7 +25,7 @@ export const listRoute = route().get(
         summary: "List groups",
         operationId: "listGroups",
         description:
-            "Retrieve the active groups, or with `archived=true` the archived groups the caller may open. Supports optional filtering by type and search query.",
+            "Retrieve the active groups, or with `archived=true` the archived ones — an archived private group only to its members and 'groups:manage'. Supports optional filtering by type and search query.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -46,18 +47,35 @@ export const listRoute = route().get(
         const conditions = [];
 
         if (archived === "true") {
-            const userId = c.get("user")?.id;
-            if (!userId) return c.json([]);
-
             conditions.push(isNotNull(schema.group.archivedAt));
-            if (!(await hasPermission(ctx, userId, "groups:manage"))) {
+
+            // Archived groups are open to everyone, except a private one,
+            // which stays with its members — see `canViewGroup`.
+            const userId = c.get("user")?.id;
+            if (
+                !userId ||
+                !(await hasPermission(ctx, userId, "groups:manage"))
+            ) {
                 conditions.push(
-                    inArray(
-                        schema.group.slug,
-                        db
-                            .select({ slug: schema.groupMembership.groupSlug })
-                            .from(schema.groupMembership)
-                            .where(eq(schema.groupMembership.userId, userId)),
+                    or(
+                        notIlike(schema.group.type, "private"),
+                        userId
+                            ? inArray(
+                                  schema.group.slug,
+                                  db
+                                      .select({
+                                          slug: schema.groupMembership
+                                              .groupSlug,
+                                      })
+                                      .from(schema.groupMembership)
+                                      .where(
+                                          eq(
+                                              schema.groupMembership.userId,
+                                              userId,
+                                          ),
+                                      ),
+                              )
+                            : undefined,
                     ),
                 );
             }
