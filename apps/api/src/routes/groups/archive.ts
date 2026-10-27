@@ -79,9 +79,13 @@ export const archiveRoute = route()
             const deletedFines = await db.transaction(async (tx) => {
                 const txCtx = { ...ctx, db: tx };
 
+                // Botsjefen er en utnevnelse, ikke et medlemskap, og gir
+                // tilgang til bøtene uansett hvem som er i gruppen. Den må
+                // følge medlemmene ut, ellers styrer vedkommende bøtene til en
+                // gjenopprettet gruppe de ikke lenger er med i.
                 await tx
                     .update(schema.group)
-                    .set({ archivedAt: new Date() })
+                    .set({ archivedAt: new Date(), finesAdminId: null })
                     .where(eq(schema.group.slug, slug));
 
                 // Medlemmene går til «tidligere medlemmer» på samme vei som

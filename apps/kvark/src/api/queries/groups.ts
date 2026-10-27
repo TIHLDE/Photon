@@ -5,7 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
 import { authQueryOptions } from "#/api/auth";
-import { getGroupPositionsQuery } from "#/api/queries/roles";
+import { RoleQueryKeys } from "#/api/queries/roles";
 import { fetchPrivateObjectUrl } from "#/lib/assets";
 import type { QueryParamsHelper } from "@tihlde/sdk/types";
 import type {
@@ -191,7 +191,12 @@ function invalidateAfterArchiveChange(
             exact: false,
         });
     }
-    client.invalidateQueries(getGroupPositionsQuery(slug));
+    // Alle grupper, ikke bare denne: en undergruppeleder mister også det
+    // koblede ledervervet i HS.
+    client.invalidateQueries({
+        queryKey: [...RoleQueryKeys.positions],
+        exact: false,
+    });
 }
 
 export const archiveGroupMutation = mutationOptions({

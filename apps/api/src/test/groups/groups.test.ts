@@ -715,6 +715,10 @@ describe("groups", () => {
                     positionId: position!.id,
                     userId: member.id,
                 });
+                await ctx.db
+                    .update(schema.group)
+                    .set({ finesActivated: true, finesAdminId: member.id })
+                    .where(eq(schema.group.slug, group.slug));
 
                 const archived = await client.api.groups[":slug"].archive.$post(
                     { param: { slug: group.slug } },
@@ -744,6 +748,12 @@ describe("groups", () => {
                         [member.id, "member"],
                     ].sort(([a], [b]) => String(a).localeCompare(String(b))),
                 );
+
+                // The botsjef is an appointment, not a membership: it goes too.
+                const after = await ctx.db.query.group.findFirst({
+                    where: eq(schema.group.slug, group.slug),
+                });
+                expect(after?.finesAdminId).toBeNull();
 
                 // The verv stays, its holder does not.
                 expect(
