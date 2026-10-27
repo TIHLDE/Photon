@@ -27,7 +27,7 @@ export const createFeedbackSchema = Schema(
             .meta({ description: "What the idea or the bug is" }),
         isAnonymous: z.boolean().optional().meta({
             description:
-                "Hide the author's name from everyone else. Defaults to anonymous.",
+                "Hide the author's name from other members in the frontend. The API still returns the author. Defaults to anonymous.",
         }),
     }),
 );
@@ -109,7 +109,7 @@ export const feedbackItemSchema = Schema(
         }),
         author: feedbackAuthorSchema.nullable().meta({
             description:
-                "Who filed it. Always null when the feedback is anonymous.",
+                "Who filed it, also when the feedback is anonymous. Clients must hide it from members when 'isAnonymous' is true.",
         }),
         upvotes: z.number(),
         downvotes: z.number(),

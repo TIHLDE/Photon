@@ -217,9 +217,13 @@ function VoteButtons({ item }: { item: FeedbackItem }) {
     );
 }
 
-function authorLabel(item: FeedbackItem): string {
+function authorLabel(item: FeedbackItem, canModerate: boolean): string {
     if (item.isAuthor) return item.isAnonymous ? "Din · anonym" : "Din";
-    return item.author?.name ?? "Anonym";
+    if (!item.author) return "Anonym";
+    // The API always sends the author, so anonymity is enforced here: only
+    // Index sees the name, with a marker that everyone else sees it as anonymous.
+    if (!item.isAnonymous) return item.author.name;
+    return canModerate ? `${item.author.name} · anonym` : "Anonym";
 }
 
 function CommentAuthorAvatar({
@@ -558,7 +562,8 @@ function FeedbackRow({
 
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-muted-foreground">
-                        {authorLabel(item)} · {formatDate(item.createdAt)}
+                        {authorLabel(item, canModerate)} ·{" "}
+                        {formatDate(item.createdAt)}
                     </p>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -681,6 +686,11 @@ function FeedbackRow({
     );
 }
 
+// Matches the API's limit on `description`, which also holds the reproduction steps.
+const DESCRIPTION_MAX_LENGTH = 2000;
+const REPRODUCTION_STEPS_HEADING =
+    "\n\nDette gjorde jeg før problemet skjedde:\n";
+
 function FeedbackFormDialog({
     type,
     item,
@@ -694,7 +704,8 @@ function FeedbackFormDialog({
 }) {
     const [title, setTitle] = useState(item?.title ?? "");
     const [description, setDescription] = useState(item?.description ?? "");
-    const [isAnonymous, setIsAnonymous] = useState(item?.isAnonymous ?? true);
+    const [reproductionSteps, setReproductionSteps] = useState("");
+    const [isAnonymous, setIsAnonymous] = useState(item?.isAnonymous ?? false);
     const [error, setError] = useState<string | null>(null);
     const [wasOpen, setWasOpen] = useState(open);
 
@@ -702,11 +713,21 @@ function FeedbackFormDialog({
     const update = useMutation(updateFeedbackMutation);
     const isPending = create.isPending || update.isPending;
     const isBug = type === "bug";
+    // Reproduction steps are only asked for on new bugs: once saved they
+    // are part of the description, so editing shows them there.
+    const askForReproductionSteps = isBug && !item;
+    const reproductionStepsMaxLength = Math.max(
+        0,
+        DESCRIPTION_MAX_LENGTH -
+            description.length -
+            REPRODUCTION_STEPS_HEADING.length,
+    );
 
     function reset() {
         setTitle(item?.title ?? "");
         setDescription(item?.description ?? "");
-        setIsAnonymous(item?.isAnonymous ?? true);
+        setReproductionSteps("");
+        setIsAnonymous(item?.isAnonymous ?? false);
         setError(null);
     }
 
@@ -728,8 +749,18 @@ function FeedbackFormDialog({
                     data: { title, description, isAnonymous },
                 });
             } else {
+                const trimmedReproductionSteps = askForReproductionSteps
+                    ? reproductionSteps.trim()
+                    : "";
                 await create.mutateAsync({
-                    data: { type, title, description, isAnonymous },
+                    data: {
+                        type,
+                        title,
+                        description: trimmedReproductionSteps
+                            ? `${description}${REPRODUCTION_STEPS_HEADING}${trimmedReproductionSteps}`
+                            : description,
+                        isAnonymous,
+                    },
                 });
             }
             onOpenChange(false);
@@ -790,7 +821,7 @@ function FeedbackFormDialog({
                                 id="feedback-description"
                                 required
                                 minLength={10}
-                                maxLength={2000}
+                                maxLength={DESCRIPTION_MAX_LENGTH}
                                 rows={5}
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
@@ -798,10 +829,34 @@ function FeedbackFormDialog({
                             />
                             <FieldDescription>
                                 {isBug
-                                    ? "Hvor skjedde det, og hva gjorde du rett før?"
+                                    ? "Hva er feil, og hvor på siden skjedde det?"
                                     : "Hva ønsker du, og hvorfor?"}
                             </FieldDescription>
                         </Field>
+                        {askForReproductionSteps && (
+                            <Field>
+                                <FieldLabel htmlFor="feedback-reproduction-steps">
+                                    Hva gjorde du før problemet skjedde?
+                                </FieldLabel>
+                                <Textarea
+                                    id="feedback-reproduction-steps"
+                                    maxLength={reproductionStepsMaxLength}
+                                    rows={4}
+                                    value={reproductionSteps}
+                                    onChange={(e) =>
+                                        setReproductionSteps(e.target.value)
+                                    }
+                                    placeholder={
+                                        "Jeg gikk til ..., trykket på ... og da skjedde ..."
+                                    }
+                                />
+                                <FieldDescription>
+                                    Valgfritt. Fortell hva du gjorde, og hvordan
+                                    vi eventuelt kan få det samme til å skje
+                                    igjen. Da finner Index feilen raskere.
+                                </FieldDescription>
+                            </Field>
+                        )}
                         <Field orientation="horizontal">
                             <FieldContent>
                                 <FieldLabel htmlFor="feedback-anonymous">

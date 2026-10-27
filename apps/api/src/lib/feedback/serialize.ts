@@ -91,12 +91,16 @@ type FeedbackItemRow = Awaited<
     ReturnType<ReturnType<typeof selectFeedbackItems>["execute"]>
 >[number];
 
+/**
+ * The author is always included, also on anonymous feedback: hiding the name
+ * from members is left to the frontend, which shows it only to Index.
+ */
 export function serializeFeedbackItem(
     row: FeedbackItemRow,
     userId: string,
 ): SerializedFeedbackItem {
     const author =
-        !row.isAnonymous && row.authorId && row.authorName
+        row.authorId && row.authorName
             ? {
                   id: row.authorId,
                   name: row.authorName,
