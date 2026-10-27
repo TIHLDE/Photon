@@ -108,7 +108,12 @@ export const archiveRoute = route()
             // Etter commit: referansesjekken leser databasen. Opprydningscronen
             // tar bare opplastinger som aldri ble brukt, så ingen andre fjerner
             // disse bildene.
-            await releaseAssetUrls(
+            //
+            // Ventes ikke på: hvert bilde er åtte slettekall mot S3, og en
+            // gruppe med mange bøter ville holdt svaret lenger enn klientens
+            // tidsavbrudd — etter at arkiveringen allerede er lagret. Den
+            // kaster aldri, så ingen avvisning slipper ut.
+            void releaseAssetUrls(
                 ctx,
                 deletedFines.map((fine) => fine.image),
             );

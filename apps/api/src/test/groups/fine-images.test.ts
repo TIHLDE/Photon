@@ -1,6 +1,6 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
-import { describe, expect } from "vitest";
+import { describe, expect, vi } from "vitest";
 import { imageVariantKey } from "~/lib/asset/image";
 import { removeUserFromGroup } from "~/lib/group";
 import {
@@ -445,13 +445,17 @@ describe("archiving a group deletes its fines", () => {
                     where: eq(schema.fine.groupSlug, group.slug),
                 }),
             ).toEqual([]);
-            expect(await ctx.bucket.exists(key)).toBe(false);
-            expect(await ctx.bucket.getObject(variantKey)).toBeNull();
-            expect(
-                await ctx.db.query.asset.findFirst({
-                    where: eq(schema.asset.key, key),
-                }),
-            ).toBeUndefined();
+
+            // Bildene slettes etter at svaret er sendt.
+            await vi.waitFor(async () => {
+                expect(await ctx.bucket.exists(key)).toBe(false);
+                expect(await ctx.bucket.getObject(variantKey)).toBeNull();
+                expect(
+                    await ctx.db.query.asset.findFirst({
+                        where: eq(schema.asset.key, key),
+                    }),
+                ).toBeUndefined();
+            });
 
             const otherFine = await ctx.db.query.fine.findFirst({
                 where: eq(schema.fine.id, other.fine.id),
