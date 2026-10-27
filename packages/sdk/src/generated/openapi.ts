@@ -1736,7 +1736,7 @@ export interface paths {
         put?: never;
         /**
          * Archive a group
-         * @description Archive a group. It leaves the group list but stays visible to everyone, nothing in it can be changed and it grants no permissions. Every fine in the group is deleted, pictures included, and does not come back on restore. Requires being the group's leader OR holding 'groups:manage'.
+         * @description Archive a group. It leaves the group list but stays visible to everyone, nothing in it can be changed and it grants no permissions. Every member, the leader included, is removed and moved to the group's member history, and loses any verv held in it. Every fine in the group is deleted, pictures included. Neither comes back on restore. Requires being the group's leader OR holding 'groups:manage'.
          */
         post: operations["archiveGroup"];
         delete?: never;
@@ -1756,7 +1756,7 @@ export interface paths {
         put?: never;
         /**
          * Restore an archived group
-         * @description Bring an archived group back: it returns to the group list, becomes editable again, and its members, leader and verv regain the permissions the group grants. Requires being the group's leader OR holding 'groups:manage'.
+         * @description Bring an archived group back: it returns to the group list and becomes editable again. It comes back empty — archiving moved every member to the member history and deleted the fines — so members and a leader have to be added anew. Requires 'groups:manage', since an archived group has no leader.
          */
         post: operations["unarchiveGroup"];
         delete?: never;

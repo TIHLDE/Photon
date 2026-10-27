@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
 import { authQueryOptions } from "#/api/auth";
+import { getGroupPositionsQuery } from "#/api/queries/roles";
 import { fetchPrivateObjectUrl } from "#/lib/assets";
 import type { QueryParamsHelper } from "@tihlde/sdk/types";
 import type {
@@ -178,11 +179,19 @@ function invalidateAfterArchiveChange(
     ]) {
         client.invalidateQueries({ queryKey: [...queryKey], exact: false });
     }
-    // Arkivering sletter gruppens bøter.
-    client.invalidateQueries({
-        queryKey: [...GroupQueryKeys.fines, slug],
-        exact: false,
-    });
+    // Arkivering sletter gruppens bøter og flytter medlemmene til
+    // «tidligere medlemmer», så vervene står uten innehavere.
+    for (const queryKey of [
+        GroupQueryKeys.fines,
+        GroupQueryKeys.members,
+        GroupQueryKeys.formerMembers,
+    ]) {
+        client.invalidateQueries({
+            queryKey: [...queryKey, slug],
+            exact: false,
+        });
+    }
+    client.invalidateQueries(getGroupPositionsQuery(slug));
 }
 
 export const archiveGroupMutation = mutationOptions({

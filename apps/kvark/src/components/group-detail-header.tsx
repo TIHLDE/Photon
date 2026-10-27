@@ -250,7 +250,7 @@ export function GroupDetailHeader({
                                     open={confirmArchive}
                                     onOpenChange={setConfirmArchive}
                                     title={`Arkivere «${group.name}»?`}
-                                    description="Gruppen flyttes til arkiverte grupper og kan ikke endres. Alle bøter i gruppen slettes for godt. Gruppen kan gjenopprettes senere, men bøtene kommer ikke tilbake."
+                                    description="Gruppen flyttes til arkiverte grupper og kan ikke endres. Alle medlemmene, også du, flyttes til tidligere medlemmer, og alle bøter i gruppen slettes for godt. Bare en administrator kan gjenopprette gruppen, og da er den tom."
                                     confirmLabel="Arkiver gruppe"
                                     onConfirm={() => {
                                         setConfirmArchive(false);

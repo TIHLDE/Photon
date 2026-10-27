@@ -460,7 +460,12 @@ describe("archiving a group deletes its fines", () => {
             expect(await ctx.bucket.exists(other.key)).toBe(true);
 
             // Gjenoppretting gir ikke botene tilbake.
-            const restored = await client.api.groups[":slug"].unarchive.$post({
+            const admin = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(admin, ["groups:manage"]);
+            const adminClient = await ctx.utils.clientForUser(admin);
+            const restored = await adminClient.api.groups[
+                ":slug"
+            ].unarchive.$post({
                 param: { slug: group.slug },
             });
             expect(restored.status).toBe(200);

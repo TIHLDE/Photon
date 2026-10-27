@@ -686,6 +686,92 @@ describe("groups", () => {
         );
 
         integrationTest(
+            "archiving moves every member to the member history",
+            async ({ ctx }) => {
+                const leader = await ctx.utils.createTestUser();
+                const member = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(leader);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "archive-members",
+                });
+                await ctx.db.insert(schema.groupMembership).values([
+                    {
+                        userId: leader.id,
+                        groupSlug: group.slug,
+                        role: "leader",
+                    },
+                    {
+                        userId: member.id,
+                        groupSlug: group.slug,
+                        role: "member",
+                    },
+                ]);
+                const [position] = await ctx.db
+                    .insert(schema.groupPosition)
+                    .values({ groupSlug: group.slug, name: "Kasserer" })
+                    .returning();
+                await ctx.db.insert(schema.groupPositionHolder).values({
+                    positionId: position!.id,
+                    userId: member.id,
+                });
+
+                const archived = await client.api.groups[":slug"].archive.$post(
+                    { param: { slug: group.slug } },
+                );
+                expect(archived.status).toBe(200);
+
+                expect(
+                    await ctx.db.query.groupMembership.findMany({
+                        where: eq(schema.groupMembership.groupSlug, group.slug),
+                    }),
+                ).toEqual([]);
+
+                const history =
+                    await ctx.db.query.groupMembershipHistory.findMany({
+                        where: eq(
+                            schema.groupMembershipHistory.groupSlug,
+                            group.slug,
+                        ),
+                    });
+                expect(
+                    history
+                        .map((row) => [row.userId, row.role])
+                        .sort(([a], [b]) => String(a).localeCompare(String(b))),
+                ).toEqual(
+                    [
+                        [leader.id, "leader"],
+                        [member.id, "member"],
+                    ].sort(([a], [b]) => String(a).localeCompare(String(b))),
+                );
+
+                // The verv stays, its holder does not.
+                expect(
+                    await ctx.db.query.groupPosition.findFirst({
+                        where: eq(schema.groupPosition.id, position!.id),
+                    }),
+                ).toBeDefined();
+                expect(
+                    await ctx.db.query.groupPositionHolder.findMany({
+                        where: eq(
+                            schema.groupPositionHolder.positionId,
+                            position!.id,
+                        ),
+                    }),
+                ).toEqual([]);
+
+                // The history stays readable to everyone.
+                const outsider = await ctx.utils.createTestUser();
+                const outsiderClient = await ctx.utils.clientForUser(outsider);
+                const formerMembers = await outsiderClient.api.groups[
+                    ":groupSlug"
+                ].members.history.$get({ param: { groupSlug: group.slug } });
+                expect(formerMembers.status).toBe(200);
+            },
+            500_000,
+        );
+
+        integrationTest(
             "nothing can be changed until the group is restored",
             async ({ ctx }) => {
                 const leader = await ctx.utils.createTestUser();
@@ -733,12 +819,28 @@ describe("groups", () => {
                 ].archive.$post({ param: { slug: group.slug } });
                 expect(archiveAgain.status).toBe(409);
 
-                const restored = await client.api.groups[
+                // Archiving took the leader out of the group, so only
+                // groups:manage can bring it back.
+                const leaderRestore = await client.api.groups[
+                    ":slug"
+                ].unarchive.$post({ param: { slug: group.slug } });
+                expect(leaderRestore.status).toBe(403);
+
+                const admin = await ctx.utils.createTestUser();
+                await ctx.utils.giveUserPermissions(admin, [
+                    "groups:manage",
+                    "groups:update",
+                ]);
+                const adminClient = await ctx.utils.clientForUser(admin);
+
+                const restored = await adminClient.api.groups[
                     ":slug"
                 ].unarchive.$post({ param: { slug: group.slug } });
                 expect(restored.status).toBe(200);
 
-                const updateAgain = await client.api.groups[":slug"].$patch({
+                const updateAgain = await adminClient.api.groups[
+                    ":slug"
+                ].$patch({
                     param: { slug: group.slug },
                     json: { name: "Renamed" },
                 });
@@ -833,7 +935,20 @@ describe("groups", () => {
                     param: { slug: group.slug },
                 });
 
-                const deleted = await client.api.groups[":slug"].$delete({
+                // The former leader is no longer in the group.
+                const byFormerLeader = await client.api.groups[":slug"].$delete(
+                    {
+                        param: { slug: group.slug },
+                        query: { confirm: group.slug },
+                    },
+                );
+                expect(byFormerLeader.status).toBe(403);
+
+                const admin = await ctx.utils.createTestUser();
+                await ctx.utils.giveUserPermissions(admin, ["groups:delete"]);
+                const adminClient = await ctx.utils.clientForUser(admin);
+
+                const deleted = await adminClient.api.groups[":slug"].$delete({
                     param: { slug: group.slug },
                     query: { confirm: group.slug },
                 });
