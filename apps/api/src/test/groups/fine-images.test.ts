@@ -10,6 +10,10 @@ import {
 
 const PICTURE = Buffer.from("bevis-for-boten");
 
+// Bildene slettes etter at svaret er sendt. vi.waitFor gir opp etter ett
+// sekund som standard, og det holder ikke på en travel CI-maskin.
+const CLEANUP_TIMEOUT = { timeout: 10_000 };
+
 async function setupFine(
     ctx: IntegrationTestContext,
     options: { slug: string },
@@ -455,7 +459,7 @@ describe("archiving a group deletes its fines", () => {
                         where: eq(schema.asset.key, key),
                     }),
                 ).toBeUndefined();
-            });
+            }, CLEANUP_TIMEOUT);
 
             const otherFine = await ctx.db.query.fine.findFirst({
                 where: eq(schema.fine.id, other.fine.id),
@@ -513,7 +517,7 @@ describe("deleting a group releases its fines' pictures", () => {
                         where: eq(schema.asset.key, key),
                     }),
                 ).toBeUndefined();
-            });
+            }, CLEANUP_TIMEOUT);
 
             expect(
                 await ctx.db.query.fine.findFirst({
