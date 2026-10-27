@@ -6,7 +6,6 @@ import {
     createFileRoute,
 } from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
-import { EventCalendar } from "@tihlde/ui/complex/event-calendar";
 import { Reveal, Stagger } from "@tihlde/ui/ui/motion";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
@@ -19,6 +18,7 @@ import { getEventsQuery } from "#/api/queries/events";
 import { getNewsQuery } from "#/api/queries/news";
 import { getVisibleBannersQuery } from "#/api/queries/banners";
 import { EventCard } from "#/components/event-card";
+import { EventMonthCalendar } from "#/components/event-month-calendar";
 import { InfoBanner } from "#/components/info-banner";
 import { NewsCard } from "#/components/news-card";
 import { SectionError } from "#/components/section-error";
@@ -46,19 +46,11 @@ const upcomingEventsQuery = () =>
         LIST_PREVIEW_COUNT,
     );
 
-/** Nok arrangementer til å fylle en måned i kalenderen. */
-const CALENDAR_PAGE_SIZE = 50;
-
 /**
- * Kalenderen henter sitt eget utvalg. Panelet er avmontert til fanen velges,
- * så spørringen koster ingenting for de som blir stående i lista.
+ * Kalenderen henter sitt eget utvalg, én måned om gangen. Panelet er avmontert
+ * til fanen velges, så den koster ingenting for de som blir stående i lista.
  */
-const calendarEventsQuery = () =>
-    getEventsQuery(
-        0,
-        { expired: false, category: EVENT_SLUGS },
-        CALENDAR_PAGE_SIZE,
-    );
+const CALENDAR_FILTERS = { category: EVENT_SLUGS };
 
 /** Seks aktiviteter, fordelt på to spalter. */
 const ACTIVITIES_PREVIEW_COUNT = 6;
@@ -153,15 +145,8 @@ function Home() {
                         </Suspense>
                     </TabsContent>
 
-                    <TabsContent value="calendar">
-                        <CatchBoundary
-                            getResetKey={() => "calendar"}
-                            errorComponent={CalendarUnavailable}
-                        >
-                            <Suspense fallback={<CalendarSkeleton />}>
-                                <EventsCalendarSection />
-                            </Suspense>
-                        </CatchBoundary>
+                    <TabsContent value="calendar" className="mt-4">
+                        <EventMonthCalendar filters={CALENDAR_FILTERS} />
                     </TabsContent>
                 </Tabs>
             </section>
@@ -255,33 +240,6 @@ function EventsSection() {
     );
 }
 
-function EventsCalendarSection() {
-    const { data } = useSuspenseQuery(calendarEventsQuery());
-
-    return (
-        <div className="mt-4">
-            <EventCalendar
-                events={data.items.map((event) => ({
-                    id: event.id,
-                    title: event.title,
-                    start: event.startTime,
-                    render: (
-                        <Link
-                            to="/arrangementer/$slug"
-                            params={{ slug: event.slug }}
-                        />
-                    ),
-                }))}
-            />
-        </div>
-    );
-}
-
-/** Kalenderen er én fane av to — lista står selv om denne feiler. */
-function CalendarUnavailable() {
-    return <SectionError message="Vi fikk ikke lastet kalenderen." />;
-}
-
 function ActivitiesSection() {
     const { data } = useSuspenseQuery(upcomingActivitiesQuery());
     const activities = data.items;
@@ -362,10 +320,6 @@ function EventGridSkeleton({ count }: { count: number }) {
             ))}
         </div>
     );
-}
-
-function CalendarSkeleton() {
-    return <Skeleton className="mt-4 h-96 w-full" />;
 }
 
 function Hero({ banners }: { banners?: ReactNode }) {

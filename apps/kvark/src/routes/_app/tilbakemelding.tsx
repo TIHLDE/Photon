@@ -560,8 +560,7 @@ function FeedbackRow({
 
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-muted-foreground">
-                        {authorLabel(item)} ·{" "}
-                        {formatDate(item.createdAt)}
+                        {authorLabel(item)} · {formatDate(item.createdAt)}
                     </p>
 
                     <div className="flex flex-wrap items-center gap-2">
