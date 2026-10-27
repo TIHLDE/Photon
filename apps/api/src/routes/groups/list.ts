@@ -10,6 +10,7 @@ import {
     isNotNull,
     isNull,
     or,
+    sql,
 } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { describeRoute } from "~/lib/openapi";
@@ -51,13 +52,21 @@ export const listRoute = route().get(
 
             conditions.push(isNotNull(schema.group.archivedAt));
             if (!(await hasPermission(ctx, userId, "groups:manage"))) {
+                // Private groups stay hidden from non-members, as in canViewGroup.
                 conditions.push(
-                    inArray(
-                        schema.group.slug,
-                        db
-                            .select({ slug: schema.groupMembership.groupSlug })
-                            .from(schema.groupMembership)
-                            .where(eq(schema.groupMembership.userId, userId)),
+                    or(
+                        sql`lower(${schema.group.type}) <> 'private'`,
+                        inArray(
+                            schema.group.slug,
+                            db
+                                .select({
+                                    slug: schema.groupMembership.groupSlug,
+                                })
+                                .from(schema.groupMembership)
+                                .where(
+                                    eq(schema.groupMembership.userId, userId),
+                                ),
+                        ),
                     ),
                 );
             }

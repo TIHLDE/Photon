@@ -558,7 +558,7 @@ describe("groups", () => {
 
     describe("archived groups", () => {
         integrationTest(
-            "an archived group leaves the list and only its members can open it",
+            "an archived group leaves the list and any signed-in user can read it",
             async ({ ctx }) => {
                 const leader = await ctx.utils.createTestUser();
                 const member = await ctx.utils.createTestUser();
@@ -610,7 +610,9 @@ describe("groups", () => {
                 const forOutsider = await outsiderClient.api.groups.$get({
                     query: { archived: "true" },
                 });
-                expect(await forOutsider.json()).toEqual([]);
+                expect((await forOutsider.json()).map((g) => g.slug)).toEqual([
+                    group.slug,
+                ]);
 
                 const signedOut = await ctx.app.request(
                     "/api/groups?archived=true",
@@ -622,6 +624,63 @@ describe("groups", () => {
                 });
                 expect(detail.status).toBe(200);
                 expect((await detail.json()).archivedAt).not.toBeNull();
+
+                const outsiderDetail = await outsiderClient.api.groups[
+                    ":slug"
+                ].$get({ param: { slug: group.slug } });
+                expect(outsiderDetail.status).toBe(200);
+
+                const outsiderMembers = await outsiderClient.api.groups[
+                    ":groupSlug"
+                ].members.$get({ param: { groupSlug: group.slug } });
+                expect(outsiderMembers.status).toBe(200);
+
+                const outsiderEdit = await outsiderClient.api.groups[
+                    ":slug"
+                ].unarchive.$post({ param: { slug: group.slug } });
+                expect(outsiderEdit.status).toBe(403);
+
+                const signedOutDetail = await ctx.app.request(
+                    `/api/groups/${group.slug}`,
+                );
+                expect(signedOutDetail.status).toBe(403);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "an archived private group stays hidden from non-members",
+            async ({ ctx }) => {
+                const member = await ctx.utils.createTestUser();
+                const outsider = await ctx.utils.createTestUser();
+                const memberClient = await ctx.utils.clientForUser(member);
+                const outsiderClient = await ctx.utils.clientForUser(outsider);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "archive-private",
+                    type: "PRIVATE",
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: member.id,
+                    groupSlug: group.slug,
+                    role: "member",
+                });
+                await ctx.db
+                    .update(schema.group)
+                    .set({ archivedAt: new Date() })
+                    .where(eq(schema.group.slug, group.slug));
+
+                const forMember = await memberClient.api.groups.$get({
+                    query: { archived: "true" },
+                });
+                expect((await forMember.json()).map((g) => g.slug)).toEqual([
+                    group.slug,
+                ]);
+
+                const forOutsider = await outsiderClient.api.groups.$get({
+                    query: { archived: "true" },
+                });
+                expect(await forOutsider.json()).toEqual([]);
 
                 const outsiderDetail = await outsiderClient.api.groups[
                     ":slug"
