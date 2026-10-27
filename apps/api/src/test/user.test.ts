@@ -865,6 +865,63 @@ describe("user endpoints", () => {
 
     // ===== Allergier: fritekst og bekreftelse =====
 
+    for (const { answer, selection } of [
+        {
+            answer: "selected allergies",
+            selection: { allergies: ["milk"], customAllergies: [] },
+        },
+        {
+            answer: "custom allergies",
+            selection: { allergies: [], customAllergies: ["Bringebær"] },
+        },
+        {
+            answer: "no allergies",
+            selection: { allergies: [], customAllergies: [] },
+        },
+    ]) {
+        integrationTest(
+            `refreshing the session after saving ${answer} marks the allergy question as answered`,
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const signIn = await ctx.auth.api.signInEmail({
+                    body: { email: user.email, password: user.password },
+                    returnHeaders: true,
+                });
+                const cookie = signIn.headers.getSetCookie()[0]?.split(";")[0];
+                if (!cookie) throw new Error("Missing session cookie");
+                const headers = new Headers({ Cookie: cookie });
+
+                const before = await ctx.auth.api.getSession({ headers });
+                expect(
+                    before?.user.settings?.allergiesConfirmedAt ?? null,
+                ).toBeNull();
+
+                const response = await ctx.app.request(
+                    "/api/user/me/settings",
+                    {
+                        method: "PATCH",
+                        headers: {
+                            Cookie: cookie,
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(selection),
+                    },
+                );
+                expect(response.status).toBe(200);
+
+                // Oversikt og headeren leser sesjonen, ikke PATCH-responsen.
+                const after = await ctx.auth.api.getSession({ headers });
+                expect(after?.user.settings?.allergiesConfirmedAt).toBeTruthy();
+                expect(after?.user.settings?.allergies).toEqual(
+                    selection.allergies,
+                );
+                expect(after?.user.settings?.customAllergies).toEqual(
+                    selection.customAllergies,
+                );
+            },
+        );
+    }
+
     integrationTest(
         "stores free-text allergies without adding catalogue rows",
         async ({ ctx }) => {

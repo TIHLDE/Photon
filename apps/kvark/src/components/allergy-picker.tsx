@@ -181,9 +181,18 @@ export function AllergyPicker({
     return (
         <Combobox
             multiple
+            autoHighlight
             items={items}
             value={selected}
-            onValueChange={handleValueChange}
+            onValueChange={(next, details) => {
+                // Escape skal lukke lista, ikke slette allerede valgte allergier.
+                if (details.reason === "escape-key") {
+                    details.cancel();
+                    details.allowPropagation();
+                    return;
+                }
+                handleValueChange(next);
+            }}
             inputValue={query}
             onInputValueChange={setQuery}
             disabled={disabled}
@@ -205,6 +214,7 @@ export function AllergyPicker({
                                 </ComboboxChip>
                             ))}
                             <ComboboxChipsInput
+                                aria-label="Velg eller skriv inn allergier"
                                 placeholder={
                                     chips.length === 0
                                         ? "Velg eller skriv inn allergier…"
