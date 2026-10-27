@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
 import { authQueryOptions } from "#/api/auth";
+import { RoleQueryKeys } from "#/api/queries/roles";
 import { fetchPrivateObjectUrl } from "#/lib/assets";
 import type { QueryParamsHelper } from "@tihlde/sdk/types";
 import type {
@@ -68,11 +69,17 @@ export const getGroupsInfiniteQuery = (
         getNextPageParam: () => undefined,
     });
 
-export const getArchivedGroupsQuery = (userId: string | undefined) =>
+/**
+ * `userId` er `null` for en utlogget besøkende og `undefined` mens sesjonen
+ * ennå ikke er kjent.
+ */
+export const getArchivedGroupsQuery = (userId: string | null | undefined) =>
     queryOptions({
-        // Svaret avhenger av hvem som spør, og utlogging tømmer ikke cachen.
-        queryKey: [...GroupQueryKeys.archived, userId],
-        enabled: Boolean(userId),
+        // Arkiverte private grupper vises bare for medlemmene, og utlogging
+        // tømmer ikke cachen. Venter på sesjonen, så et innlogget svar aldri
+        // havner under den utloggede nøkkelen.
+        queryKey: [...GroupQueryKeys.archived, userId ?? null],
+        enabled: userId !== undefined,
         queryFn: () =>
             apiClient.get("/api/groups", {
                 searchParams: { archived: "true" },
@@ -172,6 +179,24 @@ function invalidateAfterArchiveChange(
     ]) {
         client.invalidateQueries({ queryKey: [...queryKey], exact: false });
     }
+    // Arkivering sletter gruppens bøter og flytter medlemmene til
+    // «tidligere medlemmer», så vervene står uten innehavere.
+    for (const queryKey of [
+        GroupQueryKeys.fines,
+        GroupQueryKeys.members,
+        GroupQueryKeys.formerMembers,
+    ]) {
+        client.invalidateQueries({
+            queryKey: [...queryKey, slug],
+            exact: false,
+        });
+    }
+    // Alle grupper, ikke bare denne: en undergruppeleder mister også det
+    // koblede ledervervet i HS.
+    client.invalidateQueries({
+        queryKey: [...RoleQueryKeys.positions],
+        exact: false,
+    });
 }
 
 export const archiveGroupMutation = mutationOptions({

@@ -59,12 +59,13 @@ export function isPrivateGroupType(type: string): boolean {
 type VisibilityGroup = {
     slug: string;
     type: string;
-    archivedAt: Date | null;
 };
 
 /**
- * Whether `userId` may read a private or archived group's page, roster and
- * verv.
+ * Whether `userId` may read a group's page, roster and verv.
+ *
+ * Every group is open except a private one. Archiving does not hide a group:
+ * it stays readable as a record of who was in it, it just cannot be changed.
  *
  * Members always may. `groups:manage` — globally or scoped to this group — is
  * the only way in from the outside, and it exists so the admin panel keeps
@@ -75,7 +76,7 @@ export async function canViewGroup(
     group: VisibilityGroup,
     userId: string | null | undefined,
 ): Promise<boolean> {
-    if (!isPrivateGroupType(group.type) && !group.archivedAt) return true;
+    if (!isPrivateGroupType(group.type)) return true;
     if (!userId) return false;
     if (await isGroupMember(ctx, userId, group.slug)) return true;
 
@@ -96,9 +97,7 @@ export async function assertGroupVisible(
     if (await canViewGroup(ctx, group, userId)) return;
 
     throw HTTPAppException.Forbidden(
-        group.archivedAt
-            ? "Denne gruppen er arkivert — bare medlemmene har tilgang."
-            : "Denne gruppen er privat — bare medlemmene har tilgang.",
+        "Denne gruppen er privat — bare medlemmene har tilgang.",
     );
 }
 

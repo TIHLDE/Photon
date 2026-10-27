@@ -173,7 +173,9 @@ function GroupsPage() {
     const { data: groups } = useSuspenseQuery(getGroupsQuery(0));
     const { data: session } = useQuery(authQueryOptions);
     const { data: archivedGroups } = useQuery(
-        getArchivedGroupsQuery(session?.user?.id),
+        getArchivedGroupsQuery(
+            session === undefined ? undefined : (session?.user?.id ?? null),
+        ),
     );
 
     const tree = useMemo(() => buildTreeInput(groups as ApiGroup[]), [groups]);

@@ -168,7 +168,7 @@ export const groupSchema = Schema(
         }),
         archivedAt: z.string().nullable().meta({
             description:
-                "When the group was archived, or null while it is active. An archived group is visible to its members only, cannot be changed, and grants no permissions.",
+                "When the group was archived, or null while it is active. An archived group stays visible to everyone, but cannot be changed, and grants no permissions.",
         }),
         createdAt: z.string().meta({ description: "Creation timestamp" }),
         updatedAt: z.string().meta({ description: "Last update timestamp" }),
@@ -231,7 +231,7 @@ export const listGroupsQuerySchema = z.object({
     type: z.string().optional().meta({ description: "Only this group type" }),
     archived: z.enum(["true", "false"]).default("false").meta({
         description:
-            "'true' lists the archived groups the caller may open — the ones they are a member of, or all of them with 'groups:manage' — instead of the active ones.",
+            "'true' lists the archived groups instead of the active ones. An archived private group is listed only to its members and holders of 'groups:manage', global or scoped to the group.",
     }),
 });
 

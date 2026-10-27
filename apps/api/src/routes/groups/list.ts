@@ -1,17 +1,7 @@
 import { schema } from "@photon/db";
-import { hasPermission } from "@photon/auth/rbac";
-import {
-    and,
-    asc,
-    count,
-    eq,
-    ilike,
-    inArray,
-    isNotNull,
-    isNull,
-    or,
-} from "drizzle-orm";
+import { and, asc, count, eq, ilike, isNotNull, isNull, or } from "drizzle-orm";
 import { validator } from "hono-openapi";
+import { canViewGroup } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { captureAuth } from "~/middleware/auth";
@@ -24,7 +14,7 @@ export const listRoute = route().get(
         summary: "List groups",
         operationId: "listGroups",
         description:
-            "Retrieve the active groups, or with `archived=true` the archived groups the caller may open. Supports optional filtering by type and search query.",
+            "Retrieve the active groups, or with `archived=true` the archived ones — an archived private group only to those who may open it: its members and 'groups:manage' (global or scoped to the group). Supports optional filtering by type and search query.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -45,25 +35,11 @@ export const listRoute = route().get(
 
         const conditions = [];
 
-        if (archived === "true") {
-            const userId = c.get("user")?.id;
-            if (!userId) return c.json([]);
-
-            conditions.push(isNotNull(schema.group.archivedAt));
-            if (!(await hasPermission(ctx, userId, "groups:manage"))) {
-                conditions.push(
-                    inArray(
-                        schema.group.slug,
-                        db
-                            .select({ slug: schema.groupMembership.groupSlug })
-                            .from(schema.groupMembership)
-                            .where(eq(schema.groupMembership.userId, userId)),
-                    ),
-                );
-            }
-        } else {
-            conditions.push(isNull(schema.group.archivedAt));
-        }
+        conditions.push(
+            archived === "true"
+                ? isNotNull(schema.group.archivedAt)
+                : isNull(schema.group.archivedAt),
+        );
 
         // Add search filter if provided
         if (searchQuery) {
@@ -80,10 +56,29 @@ export const listRoute = route().get(
             conditions.push(eq(schema.group.type, typeFilter));
         }
 
-        const groups = await db.query.group.findMany({
+        const found = await db.query.group.findMany({
             where: and(...conditions),
             orderBy: [asc(schema.group.name)],
         });
+
+        // Archived groups are open to everyone, except a private one, which
+        // stays with whoever may open its page. Asked through the very check
+        // the page uses, so the list never offers a group the page refuses,
+        // nor hides one it would open. Archived private groups are few, so
+        // the per-group check is cheap.
+        const userId = c.get("user")?.id;
+        const groups =
+            archived === "true"
+                ? (
+                      await Promise.all(
+                          found.map(async (group) =>
+                              (await canViewGroup(ctx, group, userId))
+                                  ? group
+                                  : null,
+                          ),
+                      )
+                  ).filter((group) => group !== null)
+                : found;
 
         // Fetch member counts in one aggregated query instead of per group
         const memberCounts = await db

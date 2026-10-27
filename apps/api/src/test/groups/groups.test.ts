@@ -558,17 +558,158 @@ describe("groups", () => {
 
     describe("archived groups", () => {
         integrationTest(
-            "an archived group leaves the list and only its members can open it",
+            "an archived group leaves the list but stays open to everyone",
             async ({ ctx }) => {
                 const leader = await ctx.utils.createTestUser();
-                const member = await ctx.utils.createTestUser();
                 const outsider = await ctx.utils.createTestUser();
                 const leaderClient = await ctx.utils.clientForUser(leader);
-                const memberClient = await ctx.utils.clientForUser(member);
                 const outsiderClient = await ctx.utils.clientForUser(outsider);
 
                 const group = await ctx.utils.createTestGroup({
                     slug: "archive-visibility",
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: leader.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                const refused = await outsiderClient.api.groups[
+                    ":slug"
+                ].archive.$post({ param: { slug: group.slug } });
+                expect(refused.status).toBe(403);
+
+                const archived = await leaderClient.api.groups[
+                    ":slug"
+                ].archive.$post({ param: { slug: group.slug } });
+                expect(archived.status).toBe(200);
+
+                const active = await outsiderClient.api.groups.$get({
+                    query: {},
+                });
+                expect((await active.json()).map((g) => g.slug)).not.toContain(
+                    group.slug,
+                );
+
+                const forOutsider = await outsiderClient.api.groups.$get({
+                    query: { archived: "true" },
+                });
+                expect((await forOutsider.json()).map((g) => g.slug)).toEqual([
+                    group.slug,
+                ]);
+
+                const signedOut = await ctx.app.request(
+                    "/api/groups?archived=true",
+                );
+                expect(
+                    ((await signedOut.json()) as { slug: string }[]).map(
+                        (g) => g.slug,
+                    ),
+                ).toEqual([group.slug]);
+
+                const outsiderDetail = await outsiderClient.api.groups[
+                    ":slug"
+                ].$get({ param: { slug: group.slug } });
+                expect(outsiderDetail.status).toBe(200);
+                expect((await outsiderDetail.json()).archivedAt).not.toBeNull();
+
+                const outsiderMembers = await outsiderClient.api.groups[
+                    ":groupSlug"
+                ].members.$get({ param: { groupSlug: group.slug } });
+                expect(outsiderMembers.status).toBe(200);
+
+                // Seeing an archived group is not the same as reopening it.
+                const restoreRefused = await outsiderClient.api.groups[
+                    ":slug"
+                ].unarchive.$post({ param: { slug: group.slug } });
+                expect(restoreRefused.status).toBe(403);
+
+                const stillArchived = await ctx.db.query.group.findFirst({
+                    where: eq(schema.group.slug, group.slug),
+                });
+                expect(stillArchived?.archivedAt).not.toBeNull();
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "an archived private group stays members-only",
+            async ({ ctx }) => {
+                const outsider = await ctx.utils.createTestUser();
+                const member = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(outsider);
+                const memberClient = await ctx.utils.clientForUser(member);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "archive-private",
+                    type: "PRIVATE",
+                });
+                await ctx.db
+                    .update(schema.group)
+                    .set({ archivedAt: new Date() })
+                    .where(eq(schema.group.slug, group.slug));
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: member.id,
+                    groupSlug: group.slug,
+                    role: "member",
+                });
+
+                const detail = await client.api.groups[":slug"].$get({
+                    param: { slug: group.slug },
+                });
+                expect(detail.status).toBe(403);
+
+                const forOutsider = await client.api.groups.$get({
+                    query: { archived: "true" },
+                });
+                expect(
+                    (await forOutsider.json()).map((g) => g.slug),
+                ).not.toContain(group.slug);
+
+                const signedOut = await ctx.app.request(
+                    "/api/groups?archived=true",
+                );
+                expect(
+                    ((await signedOut.json()) as { slug: string }[]).map(
+                        (g) => g.slug,
+                    ),
+                ).not.toContain(group.slug);
+
+                const forMember = await memberClient.api.groups.$get({
+                    query: { archived: "true" },
+                });
+                expect((await forMember.json()).map((g) => g.slug)).toContain(
+                    group.slug,
+                );
+
+                // A groups:manage grant scoped to this group opens the page,
+                // so the list must offer it too.
+                const scopedAdmin = await ctx.utils.createTestUser();
+                await ctx.db.insert(schema.userPermission).values({
+                    userId: scopedAdmin.id,
+                    permission: "groups:manage",
+                    scope: `group:${group.slug}`,
+                });
+                const scopedClient = await ctx.utils.clientForUser(scopedAdmin);
+                const forScoped = await scopedClient.api.groups.$get({
+                    query: { archived: "true" },
+                });
+                expect((await forScoped.json()).map((g) => g.slug)).toContain(
+                    group.slug,
+                );
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "archiving moves every member to the member history",
+            async ({ ctx }) => {
+                const leader = await ctx.utils.createTestUser();
+                const member = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(leader);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "archive-members",
                 });
                 await ctx.db.insert(schema.groupMembership).values([
                     {
@@ -582,86 +723,76 @@ describe("groups", () => {
                         role: "member",
                     },
                 ]);
-
-                const refused = await outsiderClient.api.groups[
-                    ":slug"
-                ].archive.$post({ param: { slug: group.slug } });
-                expect(refused.status).toBe(403);
-
-                const archived = await leaderClient.api.groups[
-                    ":slug"
-                ].archive.$post({ param: { slug: group.slug } });
-                expect(archived.status).toBe(200);
-
-                const active = await memberClient.api.groups.$get({
-                    query: {},
-                });
-                expect((await active.json()).map((g) => g.slug)).not.toContain(
-                    group.slug,
-                );
-
-                const forMember = await memberClient.api.groups.$get({
-                    query: { archived: "true" },
-                });
-                expect((await forMember.json()).map((g) => g.slug)).toEqual([
-                    group.slug,
-                ]);
-
-                const forOutsider = await outsiderClient.api.groups.$get({
-                    query: { archived: "true" },
-                });
-                expect(await forOutsider.json()).toEqual([]);
-
-                const signedOut = await ctx.app.request(
-                    "/api/groups?archived=true",
-                );
-                expect(await signedOut.json()).toEqual([]);
-
-                const detail = await memberClient.api.groups[":slug"].$get({
-                    param: { slug: group.slug },
-                });
-                expect(detail.status).toBe(200);
-                expect((await detail.json()).archivedAt).not.toBeNull();
-
-                const outsiderDetail = await outsiderClient.api.groups[
-                    ":slug"
-                ].$get({ param: { slug: group.slug } });
-                expect(outsiderDetail.status).toBe(403);
-
-                const outsiderMembers = await outsiderClient.api.groups[
-                    ":groupSlug"
-                ].members.$get({ param: { groupSlug: group.slug } });
-                expect(outsiderMembers.status).toBe(403);
-            },
-            500_000,
-        );
-
-        integrationTest(
-            "groups:manage sees every archived group",
-            async ({ ctx }) => {
-                const admin = await ctx.utils.createTestUser();
-                const client = await ctx.utils.clientForUser(admin);
-                await ctx.utils.giveUserPermissions(admin, ["groups:manage"]);
-
-                const group = await ctx.utils.createTestGroup({
-                    slug: "archive-admin-view",
+                const [position] = await ctx.db
+                    .insert(schema.groupPosition)
+                    .values({ groupSlug: group.slug, name: "Kasserer" })
+                    .returning();
+                await ctx.db.insert(schema.groupPositionHolder).values({
+                    positionId: position!.id,
+                    userId: member.id,
                 });
                 await ctx.db
                     .update(schema.group)
-                    .set({ archivedAt: new Date() })
+                    .set({ finesActivated: true, finesAdminId: member.id })
                     .where(eq(schema.group.slug, group.slug));
 
-                const list = await client.api.groups.$get({
-                    query: { archived: "true" },
-                });
-                expect((await list.json()).map((g) => g.slug)).toContain(
-                    group.slug,
+                const archived = await client.api.groups[":slug"].archive.$post(
+                    { param: { slug: group.slug } },
+                );
+                expect(archived.status).toBe(200);
+
+                expect(
+                    await ctx.db.query.groupMembership.findMany({
+                        where: eq(schema.groupMembership.groupSlug, group.slug),
+                    }),
+                ).toEqual([]);
+
+                const history =
+                    await ctx.db.query.groupMembershipHistory.findMany({
+                        where: eq(
+                            schema.groupMembershipHistory.groupSlug,
+                            group.slug,
+                        ),
+                    });
+                expect(
+                    history
+                        .map((row) => [row.userId, row.role])
+                        .sort(([a], [b]) => String(a).localeCompare(String(b))),
+                ).toEqual(
+                    [
+                        [leader.id, "leader"],
+                        [member.id, "member"],
+                    ].sort(([a], [b]) => String(a).localeCompare(String(b))),
                 );
 
-                const detail = await client.api.groups[":slug"].$get({
-                    param: { slug: group.slug },
+                // The botsjef is an appointment, not a membership: it goes too.
+                const after = await ctx.db.query.group.findFirst({
+                    where: eq(schema.group.slug, group.slug),
                 });
-                expect(detail.status).toBe(200);
+                expect(after?.finesAdminId).toBeNull();
+
+                // The verv stays, its holder does not.
+                expect(
+                    await ctx.db.query.groupPosition.findFirst({
+                        where: eq(schema.groupPosition.id, position!.id),
+                    }),
+                ).toBeDefined();
+                expect(
+                    await ctx.db.query.groupPositionHolder.findMany({
+                        where: eq(
+                            schema.groupPositionHolder.positionId,
+                            position!.id,
+                        ),
+                    }),
+                ).toEqual([]);
+
+                // The history stays readable to everyone.
+                const outsider = await ctx.utils.createTestUser();
+                const outsiderClient = await ctx.utils.clientForUser(outsider);
+                const formerMembers = await outsiderClient.api.groups[
+                    ":groupSlug"
+                ].members.history.$get({ param: { groupSlug: group.slug } });
+                expect(formerMembers.status).toBe(200);
             },
             500_000,
         );
@@ -714,12 +845,28 @@ describe("groups", () => {
                 ].archive.$post({ param: { slug: group.slug } });
                 expect(archiveAgain.status).toBe(409);
 
-                const restored = await client.api.groups[
+                // Archiving took the leader out of the group, so only
+                // groups:manage can bring it back.
+                const leaderRestore = await client.api.groups[
+                    ":slug"
+                ].unarchive.$post({ param: { slug: group.slug } });
+                expect(leaderRestore.status).toBe(403);
+
+                const admin = await ctx.utils.createTestUser();
+                await ctx.utils.giveUserPermissions(admin, [
+                    "groups:manage",
+                    "groups:update",
+                ]);
+                const adminClient = await ctx.utils.clientForUser(admin);
+
+                const restored = await adminClient.api.groups[
                     ":slug"
                 ].unarchive.$post({ param: { slug: group.slug } });
                 expect(restored.status).toBe(200);
 
-                const updateAgain = await client.api.groups[":slug"].$patch({
+                const updateAgain = await adminClient.api.groups[
+                    ":slug"
+                ].$patch({
                     param: { slug: group.slug },
                     json: { name: "Renamed" },
                 });
@@ -814,7 +961,20 @@ describe("groups", () => {
                     param: { slug: group.slug },
                 });
 
-                const deleted = await client.api.groups[":slug"].$delete({
+                // The former leader is no longer in the group.
+                const byFormerLeader = await client.api.groups[":slug"].$delete(
+                    {
+                        param: { slug: group.slug },
+                        query: { confirm: group.slug },
+                    },
+                );
+                expect(byFormerLeader.status).toBe(403);
+
+                const admin = await ctx.utils.createTestUser();
+                await ctx.utils.giveUserPermissions(admin, ["groups:delete"]);
+                const adminClient = await ctx.utils.clientForUser(admin);
+
+                const deleted = await adminClient.api.groups[":slug"].$delete({
                     param: { slug: group.slug },
                     query: { confirm: group.slug },
                 });

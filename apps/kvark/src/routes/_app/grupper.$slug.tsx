@@ -3,6 +3,7 @@ import {
     useInfiniteQuery,
     useMutation,
     useQuery,
+    useQueryClient,
     useSuspenseQuery,
 } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@tihlde/ui/ui/alert";
@@ -40,6 +41,7 @@ import {
     createLawMutation,
     deleteFineMutation,
     deleteLawMutation,
+    GroupQueryKeys,
     getGroupBySlugQuery,
     getGroupFineStatisticsQuery,
     getGroupFineUsersInfiniteQuery,
@@ -95,6 +97,7 @@ import {
     type Fine,
     type Form,
     allowsNonMemberLeader,
+    isPrivateGroupType,
     mapFine,
     mapFineUser,
     mapForm,
@@ -187,6 +190,7 @@ function GroupDetail() {
     const { slug } = Route.useParams();
     const { tab: active, botStatus, botVisning, botBruker } = Route.useSearch();
     const navigate = Route.useNavigate();
+    const queryClient = useQueryClient();
     const [fineDialogOpen, setFineDialogOpen] = useState(false);
     const [fineError, setFineError] = useState<string | null>(null);
     const [editingFine, setEditingFine] = useState<Fine | null>(null);
@@ -762,6 +766,31 @@ function GroupDetail() {
         setHeaderFailure(null);
         try {
             await mutation.mutateAsync({ slug });
+
+            // Arkivering tar lederen ut av gruppen, og en privat gruppe er
+            // bare for medlemmene. Siden kan være stengt nå, men cachen ville
+            // vist den aktive gruppen videre. Tilgangen før arkiveringen sier
+            // ikke noe sikkert om den etterpå — groups:manage kan ha kommet
+            // fra gruppen selv — så vi går alltid ut. Den som fortsatt har
+            // tilgang, finner gruppen under arkiverte grupper.
+            if (
+                mutation === archiveGroup &&
+                isPrivateGroupType(apiGroup.type)
+            ) {
+                await navigate({ to: "/grupper" });
+                queryClient.removeQueries({
+                    queryKey: getGroupBySlugQuery(slug).queryKey,
+                });
+                for (const queryKey of [
+                    GroupQueryKeys.members,
+                    GroupQueryKeys.formerMembers,
+                    GroupQueryKeys.fines,
+                ]) {
+                    queryClient.removeQueries({
+                        queryKey: [...queryKey, slug],
+                    });
+                }
+            }
         } catch (error) {
             setHeaderFailure({
                 slug,

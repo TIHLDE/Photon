@@ -1,6 +1,6 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
-import { describe, expect } from "vitest";
+import { describe, expect, vi } from "vitest";
 import { imageVariantKey } from "~/lib/asset/image";
 import { removeUserFromGroup } from "~/lib/group";
 import {
@@ -9,6 +9,10 @@ import {
 } from "~/test/config/integration";
 
 const PICTURE = Buffer.from("bevis-for-boten");
+
+// Bildene slettes etter at svaret er sendt. vi.waitFor gir opp etter ett
+// sekund som standard, og det holder ikke på en travel CI-maskin.
+const CLEANUP_TIMEOUT = { timeout: 10_000 };
 
 async function setupFine(
     ctx: IntegrationTestContext,
@@ -415,6 +419,112 @@ describe("replacing a fine's picture", () => {
 
             expect(response.status).toBe(403);
             expect(await ctx.bucket.exists(key)).toBe(true);
+        },
+        500_000,
+    );
+});
+
+describe("archiving a group deletes its fines", () => {
+    integrationTest(
+        "the fines, their pictures and cached variants are gone, other groups keep theirs",
+        async ({ ctx }) => {
+            const { giver, group, key } = await setupFine(ctx, {
+                slug: "fine-archive-release",
+            });
+            const other = await setupFine(ctx, {
+                slug: "fine-archive-other",
+            });
+
+            const variantKey = imageVariantKey(key, 320);
+            await ctx.bucket.putObject(variantKey, PICTURE, "image/webp");
+
+            const client = await ctx.utils.clientForUser(giver);
+            const response = await client.api.groups[":slug"].archive.$post({
+                param: { slug: group.slug },
+            });
+            expect(response.status).toBe(200);
+
+            expect(
+                await ctx.db.query.fine.findMany({
+                    where: eq(schema.fine.groupSlug, group.slug),
+                }),
+            ).toEqual([]);
+
+            // Bildene slettes etter at svaret er sendt.
+            await vi.waitFor(async () => {
+                expect(await ctx.bucket.exists(key)).toBe(false);
+                expect(await ctx.bucket.getObject(variantKey)).toBeNull();
+                expect(
+                    await ctx.db.query.asset.findFirst({
+                        where: eq(schema.asset.key, key),
+                    }),
+                ).toBeUndefined();
+            }, CLEANUP_TIMEOUT);
+
+            const otherFine = await ctx.db.query.fine.findFirst({
+                where: eq(schema.fine.id, other.fine.id),
+            });
+            expect(otherFine).toBeDefined();
+            expect(await ctx.bucket.exists(other.key)).toBe(true);
+
+            // Gjenoppretting gir ikke botene tilbake.
+            const admin = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(admin, ["groups:manage"]);
+            const adminClient = await ctx.utils.clientForUser(admin);
+            const restored = await adminClient.api.groups[
+                ":slug"
+            ].unarchive.$post({
+                param: { slug: group.slug },
+            });
+            expect(restored.status).toBe(200);
+            expect(
+                await ctx.db.query.fine.findMany({
+                    where: eq(schema.fine.groupSlug, group.slug),
+                }),
+            ).toEqual([]);
+        },
+        500_000,
+    );
+});
+
+describe("deleting a group releases its fines' pictures", () => {
+    integrationTest(
+        "the pictures and cached variants are gone, other groups keep theirs",
+        async ({ ctx }) => {
+            const { giver, group, key } = await setupFine(ctx, {
+                slug: "fine-group-delete",
+            });
+            const other = await setupFine(ctx, {
+                slug: "fine-group-delete-other",
+            });
+
+            const variantKey = imageVariantKey(key, 320);
+            await ctx.bucket.putObject(variantKey, PICTURE, "image/webp");
+
+            const client = await ctx.utils.clientForUser(giver);
+            const response = await client.api.groups[":slug"].$delete({
+                param: { slug: group.slug },
+                query: { confirm: group.slug },
+            });
+            expect(response.status).toBe(204);
+
+            // Bildene slettes etter at svaret er sendt.
+            await vi.waitFor(async () => {
+                expect(await ctx.bucket.exists(key)).toBe(false);
+                expect(await ctx.bucket.getObject(variantKey)).toBeNull();
+                expect(
+                    await ctx.db.query.asset.findFirst({
+                        where: eq(schema.asset.key, key),
+                    }),
+                ).toBeUndefined();
+            }, CLEANUP_TIMEOUT);
+
+            expect(
+                await ctx.db.query.fine.findFirst({
+                    where: eq(schema.fine.id, other.fine.id),
+                }),
+            ).toBeDefined();
+            expect(await ctx.bucket.exists(other.key)).toBe(true);
         },
         500_000,
     );
