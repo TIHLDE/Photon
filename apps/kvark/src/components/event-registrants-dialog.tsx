@@ -4,13 +4,13 @@ import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
 } from "@tihlde/ui/ui/dialog";
-import { ScrollArea } from "@tihlde/ui/ui/scroll-area";
 import type { ReactElement } from "react";
 
 import { avatarImageUrl } from "#/lib/assets";
@@ -55,46 +55,44 @@ export function EventRegistrantsDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <ScrollArea className="max-h-96">
-                    <div className="flex flex-col gap-1">
-                        {registered.map((r) => (
-                            <RegistrantRow key={r.id} registrant={r} />
-                        ))}
+                {/* DialogBody scroller for seg selv, så tittel og lukkeknapp
+                    blir stående når lista er lengre enn skjermen. */}
+                <DialogBody className="gap-1">
+                    {registered.map((r) => (
+                        <RegistrantRow key={r.id} registrant={r} />
+                    ))}
 
-                        {waitlist.length > 0 ? (
-                            <>
-                                <div className="px-2 pt-3 pb-1 text-xs text-muted-foreground">
-                                    Venteliste
-                                </div>
-                                {waitlist.map((r) => (
-                                    <RegistrantRow
-                                        key={r.id}
-                                        registrant={r}
-                                        waitlist
-                                    />
-                                ))}
-                            </>
-                        ) : null}
+                    {waitlist.length > 0 ? (
+                        <>
+                            <div className="px-2 pt-3 pb-1 text-xs text-muted-foreground">
+                                Venteliste
+                            </div>
+                            {waitlist.map((r) => (
+                                <RegistrantRow
+                                    key={r.id}
+                                    registrant={r}
+                                    waitlist
+                                />
+                            ))}
+                        </>
+                    ) : null}
 
-                        {registrants.length === 0 ? (
-                            <p className="p-2 text-sm text-muted-foreground">
-                                Ingen er påmeldt ennå.
-                            </p>
-                        ) : null}
+                    {registrants.length === 0 ? (
+                        <p className="p-2 text-sm text-muted-foreground">
+                            Ingen er påmeldt ennå.
+                        </p>
+                    ) : null}
 
-                        {hasMore ? (
-                            <Button
-                                variant="ghost"
-                                onClick={onLoadMore}
-                                disabled={isLoadingMore}
-                            >
-                                {isLoadingMore
-                                    ? "Laster …"
-                                    : "Vis flere påmeldte"}
-                            </Button>
-                        ) : null}
-                    </div>
-                </ScrollArea>
+                    {hasMore ? (
+                        <Button
+                            variant="ghost"
+                            onClick={onLoadMore}
+                            disabled={isLoadingMore}
+                        >
+                            {isLoadingMore ? "Laster …" : "Vis flere påmeldte"}
+                        </Button>
+                    ) : null}
+                </DialogBody>
             </DialogContent>
         </Dialog>
     );
