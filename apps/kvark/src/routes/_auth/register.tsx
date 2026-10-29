@@ -13,7 +13,8 @@ import {
 import { FieldGroup } from "@tihlde/ui/ui/field";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 
-import { useState } from "react";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
+import { useRef, useState } from "react";
 
 import {
     invalidateAuth,
@@ -23,6 +24,8 @@ import {
 import { FeideSignInButton } from "#/components/feide-sign-in-button";
 import { OrDivider } from "#/components/or-divider";
 import { formHandlers, useAppForm } from "#/hooks/form";
+import { useTheme } from "#/integrations/theme";
+import { TURNSTILE_SIGN_UP_ACTION, TURNSTILE_SITE_KEY } from "#/lib/turnstile";
 
 export const Route = createFileRoute("/_auth/register")({
     component: RegisterPage,
@@ -92,6 +95,10 @@ function RegisterPage() {
      */
     const [needsUsername, setNeedsUsername] = useState(false);
 
+    const { theme, mounted } = useTheme();
+    const turnstileRef = useRef<TurnstileInstance>(undefined);
+    const [captchaToken, setCaptchaToken] = useState<string>();
+
     const form = useAppForm({
         validators: {
             onChange: registerSchema,
@@ -112,8 +119,13 @@ function RegisterPage() {
                     email: value.email,
                     password: value.password,
                     username: value.username.trim() || undefined,
+                    captchaToken,
                 });
             } catch (error) {
+                // A token is spent once Cloudflare has checked it, so a retry
+                // (say, after picking another username) needs a fresh one.
+                setCaptchaToken(undefined);
+                turnstileRef.current?.reset();
                 // The server answers a taken username with a message naming it;
                 // that is the cue to ask for one instead of only showing the
                 // error and leaving no way to act on it.
@@ -260,9 +272,36 @@ function RegisterPage() {
                             </form.AppField>
                         </FieldGroup>
 
+                        {/* Waits for `mounted`: before that `theme` is a
+                            placeholder, not the one the page is shown in. */}
+                        {TURNSTILE_SITE_KEY && mounted && (
+                            <Turnstile
+                                // The widget reads its theme once, so a theme
+                                // switch has to render a new one.
+                                key={theme}
+                                ref={turnstileRef}
+                                siteKey={TURNSTILE_SITE_KEY}
+                                options={{
+                                    action: TURNSTILE_SIGN_UP_ACTION,
+                                    size: "flexible",
+                                    theme,
+                                    language: "nb",
+                                }}
+                                onSuccess={setCaptchaToken}
+                                onExpire={() => setCaptchaToken(undefined)}
+                                onError={() => setCaptchaToken(undefined)}
+                            />
+                        )}
+
                         <form.AppForm>
                             <form.FormErrors />
                         </form.AppForm>
+
+                        {signUpMutation.isError && (
+                            <p className="text-sm text-destructive">
+                                {signUpMutation.error.message}
+                            </p>
+                        )}
 
                         <form.AppForm>
                             <form.SubmitButton

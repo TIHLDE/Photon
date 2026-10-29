@@ -62,6 +62,10 @@ const MESSAGES: Record<string, string> = {
     USERNAME_TOO_SHORT: "Brukernavnet er for kort.",
     USERNAME_TOO_LONG: "Brukernavnet er for langt.",
     FAILED_TO_CREATE_USER: "Vi fikk ikke opprettet brukeren. Prøv igjen.",
+    // Turnstile (captcha-pluginen)
+    MISSING_RESPONSE: "Bekreft at du ikke er en robot.",
+    VERIFICATION_FAILED:
+        "Vi fikk ikke bekreftet at du ikke er en robot. Prøv igjen.",
 
     // Lenker i e-post
     INVALID_TOKEN: "Lenken virker ikke. Be om en ny.",

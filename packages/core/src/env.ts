@@ -135,6 +135,13 @@ const envSchema = z
             .optional()
             .transform(toBoolean({ defaultVal: true })),
 
+        // CLOUDFLARE TURNSTILE
+        /**
+         * Secret key for the Turnstile widget on the sign-up form. Only read
+         * in production; dev and tests never demand a challenge.
+         */
+        TURNSTILE_SECRET_KEY: z.string().optional(),
+
         // FEIDE
         FEIDE_CLIENT_ID: z.string().default(""),
         FEIDE_CLIENT_SECRET: z.string().default(""),

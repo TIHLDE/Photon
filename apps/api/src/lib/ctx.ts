@@ -83,6 +83,20 @@ export async function createAppContext(): Promise<AppContext> {
             additionalTrusted: [env.ROOT_URL, ...env.WEBSITE_ORIGINS],
             basePath: "/api/auth",
         },
+        // Production only: dev sign-ups never meet the challenge, even with
+        // the key in .env.
+        turnstile:
+            env.NODE_ENV === "production" && env.TURNSTILE_SECRET_KEY
+                ? {
+                      secretKey: env.TURNSTILE_SECRET_KEY,
+                      // The sites the API already trusts — never localhost here.
+                      hostnames: env.WEBSITE_ORIGINS.flatMap((origin) =>
+                          URL.canParse(origin)
+                              ? [new URL(origin).hostname]
+                              : [],
+                      ),
+                  }
+                : undefined,
         DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM: false,
     });
     return {

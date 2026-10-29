@@ -508,10 +508,13 @@ export const signUpEmailMutationOptions = mutationOptions({
         email,
         password,
         username,
+        captchaToken,
     }: {
         name: string;
         email: string;
         password: string;
+        /** Solved Turnstile challenge; absent when the widget is turned off. */
+        captchaToken?: string;
         /**
          * Only for sign-ups with a private address, and only when the one
          * derived from the address is taken. A stud address always yields the
@@ -524,6 +527,9 @@ export const signUpEmailMutationOptions = mutationOptions({
             email,
             password,
             ...(username ? { username } : {}),
+            fetchOptions: captchaToken
+                ? { headers: { "x-captcha-response": captchaToken } }
+                : undefined,
         });
         if (result.error) {
             throw new Error(

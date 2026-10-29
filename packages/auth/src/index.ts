@@ -7,6 +7,7 @@ import {
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import {
     admin,
+    captcha,
     customSession,
     jwt,
     openAPI,
@@ -315,6 +316,19 @@ export interface CreateAuthOptions {
         };
     };
 
+    /**
+     * Cloudflare Turnstile. When set, `/sign-up/email` over HTTP demands a
+     * solved challenge; when unset the check is off entirely.
+     */
+    turnstile?: {
+        secretKey: string;
+        /**
+         * Frontend hostnames a token may have been solved on. One widget can
+         * cover dev and production, so production must not list localhost.
+         */
+        hostnames: string[];
+    };
+
     /// Used only for tests to make them not use expensive hashing algorithms
     DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM: boolean;
 }
@@ -370,6 +384,36 @@ function preferredUsernameClaim(
     return typeof username === "string" && username.length > 0
         ? { preferred_username: username }
         : {};
+}
+
+/**
+ * The `action` the sign-up widget is rendered with. The server demands it, so
+ * a token solved on some other widget sharing our site key is no good here.
+ * Kvark's register page sends the same string.
+ */
+const TURNSTILE_SIGN_UP_ACTION = "signup";
+
+/**
+ * Better Auth's captcha plugin with Cloudflare Turnstile on `/sign-up/email`,
+ * doing nothing when `turnstile` is unset (dev and the test suite).
+ *
+ * Always present rather than spread in conditionally, so the plugins tuple
+ * stays stable for `$Infer` — a conditional entry widens it to an array and
+ * the session type loses every plugin field.
+ */
+function turnstilePlugin(turnstile: CreateAuthOptions["turnstile"]) {
+    const plugin = captcha({
+        provider: "cloudflare-turnstile",
+        secretKey: turnstile?.secretKey ?? "",
+        endpoints: ["/sign-up/email"],
+        expectedAction: TURNSTILE_SIGN_UP_ACTION,
+        allowedHostnames: turnstile?.hostnames,
+    });
+    return {
+        ...plugin,
+        onRequest: async (...args: Parameters<typeof plugin.onRequest>) =>
+            turnstile ? plugin.onRequest(...args) : undefined,
+    };
 }
 
 export function createAuth(options: CreateAuthOptions) {
@@ -957,6 +1001,18 @@ export function createAuth(options: CreateAuthOptions) {
                     refreshToken: "tihlde_rt_",
                 },
             }),
+
+            /**
+             * Bots were creating accounts through the public sign-up form.
+             * Only `/sign-up/email`: sign-in and password reset have not been
+             * abused, and a challenge there is friction for every member.
+             *
+             * The plugin hooks `onRequest`, which only sees requests arriving
+             * over HTTP — so a trusted server-side `signUpEmail` (Fadderuka,
+             * see `runTrustedSignUp`) never meets the challenge, as it should
+             * not: there is no browser on the other end to solve it.
+             */
+            turnstilePlugin(options.turnstile),
 
             // Must stay last: it wraps the session shape produced by the
             // plugins above, and `ExtendedSession` is inferred from the result.
