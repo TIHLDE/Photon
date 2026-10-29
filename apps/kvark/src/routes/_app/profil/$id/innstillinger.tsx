@@ -3,16 +3,19 @@ import {
     invalidateAuth,
     requireOwnProfile,
 } from "#/api/auth";
+import { useImageUploader } from "#/api/queries/assets";
 import {
     getAllergiesQuery,
+    getUserProfileQuery,
     updateUserSettingsMutation,
 } from "#/api/queries/user";
 import {
     AllergyPicker,
     type AllergySelection,
 } from "#/components/allergy-picker";
+import { EditProfileCard } from "#/components/edit-profile-card";
 import { EVENT_RULES_URL } from "#/components/event-rules-consent";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Button } from "@tihlde/ui/ui/button";
@@ -23,6 +26,7 @@ import {
     FieldDescription,
     FieldLabel,
 } from "@tihlde/ui/ui/field";
+import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Switch } from "@tihlde/ui/ui/switch";
 import { AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -60,6 +64,7 @@ function RouteComponent() {
 
     return (
         <div className="flex flex-col gap-6">
+            <ProfileCard />
             <Card>
                 <CardHeader>
                     <CardTitle>Personvern</CardTitle>
@@ -119,6 +124,77 @@ function RouteComponent() {
             <EventRulesCard />
             <AllergiesCard />
         </div>
+    );
+}
+
+/**
+ * Profilbilde, beskrivelse og lenker — det andre ser på profilen. Lå før i en
+ * dialog bak «Rediger profil» i headeren.
+ */
+function ProfileCard() {
+    const { id } = Route.useParams();
+    // Bildet som vises kommer fra profilen: den faller tilbake på Feide-bildet
+    // når medlemmet ikke har lastet opp sitt eget.
+    const { data: profile } = useSuspenseQuery(getUserProfileQuery(id));
+    const { data: session } = useQuery(authQueryOptions);
+    const updateSettings = useMutation(updateUserSettingsMutation);
+    const { uploadImage } = useImageUploader();
+
+    // Skjemaet fylles fra sesjonen. Vises det før den er lastet, kan medlemmet
+    // begynne å skrive i tomme felt — og lagringen tømmer da lenkene som
+    // allerede ligger der.
+    if (!session) return <Skeleton className="h-96 w-full" />;
+
+    const settings = session.user.settings;
+
+    return (
+        <EditProfileCard
+            name={profile.name}
+            imageUrl={profile.image ?? null}
+            // Bare et eget opplastet bilde kan fjernes: uten ett faller
+            // profilen tilbake på bildet Feide leverer.
+            hasCustomImage={Boolean(settings?.imageUrl)}
+            defaultValues={{
+                bio: settings?.bioDescription ?? "",
+                github: settings?.githubUrl ?? "",
+                linkedin: settings?.linkedinUrl ?? "",
+            }}
+            onSubmit={async (values) => {
+                // Bildet lastes opp først: feiler det, er ingenting lagret, og
+                // medlemmet kan prøve på nytt uten at halve endringen allerede
+                // ligger der.
+                let imageUrl: string | undefined;
+                if (values.imageFile) {
+                    imageUrl = await uploadImage(values.imageFile);
+                } else if (values.removeImage) {
+                    // Tom streng er «fjern bildet»; `undefined` ville bare
+                    // betydd «ikke endre».
+                    imageUrl = "";
+                }
+
+                try {
+                    await updateSettings.mutateAsync({
+                        data: {
+                            // Tomme strenger må sendes med — `undefined`
+                            // betyr «ikke endre», så feltene kunne aldri tømmes
+                            // igjen. API-et lagrer tomt som NULL.
+                            bioDescription: values.bio,
+                            githubUrl: values.github,
+                            linkedinUrl: values.linkedin,
+                            ...(imageUrl === undefined ? {} : { imageUrl }),
+                        },
+                    });
+                } catch (error) {
+                    // Kortet viser denne teksten. HTTP-feilen fra klienten
+                    // sier «Request failed with status code 400», som ikke
+                    // hjelper et medlem.
+                    throw new Error("Fikk ikke lagret profilen. Prøv igjen.", {
+                        cause: error,
+                    });
+                }
+                await invalidateAuth();
+            }}
+        />
     );
 }
 
