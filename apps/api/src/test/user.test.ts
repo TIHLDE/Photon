@@ -1,5 +1,6 @@
 import { schema } from "@photon/db";
 import { describe, expect } from "vitest";
+import seedAllergies from "~/db/seed/user";
 import { integrationTest } from "~/test/config/integration";
 
 describe("user endpoints", () => {
@@ -10,9 +11,7 @@ describe("user endpoints", () => {
         async ({ ctx }) => {
             const { db } = ctx;
 
-            // Egne slugs: katalogen er ikke tom lenger — migrasjon 0074 setter
-            // inn Mattilsynets 14 pluss kostholdskravene — så «gluten» og
-            // «nuts» ville kollidert på primærnøkkelen.
+            // Egne slugs, så testen ikke kolliderer med katalogen i seeden.
             await db
                 .insert(schema.allergy)
                 .values([
@@ -48,8 +47,10 @@ describe("user endpoints", () => {
     );
 
     integrationTest(
-        "ships the curated baseline every environment gets",
+        "seeds the curated catalogue",
         async ({ ctx }) => {
+            await seedAllergies(ctx);
+
             const client = ctx.utils.client();
 
             const response = await client.api.user.allergy.$get({
@@ -58,9 +59,8 @@ describe("user endpoints", () => {
 
             expect(response.status).toBe(200);
 
-            // Erstatter en gammel «tom katalog»-test: katalogen er ikke tom
-            // etter migrasjon 0074, og det er nettopp poenget — prod hadde
-            // bare Lepton-fritekst, så nedtrekkslista sto med to valg.
+            // Prod hadde bare Lepton-fritekst, så nedtrekkslista sto med to
+            // valg uten denne katalogen.
             const json = await response.json();
             expect(json.map((a) => a.slug)).toEqual(
                 expect.arrayContaining([
@@ -1018,6 +1018,7 @@ describe("user endpoints", () => {
         "curated=true excludes the free-text rows the migration imported",
         async ({ ctx }) => {
             const { db } = ctx;
+            await seedAllergies(ctx);
             await db
                 .insert(schema.allergy)
                 .values({ slug: "reagerer-pa-alt", label: "reagerer på alt" })
