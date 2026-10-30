@@ -51,10 +51,8 @@ jobs:
             - name: Check formatting
               run: bun run format
 
-            # Drizzle applies migrations by journal timestamp, not by index, and
-            # silently skips any that are not newer than the last one applied.
-            - name: Check migration order
-              run: bun run db:check-order
+            - name: Check migrations
+              run: bun run db:check
 
             - name: Check building
               run: bun run build

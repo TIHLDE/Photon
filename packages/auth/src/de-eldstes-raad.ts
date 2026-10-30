@@ -109,10 +109,9 @@ export async function syncDeEldstesRaad(
     if (!qualifies) return;
 
     /**
-     * The group is created by a migration, so production and every test
-     * database have it. A `db:push`-ed development database that predates the
-     * seed may not, and a missing group must read as "nothing to do" rather
-     * than a foreign key violation thrown out of somebody's login.
+     * Production has the group and the seed creates it. A development or test
+     * database may not have it, and a missing group must read as "nothing to
+     * do" rather than a foreign key violation thrown out of somebody's login.
      */
     const [target] = await db
         .select({ slug: group.slug })

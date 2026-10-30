@@ -2,10 +2,8 @@ import {
     DE_ELDSTES_RAAD_SLUG,
     syncDeEldstesRaad,
 } from "@photon/auth/de-eldstes-raad";
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
 import { type DbRelations, schema } from "@photon/db";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
@@ -38,6 +36,13 @@ const seedGroups = async (db: NodePgDatabase<DbRelations>) => {
                 slug: FORVALTNING,
                 name: "Forvaltningsgruppen",
                 type: "BOARD",
+                finesInfo: "",
+                finesActivated: false,
+            },
+            {
+                slug: DE_ELDSTES_RAAD_SLUG,
+                name: "De Eldstes Raad",
+                type: "PRIVATE",
                 finesInfo: "",
                 finesActivated: false,
             },
@@ -92,30 +97,6 @@ const membershipOf = async (
 };
 
 describe("De Eldstes Raad", () => {
-    integrationTest("exists as a private group", async ({ ctx }) => {
-        const [group] = await ctx.db
-            .select({ name: schema.group.name, type: schema.group.type })
-            .from(schema.group)
-            .where(eq(schema.group.slug, DE_ELDSTES_RAAD_SLUG))
-            .limit(1);
-
-        expect(group?.name).toBe("De Eldstes Raad");
-        expect(group?.type.toLowerCase()).toBe("private");
-    });
-
-    /**
-     * The old slug is gone: it was «Raas», and the rename moved the roster
-     * across rather than leaving two groups behind.
-     */
-    integrationTest("has replaced the misspelt group", async ({ ctx }) => {
-        const rows = await ctx.db
-            .select({ slug: schema.group.slug })
-            .from(schema.group)
-            .where(eq(schema.group.slug, "de-eldstes-raas"));
-
-        expect(rows).toEqual([]);
-    });
-
     integrationTest(
         "enrols a sitting HS member, not only a former one",
         async ({ ctx }) => {
@@ -297,47 +278,6 @@ describe("De Eldstes Raad", () => {
             await syncDeEldstesRaad(ctx.db, user.id);
 
             expect(await membershipOf(ctx.db, user.id)).toBeNull();
-        },
-    );
-
-    /**
-     * The backfill is read from the migration itself rather than restated
-     * here: one that has drifted from the one production ran is worth nothing
-     * as a test.
-     */
-    integrationTest(
-        "backfills sitting HS and the fondsforvalter",
-        async ({ ctx }) => {
-            await seedGroups(ctx.db);
-            const sitting = await ctx.utils.createTestUser();
-            const forvalter = await ctx.utils.createTestUser();
-            const ordinary = await ctx.utils.createTestUser();
-            const formerHs = await ctx.utils.createTestUser();
-
-            await join(ctx.db, sitting.id, HS);
-            await join(ctx.db, forvalter.id, FORVALTNING, "leader");
-            await join(ctx.db, ordinary.id, FORVALTNING, "member");
-            await endStint(ctx.db, formerHs.id, HS);
-
-            const file = await readFile(
-                resolve(
-                    process.cwd(),
-                    "../../packages/db/drizzle/0071_de_eldstes_raad.sql",
-                ),
-                "utf8",
-            );
-            // The two backfills are the last two statements; the rename above
-            // them has already run as part of the migration.
-            for (const statement of file
-                .split("--> statement-breakpoint")
-                .slice(-2)) {
-                await ctx.db.execute(sql.raw(statement));
-            }
-
-            expect(await membershipOf(ctx.db, sitting.id)).not.toBeNull();
-            expect(await membershipOf(ctx.db, forvalter.id)).not.toBeNull();
-            expect(await membershipOf(ctx.db, formerHs.id)).not.toBeNull();
-            expect(await membershipOf(ctx.db, ordinary.id)).toBeNull();
         },
     );
 

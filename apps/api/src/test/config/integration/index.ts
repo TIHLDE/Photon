@@ -40,14 +40,16 @@ async function getMigratedBaselinePath(): Promise<string> {
     hash.update(PGLITE_BASELINE_CACHE_VERSION);
 
     const entries = await readdir(migrationsFolder, { withFileTypes: true });
-    const migrationFiles = entries
-        .filter((entry) => entry.isFile() && entry.name.endsWith(".sql"))
+    const migrationFolders = entries
+        .filter((entry) => entry.isDirectory())
         .map((entry) => entry.name)
         .sort();
 
-    for (const file of migrationFiles) {
-        hash.update(file);
-        hash.update(await readFile(join(migrationsFolder, file)));
+    for (const folder of migrationFolders) {
+        hash.update(folder);
+        hash.update(
+            await readFile(join(migrationsFolder, folder, "migration.sql")),
+        );
     }
 
     const baselineDir = join(tmpdir(), "photon-api-pglite");
@@ -80,18 +82,12 @@ async function getMigratedBaselinePath(): Promise<string> {
 }
 
 /**
- * Schema holding a copy of every row the migrations seed, so `resetDatabase`
- * can put them back after truncating.
- */
-const SEED_SCHEMA = "photon_test_seed";
-
-/**
  * A PGlite instance that lives for a whole test worker, plus the SQL that
  * returns it to the migrated baseline.
  */
 type WorkerDatabase = {
     pglite: PGlite;
-    /** Restores the migrated baseline: data, seeded rows and sequences. */
+    /** Restores the migrated baseline: empty tables and fresh sequences. */
     reset: () => Promise<void>;
 };
 
@@ -99,13 +95,12 @@ type WorkerDatabase = {
  * Boots one PGlite from the migrated baseline and prepares a reset script.
  *
  * Booting PGlite costs ~700ms (WASM start-up plus loading the data dir), and
- * doing it per test was the bulk of the suite's runtime. Truncating and
- * re-seeding the same instance costs well under 100ms.
+ * doing it per test was the bulk of the suite's runtime. Truncating the
+ * same instance costs well under 100ms.
  *
- * The reset copies the rows the migrations seed into {@link SEED_SCHEMA} once,
- * and each reset truncates every public table, re-inserts those rows and puts
- * every sequence back where the baseline had it, so ids are as predictable
- * as on a freshly loaded database.
+ * Each reset truncates every public table and puts every sequence back where
+ * the baseline had it, so ids are as predictable as on a freshly loaded
+ * database.
  */
 async function createWorkerDatabase(): Promise<WorkerDatabase> {
     const baselinePath = await getMigratedBaselinePath();
@@ -121,25 +116,6 @@ async function createWorkerDatabase(): Promise<WorkerDatabase> {
          WHERE schemaname = 'public' ORDER BY tablename`,
     );
 
-    await pglite.exec(`CREATE SCHEMA ${SEED_SCHEMA}`);
-
-    const restoreSeed: string[] = [];
-    for (const { name } of tables) {
-        const table = `"${name}"`;
-        const { rows } = await pglite.query<{ seeded: boolean }>(
-            `SELECT EXISTS (SELECT 1 FROM public.${table}) AS seeded`,
-        );
-        if (!rows[0]?.seeded) continue;
-
-        await pglite.exec(
-            `CREATE TABLE ${SEED_SCHEMA}.${table} AS TABLE public.${table}`,
-        );
-        restoreSeed.push(
-            `INSERT INTO public.${table} OVERRIDING SYSTEM VALUE
-             SELECT * FROM ${SEED_SCHEMA}.${table};`,
-        );
-    }
-
     const { rows: sequences } = await pglite.query<{
         name: string;
         lastValue: string | null;
@@ -154,12 +130,9 @@ async function createWorkerDatabase(): Promise<WorkerDatabase> {
     );
 
     const resetSql = [
-        // Skips FK triggers so seeded rows can go back in any order.
-        "SET LOCAL session_replication_role = replica;",
         tables.length > 0
             ? `TRUNCATE ${tables.map(({ name }) => `public."${name}"`).join(", ")};`
             : "",
-        ...restoreSeed,
         ...restoreSequences,
     ].join("\n");
 
