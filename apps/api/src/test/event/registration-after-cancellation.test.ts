@@ -47,8 +47,7 @@ describe("registering again after a cancelled registration", () => {
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const payment = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { and, eq }) =>
-                    and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                where: { eventId: event.id, userId: user.id },
             });
             expect(payment).toBeDefined();
 
@@ -59,8 +58,7 @@ describe("registering again after a cancelled registration", () => {
             });
 
             const cancelled = await ctx.db.query.eventRegistration.findFirst({
-                where: (r, { and, eq }) =>
-                    and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                where: { eventId: event.id, userId: user.id },
             });
             expect(cancelled?.status).toBe("cancelled");
 
@@ -79,8 +77,7 @@ describe("registering again after a cancelled registration", () => {
             // exist. Assert the count anyway: it is what proves the revival
             // went through the conflict branch rather than silently no-oping.
             const rows = await ctx.db.query.eventRegistration.findMany({
-                where: (r, { and, eq }) =>
-                    and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                where: { eventId: event.id, userId: user.id },
             });
             expect(rows).toHaveLength(1);
             expect(rows[0]?.status).toBe("pending");
@@ -90,8 +87,7 @@ describe("registering again after a cancelled registration", () => {
             // And the spot is really theirs again once the resolver runs.
             await resolveRegistrationsForEvent(event.id, ctx);
             const revived = await ctx.db.query.eventRegistration.findFirst({
-                where: (r, { and, eq }) =>
-                    and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                where: { eventId: event.id, userId: user.id },
             });
             expect(revived?.status).toBe("registered");
         },
@@ -182,17 +178,12 @@ describe("registering again after a cancelled registration", () => {
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const returning = await ctx.db.query.eventRegistration.findFirst({
-                where: (r, { and, eq }) =>
-                    and(
-                        eq(r.eventId, event.id),
-                        eq(r.userId, cancelledUser.id),
-                    ),
+                where: { eventId: event.id, userId: cancelledUser.id },
             });
             expect(returning?.status).toBe("waitlisted");
 
             const holder = await ctx.db.query.eventRegistration.findFirst({
-                where: (r, { and, eq }) =>
-                    and(eq(r.eventId, event.id), eq(r.userId, replacement.id)),
+                where: { eventId: event.id, userId: replacement.id },
             });
             expect(holder?.status).toBe("registered");
         },

@@ -64,15 +64,14 @@ export const adminCreateRegistrationRoute = route().post(
             }
             const [user, existing, settings] = await Promise.all([
                 tx.query.user.findFirst({
-                    where: (u, { eq }) => eq(u.id, userId),
+                    where: { id: userId },
                     columns: { id: true },
                 }),
                 tx.query.eventRegistration.findFirst({
-                    where: (r, { and, eq }) =>
-                        and(eq(r.eventId, eventId), eq(r.userId, userId)),
+                    where: { eventId, userId },
                 }),
                 tx.query.userSettings.findFirst({
-                    where: (s, { eq }) => eq(s.userId, userId),
+                    where: { userId },
                     columns: { allowsPhotosByDefault: true },
                 }),
             ]);

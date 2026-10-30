@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { defineRelationsPart } from "drizzle-orm";
 import {
     boolean,
     pgEnum,
@@ -26,7 +26,10 @@ export type Gender = (typeof genderVariants)[number];
 export const userSettings = pgTable("settings", {
     userId: text("user_id")
         .primaryKey()
-        .references(() => user.id, { onDelete: "cascade" }),
+        .references(() => user.id, {
+            name: "user_settings_user_id_auth_user_id_fk",
+            onDelete: "cascade",
+        }),
     gender: gender("gender").notNull(),
     allowsPhotosByDefault: boolean("allows_photos_by_default")
         .default(false)
@@ -37,6 +40,8 @@ export const userSettings = pgTable("settings", {
     githubUrl: varchar("github_url", { length: 256 }),
     linkedinUrl: varchar("linkedin_url", { length: 256 }),
     receiveMailCommunication: boolean("receive_mail_communication").notNull(),
+    isOnboarded: boolean("is_onboarded").default(false).notNull(),
+    ...timestamps,
     /**
      * Whether the member is listed by name in deltakerlister. Off means they
      * still register as normal, but other members see them as anonymous.
@@ -45,7 +50,6 @@ export const userSettings = pgTable("settings", {
     publicEventRegistrations: boolean("public_event_registrations")
         .default(true)
         .notNull(),
-    isOnboarded: boolean("is_onboarded").default(false).notNull(),
     /**
      * Allergier medlemmet har skrevet inn selv, i tillegg til avhukingene i
      * `user_allergy`. De ligger her og ikke i katalogen fordi Lepton-importen
@@ -64,13 +68,7 @@ export const userSettings = pgTable("settings", {
      * av noen er ikke en bekreftelse fra medlemmet.
      */
     allergiesConfirmedAt: timestamp("allergies_confirmed_at"),
-    ...timestamps,
 });
-
-export const userSettingsRelations = relations(userSettings, ({ many }) => ({
-    allergies: many(userAllergy),
-}));
-
 /**
  * Hemmelig nøkkel som gir tilgang til brukerens egen kalenderstrøm
  * (`/api/event/calendar/:token/events.ics`). Kalenderklienter kan ikke logge
@@ -82,8 +80,13 @@ export const userSettingsRelations = relations(userSettings, ({ many }) => ({
 export const userCalendarToken = pgTable("calendar_token", {
     userId: text("user_id")
         .primaryKey()
-        .references(() => user.id, { onDelete: "cascade" }),
-    token: varchar("token", { length: 64 }).notNull().unique(),
+        .references(() => user.id, {
+            name: "user_calendar_token_user_id_auth_user_id_fk",
+            onDelete: "cascade",
+        }),
+    token: varchar("token", { length: 64 })
+        .notNull()
+        .unique("user_calendar_token_token_unique"),
     ...timestamps,
 });
 
@@ -99,32 +102,57 @@ export const allergy = pgTable("allergy", {
      */
     curated: boolean("curated").default(false).notNull(),
 });
-
-export const allergyRelations = relations(allergy, ({ many }) => ({
-    userSettings: many(userAllergy),
-}));
-
 export const userAllergy = pgTable(
     "user_setting_allergy",
     {
         userId: text("user_id")
             .notNull()
-            .references(() => userSettings.userId, { onDelete: "cascade" }),
+            .references(() => userSettings.userId, {
+                name: "user_user_setting_allergy_user_id_user_settings_user_id_fk",
+                onDelete: "cascade",
+            }),
         allergySlug: varchar("allergy_slug", { length: 64 })
             .notNull()
-            .references(() => allergy.slug, { onDelete: "cascade" }),
+            .references(() => allergy.slug, {
+                name: "user_user_setting_allergy_allergy_slug_user_allergy_slug_fk",
+                onDelete: "cascade",
+            }),
         ...timestamps,
     },
-    (t) => [primaryKey({ columns: [t.userId, t.allergySlug] })],
+    (t) => [
+        primaryKey({
+            name: "user_user_setting_allergy_user_id_allergy_slug_pk",
+            columns: [t.userId, t.allergySlug],
+        }),
+    ],
 );
 
-export const userAllergyRelations = relations(userAllergy, ({ one }) => ({
-    userSettings: one(userSettings, {
-        fields: [userAllergy.userId],
-        references: [userSettings.userId],
+export const userSettingsRelations = defineRelationsPart(
+    { userSettings, allergy, userAllergy },
+    (r) => ({
+        userSettings: {
+            allergies: r.many.userAllergy({
+                from: r.userSettings.userId,
+                to: r.userAllergy.userId,
+            }),
+        },
+        allergy: {
+            userSettings: r.many.userAllergy({
+                from: r.allergy.slug,
+                to: r.userAllergy.allergySlug,
+            }),
+        },
+        userAllergy: {
+            userSettings: r.one.userSettings({
+                from: r.userAllergy.userId,
+                to: r.userSettings.userId,
+                optional: false,
+            }),
+            allergy: r.one.allergy({
+                from: r.userAllergy.allergySlug,
+                to: r.allergy.slug,
+                optional: false,
+            }),
+        },
     }),
-    allergy: one(allergy, {
-        fields: [userAllergy.allergySlug],
-        references: [allergy.slug],
-    }),
-}));
+);

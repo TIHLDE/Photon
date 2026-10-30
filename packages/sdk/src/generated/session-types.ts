@@ -12,16 +12,16 @@ export type ExtendedSession = {
             createdAt: Date;
             updatedAt: Date;
             userId: string;
-            gender: "male" | "female" | "other";
+            imageUrl: string | null;
+            gender: "other" | "male" | "female";
             allowsPhotosByDefault: boolean;
             acceptsEventRules: boolean;
-            imageUrl: string | null;
             bioDescription: string | null;
             githubUrl: string | null;
             linkedinUrl: string | null;
             receiveMailCommunication: boolean;
-            publicEventRegistrations: boolean;
             isOnboarded: boolean;
+            publicEventRegistrations: boolean;
             customAllergies: string[];
             allergiesConfirmedAt: Date | null;
 

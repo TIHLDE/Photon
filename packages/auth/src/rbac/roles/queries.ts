@@ -7,9 +7,9 @@
 import { eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { role } from "@photon/db/schema";
-import type { DbSchema } from "@photon/db";
+import type { DbRelations } from "@photon/db";
 
-type DbCtx = { db: NodePgDatabase<DbSchema> };
+type DbCtx = { db: NodePgDatabase<DbRelations> };
 
 /**
  * Get a role by its name.

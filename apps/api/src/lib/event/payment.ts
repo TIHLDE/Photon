@@ -95,12 +95,7 @@ export async function hasPaidForEvent(
 ): Promise<boolean> {
     const paid = await ctx.db.query.eventPayment.findFirst({
         columns: { id: true },
-        where: (p, { and, eq }) =>
-            and(
-                eq(p.eventId, eventId),
-                eq(p.userId, userId),
-                eq(p.status, "paid"),
-            ),
+        where: { eventId, userId, status: "paid" },
     });
 
     return Boolean(paid);
@@ -182,13 +177,12 @@ export async function createPaymentObligation(
      */
     const liveObligation = await ctx.db.query.eventPayment.findFirst({
         columns: { id: true },
-        where: (p, { and, eq, gt }) =>
-            and(
-                eq(p.eventId, event.id),
-                eq(p.userId, userId),
-                eq(p.status, "pending"),
-                gt(p.expiresAt, now),
-            ),
+        where: {
+            eventId: event.id,
+            userId,
+            status: "pending",
+            expiresAt: { gt: now },
+        },
     });
 
     if (liveObligation) {
@@ -262,8 +256,7 @@ export async function createPaymentObligations(
 
     const existing = await ctx.db.query.eventPayment.findMany({
         columns: { userId: true, status: true, expiresAt: true },
-        where: (p, { and, eq, inArray }) =>
-            and(eq(p.eventId, event.id), inArray(p.userId, userIds)),
+        where: { eventId: event.id, userId: { in: userIds } },
     });
 
     const covered = new Set(
@@ -459,9 +452,8 @@ async function promoteFromWaitlistWithLock(
     }
 
     const waitlisted = await ctx.db.query.eventRegistration.findMany({
-        where: (r, { and, eq }) =>
-            and(eq(r.eventId, event.id), eq(r.status, "waitlisted")),
-        orderBy: (r, { asc }) => asc(r.waitlistPosition),
+        where: { eventId: event.id, status: "waitlisted" },
+        orderBy: { waitlistPosition: "asc" },
     });
 
     const promoted = waitlisted[0];
@@ -669,8 +661,7 @@ export async function confirmPaymentForUser(
     { eventId, userId }: { eventId: string; userId: string },
 ): Promise<PaymentConfirmation> {
     const payments = await ctx.db.query.eventPayment.findMany({
-        where: (payment, { and, eq }) =>
-            and(eq(payment.eventId, eventId), eq(payment.userId, userId)),
+        where: { eventId, userId },
     });
 
     // The webhook may already have settled it while the member was on their way
@@ -766,7 +757,7 @@ export async function handlePaymentExpiration(
     const { eventId, userId, paymentId } = data;
 
     const payment = await ctx.db.query.eventPayment.findFirst({
-        where: (p, { eq }) => eq(p.id, paymentId),
+        where: { id: paymentId },
     });
 
     // Obligation gone, already paid, or already refunded — nothing to do.
@@ -796,8 +787,7 @@ export async function handlePaymentExpiration(
     }
 
     const registration = await ctx.db.query.eventRegistration.findFirst({
-        where: (r, { and, eq }) =>
-            and(eq(r.eventId, eventId), eq(r.userId, userId)),
+        where: { eventId, userId },
     });
 
     // Only reclaim a spot that is still actively held by this user.
@@ -830,15 +820,14 @@ export async function handlePaymentExpiration(
      */
     const successor = await ctx.db.query.eventPayment.findFirst({
         columns: { id: true },
-        where: (p, { and, eq, gt, ne }) =>
-            and(
-                eq(p.eventId, eventId),
-                eq(p.userId, userId),
-                eq(p.status, "pending"),
-                ne(p.id, paymentId),
-                gt(p.createdAt, payment.createdAt),
-                gt(p.expiresAt, new Date()),
-            ),
+        where: {
+            eventId,
+            userId,
+            status: "pending",
+            id: { ne: paymentId },
+            createdAt: { gt: payment.createdAt },
+            expiresAt: { gt: new Date() },
+        },
     });
 
     if (successor) {
@@ -856,12 +845,7 @@ export async function handlePaymentExpiration(
     // rather than on the one this timer happens to point at — the once-only
     // extension is what keeps that from becoming a loophole.
     const attempts = await ctx.db.query.eventPayment.findMany({
-        where: (p, { and, eq }) =>
-            and(
-                eq(p.eventId, eventId),
-                eq(p.userId, userId),
-                eq(p.status, "pending"),
-            ),
+        where: { eventId, userId, status: "pending" },
     });
 
     let verdict: ProviderVerdict = "dead";
@@ -947,7 +931,7 @@ export async function handlePaymentExpiration(
 
         // 3. Load the event (with pools) for promotion + notifications.
         const event = await tx.query.event.findFirst({
-            where: (e, { eq }) => eq(e.id, eventId),
+            where: { id: eventId },
             with: {
                 pools: true,
                 priorityUsers: true,

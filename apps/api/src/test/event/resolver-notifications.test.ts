@@ -54,7 +54,7 @@ describe("Notifications from a resolved batch", () => {
 
             const registrations = await ctx.db.query.eventRegistration.findMany(
                 {
-                    where: (r, { eq }) => eq(r.eventId, event.id),
+                    where: { eventId: event.id },
                 },
             );
             expect(

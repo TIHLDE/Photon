@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { defineRelationsPart } from "drizzle-orm";
 import {
     boolean,
     pgTableCreator,
@@ -21,9 +21,11 @@ export const news = pgTable("news", {
     imageUrl: text("image_url"),
     imageAlt: varchar("image_alt", { length: 255 }),
     createdById: text("created_by_user_id").references(() => user.id, {
+        name: "news_news_created_by_user_id_auth_user_id_fk",
         onDelete: "set null",
     }),
     emojisAllowed: boolean("emojis_allowed").default(false).notNull(),
+    ...timestamps,
     /**
      * When the article was taken off the public pages.
      *
@@ -32,39 +34,57 @@ export const news = pgTable("news", {
      * Null means the article is live.
      */
     archivedAt: timestamp("archived_at"),
-    ...timestamps,
 });
-
-export const newsRelations = relations(news, ({ one, many }) => ({
-    creator: one(user, {
-        fields: [news.createdById],
-        references: [user.id],
-    }),
-    reactions: many(newsReaction),
-}));
-
 export const newsReaction = pgTable(
     "reaction",
     {
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                name: "news_reaction_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
         newsId: uuid("news_id")
             .notNull()
-            .references(() => news.id, { onDelete: "cascade" }),
+            .references(() => news.id, {
+                name: "news_reaction_news_id_news_news_id_fk",
+                onDelete: "cascade",
+            }),
         emoji: varchar("emoji", { length: 32 }).notNull(),
         createdAt: timestamp("created_at").defaultNow().notNull(),
     },
-    (t) => [primaryKey({ columns: [t.userId, t.newsId] })],
+    (t) => [
+        primaryKey({
+            name: "news_reaction_user_id_news_id_pk",
+            columns: [t.userId, t.newsId],
+        }),
+    ],
 );
 
-export const newsReactionRelations = relations(newsReaction, ({ one }) => ({
-    user: one(user, {
-        fields: [newsReaction.userId],
-        references: [user.id],
+export const newsRelations = defineRelationsPart(
+    { news, newsReaction, user },
+    (r) => ({
+        news: {
+            creator: r.one.user({
+                from: r.news.createdById,
+                to: r.user.id,
+            }),
+            reactions: r.many.newsReaction({
+                from: r.news.id,
+                to: r.newsReaction.newsId,
+            }),
+        },
+        newsReaction: {
+            user: r.one.user({
+                from: r.newsReaction.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+            news: r.one.news({
+                from: r.newsReaction.newsId,
+                to: r.news.id,
+                optional: false,
+            }),
+        },
     }),
-    news: one(news, {
-        fields: [newsReaction.newsId],
-        references: [news.id],
-    }),
-}));
+);

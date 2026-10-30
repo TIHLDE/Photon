@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { defineRelationsPart } from "drizzle-orm";
 import {
     index,
     integer,
@@ -121,6 +121,7 @@ export const application = pgTable(
          * record of what they submitted.
          */
         submittedById: text("submitted_by_id").references(() => user.id, {
+            name: "application_submitted_by_id_auth_user_id_fk",
             onDelete: "set null",
         }),
         /** Contact details as given on the form — kept even if the user goes. */
@@ -137,6 +138,7 @@ export const application = pgTable(
         /** Handler-only note. Never serialized to the submitter. */
         internalComment: text("internal_comment"),
         handledById: text("handled_by_id").references(() => user.id, {
+            name: "application_handled_by_id_auth_user_id_fk",
             onDelete: "set null",
         }),
         handledAt: timestamp("handled_at"),
@@ -152,7 +154,10 @@ export const application = pgTable(
 export const applicationExpense = pgTable("application_expense", {
     applicationId: uuid("application_id")
         .primaryKey()
-        .references(() => application.id, { onDelete: "cascade" }),
+        .references(() => application.id, {
+            name: "application_expense_application_id_application_id_fk",
+            onDelete: "cascade",
+        }),
     /** Optional copy to a group's økonomiansvarlig. Validated as an allowlist. */
     ccEmail: text("cc_email"),
     /**
@@ -173,7 +178,10 @@ export const applicationExpense = pgTable("application_expense", {
     expenseDate: varchar("expense_date", { length: 10 }).notNull(),
     groupSlug: varchar("group_slug", { length: 128 })
         .notNull()
-        .references(() => group.slug, { onDelete: "restrict" }),
+        .references(() => group.slug, {
+            name: "application_expense_group_slug_org_group_slug_fk",
+            onDelete: "restrict",
+        }),
     budgetType: applicationBudgetType("budget_type").notNull(),
     description: text("description").notNull(),
     /** Canonical "xxxx.xx.xxxxx". */
@@ -184,10 +192,16 @@ export const applicationExpense = pgTable("application_expense", {
 export const applicationSupport = pgTable("application_support", {
     applicationId: uuid("application_id")
         .primaryKey()
-        .references(() => application.id, { onDelete: "cascade" }),
+        .references(() => application.id, {
+            name: "application_support_application_id_application_id_fk",
+            onDelete: "cascade",
+        }),
     groupSlug: varchar("group_slug", { length: 128 })
         .notNull()
-        .references(() => group.slug, { onDelete: "restrict" }),
+        .references(() => group.slug, {
+            name: "application_support_group_slug_org_group_slug_fk",
+            onDelete: "restrict",
+        }),
     purpose: text("purpose").notNull(),
     eventDescription: text("event_description").notNull(),
     justification: text("justification").notNull(),
@@ -200,7 +214,10 @@ export const applicationSupport = pgTable("application_support", {
 export const applicationHsCase = pgTable("application_hs_case", {
     applicationId: uuid("application_id")
         .primaryKey()
-        .references(() => application.id, { onDelete: "cascade" }),
+        .references(() => application.id, {
+            name: "application_hs_case_application_id_application_id_fk",
+            onDelete: "cascade",
+        }),
     caseName: text("case_name").notNull(),
     caseType: applicationCaseType("case_type").notNull(),
     background: text("background").notNull(),
@@ -225,7 +242,10 @@ export const applicationCompanyContact = pgTable(
     {
         applicationId: uuid("application_id")
             .primaryKey()
-            .references(() => application.id, { onDelete: "cascade" }),
+            .references(() => application.id, {
+                name: "application_company_contact_application_id_application_id_fk",
+                onDelete: "cascade",
+            }),
         company: text("company").notNull(),
         /** Which kinds of arrangement the company is interested in. */
         eventTypes: text("event_types").array().notNull(),
@@ -241,7 +261,10 @@ export const applicationAttachment = pgTable(
         id: uuid("id").primaryKey().defaultRandom(),
         applicationId: uuid("application_id")
             .notNull()
-            .references(() => application.id, { onDelete: "cascade" }),
+            .references(() => application.id, {
+                name: "application_attachment_application_id_application_id_fk",
+                onDelete: "cascade",
+            }),
         /** S3 object key, stored as plain text like contract.fileKey. */
         assetKey: text("asset_key").notNull(),
         kind: applicationAttachmentKind("kind").notNull(),
@@ -250,95 +273,6 @@ export const applicationAttachment = pgTable(
     },
     (table) => [index().on(table.applicationId)],
 );
-
-export const applicationRelations = relations(application, ({ one, many }) => ({
-    submittedBy: one(user, {
-        fields: [application.submittedById],
-        references: [user.id],
-        relationName: "applicationSubmitter",
-    }),
-    handledBy: one(user, {
-        fields: [application.handledById],
-        references: [user.id],
-        relationName: "applicationHandler",
-    }),
-    expense: one(applicationExpense, {
-        fields: [application.id],
-        references: [applicationExpense.applicationId],
-    }),
-    support: one(applicationSupport, {
-        fields: [application.id],
-        references: [applicationSupport.applicationId],
-    }),
-    hsCase: one(applicationHsCase, {
-        fields: [application.id],
-        references: [applicationHsCase.applicationId],
-    }),
-    companyContact: one(applicationCompanyContact, {
-        fields: [application.id],
-        references: [applicationCompanyContact.applicationId],
-    }),
-    attachments: many(applicationAttachment),
-}));
-
-export const applicationExpenseRelations = relations(
-    applicationExpense,
-    ({ one }) => ({
-        application: one(application, {
-            fields: [applicationExpense.applicationId],
-            references: [application.id],
-        }),
-        group: one(group, {
-            fields: [applicationExpense.groupSlug],
-            references: [group.slug],
-        }),
-    }),
-);
-
-export const applicationSupportRelations = relations(
-    applicationSupport,
-    ({ one }) => ({
-        application: one(application, {
-            fields: [applicationSupport.applicationId],
-            references: [application.id],
-        }),
-        group: one(group, {
-            fields: [applicationSupport.groupSlug],
-            references: [group.slug],
-        }),
-    }),
-);
-
-export const applicationHsCaseRelations = relations(
-    applicationHsCase,
-    ({ one }) => ({
-        application: one(application, {
-            fields: [applicationHsCase.applicationId],
-            references: [application.id],
-        }),
-    }),
-);
-
-export const applicationCompanyContactRelations = relations(
-    applicationCompanyContact,
-    ({ one }) => ({
-        application: one(application, {
-            fields: [applicationCompanyContact.applicationId],
-            references: [application.id],
-        }),
-    }),
-);
-
-export const applicationAttachmentRelations = relations(
-    applicationAttachment,
-    ({ one }) => ({
-        application: one(application, {
-            fields: [applicationAttachment.applicationId],
-            references: [application.id],
-        }),
-    }),
-);
-
 export type Application = typeof application.$inferSelect;
 export type NewApplication = typeof application.$inferInsert;
 export type ApplicationExpense = typeof applicationExpense.$inferSelect;
@@ -347,3 +281,95 @@ export type ApplicationHsCase = typeof applicationHsCase.$inferSelect;
 export type ApplicationCompanyContact =
     typeof applicationCompanyContact.$inferSelect;
 export type ApplicationAttachment = typeof applicationAttachment.$inferSelect;
+
+export const applicationRelations = defineRelationsPart(
+    {
+        application,
+        applicationExpense,
+        applicationSupport,
+        applicationHsCase,
+        applicationCompanyContact,
+        applicationAttachment,
+        user,
+        group,
+    },
+    (r) => ({
+        application: {
+            submittedBy: r.one.user({
+                from: r.application.submittedById,
+                to: r.user.id,
+                alias: "applicationSubmitter",
+            }),
+            handledBy: r.one.user({
+                from: r.application.handledById,
+                to: r.user.id,
+                alias: "applicationHandler",
+            }),
+            expense: r.one.applicationExpense({
+                from: r.application.id,
+                to: r.applicationExpense.applicationId,
+            }),
+            support: r.one.applicationSupport({
+                from: r.application.id,
+                to: r.applicationSupport.applicationId,
+            }),
+            hsCase: r.one.applicationHsCase({
+                from: r.application.id,
+                to: r.applicationHsCase.applicationId,
+            }),
+            companyContact: r.one.applicationCompanyContact({
+                from: r.application.id,
+                to: r.applicationCompanyContact.applicationId,
+            }),
+            attachments: r.many.applicationAttachment({
+                from: r.application.id,
+                to: r.applicationAttachment.applicationId,
+            }),
+        },
+        applicationExpense: {
+            application: r.one.application({
+                from: r.applicationExpense.applicationId,
+                to: r.application.id,
+                optional: false,
+            }),
+            group: r.one.group({
+                from: r.applicationExpense.groupSlug,
+                to: r.group.slug,
+                optional: false,
+            }),
+        },
+        applicationSupport: {
+            application: r.one.application({
+                from: r.applicationSupport.applicationId,
+                to: r.application.id,
+                optional: false,
+            }),
+            group: r.one.group({
+                from: r.applicationSupport.groupSlug,
+                to: r.group.slug,
+                optional: false,
+            }),
+        },
+        applicationHsCase: {
+            application: r.one.application({
+                from: r.applicationHsCase.applicationId,
+                to: r.application.id,
+                optional: false,
+            }),
+        },
+        applicationCompanyContact: {
+            application: r.one.application({
+                from: r.applicationCompanyContact.applicationId,
+                to: r.application.id,
+                optional: false,
+            }),
+        },
+        applicationAttachment: {
+            application: r.one.application({
+                from: r.applicationAttachment.applicationId,
+                to: r.application.id,
+                optional: false,
+            }),
+        },
+    }),
+);

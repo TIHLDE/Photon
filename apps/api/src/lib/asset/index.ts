@@ -1,5 +1,4 @@
-import { type DbSchema, schema } from "@photon/db";
-import { and, eq, lt } from "drizzle-orm";
+import { type DbRelations, schema } from "@photon/db";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { StorageService } from "~/lib/storage";
 import { IMAGE_VARIANT_WIDTHS, imageVariantKey } from "./image";
@@ -34,17 +33,14 @@ export function isAllowedMimeType(
  * These are candidates for cleanup
  */
 export async function getStagedAssetsForCleanup(
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     cutoffDate: Date,
     limit = 100,
 ): Promise<schema.Asset[]> {
     return db.query.asset.findMany({
-        where: and(
-            eq(schema.asset.status, "staged"),
-            lt(schema.asset.createdAt, cutoffDate),
-        ),
+        where: { status: "staged", createdAt: { lt: cutoffDate } },
         limit,
-        orderBy: (asset, { asc }) => [asc(asset.createdAt)],
+        orderBy: { createdAt: "asc" },
     });
 }
 

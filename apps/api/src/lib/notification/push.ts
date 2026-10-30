@@ -92,7 +92,7 @@ export async function deliverPushNotification(
     ctx: AppContext,
 ): Promise<void> {
     const devices = await ctx.db.query.notificationDevice.findMany({
-        where: (device, { eq }) => eq(device.userId, data.userId),
+        where: { userId: data.userId },
         columns: { token: true },
     });
 

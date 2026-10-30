@@ -55,7 +55,7 @@ export const updateRoute = route().patch(
         const userId = c.get("user").id;
 
         const existing = await db.query.feedback.findFirst({
-            where: eq(schema.feedback.id, id),
+            where: { id },
         });
 
         if (!existing) {

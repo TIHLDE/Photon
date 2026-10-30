@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { defineRelationsPart } from "drizzle-orm";
 import {
     boolean,
     pgEnum,
@@ -56,14 +56,17 @@ export const jobPost = pgTable("job_post", {
     imageUrl: text("image_url"),
     imageAlt: varchar("image_alt", { length: 255 }),
     createdById: text("created_by_user_id").references(() => user.id, {
+        name: "job_job_post_created_by_user_id_auth_user_id_fk",
         onDelete: "set null",
     }),
     ...timestamps,
 });
 
-export const jobPostRelations = relations(jobPost, ({ one }) => ({
-    creator: one(user, {
-        fields: [jobPost.createdById],
-        references: [user.id],
-    }),
+export const jobRelations = defineRelationsPart({ jobPost, user }, (r) => ({
+    jobPost: {
+        creator: r.one.user({
+            from: r.jobPost.createdById,
+            to: r.user.id,
+        }),
+    },
 }));

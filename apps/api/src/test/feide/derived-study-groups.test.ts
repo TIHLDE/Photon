@@ -1,6 +1,6 @@
 import { syncDerivedStudyGroups } from "@photon/auth/feide";
 import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 
@@ -43,7 +43,7 @@ describe("derived study groups", () => {
             );
 
             const created = await ctx.db.query.group.findFirst({
-                where: eq(schema.group.slug, "2031"),
+                where: { slug: "2031" },
             });
 
             expect(created?.type).toBe("STUDYYEAR");
@@ -86,10 +86,7 @@ describe("derived study groups", () => {
             );
 
             const membership = await ctx.db.query.groupMembership.findFirst({
-                where: and(
-                    eq(schema.groupMembership.userId, user.id),
-                    eq(schema.groupMembership.groupSlug, "dataingenir"),
-                ),
+                where: { userId: user.id, groupSlug: "dataingenir" },
             });
 
             expect(membership?.role).toBe("leader");

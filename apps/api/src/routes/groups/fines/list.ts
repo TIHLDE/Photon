@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { type SQL, and, desc, eq, or } from "drizzle-orm";
+import { EmptyFilter, type SQL, and, eq, or } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
@@ -20,6 +20,8 @@ import {
 } from "./permissions";
 import { fineListResponseSchema, fineStatusSchema } from "./schema";
 import { serializeFineLaw } from "./serialize";
+
+type FineTable = typeof schema.fine;
 
 export const listFinesRoute = route().get(
     "/:groupSlug/fines",
@@ -64,8 +66,8 @@ export const listFinesRoute = route().get(
 
         const group = await requireFinesGroup(ctx, groupSlug);
 
-        const conditions: (SQL | undefined)[] = [
-            eq(schema.fine.groupSlug, groupSlug),
+        const conditions: ((fine: FineTable) => SQL | undefined)[] = [
+            (fine) => eq(fine.groupSlug, groupSlug),
         ];
 
         /**
@@ -92,30 +94,28 @@ export const listFinesRoute = route().get(
                 });
             }
 
-            conditions.push(
-                or(
-                    eq(schema.fine.userId, user.id),
-                    eq(schema.fine.createdByUserId, user.id),
-                ),
+            conditions.push((fine) =>
+                or(eq(fine.userId, user.id), eq(fine.createdByUserId, user.id)),
             );
         }
 
         if (userId) {
-            conditions.push(eq(schema.fine.userId, userId));
+            conditions.push((fine) => eq(fine.userId, userId));
         }
 
         if (status) {
-            conditions.push(eq(schema.fine.status, status));
+            conditions.push((fine) => eq(fine.status, status));
         }
 
-        const filters = and(...conditions);
-        const totalCount = await db.$count(schema.fine, filters);
+        const filters = (fine: FineTable) =>
+            and(...conditions.map((condition) => condition(fine)));
+        const totalCount = await db.$count(schema.fine, filters(schema.fine));
 
         // Include public user info (name/image) so the UI can display names
         // instead of user IDs
         const fines = await db.query.fine.findMany({
-            where: filters,
-            orderBy: desc(schema.fine.createdAt),
+            where: { RAW: (fine) => filters(fine) ?? EmptyFilter },
+            orderBy: { createdAt: "desc" },
             limit: pageSize,
             offset: getPageOffset(page, pageSize),
             with: {

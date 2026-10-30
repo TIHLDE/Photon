@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { defineRelationsPart, sql } from "drizzle-orm";
 import {
     boolean,
     check,
@@ -92,30 +92,29 @@ export type EventVisibility = (typeof eventVisibilityVariants)[number];
 export const event = pgTable("event", {
     id: uuid("id").primaryKey().defaultRandom(),
     title: varchar("title", { length: 256 }).notNull(),
-    slug: varchar("slug", { length: 256 }).notNull().unique(),
+    slug: varchar("slug", { length: 256 })
+        .notNull()
+        .unique("event_event_slug_unique"),
     description: text("description"),
     categorySlug: varchar("category_slug", { length: 64 })
-        .references(() => eventCategory.slug)
+        .references(() => eventCategory.slug, {
+            name: "event_event_category_slug_event_category_slug_fk",
+        })
         .notNull(),
     location: varchar("location", { length: 256 }),
-    /**
-     * Koordinater for stedet, satt når adressen er valgt fra adressesøket
-     * (Kartverket). Er null for fritekst-steder som "Digitalt" eller "R1".
-     * Brukes til å lage en kartlenke på arrangementssiden.
-     */
-    locationLat: doublePrecision("location_lat"),
-    locationLng: doublePrecision("location_lng"),
     imageUrl: text("image_url"),
-    imageAlt: varchar("image_alt", { length: 255 }),
     capacity: integer("capacity"),
     allowWaitlist: boolean("allow_waitlist").default(true).notNull(),
     contactPersonId: text("contact_person_id").references(() => user.id, {
+        name: "event_event_contact_person_id_auth_user_id_fk",
         onDelete: "set null",
     }),
     createdByUserId: text("created_by_user_id").references(() => user.id, {
+        name: "event_event_created_by_user_id_auth_user_id_fk",
         onDelete: "set null",
     }),
     updateByUserId: text("update_by_user_id").references(() => user.id, {
+        name: "event_event_update_by_user_id_auth_user_id_fk",
         onDelete: "set null",
     }),
     start: timestamp("start").notNull(),
@@ -132,8 +131,22 @@ export const event = pgTable("event", {
     reactionsAllowed: boolean("reactions_allowed").default(true).notNull(),
     organizerGroupSlug: varchar("organizer_group_slug", {
         length: 128,
-    }).references(() => group.slug, { onDelete: "set null" }),
+    }).references(() => group.slug, {
+        name: "event_event_organizer_group_slug_org_group_slug_fk",
+        onDelete: "set null",
+    }),
     enforcesPreviousStrikes: boolean("enforces_previous_strikes").notNull(),
+    ...timestamps,
+    imageAlt: varchar("image_alt", { length: 255 }),
+    /** Only members covered by a priority pool may register. */
+    onlyAllowPrioritized: boolean("only_allow_prioritized")
+        .default(false)
+        .notNull(),
+    /**
+     * Who may see the event. "public" is visible to everyone including
+     * logged-out visitors; "members" hides it from unauthenticated callers.
+     */
+    visibility: eventVisibility("visibility").default("public").notNull(),
     /**
      * When true, this event automatically issues strikes (prikker): 1 strike
      * for unregistering after `cancellationDeadline`, and 2 strikes for
@@ -145,6 +158,30 @@ export const event = pgTable("event", {
      * Used as an idempotency marker so no-show strikes are issued only once.
      */
     noShowProcessedAt: timestamp("no_show_processed_at"),
+    /**
+     * Koordinater for stedet, satt når adressen er valgt fra adressesøket
+     * (Kartverket). Er null for fritekst-steder som "Digitalt" eller "R1".
+     * Brukes til å lage en kartlenke på arrangementssiden.
+     */
+    locationLat: doublePrecision("location_lat"),
+    locationLng: doublePrecision("location_lng"),
+    /**
+     * Restricts registration to members of a single NTNU institute, matched
+     * through the study groups they belong to. NULL — the default — means the
+     * event is open to every institute, which is what nearly all events are.
+     * Set it for arrangements that belong to one institute, so DigSec (IIK)
+     * students cannot take IDI seats and the other way around.
+     *
+     * This gates registration only; the event stays visible to everyone, the
+     * same way a priority-pool-only event does.
+     */
+    restrictedToInstituteId: integer("restricted_to_institute_id").references(
+        () => institute.id,
+        {
+            name: "event_event_restricted_to_institute_id_org_institute_id_fk",
+            onDelete: "set null",
+        },
+    ),
     /**
      * Set once the "påmeldingen åpner snart" reminder has been sent to everyone
      * who favourited the event. Idempotency marker so the reminder goes out at
@@ -158,10 +195,6 @@ export const event = pgTable("event", {
      * at most once per event.
      */
     paymentReviewNotifiedAt: timestamp("payment_review_notified_at"),
-    /** Only members covered by a priority pool may register. */
-    onlyAllowPrioritized: boolean("only_allow_prioritized")
-        .default(false)
-        .notNull(),
     /**
      * Lets alumni register too, not just active members.
      *
@@ -177,65 +210,26 @@ export const event = pgTable("event", {
      * registration only: it changes nothing about who can see the event.
      */
     openToAlumni: boolean("open_to_alumni").default(false).notNull(),
-    /**
-     * Restricts registration to members of a single NTNU institute, matched
-     * through the study groups they belong to. NULL — the default — means the
-     * event is open to every institute, which is what nearly all events are.
-     * Set it for arrangements that belong to one institute, so DigSec (IIK)
-     * students cannot take IDI seats and the other way around.
-     *
-     * This gates registration only; the event stays visible to everyone, the
-     * same way a priority-pool-only event does.
-     */
-    restrictedToInstituteId: integer("restricted_to_institute_id").references(
-        () => institute.id,
-        { onDelete: "set null" },
-    ),
-    /**
-     * Who may see the event. "public" is visible to everyone including
-     * logged-out visitors; "members" hides it from unauthenticated callers.
-     */
-    visibility: eventVisibility("visibility").default("public").notNull(),
-    ...timestamps,
 });
-
-export const eventRelations = relations(event, ({ one, many }) => ({
-    category: one(eventCategory, {
-        fields: [event.categorySlug],
-        references: [eventCategory.slug],
-    }),
-    organizer: one(group, {
-        fields: [event.organizerGroupSlug],
-        references: [group.slug],
-    }),
-    restrictedToInstitute: one(institute, {
-        fields: [event.restrictedToInstituteId],
-        references: [institute.id],
-    }),
-    contactPerson: one(user, {
-        fields: [event.contactPersonId],
-        references: [user.id],
-    }),
-    reactions: many(eventReaction),
-    pools: many(eventPriorityPool),
-    priorityUsers: many(eventPriorityUser),
-    favorites: many(eventFavorite),
-    registrations: many(eventRegistration),
-}));
-
 export const eventRegistration = pgTable(
     "registration",
     {
         eventId: uuid("event_id")
             .notNull()
-            .references(() => event.id, { onDelete: "cascade" }),
+            .references(() => event.id, {
+                name: "event_registration_event_id_event_event_id_fk",
+                onDelete: "cascade",
+            }),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                name: "event_registration_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
         status: registrationStatus("status").notNull().default("registered"),
         waitlistPosition: integer("waitlist_position"),
         attendedAt: timestamp("attended_at"),
-        promotedFromWaitlistAt: timestamp("promoted_from_waitlist_at"),
+        ...timestamps,
         /**
          * Photo consent for THIS event, overriding the account-level
          * `allowsPhotosByDefault`. Carried over from Lepton, where members
@@ -251,10 +245,13 @@ export const eventRegistration = pgTable(
          * the registration gate still blocks them.
          */
         evaluationReminderSentAt: timestamp("evaluation_reminder_sent_at"),
-        ...timestamps,
+        promotedFromWaitlistAt: timestamp("promoted_from_waitlist_at"),
     },
     (t) => [
-        primaryKey({ columns: [t.userId, t.eventId] }),
+        primaryKey({
+            name: "event_registration_user_id_event_id_pk",
+            columns: [t.userId, t.eventId],
+        }),
         /**
          * The primary key leads on `user_id`, so it cannot serve a lookup by
          * event — and looking up by event is what this table mostly does:
@@ -281,31 +278,22 @@ export const eventRegistration = pgTable(
             .where(sql`${t.status} = 'pending'`),
     ],
 );
-
-export const eventRegistrationRelations = relations(
-    eventRegistration,
-    ({ one }) => ({
-        event: one(event, {
-            fields: [eventRegistration.eventId],
-            references: [event.id],
-        }),
-        user: one(user, {
-            fields: [eventRegistration.userId],
-            references: [user.id],
-        }),
-    }),
-);
-
 export const eventStrike = pgTable(
     "strike",
     {
         id: uuid("id").primaryKey().defaultRandom(),
         eventId: uuid("event_id")
             .notNull()
-            .references(() => event.id, { onDelete: "cascade" }),
+            .references(() => event.id, {
+                name: "event_strike_event_id_event_event_id_fk",
+                onDelete: "cascade",
+            }),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                name: "event_strike_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
         count: integer("count").notNull(),
         reason: varchar("reason", { length: 256 }),
         ...timestamps,
@@ -320,34 +308,30 @@ export const eventStrike = pgTable(
         index("strike_user_id_idx").on(table.userId),
     ],
 );
-
-export const eventStrikeRelations = relations(eventStrike, ({ one }) => ({
-    event: one(event, {
-        fields: [eventStrike.eventId],
-        references: [event.id],
-    }),
-    user: one(user, {
-        fields: [eventStrike.userId],
-        references: [user.id],
-    }),
-}));
-
 export const eventPayment = pgTable(
     "payment",
     {
         id: uuid("id").primaryKey().defaultRandom(),
         eventId: uuid("event_id")
             .notNull()
-            .references(() => event.id, { onDelete: "cascade" }),
+            .references(() => event.id, {
+                name: "event_payment_event_id_event_event_id_fk",
+                onDelete: "cascade",
+            }),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
-        amountMinor: integer("amount_minor").notNull(), // cents/øre
+            .references(() => user.id, {
+                name: "event_payment_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
+        amountMinor: integer("amount_minor").notNull(),
+        // cents/øre
         currency: varchar("currency", { length: 3 }).default("NOK").notNull(),
         provider: varchar("provider", { length: 64 }),
         providerPaymentId: text("provider_payment_id"),
         status: paymentStatus("status").notNull().default("pending"),
         receivedPaymentAt: timestamp("received_payment_at"),
+        ...timestamps,
         /**
          * Deadline for when this payment obligation must be fulfilled. Set to
          * `now + DEFAULT_PAYMENT_GRACE_MINUTES` when a user is registered to a
@@ -367,7 +351,6 @@ export const eventPayment = pgTable(
         flag: paymentFlag("flag"),
         /** When {@link flag} was raised. */
         flaggedAt: timestamp("flagged_at"),
-        ...timestamps,
     },
     (t) => [
         /**
@@ -378,63 +361,49 @@ export const eventPayment = pgTable(
         index("payment_event_id_user_id_idx").on(t.eventId, t.userId),
     ],
 );
-
-export const eventPaymentRelations = relations(eventPayment, ({ one }) => ({
-    event: one(event, {
-        fields: [eventPayment.eventId],
-        references: [event.id],
-    }),
-    user: one(user, {
-        fields: [eventPayment.userId],
-        references: [user.id],
-    }),
-}));
-
 export const eventFeedback = pgTable("feedback", {
     id: uuid("id").primaryKey().defaultRandom(),
     eventId: uuid("event_id")
         .notNull()
-        .references(() => event.id, { onDelete: "cascade" }),
-    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+        .references(() => event.id, {
+            name: "event_feedback_event_id_event_event_id_fk",
+            onDelete: "cascade",
+        }),
+    userId: text("user_id").references(() => user.id, {
+        name: "event_feedback_user_id_auth_user_id_fk",
+        onDelete: "set null",
+    }),
     rating: integer("rating"), // 1-5 optional
     comment: text("comment"),
     ...timestamps,
 });
-
-export const eventFeedbackRelations = relations(eventFeedback, ({ one }) => ({
-    event: one(event, {
-        fields: [eventFeedback.eventId],
-        references: [event.id],
-    }),
-    user: one(user, {
-        fields: [eventFeedback.userId],
-        references: [user.id],
-    }),
-}));
-
 export const eventCategory = pgTable("category", {
     slug: varchar("slug", { length: 64 }).primaryKey(),
     label: varchar("label", { length: 128 }).notNull(),
 });
-
-export const eventCategoryRelations = relations(eventCategory, ({ many }) => ({
-    events: many(event),
-}));
-
 export const eventReaction = pgTable(
     "reaction",
     {
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                name: "event_reaction_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
         eventId: uuid("event_id")
             .notNull()
-            .references(() => event.id, { onDelete: "cascade" }),
+            .references(() => event.id, {
+                name: "event_reaction_event_id_event_event_id_fk",
+                onDelete: "cascade",
+            }),
         emoji: varchar("emoji", { length: 32 }).notNull(),
         createdAt: timestamp("created_at").defaultNow().notNull(),
     },
     (t) => [
-        primaryKey({ columns: [t.userId, t.eventId] }),
+        primaryKey({
+            name: "event_reaction_user_id_event_id_pk",
+            columns: [t.userId, t.eventId],
+        }),
         /**
          * The primary key leads on `user_id`, so "every reaction on this
          * event" — which is what the event page asks for — could not use it
@@ -443,18 +412,6 @@ export const eventReaction = pgTable(
         index("reaction_event_id_idx").on(t.eventId),
     ],
 );
-
-export const eventReactionRelations = relations(eventReaction, ({ one }) => ({
-    user: one(user, {
-        fields: [eventReaction.userId],
-        references: [user.id],
-    }),
-    event: one(event, {
-        fields: [eventReaction.eventId],
-        references: [event.id],
-    }),
-}));
-
 /**
  * One criterion that earns a member priority on an event.
  *
@@ -474,7 +431,11 @@ export const eventPriorityPool = pgTable(
         id: uuid("id").primaryKey().defaultRandom(),
         eventId: uuid("event_id")
             .notNull()
-            .references(() => event.id, { onDelete: "cascade" }),
+            .references(() => event.id, {
+                name: "event_priority_pool_event_id_event_event_id_fk",
+                onDelete: "cascade",
+            }),
+        ...timestamps,
         /**
          * The group a member must belong to, or null when the pool is a pure
          * class-level rule.
@@ -486,11 +447,13 @@ export const eventPriorityPool = pgTable(
          */
         groupSlug: varchar("group_slug", { length: 128 }).references(
             () => group.slug,
-            { onDelete: "cascade" },
+            {
+                name: "event_priority_pool_group_slug_org_group_slug_fk",
+                onDelete: "cascade",
+            },
         ),
         /** 1-5, or null when the pool does not care about class level. */
         classYear: smallint("class_year"),
-        ...timestamps,
     },
     (t) => [
         check(
@@ -504,21 +467,6 @@ export const eventPriorityPool = pgTable(
         index("priority_pool_event_id_idx").on(t.eventId),
     ],
 );
-
-export const eventPriorityPoolRelations = relations(
-    eventPriorityPool,
-    ({ one }) => ({
-        event: one(event, {
-            fields: [eventPriorityPool.eventId],
-            references: [event.id],
-        }),
-        group: one(group, {
-            fields: [eventPriorityPool.groupSlug],
-            references: [group.slug],
-        }),
-    }),
-);
-
 /**
  * Frozen archive of the pre-2026 priority pools, when a pool was a set of
  * group slugs ANDed together.
@@ -535,29 +483,25 @@ export const eventPriorityPoolGroup = pgTable(
     {
         priorityPoolId: uuid("priority_pool_id")
             .notNull()
-            .references(() => eventPriorityPool.id, { onDelete: "cascade" }),
+            .references(() => eventPriorityPool.id, {
+                name: "event_priority_pool_group_priority_pool_id_event_priority_pool_",
+                onDelete: "cascade",
+            }),
         groupSlug: varchar("group_slug", { length: 128 })
             .notNull()
-            .references(() => group.slug, { onDelete: "cascade" }),
+            .references(() => group.slug, {
+                name: "event_priority_pool_group_group_slug_org_group_slug_fk",
+                onDelete: "cascade",
+            }),
         ...timestamps,
     },
-    (t) => [primaryKey({ columns: [t.priorityPoolId, t.groupSlug] })],
-);
-
-export const eventPriorityPoolGroupRelations = relations(
-    eventPriorityPoolGroup,
-    ({ one }) => ({
-        priorityPool: one(eventPriorityPool, {
-            fields: [eventPriorityPoolGroup.priorityPoolId],
-            references: [eventPriorityPool.id],
+    (t) => [
+        primaryKey({
+            name: "event_priority_pool_group_priority_pool_id_group_slug_pk",
+            columns: [t.priorityPoolId, t.groupSlug],
         }),
-        group: one(group, {
-            fields: [eventPriorityPoolGroup.groupSlug],
-            references: [group.slug],
-        }),
-    }),
+    ],
 );
-
 /**
  * Enkeltpersoner som er prioritert på et arrangement.
  *
@@ -572,62 +516,61 @@ export const eventPriorityUser = pgTable(
     {
         eventId: uuid("event_id")
             .notNull()
-            .references(() => event.id, { onDelete: "cascade" }),
+            .references(() => event.id, {
+                name: "event_priority_user_event_id_event_event_id_fk",
+                onDelete: "cascade",
+            }),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                name: "event_priority_user_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
         ...timestamps,
     },
-    (t) => [primaryKey({ columns: [t.eventId, t.userId] })],
-);
-
-export const eventPriorityUserRelations = relations(
-    eventPriorityUser,
-    ({ one }) => ({
-        event: one(event, {
-            fields: [eventPriorityUser.eventId],
-            references: [event.id],
+    (t) => [
+        primaryKey({
+            name: "event_priority_user_event_id_user_id_pk",
+            columns: [t.eventId, t.userId],
         }),
-        user: one(user, {
-            fields: [eventPriorityUser.userId],
-            references: [user.id],
-        }),
-    }),
+    ],
 );
-
 export const eventFavorite = pgTable(
     "favorite",
     {
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                name: "event_favorite_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
         eventId: uuid("event_id")
             .notNull()
-            .references(() => event.id, { onDelete: "cascade" }),
+            .references(() => event.id, {
+                name: "event_favorite_event_id_event_event_id_fk",
+                onDelete: "cascade",
+            }),
         createdAt: timestamp("created_at").defaultNow().notNull(),
     },
-    (t) => [primaryKey({ columns: [t.userId, t.eventId] })],
+    (t) => [
+        primaryKey({
+            name: "event_favorite_user_id_event_id_pk",
+            columns: [t.userId, t.eventId],
+        }),
+    ],
 );
-
-export const eventFavoriteRelations = relations(eventFavorite, ({ one }) => ({
-    user: one(user, {
-        fields: [eventFavorite.userId],
-        references: [user.id],
-    }),
-    event: one(event, {
-        fields: [eventFavorite.eventId],
-        references: [event.id],
-    }),
-}));
-
 export const eventMessage = pgTable(
     "message",
     {
         id: uuid("id").primaryKey().defaultRandom(),
         eventId: uuid("event_id")
             .notNull()
-            .references(() => event.id, { onDelete: "cascade" }),
+            .references(() => event.id, {
+                name: "event_message_event_id_event_event_id_fk",
+                onDelete: "cascade",
+            }),
         sentById: text("sent_by_id").references(() => user.id, {
+            name: "event_message_sent_by_id_auth_user_id_fk",
             onDelete: "set null",
         }),
         title: varchar("title", { length: 80 }).notNull(),
@@ -638,18 +581,6 @@ export const eventMessage = pgTable(
     },
     (t) => [index("message_event_id_idx").on(t.eventId)],
 );
-
-export const eventMessageRelations = relations(eventMessage, ({ one }) => ({
-    event: one(event, {
-        fields: [eventMessage.eventId],
-        references: [event.id],
-    }),
-    sentBy: one(user, {
-        fields: [eventMessage.sentById],
-        references: [user.id],
-    }),
-}));
-
 // Vipps utsteder hemmeligheten én gang, ved registrering, og viser den aldri
 // igjen. Lå den bare i Redis, mistet vi den ved hver deploy — og siden en
 // glemt registrering ikke kan gjenfinnes, ble det registrert en ny hver gang.
@@ -660,3 +591,187 @@ export const vippsWebhook = pgTable("vipps_webhook", {
     url: text("url").notNull(),
     ...timestamps,
 });
+
+export const eventRelations = defineRelationsPart(
+    {
+        event,
+        eventRegistration,
+        eventStrike,
+        eventPayment,
+        eventFeedback,
+        eventCategory,
+        eventReaction,
+        eventPriorityPool,
+        eventPriorityPoolGroup,
+        eventPriorityUser,
+        eventFavorite,
+        eventMessage,
+        group,
+        institute,
+        user,
+    },
+    (r) => ({
+        event: {
+            category: r.one.eventCategory({
+                from: r.event.categorySlug,
+                to: r.eventCategory.slug,
+                optional: false,
+            }),
+            organizer: r.one.group({
+                from: r.event.organizerGroupSlug,
+                to: r.group.slug,
+            }),
+            restrictedToInstitute: r.one.institute({
+                from: r.event.restrictedToInstituteId,
+                to: r.institute.id,
+            }),
+            contactPerson: r.one.user({
+                from: r.event.contactPersonId,
+                to: r.user.id,
+            }),
+            reactions: r.many.eventReaction({
+                from: r.event.id,
+                to: r.eventReaction.eventId,
+            }),
+            pools: r.many.eventPriorityPool({
+                from: r.event.id,
+                to: r.eventPriorityPool.eventId,
+            }),
+            priorityUsers: r.many.eventPriorityUser({
+                from: r.event.id,
+                to: r.eventPriorityUser.eventId,
+            }),
+            favorites: r.many.eventFavorite({
+                from: r.event.id,
+                to: r.eventFavorite.eventId,
+            }),
+            registrations: r.many.eventRegistration({
+                from: r.event.id,
+                to: r.eventRegistration.eventId,
+            }),
+        },
+        eventRegistration: {
+            event: r.one.event({
+                from: r.eventRegistration.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+            user: r.one.user({
+                from: r.eventRegistration.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+        },
+        eventStrike: {
+            event: r.one.event({
+                from: r.eventStrike.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+            user: r.one.user({
+                from: r.eventStrike.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+        },
+        eventPayment: {
+            event: r.one.event({
+                from: r.eventPayment.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+            user: r.one.user({
+                from: r.eventPayment.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+        },
+        eventFeedback: {
+            event: r.one.event({
+                from: r.eventFeedback.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+            user: r.one.user({
+                from: r.eventFeedback.userId,
+                to: r.user.id,
+            }),
+        },
+        eventCategory: {
+            events: r.many.event({
+                from: r.eventCategory.slug,
+                to: r.event.categorySlug,
+            }),
+        },
+        eventReaction: {
+            user: r.one.user({
+                from: r.eventReaction.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+            event: r.one.event({
+                from: r.eventReaction.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+        },
+        eventPriorityPool: {
+            event: r.one.event({
+                from: r.eventPriorityPool.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+            group: r.one.group({
+                from: r.eventPriorityPool.groupSlug,
+                to: r.group.slug,
+            }),
+        },
+        eventPriorityPoolGroup: {
+            priorityPool: r.one.eventPriorityPool({
+                from: r.eventPriorityPoolGroup.priorityPoolId,
+                to: r.eventPriorityPool.id,
+                optional: false,
+            }),
+            group: r.one.group({
+                from: r.eventPriorityPoolGroup.groupSlug,
+                to: r.group.slug,
+                optional: false,
+            }),
+        },
+        eventPriorityUser: {
+            event: r.one.event({
+                from: r.eventPriorityUser.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+            user: r.one.user({
+                from: r.eventPriorityUser.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+        },
+        eventFavorite: {
+            user: r.one.user({
+                from: r.eventFavorite.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+            event: r.one.event({
+                from: r.eventFavorite.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+        },
+        eventMessage: {
+            event: r.one.event({
+                from: r.eventMessage.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+            sentBy: r.one.user({
+                from: r.eventMessage.sentById,
+                to: r.user.id,
+            }),
+        },
+    }),
+);

@@ -9,10 +9,10 @@
 import { desc, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { role, userRole } from "@photon/db/schema";
-import type { DbSchema } from "@photon/db";
+import type { DbRelations } from "@photon/db";
 import { getUserPermissions } from "../permissions/checker";
 
-type DbCtx = { db: NodePgDatabase<DbSchema> };
+type DbCtx = { db: NodePgDatabase<DbRelations> };
 
 /**
  * Get the highest role position (highest number) for a user.

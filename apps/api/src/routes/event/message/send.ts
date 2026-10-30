@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, eq, gt } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import type z from "zod";
@@ -80,15 +80,14 @@ export const sendEventMessageRoute = route().post(
                 }
 
                 const duplicate = await tx.query.eventMessage.findFirst({
-                    where: and(
-                        eq(schema.eventMessage.eventId, eventId),
-                        eq(schema.eventMessage.title, content.title),
-                        eq(schema.eventMessage.body, content.body),
-                        gt(
-                            schema.eventMessage.createdAt,
-                            new Date(Date.now() - DUPLICATE_WINDOW_MS),
-                        ),
-                    ),
+                    where: {
+                        eventId,
+                        title: content.title,
+                        body: content.body,
+                        createdAt: {
+                            gt: new Date(Date.now() - DUPLICATE_WINDOW_MS),
+                        },
+                    },
                     columns: { id: true },
                 });
 

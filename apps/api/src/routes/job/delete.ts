@@ -39,7 +39,7 @@ export const deleteRoute = route().delete(
 
         // Check if job exists
         const job = await db.query.jobPost.findFirst({
-            where: eq(schema.jobPost.id, id),
+            where: { id },
         });
 
         if (!job) {

@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 
@@ -173,10 +172,7 @@ describe("event detail registration.hasPaid", () => {
 
             // Guard against the free-event path accidentally creating one.
             const payments = await ctx.db.query.eventPayment.findMany({
-                where: and(
-                    eq(schema.eventPayment.eventId, event.id),
-                    eq(schema.eventPayment.userId, user.id),
-                ),
+                where: { eventId: event.id, userId: user.id },
             });
             expect(payments).toHaveLength(0);
         },

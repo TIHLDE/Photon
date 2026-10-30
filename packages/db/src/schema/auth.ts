@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
     text,
     timestamp,
@@ -7,9 +6,6 @@ import {
     index,
     pgTableCreator,
 } from "drizzle-orm/pg-core";
-
-import { studyProgramMembership } from "./org";
-import { userSettings } from "./user";
 
 const pgTable = pgTableCreator((name) => `auth_${name}`);
 
@@ -42,7 +38,7 @@ export const user = pgTable(
     {
         id: text("id").primaryKey(),
         name: text("name").notNull(),
-        email: text("email").notNull().unique(),
+        email: text("email").notNull().unique("auth_user_email_unique"),
         emailVerified: boolean("email_verified").default(false).notNull(),
         image: text("image"),
         createdAt: timestamp("created_at").notNull(),
@@ -53,7 +49,7 @@ export const user = pgTable(
         banned: boolean("banned").default(false),
         banReason: text("ban_reason"),
         banExpires: timestamp("ban_expires"),
-        username: text("username").unique(),
+        username: text("username").unique("auth_user_username_unique"),
         displayUsername: text("display_username"),
         approvalStatus: text("approval_status").$type<ApprovalStatus>(),
         approvedAt: timestamp("approved_at"),
@@ -67,7 +63,7 @@ export const session = pgTable(
     {
         id: text("id").primaryKey(),
         expiresAt: timestamp("expires_at").notNull(),
-        token: text("token").notNull().unique(),
+        token: text("token").notNull().unique("auth_session_token_unique"),
         createdAt: timestamp("created_at").notNull(),
         updatedAt: timestamp("updated_at")
             .$onUpdate(() => new Date())
@@ -76,7 +72,10 @@ export const session = pgTable(
         userAgent: text("user_agent"),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                name: "auth_session_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
         impersonatedBy: text("impersonated_by"),
     },
     (table) => [index("session_userId_idx").on(table.userId)],
@@ -90,7 +89,10 @@ export const account = pgTable(
         providerId: text("provider_id").notNull(),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                name: "auth_account_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
         accessToken: text("access_token"),
         refreshToken: text("refresh_token"),
         idToken: text("id_token"),
@@ -98,6 +100,10 @@ export const account = pgTable(
         refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
         scope: text("scope"),
         password: text("password"),
+        createdAt: timestamp("created_at").notNull(),
+        updatedAt: timestamp("updated_at")
+            .$onUpdate(() => new Date())
+            .notNull(),
         /**
          * Where `password` came from — only ever set on `credential` rows.
          *
@@ -115,10 +121,6 @@ export const account = pgTable(
          * the past, and every row written from here on is a real password.
          */
         passwordSource: text("password_source").$type<PasswordSource>(),
-        createdAt: timestamp("created_at").notNull(),
-        updatedAt: timestamp("updated_at")
-            .$onUpdate(() => new Date())
-            .notNull(),
     },
     (table) => [index("account_userId_idx").on(table.userId)],
 );
@@ -150,7 +152,9 @@ export const oauthClient = pgTable(
     "oauth_client",
     {
         id: text("id").primaryKey(),
-        clientId: text("client_id").notNull().unique(),
+        clientId: text("client_id")
+            .notNull()
+            .unique("auth_oauth_client_client_id_unique"),
         clientSecret: text("client_secret"),
         disabled: boolean("disabled").default(false),
         skipConsent: boolean("skip_consent"),
@@ -158,6 +162,7 @@ export const oauthClient = pgTable(
         subjectType: text("subject_type"),
         scopes: text("scopes").array(),
         userId: text("user_id").references(() => user.id, {
+            name: "auth_oauth_client_user_id_auth_user_id_fk",
             onDelete: "cascade",
         }),
         createdAt: timestamp("created_at"),
@@ -189,16 +194,25 @@ export const oauthRefreshToken = pgTable(
     "oauth_refresh_token",
     {
         id: text("id").primaryKey(),
-        token: text("token").notNull().unique(),
+        token: text("token")
+            .notNull()
+            .unique("auth_oauth_refresh_token_token_unique"),
         clientId: text("client_id")
             .notNull()
-            .references(() => oauthClient.clientId, { onDelete: "cascade" }),
+            .references(() => oauthClient.clientId, {
+                name: "auth_oauth_refresh_token_client_id_auth_oauth_client_client_id_",
+                onDelete: "cascade",
+            }),
         sessionId: text("session_id").references(() => session.id, {
+            name: "auth_oauth_refresh_token_session_id_auth_session_id_fk",
             onDelete: "set null",
         }),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                name: "auth_oauth_refresh_token_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
         referenceId: text("reference_id"),
         expiresAt: timestamp("expires_at").notNull(),
         createdAt: timestamp("created_at").notNull(),
@@ -217,18 +231,26 @@ export const oauthAccessToken = pgTable(
     "oauth_access_token",
     {
         id: text("id").primaryKey(),
-        token: text("token").notNull().unique(),
+        token: text("token")
+            .notNull()
+            .unique("auth_oauth_access_token_token_unique"),
         clientId: text("client_id")
             .notNull()
-            .references(() => oauthClient.clientId, { onDelete: "cascade" }),
+            .references(() => oauthClient.clientId, {
+                name: "auth_oauth_access_token_client_id_auth_oauth_client_client_id_f",
+                onDelete: "cascade",
+            }),
         sessionId: text("session_id").references(() => session.id, {
+            name: "auth_oauth_access_token_session_id_auth_session_id_fk",
             onDelete: "set null",
         }),
         userId: text("user_id").references(() => user.id, {
+            name: "auth_oauth_access_token_user_id_auth_user_id_fk",
             onDelete: "cascade",
         }),
         referenceId: text("reference_id"),
         refreshId: text("refresh_id").references(() => oauthRefreshToken.id, {
+            name: "auth_oauth_access_token_refresh_id_auth_oauth_refresh_token_id_",
             onDelete: "cascade",
         }),
         expiresAt: timestamp("expires_at").notNull(),
@@ -249,8 +271,12 @@ export const oauthConsent = pgTable(
         id: text("id").primaryKey(),
         clientId: text("client_id")
             .notNull()
-            .references(() => oauthClient.clientId, { onDelete: "cascade" }),
+            .references(() => oauthClient.clientId, {
+                name: "auth_oauth_consent_client_id_auth_oauth_client_client_id_fk",
+                onDelete: "cascade",
+            }),
         userId: text("user_id").references(() => user.id, {
+            name: "auth_oauth_consent_user_id_auth_user_id_fk",
             onDelete: "cascade",
         }),
         referenceId: text("reference_id"),
@@ -263,107 +289,3 @@ export const oauthConsent = pgTable(
         index("oauthConsent_userId_idx").on(table.userId),
     ],
 );
-
-export const userRelations = relations(user, ({ one, many }) => ({
-    sessions: many(session),
-    accounts: many(account),
-    oauthClients: many(oauthClient),
-    oauthRefreshTokens: many(oauthRefreshToken),
-    oauthAccessTokens: many(oauthAccessToken),
-    oauthConsents: many(oauthConsent),
-    /**
-     * Declared from this side, not from `userSettings`, so a user with no
-     * settings row still answers: three accounts in production have none, and
-     * `approvalStatus` — read alongside the settings on every `get-session` —
-     * would silently read as "approved" for them if the query started at the
-     * settings table.
-     *
-     * `userSettings` is imported lazily through the relations callback, which
-     * is what keeps this from being a module cycle: `user.ts` imports `user`
-     * from here at load, and this only touches `userSettings` when the
-     * relational schema is built.
-     */
-    settings: one(userSettings, {
-        fields: [user.id],
-        references: [userSettings.userId],
-    }),
-    studyProgramMemberships: many(studyProgramMembership),
-}));
-
-export const sessionRelations = relations(session, ({ one, many }) => ({
-    user: one(user, {
-        fields: [session.userId],
-        references: [user.id],
-    }),
-    oauthRefreshTokens: many(oauthRefreshToken),
-    oauthAccessTokens: many(oauthAccessToken),
-}));
-
-export const accountRelations = relations(account, ({ one }) => ({
-    user: one(user, {
-        fields: [account.userId],
-        references: [user.id],
-    }),
-}));
-
-export const oauthClientRelations = relations(oauthClient, ({ one, many }) => ({
-    user: one(user, {
-        fields: [oauthClient.userId],
-        references: [user.id],
-    }),
-    oauthRefreshTokens: many(oauthRefreshToken),
-    oauthAccessTokens: many(oauthAccessToken),
-    oauthConsents: many(oauthConsent),
-}));
-
-export const oauthRefreshTokenRelations = relations(
-    oauthRefreshToken,
-    ({ one, many }) => ({
-        oauthClient: one(oauthClient, {
-            fields: [oauthRefreshToken.clientId],
-            references: [oauthClient.clientId],
-        }),
-        session: one(session, {
-            fields: [oauthRefreshToken.sessionId],
-            references: [session.id],
-        }),
-        user: one(user, {
-            fields: [oauthRefreshToken.userId],
-            references: [user.id],
-        }),
-        oauthAccessTokens: many(oauthAccessToken),
-    }),
-);
-
-export const oauthAccessTokenRelations = relations(
-    oauthAccessToken,
-    ({ one }) => ({
-        oauthClient: one(oauthClient, {
-            fields: [oauthAccessToken.clientId],
-            references: [oauthClient.clientId],
-        }),
-        session: one(session, {
-            fields: [oauthAccessToken.sessionId],
-            references: [session.id],
-        }),
-        user: one(user, {
-            fields: [oauthAccessToken.userId],
-            references: [user.id],
-        }),
-        oauthRefreshToken: one(oauthRefreshToken, {
-            fields: [oauthAccessToken.refreshId],
-            references: [oauthRefreshToken.id],
-        }),
-    }),
-);
-
-export const oauthConsentRelations = relations(oauthConsent, ({ one }) => ({
-    oauthClient: one(oauthClient, {
-        fields: [oauthConsent.clientId],
-        references: [oauthClient.clientId],
-    }),
-    user: one(user, {
-        fields: [oauthConsent.userId],
-        references: [user.id],
-    }),
-}));

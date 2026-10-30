@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { assertGroupVisible } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
@@ -49,8 +49,8 @@ export const listFormerMembersRoute = route().get(
         await assertGroupVisible(ctx, group, c.get("user")?.id);
 
         const entries = await db.query.groupMembershipHistory.findMany({
-            where: eq(schema.groupMembershipHistory.groupSlug, groupSlug),
-            orderBy: [desc(schema.groupMembershipHistory.endedAt)],
+            where: { groupSlug },
+            orderBy: { endedAt: "desc" },
             with: {
                 user: {
                     columns: {

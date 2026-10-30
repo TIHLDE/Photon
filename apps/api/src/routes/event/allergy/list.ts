@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { and, eq, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import {
     DEFAULT_STATUSES,
@@ -76,10 +75,7 @@ export const getEventAllergiesRoute = route().get(
         // Only the people who actually hold a spot. Venteliste og avmeldte
         // skal ikke telles med — kjøkkenet lager mat til de som kommer.
         const registrations = await db.query.eventRegistration.findMany({
-            where: and(
-                eq(schema.eventRegistration.eventId, eventId),
-                inArray(schema.eventRegistration.status, [...DEFAULT_STATUSES]),
-            ),
+            where: { eventId, status: { in: [...DEFAULT_STATUSES] } },
             with: {
                 user: {
                     columns: { id: true, name: true },

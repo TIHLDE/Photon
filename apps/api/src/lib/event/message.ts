@@ -27,7 +27,7 @@ export async function findMessageEvent(
     eventId: string,
 ): Promise<MessageEvent> {
     const event = await ctx.db.query.event.findFirst({
-        where: eq(schema.event.id, eventId),
+        where: { id: eventId },
         columns: { id: true, title: true, slug: true },
         with: {
             organizer: { columns: { name: true, contactEmail: true } },

@@ -49,7 +49,7 @@ gh run list --limit 3
 ENTRYPOINT ["sh", "-c", "bun run ./apps/api/dist/migrate.js && bun run ./apps/api/dist/index.js"]
 ```
 
-Skjemaet endrer seg altså først når Drift har byttet container, som er minutter etter at workflowen melder `success`. Venter du på en migrasjon, poll databasen — ikke workflowen. Og `drizzle-kit migrate` velger på journal-tidsstempel, ikke på hash — den kan melde «applied successfully» uten å ha kjørt noe. Verifiser mot databasen, ikke mot loggen.
+Skjemaet endrer seg altså først når Drift har byttet container, som er minutter etter at workflowen melder `success`. Venter du på en migrasjon, poll databasen — ikke workflowen. Migratoren kan melde suksess uten å ha kjørt noe, når ingen migrasjon mangler. Verifiser mot databasen, ikke mot loggen.
 
 Rekkefølgen i entrypointet er det som gjør skjemaendringer trygge: migrasjonen er ferdig før ny kode svarer på en eneste forespørsel. Et skript som må kjøre *etter* en migrasjon — en backfill som skriver en ny enum-verdi, for eksempel — kan derfor ikke kjøres før ny container faktisk har startet.
 

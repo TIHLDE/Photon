@@ -47,7 +47,7 @@ describe("Registration window", () => {
             expect(body.message).toContain("not opened yet");
 
             const rows = await ctx.db.query.eventRegistration.findMany({
-                where: (reg, { eq }) => eq(reg.eventId, event.id),
+                where: { eventId: event.id },
             });
             expect(rows).toHaveLength(0);
         },
@@ -79,7 +79,7 @@ describe("Registration window", () => {
             expect(body.message).toContain("has closed");
 
             const rows = await ctx.db.query.eventRegistration.findMany({
-                where: (reg, { eq }) => eq(reg.eventId, event.id),
+                where: { eventId: event.id },
             });
             expect(rows).toHaveLength(0);
         },
@@ -109,7 +109,7 @@ describe("Registration window", () => {
             expect(res.status).toBe(200);
 
             const rows = await ctx.db.query.eventRegistration.findMany({
-                where: (reg, { eq }) => eq(reg.eventId, event.id),
+                where: { eventId: event.id },
             });
             expect(rows).toHaveLength(1);
         },

@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { desc, isNotNull, isNull } from "drizzle-orm";
+import { EmptyFilter, isNotNull, isNull } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import type z from "zod";
@@ -53,21 +53,21 @@ export const listRoute = route().get(
 
         // `include` is the only case with no filter at all; the other two each
         // pick one side of `archived_at`.
-        const filter =
+        const filter = (news: typeof schema.news) =>
             archived === "exclude"
-                ? isNull(schema.news.archivedAt)
+                ? isNull(news.archivedAt)
                 : archived === "only"
-                  ? isNotNull(schema.news.archivedAt)
+                  ? isNotNull(news.archivedAt)
                   : undefined;
 
-        const newsCount = await db.$count(schema.news, filter);
+        const newsCount = await db.$count(schema.news, filter(schema.news));
 
         const pageOffset = getPageOffset(page, pageSize);
         const totalPages = getTotalPages(newsCount, pageSize);
 
         const newsList = await db.query.news.findMany({
-            where: filter,
-            orderBy: [desc(schema.news.createdAt)],
+            where: { RAW: (news) => filter(news) ?? EmptyFilter },
+            orderBy: { createdAt: "desc" },
             limit: pageSize,
             offset: pageOffset,
         });

@@ -19,7 +19,6 @@ export function userImage(user: {
     >`coalesce((select nullif(avatar_settings.${settingsImage}, '') from ${settings} avatar_settings where avatar_settings.${settingsUser} = ${user.id}), ${user.image})`;
 }
 
-export const userImageExtra = (user: {
-    id: AnyPgColumn;
-    image: AnyPgColumn;
-}) => ({ image: userImage(user).as("image") });
+export const userImageExtra = {
+    image: (user: { id: AnyPgColumn; image: AnyPgColumn }) => userImage(user),
+};

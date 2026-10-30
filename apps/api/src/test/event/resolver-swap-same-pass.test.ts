@@ -66,7 +66,7 @@ describe("Swap inside a single resolver pass", () => {
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const rows = await ctx.db.query.eventRegistration.findMany({
-                where: (r, { eq }) => eq(r.eventId, event.id),
+                where: { eventId: event.id },
             });
             const statusOf = (userId: string) =>
                 rows.find((r) => r.userId === userId)?.status;
@@ -81,7 +81,7 @@ describe("Swap inside a single resolver pass", () => {
             // with a deadline attached to a waitlist place is a countdown to
             // nothing.
             const payments = await ctx.db.query.eventPayment.findMany({
-                where: (p, { eq }) => eq(p.eventId, event.id),
+                where: { eventId: event.id },
             });
             expect(payments).toHaveLength(1);
             expect(payments[0]?.userId).toBe(prioritised.id);

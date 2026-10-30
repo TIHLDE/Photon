@@ -134,7 +134,7 @@ export async function hasAcceptedEventRules(
     ctx: AppContext,
 ): Promise<boolean> {
     const settings = await ctx.db.query.userSettings.findFirst({
-        where: (s, { eq }) => eq(s.userId, userId),
+        where: { userId },
         columns: { acceptsEventRules: true },
     });
 
@@ -148,7 +148,7 @@ export async function getUserSettings(
     const { db } = ctx;
 
     const settingsWithAllergies = await db.query.userSettings.findFirst({
-        where: (settings, { eq }) => eq(settings.userId, userId),
+        where: { userId },
         with: {
             allergies: {
                 columns: {
@@ -249,7 +249,7 @@ export async function updateUserSettings(
     const { db } = ctx;
 
     const previous = await db.query.userSettings.findFirst({
-        where: (settings, { eq }) => eq(settings.userId, userId),
+        where: { userId },
         columns: { imageUrl: true },
     });
 
@@ -318,7 +318,7 @@ export async function updateUserSettings(
 
         // Fetch and return updated settings
         const updated = await tx.query.userSettings.findFirst({
-            where: (settings, { eq }) => eq(settings.userId, userId),
+            where: { userId },
             with: {
                 allergies: {
                     columns: {

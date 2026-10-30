@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { calculateFormStatistics, canManageForm } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
@@ -38,7 +37,7 @@ export const statisticsRoute = route().get(
 
         // Check if form exists
         const form = await db.query.form.findFirst({
-            where: eq(schema.form.id, formId),
+            where: { id: formId },
         });
 
         if (!form) {

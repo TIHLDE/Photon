@@ -28,12 +28,7 @@ export const isGroupLeader: OwnershipChecker = async (
     userId: string,
 ): Promise<boolean> => {
     const membership = await ctx.db.query.groupMembership.findFirst({
-        where: (membership, { and, eq }) =>
-            and(
-                eq(membership.groupSlug, groupSlug),
-                eq(membership.userId, userId),
-                eq(membership.role, "leader"),
-            ),
+        where: { groupSlug, userId, role: "leader" },
     });
 
     return !!membership;
@@ -48,11 +43,7 @@ export const isGroupMember = async (
     userId: string,
 ): Promise<boolean> => {
     const membership = await ctx.db.query.groupMembership.findFirst({
-        where: (membership, { and, eq }) =>
-            and(
-                eq(membership.groupSlug, groupSlug),
-                eq(membership.userId, userId),
-            ),
+        where: { groupSlug, userId },
     });
 
     return !!membership;

@@ -53,8 +53,7 @@ export const getUserRoute = route().get(
         const viewer = c.get("user");
 
         const user = await db.query.user.findFirst({
-            where: (user, { eq, or }) =>
-                or(eq(user.id, identifier), eq(user.username, identifier)),
+            where: { OR: [{ id: identifier }, { username: identifier }] },
             columns: {
                 id: true,
                 name: true,
@@ -88,7 +87,7 @@ export const getUserRoute = route().get(
 
         const [settings, memberships, history] = await Promise.all([
             db.query.userSettings.findFirst({
-                where: (s, { eq }) => eq(s.userId, user.id),
+                where: { userId: user.id },
                 columns: {
                     imageUrl: true,
                     bioDescription: true,
@@ -97,12 +96,12 @@ export const getUserRoute = route().get(
                 },
             }),
             db.query.groupMembership.findMany({
-                where: (gm, { eq }) => eq(gm.userId, user.id),
+                where: { userId: user.id },
                 with: { group: true },
             }),
             db.query.groupMembershipHistory.findMany({
-                where: (h, { eq }) => eq(h.userId, user.id),
-                orderBy: (h, { desc }) => [desc(h.endedAt)],
+                where: { userId: user.id },
+                orderBy: { endedAt: "desc" },
                 with: { group: true },
             }),
         ]);

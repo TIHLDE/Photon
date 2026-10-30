@@ -39,7 +39,7 @@ export const getUserAllergiesRoute = route().get(
         const userId = c.req.param("id");
 
         const user = await db.query.user.findFirst({
-            where: eq(schema.user.id, userId),
+            where: { id: userId },
             columns: { id: true },
         });
 

@@ -7,9 +7,9 @@
 import { and, eq, inArray } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { role, userRole } from "@photon/db/schema";
-import type { DbSchema } from "@photon/db";
+import type { DbRelations } from "@photon/db";
 
-type DbCtx = { db: NodePgDatabase<DbSchema> };
+type DbCtx = { db: NodePgDatabase<DbRelations> };
 import { getRoleByName } from "./queries";
 
 /**

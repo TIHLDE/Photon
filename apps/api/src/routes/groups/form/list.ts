@@ -1,6 +1,5 @@
 import { hasScopedPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { isGroupFormOpen, userHasSubmitted } from "~/lib/form/service";
 import { assertGroupVisible } from "~/lib/group";
@@ -42,7 +41,7 @@ export const listGroupFormsRoute = route().get(
 
         // Check if group exists
         const group = await db.query.group.findFirst({
-            where: eq(schema.group.slug, groupSlug),
+            where: { slug: groupSlug },
         });
 
         if (!group) {
@@ -55,8 +54,7 @@ export const listGroupFormsRoute = route().get(
 
         // Check if user is group leader or member
         const membership = await db.query.groupMembership.findFirst({
-            where: (m, { and, eq }) =>
-                and(eq(m.groupSlug, groupSlug), eq(m.userId, user.id)),
+            where: { groupSlug, userId: user.id },
         });
 
         const isMember = !!membership;
@@ -78,7 +76,7 @@ export const listGroupFormsRoute = route().get(
 
         // Get all group forms
         const groupForms = await db.query.formGroupForm.findMany({
-            where: eq(schema.formGroupForm.groupSlug, groupSlug),
+            where: { groupSlug },
             with: {
                 form: true,
             },

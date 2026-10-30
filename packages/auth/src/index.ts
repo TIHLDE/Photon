@@ -20,7 +20,7 @@ import {
 } from "@better-auth/oauth-provider";
 import { and, eq, isNull } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { DbSchema } from "@photon/db";
+import type { DbRelations } from "@photon/db";
 import { account, user } from "@photon/db/schema";
 import type { EmailService, CacheService } from "@photon/core/services";
 import { uniq } from "es-toolkit";
@@ -304,7 +304,7 @@ export interface CreateAuthOptions {
          * settings, permissions and groups. `database` above is Better Auth's
          * own adapter and cannot answer these queries.
          */
-        db: NodePgDatabase<DbSchema>;
+        db: NodePgDatabase<DbRelations>;
         email: EmailService;
         cache: CacheService;
     };
@@ -773,7 +773,7 @@ export function createAuth(options: CreateAuthOptions) {
                  * differs from the one their Feide account carries used to get.
                  */
                 const takenBy = await options.services.db.query.user.findFirst({
-                    where: eq(user.username, derivedUsername),
+                    where: { username: derivedUsername },
                     columns: { id: true },
                 });
                 if (takenBy) {
@@ -1036,7 +1036,7 @@ export function createAuth(options: CreateAuthOptions) {
                  */
                 const [row, permissions, groups, accounts] = await Promise.all([
                     db.query.user.findFirst({
-                        where: (u, { eq }) => eq(u.id, user.id),
+                        where: { id: user.id },
                         columns: { approvalStatus: true },
                         with: {
                             settings: {
@@ -1053,7 +1053,7 @@ export function createAuth(options: CreateAuthOptions) {
                     }),
                     getUserPermissions({ db }, user.id),
                     db.query.groupMembership.findMany({
-                        where: (gm, { eq }) => eq(gm.userId, user.id),
+                        where: { userId: user.id },
                         with: { group: true },
                     }),
                     /**
@@ -1064,7 +1064,7 @@ export function createAuth(options: CreateAuthOptions) {
                      * from the user table alone.
                      */
                     db.query.account.findMany({
-                        where: (a, { eq }) => eq(a.userId, user.id),
+                        where: { userId: user.id },
                         columns: { providerId: true, passwordSource: true },
                     }),
                 ]);

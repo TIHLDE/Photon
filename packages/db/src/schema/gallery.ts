@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { defineRelationsPart } from "drizzle-orm";
 import {
     index,
     pgTableCreator,
@@ -23,7 +23,9 @@ const pgTable = pgTableCreator((name) => `gallery_${name}`);
  */
 export const galleryAlbum = pgTable("album", {
     id: uuid("id").primaryKey().defaultRandom(),
-    slug: varchar("slug", { length: 80 }).notNull().unique(),
+    slug: varchar("slug", { length: 80 })
+        .notNull()
+        .unique("gallery_album_slug_unique"),
     title: varchar("title", { length: 100 }).notNull(),
     description: text("description"),
 
@@ -39,31 +41,17 @@ export const galleryAlbum = pgTable("album", {
      * the pictures with it.
      */
     eventId: uuid("event_id").references(() => event.id, {
+        name: "gallery_album_event_id_event_event_id_fk",
         onDelete: "set null",
     }),
 
     createdById: text("created_by_user_id").references(() => user.id, {
+        name: "gallery_album_created_by_user_id_auth_user_id_fk",
         onDelete: "set null",
     }),
 
     ...timestamps,
 });
-
-export const galleryAlbumRelations = relations(
-    galleryAlbum,
-    ({ one, many }) => ({
-        creator: one(user, {
-            fields: [galleryAlbum.createdById],
-            references: [user.id],
-        }),
-        event: one(event, {
-            fields: [galleryAlbum.eventId],
-            references: [event.id],
-        }),
-        pictures: many(galleryPicture),
-    }),
-);
-
 /**
  * A single picture inside an album.
  *
@@ -77,7 +65,10 @@ export const galleryPicture = pgTable(
         id: uuid("id").primaryKey().defaultRandom(),
         albumId: uuid("album_id")
             .notNull()
-            .references(() => galleryAlbum.id, { onDelete: "cascade" }),
+            .references(() => galleryAlbum.id, {
+                name: "gallery_picture_album_id_gallery_album_id_fk",
+                onDelete: "cascade",
+            }),
         imageUrl: text("image_url").notNull(),
 
         /**
@@ -97,15 +88,34 @@ export const galleryPicture = pgTable(
     },
     (t) => [index("gallery_picture_album_id_idx").on(t.albumId)],
 );
-
-export const galleryPictureRelations = relations(galleryPicture, ({ one }) => ({
-    album: one(galleryAlbum, {
-        fields: [galleryPicture.albumId],
-        references: [galleryAlbum.id],
-    }),
-}));
-
 export type GalleryAlbum = typeof galleryAlbum.$inferSelect;
 export type NewGalleryAlbum = typeof galleryAlbum.$inferInsert;
 export type GalleryPicture = typeof galleryPicture.$inferSelect;
 export type NewGalleryPicture = typeof galleryPicture.$inferInsert;
+
+export const galleryRelations = defineRelationsPart(
+    { galleryAlbum, galleryPicture, user, event },
+    (r) => ({
+        galleryAlbum: {
+            creator: r.one.user({
+                from: r.galleryAlbum.createdById,
+                to: r.user.id,
+            }),
+            event: r.one.event({
+                from: r.galleryAlbum.eventId,
+                to: r.event.id,
+            }),
+            pictures: r.many.galleryPicture({
+                from: r.galleryAlbum.id,
+                to: r.galleryPicture.albumId,
+            }),
+        },
+        galleryPicture: {
+            album: r.one.galleryAlbum({
+                from: r.galleryPicture.albumId,
+                to: r.galleryAlbum.id,
+                optional: false,
+            }),
+        },
+    }),
+);

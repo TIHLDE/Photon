@@ -1,6 +1,5 @@
 import { schema } from "@photon/db";
 import { env } from "@photon/core/env";
-import { eq } from "drizzle-orm";
 import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -29,7 +28,7 @@ export const getActiveContractRoute = route().get(
         const { db } = c.get("ctx");
 
         const activeContract = await db.query.contract.findFirst({
-            where: eq(schema.contract.isActive, true),
+            where: { isActive: true },
         });
 
         if (!activeContract) {

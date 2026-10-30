@@ -59,8 +59,7 @@ describe("Duplicate payment obligations", () => {
 
             // The obligation they actually paid: a checkout Vipps confirmed.
             const paid = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { and, eq }) =>
-                    and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                where: { eventId: event.id, userId: user.id },
             });
             await ctx.db
                 .update(schema.eventPayment)
@@ -94,8 +93,7 @@ describe("Duplicate payment obligations", () => {
 
             const registration = await ctx.db.query.eventRegistration.findFirst(
                 {
-                    where: (r, { and, eq }) =>
-                        and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 },
             );
 
@@ -120,8 +118,7 @@ describe("Duplicate payment obligations", () => {
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const first = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { and, eq }) =>
-                    and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                where: { eventId: event.id, userId: user.id },
             });
 
             // They opened a checkout, then signed up again while it was in the
@@ -136,8 +133,7 @@ describe("Duplicate payment obligations", () => {
             expect(second?.id).toBe(first?.id);
 
             const rows = await ctx.db.query.eventPayment.findMany({
-                where: (p, { and, eq }) =>
-                    and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                where: { eventId: event.id, userId: user.id },
             });
             expect(rows).toHaveLength(1);
         },
@@ -163,8 +159,7 @@ describe("Duplicate payment obligations", () => {
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const obligation = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { and, eq }) =>
-                    and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                where: { eventId: event.id, userId: user.id },
             });
             await ctx.db
                 .update(schema.eventPayment)
@@ -182,7 +177,7 @@ describe("Duplicate payment obligations", () => {
             expect(vipps.cancelPayment).toHaveBeenCalledWith("vipps-ref-123");
 
             const after = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { eq }) => eq(p.id, obligation?.id ?? ""),
+                where: { id: obligation?.id ?? "" },
             });
             expect(after?.status).toBe("failed");
         },
@@ -208,8 +203,7 @@ describe("Duplicate payment obligations", () => {
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const obligation = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { and, eq }) =>
-                    and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                where: { eventId: event.id, userId: user.id },
             });
             await ctx.db
                 .update(schema.eventPayment)
@@ -228,8 +222,7 @@ describe("Duplicate payment obligations", () => {
             // The spot is still theirs — the money is on its way to it.
             const registration = await ctx.db.query.eventRegistration.findFirst(
                 {
-                    where: (r, { and, eq }) =>
-                        and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 },
             );
             expect(registration?.status).toBe("registered");

@@ -1,6 +1,6 @@
 import { getPermissionGroupScopes } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
-import { and, desc, gte, inArray, sql } from "drizzle-orm";
+import { EmptyFilter, and, gte, inArray, sql } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -16,6 +16,8 @@ import {
 import { strikePermissions } from "~/lib/event/access";
 import { getStrikeActiveCutoff } from "~/lib/event/strikes";
 import { strikesByUserResponseSchema } from "./schema";
+
+type StrikeTable = typeof schema.eventStrike;
 
 export const listStrikesByUserRoute = route().get(
     "/strikes/members",
@@ -58,11 +60,11 @@ export const listStrikesByUserRoute = route().get(
          * below are summed over exactly the rows that survive this, so the
          * number on a closed accordion always matches the rows inside it.
          */
-        const groupFilter =
+        const groupFilter = (strike: StrikeTable) =>
             scopes === "*"
                 ? undefined
                 : inArray(
-                      schema.eventStrike.eventId,
+                      strike.eventId,
                       db
                           .select({ id: schema.event.id })
                           .from(schema.event)
@@ -76,17 +78,16 @@ export const listStrikesByUserRoute = route().get(
                           ),
                   );
 
-        const filters = and(
-            gte(schema.eventStrike.createdAt, getStrikeActiveCutoff()),
-            groupFilter,
-        );
+        const activeCutoff = getStrikeActiveCutoff();
+        const filters = (strike: StrikeTable) =>
+            and(gte(strike.createdAt, activeCutoff), groupFilter(strike));
 
         const [{ count: totalCount } = { count: 0 }] = await db
             .select({
                 count: sql<number>`count(distinct ${schema.eventStrike.userId})::int`,
             })
             .from(schema.eventStrike)
-            .where(filters);
+            .where(filters(schema.eventStrike));
 
         // Medlemmene, ikke prikkene, er sidene her. Den som fikk en prikk sist
         // står øverst, slik den flate lista også sorterte.
@@ -96,7 +97,7 @@ export const listStrikesByUserRoute = route().get(
                 total: sql<number>`sum(${schema.eventStrike.count})::int`,
             })
             .from(schema.eventStrike)
-            .where(filters)
+            .where(filters(schema.eventStrike))
             .groupBy(schema.eventStrike.userId)
             // Brukeren er med i sorteringen fordi to medlemmer kan ha fått
             // sin siste prikk i samme sekund — uten et fast tiebreak kan et
@@ -113,11 +114,14 @@ export const listStrikesByUserRoute = route().get(
             userIds.length === 0
                 ? []
                 : await db.query.eventStrike.findMany({
-                      where: and(
-                          filters,
-                          inArray(schema.eventStrike.userId, userIds),
-                      ),
-                      orderBy: (s) => [desc(s.createdAt)],
+                      where: {
+                          RAW: (strike) =>
+                              and(
+                                  filters(strike),
+                                  inArray(strike.userId, userIds),
+                              ) ?? EmptyFilter,
+                      },
+                      orderBy: { createdAt: "desc" },
                       with: {
                           user: {
                               columns: { id: true, name: true },

@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -28,7 +27,7 @@ export const getFavoriteEventsRoute = route().get(
 
         // Get all favorite event IDs for the user
         const favorites = await db.query.eventFavorite.findMany({
-            where: eq(schema.eventFavorite.userId, userId),
+            where: { userId },
             with: {
                 event: {
                     columns: {

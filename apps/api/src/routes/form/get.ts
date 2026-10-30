@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { isGroupFormOpen, userHasSubmitted } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
@@ -29,13 +28,13 @@ export const getRoute = route().get(
         const formId = c.req.param("id");
 
         const form = await db.query.form.findFirst({
-            where: eq(schema.form.id, formId),
+            where: { id: formId },
             with: {
                 fields: {
-                    orderBy: (fields, { asc }) => [asc(fields.order)],
+                    orderBy: { order: "asc" },
                     with: {
                         options: {
-                            orderBy: (options, { asc }) => [asc(options.order)],
+                            orderBy: { order: "asc" },
                         },
                     },
                 },
@@ -56,14 +55,14 @@ export const getRoute = route().get(
         // group. The client needs to know which, plus the owner's submission
         // rules, to decide how to present and gate the form.
         const eventForm = await db.query.formEventForm.findFirst({
-            where: eq(schema.formEventForm.formId, form.id),
+            where: { formId: form.id },
             with: { event: true },
         });
 
         const groupForm = eventForm
             ? undefined
             : await db.query.formGroupForm.findFirst({
-                  where: eq(schema.formGroupForm.formId, form.id),
+                  where: { formId: form.id },
                   with: { group: true },
               });
 

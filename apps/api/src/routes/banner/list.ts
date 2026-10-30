@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { desc } from "drizzle-orm";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -31,7 +30,7 @@ export const listRoute = route().get(
         const { db } = c.get("ctx");
 
         const banners = await db.query.banner.findMany({
-            orderBy: [desc(schema.banner.visibleFrom)],
+            orderBy: { visibleFrom: "desc" },
         });
 
         const now = new Date();

@@ -1,4 +1,4 @@
-import { type DbSchema, schema } from "@photon/db";
+import { type DbRelations, schema } from "@photon/db";
 import { and, eq, isNotNull } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
@@ -18,7 +18,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
  */
 export async function getUserInstituteIds(
     userId: string,
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
 ): Promise<Set<number>> {
     const rows = await db
         .select({ instituteId: schema.group.instituteId })

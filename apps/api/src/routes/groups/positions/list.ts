@@ -52,7 +52,7 @@ export const listPositionsRoute = route().get(
         await assertGroupVisible(ctx, group, c.get("user").id);
 
         const positions = await db.query.groupPosition.findMany({
-            where: eq(schema.groupPosition.groupSlug, groupSlug),
+            where: { groupSlug },
             with: {
                 holders: {
                     with: {
@@ -61,10 +61,10 @@ export const listPositionsRoute = route().get(
                             extras: userImageExtra,
                         },
                     },
-                    orderBy: (holder, { asc }) => [asc(holder.createdAt)],
+                    orderBy: { createdAt: "asc" },
                 },
             },
-            orderBy: (position, { asc }) => [asc(position.name)],
+            orderBy: { name: "asc" },
         });
 
         // A verv linked to a subgroup shares its grant with that subgroup's

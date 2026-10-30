@@ -1,5 +1,5 @@
 import { hasPermission, hasScopedPermission } from "@photon/auth/rbac";
-import type { DbSchema } from "@photon/db";
+import type { DbRelations } from "@photon/db";
 import { schema } from "@photon/db";
 import { and, count, eq, inArray } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -21,7 +21,7 @@ import {
     GroupFormOnlyForMembersException,
 } from "./exceptions";
 
-type Database = NodePgDatabase<DbSchema>;
+type Database = NodePgDatabase<DbRelations>;
 
 /** Anything carrying a database handle — the Hono app context satisfies it. */
 type DbCtx = { db: Database };
@@ -157,10 +157,7 @@ export async function userHasSubmitted(
     userId: string,
 ): Promise<boolean> {
     const submission = await db.query.formSubmission.findFirst({
-        where: and(
-            eq(schema.formSubmission.formId, formId),
-            eq(schema.formSubmission.userId, userId),
-        ),
+        where: { formId, userId },
     });
     return !!submission;
 }
@@ -170,13 +167,13 @@ export async function userHasSubmitted(
  */
 export async function getFormWithDetails(db: Database, formId: string) {
     return await db.query.form.findFirst({
-        where: eq(schema.form.id, formId),
+        where: { id: formId },
         with: {
             fields: {
-                orderBy: (fields, { asc }) => [asc(fields.order)],
+                orderBy: { order: "asc" },
                 with: {
                     options: {
-                        orderBy: (options, { asc }) => [asc(options.order)],
+                        orderBy: { order: "asc" },
                     },
                 },
             },
@@ -193,20 +190,15 @@ export async function getEventFormWithDetails(
     type: "survey" | "evaluation",
 ) {
     return await db.query.formEventForm.findFirst({
-        where: and(
-            eq(schema.formEventForm.eventId, eventId),
-            eq(schema.formEventForm.type, type),
-        ),
+        where: { eventId, type },
         with: {
             form: {
                 with: {
                     fields: {
-                        orderBy: (fields, { asc }) => [asc(fields.order)],
+                        orderBy: { order: "asc" },
                         with: {
                             options: {
-                                orderBy: (options, { asc }) => [
-                                    asc(options.order),
-                                ],
+                                orderBy: { order: "asc" },
                             },
                         },
                     },
@@ -225,20 +217,15 @@ export async function getGroupFormWithDetails(
     formId: string,
 ) {
     return await db.query.formGroupForm.findFirst({
-        where: and(
-            eq(schema.formGroupForm.groupSlug, groupSlug),
-            eq(schema.formGroupForm.formId, formId),
-        ),
+        where: { groupSlug, formId },
         with: {
             form: {
                 with: {
                     fields: {
-                        orderBy: (fields, { asc }) => [asc(fields.order)],
+                        orderBy: { order: "asc" },
                         with: {
                             options: {
-                                orderBy: (options, { asc }) => [
-                                    asc(options.order),
-                                ],
+                                orderBy: { order: "asc" },
                             },
                         },
                     },
@@ -317,7 +304,7 @@ export async function findDestructiveFieldChanges(
     fields: UpdateFieldInput[],
 ): Promise<string[]> {
     const existingFields = await db.query.formField.findMany({
-        where: eq(schema.formField.formId, formId),
+        where: { formId },
         with: { options: true },
     });
 
@@ -430,7 +417,7 @@ export async function updateFieldsAndOptions(
 ) {
     // Get existing fields
     const existingFields = await db.query.formField.findMany({
-        where: eq(schema.formField.formId, formId),
+        where: { formId },
         with: {
             options: true,
         },
@@ -479,7 +466,7 @@ export async function updateFieldsAndOptions(
                     fieldData.type === "single_select")
             ) {
                 const existingOptions = await db.query.formOption.findMany({
-                    where: eq(schema.formOption.fieldId, fieldData.id),
+                    where: { fieldId: fieldData.id },
                 });
 
                 const updatedOptionIds = fieldData.options
@@ -585,16 +572,13 @@ export async function validateAndCreateSubmission(
 ): Promise<string> {
     // Check for existing submission
     const existingSubmission = await db.query.formSubmission.findFirst({
-        where: and(
-            eq(schema.formSubmission.formId, formId),
-            eq(schema.formSubmission.userId, userId),
-        ),
+        where: { formId, userId },
     });
 
     // Handle event form logic
     if (options?.eventId) {
         const eventForm = await db.query.formEventForm.findFirst({
-            where: eq(schema.formEventForm.formId, formId),
+            where: { formId },
         });
 
         if (eventForm) {
@@ -602,14 +586,11 @@ export async function validateAndCreateSubmission(
             if (eventForm.type === "evaluation") {
                 const registration = await db.query.eventRegistration.findFirst(
                     {
-                        where: and(
-                            eq(
-                                schema.eventRegistration.eventId,
-                                options.eventId,
-                            ),
-                            eq(schema.eventRegistration.userId, userId),
-                            eq(schema.eventRegistration.status, "attended"),
-                        ),
+                        where: {
+                            eventId: options.eventId,
+                            userId,
+                            status: "attended",
+                        },
                     },
                 );
 
@@ -620,7 +601,7 @@ export async function validateAndCreateSubmission(
 
             // Check if registration is still open
             const event = await db.query.event.findFirst({
-                where: eq(schema.event.id, options.eventId),
+                where: { id: options.eventId },
             });
 
             if (event?.isRegistrationClosed && existingSubmission) {
@@ -639,17 +620,14 @@ export async function validateAndCreateSubmission(
     // Handle group form logic
     if (options?.groupSlug) {
         const groupForm = await db.query.formGroupForm.findFirst({
-            where: and(
-                eq(schema.formGroupForm.formId, formId),
-                eq(schema.formGroupForm.groupSlug, options.groupSlug),
-            ),
+            where: { formId, groupSlug: options.groupSlug },
         });
 
         if (groupForm) {
             // Check if form is open — either stengt for godt, eller ennå ikke
             // åpnet fordi det er planlagt fram i tid.
             const group = await db.query.group.findFirst({
-                where: eq(schema.group.slug, options.groupSlug),
+                where: { slug: options.groupSlug },
                 columns: { archivedAt: true },
             });
 
@@ -660,10 +638,7 @@ export async function validateAndCreateSubmission(
             // Check if only for members
             if (groupForm.onlyForGroupMembers) {
                 const membership = await db.query.groupMembership.findFirst({
-                    where: and(
-                        eq(schema.groupMembership.groupSlug, options.groupSlug),
-                        eq(schema.groupMembership.userId, userId),
-                    ),
+                    where: { groupSlug: options.groupSlug, userId },
                 });
 
                 if (!membership) {
@@ -760,7 +735,7 @@ export async function submissionSpotHolders(
     formId: string,
 ): Promise<Set<string> | null> {
     const eventForm = await db.query.formEventForm.findFirst({
-        where: eq(schema.formEventForm.formId, formId),
+        where: { formId },
     });
 
     if (!eventForm) return null;
@@ -948,11 +923,7 @@ export async function canManageForm(
     }
 
     const membership = await db.query.groupMembership.findFirst({
-        where: and(
-            eq(schema.groupMembership.groupSlug, ownerGroupSlug),
-            eq(schema.groupMembership.userId, userId),
-            eq(schema.groupMembership.role, "leader"),
-        ),
+        where: { groupSlug: ownerGroupSlug, userId, role: "leader" },
     });
 
     return !!membership;
@@ -969,7 +940,7 @@ async function formOwner(
     formId: string,
 ): Promise<{ isEventForm: boolean; groupSlug: string | null }> {
     const eventForm = await db.query.formEventForm.findFirst({
-        where: eq(schema.formEventForm.formId, formId),
+        where: { formId },
         with: { event: true },
     });
 
@@ -981,7 +952,7 @@ async function formOwner(
     }
 
     const groupForm = await db.query.formGroupForm.findFirst({
-        where: eq(schema.formGroupForm.formId, formId),
+        where: { formId },
     });
 
     return { isEventForm: false, groupSlug: groupForm?.groupSlug ?? null };

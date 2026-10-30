@@ -63,7 +63,7 @@ export const updateStudyYearRoute = route().patch(
         const { startYear, studyProgramSlug } = c.req.valid("json");
 
         const user = await db.query.user.findFirst({
-            where: eq(schema.user.id, userId),
+            where: { id: userId },
             columns: { id: true },
         });
 

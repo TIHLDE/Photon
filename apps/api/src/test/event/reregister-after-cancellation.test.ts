@@ -51,8 +51,7 @@ describe("melde seg på igjen etter en kansellert plass", () => {
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const reg = await ctx.db.query.eventRegistration.findFirst({
-                where: (r, { and, eq }) =>
-                    and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                where: { eventId: event.id, userId: user.id },
             });
             expect(reg?.status).toBe("registered");
             // Ventelisteplassen hørte til runden som tok slutt.
@@ -114,8 +113,7 @@ describe("melde seg på igjen etter en kansellert plass", () => {
             });
 
             const reg = await ctx.db.query.eventRegistration.findFirst({
-                where: (r, { and, eq }) =>
-                    and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                where: { eventId: event.id, userId: user.id },
             });
             expect(reg?.createdAt.getTime()).toBeGreaterThan(gammel.getTime());
         },

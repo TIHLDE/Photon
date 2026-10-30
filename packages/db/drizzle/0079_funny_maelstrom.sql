@@ -1,1 +1,0 @@
-ALTER TABLE "event_event" ADD COLUMN "open_to_alumni" boolean DEFAULT false NOT NULL;

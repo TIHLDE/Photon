@@ -1,1 +1,0 @@
-ALTER TABLE "org_fine" ADD COLUMN "image" varchar(600);

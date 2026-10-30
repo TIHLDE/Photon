@@ -59,7 +59,7 @@ export const archiveRoute = route()
             const { db } = ctx;
 
             const group = await db.query.group.findFirst({
-                where: eq(schema.group.slug, slug),
+                where: { slug },
             });
 
             if (!group) {

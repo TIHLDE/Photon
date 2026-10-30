@@ -240,7 +240,7 @@ describe("Event payment administration", () => {
                 });
 
                 const row = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { eq }) => eq(p.id, payment.id),
+                    where: { id: payment.id },
                 });
                 expect(row?.status).toBe("refunded");
             },
@@ -467,7 +467,7 @@ describe("Event payment administration", () => {
                 expect(res.status).toBe(502);
 
                 const row = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { eq }) => eq(p.id, payment.id),
+                    where: { id: payment.id },
                 });
                 expect(row?.status).toBe("paid");
             },
@@ -504,7 +504,7 @@ describe("Event payment administration", () => {
                 expect(vi.mocked(vipps.refundPayment)).not.toHaveBeenCalled();
 
                 const row = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { eq }) => eq(p.id, payment.id),
+                    where: { id: payment.id },
                 });
                 expect(row?.status).toBe("paid");
             },

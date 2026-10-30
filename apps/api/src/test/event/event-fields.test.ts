@@ -178,7 +178,7 @@ describe("registration allowPhoto", () => {
             expect(defaultJson.allowPhoto).toBe(true);
 
             const rows = await ctx.db.query.eventRegistration.findMany({
-                where: (reg, { eq }) => eq(reg.eventId, event.id),
+                where: { eventId: event.id },
             });
             const declined = rows.find((r) => r.userId === decliningUser.id);
             const defaulted = rows.find((r) => r.userId === defaultUser.id);
@@ -222,8 +222,7 @@ describe("registration allowPhoto", () => {
             expect(json.allowPhoto).toBe(false);
 
             const row = await ctx.db.query.eventRegistration.findFirst({
-                where: (reg, { and, eq }) =>
-                    and(eq(reg.eventId, event.id), eq(reg.userId, user.id)),
+                where: { eventId: event.id, userId: user.id },
             });
             expect(row?.allowPhoto).toBe(false);
         },

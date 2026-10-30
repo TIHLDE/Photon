@@ -17,7 +17,7 @@ import {
     userPermission,
     userRole,
 } from "@photon/db/schema";
-import type { DbSchema } from "@photon/db";
+import type { DbRelations } from "@photon/db";
 import {
     GLOBAL_SCOPE,
     formatPermission,
@@ -26,7 +26,7 @@ import {
 } from "../permission-parser";
 import { isGroupScopablePermission } from "./registry";
 
-type DbCtx = { db: NodePgDatabase<DbSchema> };
+type DbCtx = { db: NodePgDatabase<DbRelations> };
 
 // =============================================================================
 // Get User Permissions

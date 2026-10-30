@@ -1,11 +1,11 @@
-import type { DbSchema } from "@photon/db";
+import type { DbRelations } from "@photon/db";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { StorageService } from "~/lib/storage";
 import { assetKeyFromUrl, deleteAsset } from "./index";
 import { findAssetReferences } from "./references";
 
 type AssetContext = {
-    db: NodePgDatabase<DbSchema>;
+    db: NodePgDatabase<DbRelations>;
     bucket: StorageService;
 };
 

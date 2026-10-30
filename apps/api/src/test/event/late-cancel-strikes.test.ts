@@ -12,8 +12,7 @@ async function strikeTotal(
     userId: string,
 ) {
     const rows = await ctx.db.query.eventStrike.findMany({
-        where: (s, { and, eq }) =>
-            and(eq(s.userId, userId), eq(s.eventId, eventId)),
+        where: { userId, eventId },
     });
     return sumBy(rows, (r) => r.count);
 }
@@ -170,8 +169,7 @@ describe("Late cancellation strikes", () => {
             });
 
             const promoted = await ctx.db.query.eventRegistration.findFirst({
-                where: (r, { and, eq }) =>
-                    and(eq(r.eventId, event.id), eq(r.userId, waiting.id)),
+                where: { eventId: event.id, userId: waiting.id },
             });
             expect(promoted?.status).toBe("registered");
 

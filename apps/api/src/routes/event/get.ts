@@ -38,8 +38,7 @@ export const getRoute = route().get(
                 identifier,
             );
         const event = await db.query.event.findFirst({
-            where: (event, { eq }) =>
-                isUuid ? eq(event.id, identifier) : eq(event.slug, identifier),
+            where: isUuid ? { id: identifier } : { slug: identifier },
             with: {
                 category: true,
                 organizer: true,
@@ -132,11 +131,7 @@ export const getRoute = route().get(
 
         if (user) {
             const dbRegistration = await db.query.eventRegistration.findFirst({
-                where: (registration, { eq, and }) =>
-                    and(
-                        eq(registration.userId, user.id),
-                        eq(registration.eventId, event.id),
-                    ),
+                where: { userId: user.id, eventId: event.id },
             });
 
             if (dbRegistration) {
@@ -156,11 +151,7 @@ export const getRoute = route().get(
                               status: true,
                               expiresAt: true,
                           },
-                          where: (payment, { eq, and }) =>
-                              and(
-                                  eq(payment.eventId, event.id),
-                                  eq(payment.userId, user.id),
-                              ),
+                          where: { eventId: event.id, userId: user.id },
                       })
                     : [];
 

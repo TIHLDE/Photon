@@ -1,5 +1,6 @@
 import { schema } from "@photon/db";
 import { describe, expect } from "vitest";
+import seedAllergies from "~/db/seed/user";
 import { integrationTest } from "~/test/config/integration";
 
 /**
@@ -13,6 +14,7 @@ import { integrationTest } from "~/test/config/integration";
 async function createEvent(ctx: any, slug: string) {
     await ctx.utils.setupGroups();
     await ctx.utils.setupEventCategories();
+    await seedAllergies(ctx);
 
     return await ctx.utils.createTestEvent({
         title: "Immeball",

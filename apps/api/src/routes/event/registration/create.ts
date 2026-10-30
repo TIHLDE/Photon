@@ -74,7 +74,7 @@ export const registerToEventRoute = route().post(
             userSettings,
         ] = await Promise.all([
             db.query.event.findFirst({
-                where: (event, { eq }) => eq(event.id, eventId),
+                where: { id: eventId },
                 with: {
                     pools: true,
                     priorityUsers: true,
@@ -85,13 +85,12 @@ export const registerToEventRoute = route().post(
             hasAcceptedEventRules(userId, ctx),
             getUnansweredEvaluations(ctx, userId),
             db.query.eventRegistration.findFirst({
-                where: (reg, { and, eq }) =>
-                    and(eq(reg.eventId, eventId), eq(reg.userId, userId)),
+                where: { eventId, userId },
             }),
             // Bare nødvendig når kallet ikke sier noe om bildesamtykke selv.
             body.allowPhoto === undefined
                 ? db.query.userSettings.findFirst({
-                      where: (settings, { eq }) => eq(settings.userId, userId),
+                      where: { userId },
                       columns: { allowsPhotosByDefault: true },
                   })
                 : undefined,

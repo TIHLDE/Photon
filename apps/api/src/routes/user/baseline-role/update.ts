@@ -1,6 +1,5 @@
 import { assignUserRole, removeUserRole } from "@photon/auth/roles";
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
@@ -62,7 +61,7 @@ export const updateUserBaselineRoleRoute = route().patch(
         const { role } = c.req.valid("json");
 
         const user = await db.query.user.findFirst({
-            where: eq(schema.user.id, userId),
+            where: { id: userId },
             columns: { id: true },
         });
 

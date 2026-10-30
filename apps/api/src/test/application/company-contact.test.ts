@@ -1,5 +1,3 @@
-import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { describe, expect, vi } from "vitest";
 import type { IntegrationTestContext } from "~/test/config/integration";
 import { integrationTest } from "~/test/config/integration";
@@ -42,7 +40,7 @@ describe("Henvendelser fra bedrift", () => {
             expect(response.status).toBe(200);
 
             const stored = await ctx.db.query.application.findFirst({
-                where: eq(schema.application.type, "company_contact"),
+                where: { type: "company_contact" },
                 with: { companyContact: true },
             });
 
@@ -177,7 +175,7 @@ describe("Henvendelser fra bedrift", () => {
             });
 
             const stored = await ctx.db.query.application.findFirst({
-                where: eq(schema.application.type, "company_contact"),
+                where: { type: "company_contact" },
             });
 
             const handler = await ctx.utils.createTestUser();
@@ -215,7 +213,7 @@ describe("Henvendelser fra bedrift", () => {
             });
 
             const stored = await ctx.db.query.application.findFirst({
-                where: eq(schema.application.type, "company_contact"),
+                where: { type: "company_contact" },
             });
 
             const handler = await ctx.utils.createTestUser();

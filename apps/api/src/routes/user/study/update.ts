@@ -61,7 +61,7 @@ export const updateStudyRoute = route().patch(
         const { studyProgramSlug } = c.req.valid("json");
 
         const user = await db.query.user.findFirst({
-            where: eq(schema.user.id, userId),
+            where: { id: userId },
             columns: { id: true },
         });
 
@@ -82,7 +82,7 @@ export const updateStudyRoute = route().patch(
 
         if (studyProgramSlug !== null) {
             const group = await db.query.group.findFirst({
-                where: eq(schema.group.slug, studyProgramSlug),
+                where: { slug: studyProgramSlug },
                 columns: { slug: true, name: true, type: true },
             });
 

@@ -1,7 +1,6 @@
 import { createAuth, drizzleAdapter, runTrustedSignUp } from "@photon/auth";
 import { env } from "@photon/core/env";
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, vi } from "vitest";
 import {
     type IntegrationTestContext,
@@ -99,7 +98,7 @@ describe("sign-up with Turnstile", () => {
 
     async function userExists(ctx: IntegrationTestContext, email: string) {
         const row = await ctx.db.query.user.findFirst({
-            where: eq(schema.user.email, email),
+            where: { email },
             columns: { id: true },
         });
         return row !== undefined;

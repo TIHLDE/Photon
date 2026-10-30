@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, asc, count, eq, ilike, isNotNull, isNull, or } from "drizzle-orm";
+import { EmptyFilter, count } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { canViewGroup } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
@@ -33,32 +33,21 @@ export const listRoute = route().get(
             archived,
         } = c.req.valid("query");
 
-        const conditions = [];
-
-        conditions.push(
-            archived === "true"
-                ? isNotNull(schema.group.archivedAt)
-                : isNull(schema.group.archivedAt),
-        );
-
-        // Add search filter if provided
-        if (searchQuery) {
-            conditions.push(
-                or(
-                    ilike(schema.group.name, `%${searchQuery}%`),
-                    ilike(schema.group.description, `%${searchQuery}%`),
-                ),
-            );
-        }
-
-        // Add type filter if provided
-        if (typeFilter) {
-            conditions.push(eq(schema.group.type, typeFilter));
-        }
-
         const found = await db.query.group.findMany({
-            where: and(...conditions),
-            orderBy: [asc(schema.group.name)],
+            where: {
+                archivedAt:
+                    archived === "true"
+                        ? { isNotNull: true }
+                        : { isNull: true },
+                OR: searchQuery
+                    ? [
+                          { name: { ilike: `%${searchQuery}%` } },
+                          { description: { ilike: `%${searchQuery}%` } },
+                      ]
+                    : EmptyFilter,
+                type: typeFilter ? typeFilter : EmptyFilter,
+            },
+            orderBy: { name: "asc" },
         });
 
         // Archived groups are open to everyone, except a private one, which

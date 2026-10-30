@@ -50,7 +50,7 @@ export const updateRoute = route().patch(
 
         // Check if form exists
         const form = await db.query.form.findFirst({
-            where: eq(schema.form.id, formId),
+            where: { id: formId },
         });
 
         if (!form) {
@@ -71,7 +71,7 @@ export const updateRoute = route().patch(
         // The submission rules live on the group_form row, so they can only be
         // written when the form actually belongs to a group.
         const groupForm = await db.query.formGroupForm.findFirst({
-            where: eq(schema.formGroupForm.formId, formId),
+            where: { formId },
         });
 
         // Spørsmålene kan endres selv om skjemaet har svar — det er bare det å
@@ -164,13 +164,13 @@ export const updateRoute = route().patch(
 
         // Fetch updated form
         const updatedForm = await db.query.form.findFirst({
-            where: eq(schema.form.id, formId),
+            where: { id: formId },
             with: {
                 fields: {
-                    orderBy: (fields, { asc }) => [asc(fields.order)],
+                    orderBy: { order: "asc" },
                     with: {
                         options: {
-                            orderBy: (options, { asc }) => [asc(options.order)],
+                            orderBy: { order: "asc" },
                         },
                     },
                 },
@@ -179,7 +179,7 @@ export const updateRoute = route().patch(
 
         const updatedGroupForm = groupForm
             ? await db.query.formGroupForm.findFirst({
-                  where: eq(schema.formGroupForm.formId, formId),
+                  where: { formId },
               })
             : undefined;
 

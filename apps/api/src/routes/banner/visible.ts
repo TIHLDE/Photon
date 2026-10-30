@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { and, desc, gt, lte } from "drizzle-orm";
 import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -28,11 +27,8 @@ export const visibleRoute = route().get(
         const now = new Date();
 
         const banners = await db.query.banner.findMany({
-            where: and(
-                lte(schema.banner.visibleFrom, now),
-                gt(schema.banner.visibleUntil, now),
-            ),
-            orderBy: [desc(schema.banner.visibleFrom)],
+            where: { visibleFrom: { lte: now }, visibleUntil: { gt: now } },
+            orderBy: { visibleFrom: "desc" },
         });
 
         const items = banners.map((banner) => ({

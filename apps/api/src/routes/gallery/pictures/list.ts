@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { asc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import type z from "zod";
@@ -44,8 +44,10 @@ export const listPicturesRoute = route().get(
             throw new HTTPException(404, { message: "Fant ikke galleriet" });
         }
 
-        const where = eq(schema.galleryPicture.albumId, album.id);
-        const totalCount = await ctx.db.$count(schema.galleryPicture, where);
+        const totalCount = await ctx.db.$count(
+            schema.galleryPicture,
+            eq(schema.galleryPicture.albumId, album.id),
+        );
         const totalPages = getTotalPages(totalCount, pageSize);
 
         /**
@@ -53,11 +55,8 @@ export const listPicturesRoute = route().get(
          * never reshuffles pictures the user is already looking at.
          */
         const pictures = await ctx.db.query.galleryPicture.findMany({
-            where,
-            orderBy: [
-                asc(schema.galleryPicture.createdAt),
-                asc(schema.galleryPicture.id),
-            ],
+            where: { albumId: album.id },
+            orderBy: { createdAt: "asc", id: "asc" },
             limit: pageSize,
             offset: getPageOffset(page, pageSize),
         });

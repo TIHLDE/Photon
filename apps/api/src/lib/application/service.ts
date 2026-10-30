@@ -1,11 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { schema } from "@photon/db";
 import type { ApplicationType } from "@photon/db/schema";
-import { and, desc, eq, inArray, or } from "drizzle-orm";
+import { EmptyFilter, and, eq, inArray, or } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 import { getUserStudy } from "~/lib/user/study";
 import { renderApplicationPdf } from "./pdf";
 import type { ApplicationWithDetails } from "./types";
+
+type ApplicationTable = typeof schema.application;
 
 /** The relational `with` clause every detailed application read shares. */
 const applicationWith = {
@@ -23,7 +25,7 @@ export async function findApplicationById(
     id: string,
 ): Promise<ApplicationWithDetails | null> {
     const application = await ctx.db.query.application.findFirst({
-        where: eq(schema.application.id, id),
+        where: { id },
         with: applicationWith,
     });
 
@@ -59,57 +61,65 @@ export async function listApplications(
         (type) => !restricted.includes(type),
     );
 
-    const typeMatchers = [
-        ...(unrestricted.length > 0
-            ? [inArray(schema.application.type, unrestricted)]
-            : []),
-        ...restricted.map((type) =>
-            and(
-                eq(schema.application.type, type),
-                inArray(
-                    schema.application.id,
-                    type === "expense"
-                        ? ctx.db
-                              .select({
-                                  id: schema.applicationExpense.applicationId,
-                              })
-                              .from(schema.applicationExpense)
-                              .where(
-                                  inArray(
-                                      schema.applicationExpense.groupSlug,
-                                      options.groupSlugsByType?.[type] ?? [],
+    const buildFilter = (application: ApplicationTable) => {
+        const typeMatchers = [
+            ...(unrestricted.length > 0
+                ? [inArray(application.type, unrestricted)]
+                : []),
+            ...restricted.map((type) =>
+                and(
+                    eq(application.type, type),
+                    inArray(
+                        application.id,
+                        type === "expense"
+                            ? ctx.db
+                                  .select({
+                                      id: schema.applicationExpense
+                                          .applicationId,
+                                  })
+                                  .from(schema.applicationExpense)
+                                  .where(
+                                      inArray(
+                                          schema.applicationExpense.groupSlug,
+                                          options.groupSlugsByType?.[type] ??
+                                              [],
+                                      ),
+                                  )
+                            : ctx.db
+                                  .select({
+                                      id: schema.applicationSupport
+                                          .applicationId,
+                                  })
+                                  .from(schema.applicationSupport)
+                                  .where(
+                                      inArray(
+                                          schema.applicationSupport.groupSlug,
+                                          options.groupSlugsByType?.[type] ??
+                                              [],
+                                      ),
                                   ),
-                              )
-                        : ctx.db
-                              .select({
-                                  id: schema.applicationSupport.applicationId,
-                              })
-                              .from(schema.applicationSupport)
-                              .where(
-                                  inArray(
-                                      schema.applicationSupport.groupSlug,
-                                      options.groupSlugsByType?.[type] ?? [],
-                                  ),
-                              ),
+                    ),
                 ),
             ),
-        ),
-    ];
+        ];
 
-    const filters = [or(...typeMatchers)];
-    if (options.status) {
-        filters.push(eq(schema.application.status, options.status));
-    }
-    if (options.submittedById) {
-        filters.push(
-            eq(schema.application.submittedById, options.submittedById),
-        );
-    }
+        const filters = [or(...typeMatchers)];
+        if (options.status) {
+            filters.push(eq(application.status, options.status));
+        }
+        if (options.submittedById) {
+            filters.push(eq(application.submittedById, options.submittedById));
+        }
+
+        return and(...filters);
+    };
 
     const rows = await ctx.db.query.application.findMany({
-        where: and(...filters),
+        where: {
+            RAW: (application) => buildFilter(application) ?? EmptyFilter,
+        },
         with: applicationWith,
-        orderBy: [desc(schema.application.createdAt)],
+        orderBy: { createdAt: "desc" },
         limit: options.limit,
         offset: options.offset,
     });
@@ -138,7 +148,7 @@ export async function buildSignature(
     userId: string,
 ): Promise<string> {
     const user = await ctx.db.query.user.findFirst({
-        where: eq(schema.user.id, userId),
+        where: { id: userId },
         columns: { username: true, name: true },
     });
 

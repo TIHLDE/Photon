@@ -1,1 +1,0 @@
-ALTER TABLE "org_group" ADD COLUMN "leader_title" varchar(128);
