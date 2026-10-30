@@ -194,14 +194,14 @@ export const updatePositionRoute = route().patch(
         }
 
         const holders = await db.query.groupPositionHolder.findMany({
-            where: eq(schema.groupPositionHolder.positionId, positionId),
+            where: { positionId },
             with: {
                 user: {
                     columns: { id: true, name: true },
                     extras: userImageExtra,
                 },
             },
-            orderBy: (holder, { asc }) => [asc(holder.createdAt)],
+            orderBy: { createdAt: "asc" },
         });
 
         return c.json({

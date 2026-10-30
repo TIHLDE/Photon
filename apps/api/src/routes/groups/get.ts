@@ -39,7 +39,7 @@ export const getRoute = route().get(
         const slug = c.req.param("slug");
 
         const group = await db.query.group.findFirst({
-            where: (group, { eq }) => eq(group.slug, slug),
+            where: { slug },
         });
 
         if (!group) {
@@ -93,11 +93,7 @@ export const getRoute = route().get(
             viewerHasJoinRequest: Boolean(
                 userId &&
                 (await db.query.groupJoinRequest.findFirst({
-                    where: (request, { and, eq }) =>
-                        and(
-                            eq(request.groupSlug, group.slug),
-                            eq(request.userId, userId),
-                        ),
+                    where: { groupSlug: group.slug, userId },
                 })),
             ),
             viewerCanUseFines,

@@ -66,10 +66,10 @@ export async function resolveRegistrationsForEvent(
 
         // Step 2: Fetch event with relations using transaction
         const event = await tx.query.event.findFirst({
-            where: (event, { eq }) => eq(event.id, eventId),
+            where: { id: eventId },
             with: {
                 registrations: {
-                    where: (reg, { ne }) => ne(reg.status, "pending"),
+                    where: { status: { ne: "pending" } },
                 },
                 pools: true,
                 priorityUsers: true,

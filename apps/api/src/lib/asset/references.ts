@@ -1,4 +1,4 @@
-import { type DbSchema, schema } from "@photon/db";
+import { type DbRelations, schema } from "@photon/db";
 import {
     type SQL,
     getTableName,
@@ -86,7 +86,7 @@ function ref(table: PgTable, column: AnyPgColumn): AssetReference {
  * keep an asset alive that was about to be deleted, never the reverse.
  */
 export async function findAssetReferences(
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     keys: string[],
 ): Promise<Map<string, string>> {
     const found = new Map<string, string>();
@@ -129,7 +129,7 @@ export async function findAssetReferences(
  * the other.
  */
 export async function collectReferencedAssetKeys(
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
 ): Promise<Map<string, string>> {
     const referenced = new Map<string, string>();
 

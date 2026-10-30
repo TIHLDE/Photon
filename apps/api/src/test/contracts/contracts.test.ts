@@ -556,7 +556,7 @@ describe("contracts", () => {
                 expect(signed.status).toBe(201);
 
                 const row = await ctx.db.query.contractSignature.findFirst({
-                    where: eq(schema.contractSignature.userId, member.id),
+                    where: { userId: member.id },
                 });
                 if (!row) throw new Error("Signature was not recorded");
 

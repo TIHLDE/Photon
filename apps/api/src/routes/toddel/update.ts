@@ -43,7 +43,7 @@ export const updateRoute = route().patch(
         }
 
         const existing = await db.query.toddel.findFirst({
-            where: eq(schema.toddel.edition, edition),
+            where: { edition },
         });
 
         if (!existing) {

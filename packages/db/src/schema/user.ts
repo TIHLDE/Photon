@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
     boolean,
     pgEnum,
@@ -66,11 +65,6 @@ export const userSettings = pgTable("settings", {
     allergiesConfirmedAt: timestamp("allergies_confirmed_at"),
     ...timestamps,
 });
-
-export const userSettingsRelations = relations(userSettings, ({ many }) => ({
-    allergies: many(userAllergy),
-}));
-
 /**
  * Hemmelig nøkkel som gir tilgang til brukerens egen kalenderstrøm
  * (`/api/event/calendar/:token/events.ics`). Kalenderklienter kan ikke logge
@@ -99,11 +93,6 @@ export const allergy = pgTable("allergy", {
      */
     curated: boolean("curated").default(false).notNull(),
 });
-
-export const allergyRelations = relations(allergy, ({ many }) => ({
-    userSettings: many(userAllergy),
-}));
-
 export const userAllergy = pgTable(
     "user_setting_allergy",
     {
@@ -117,14 +106,3 @@ export const userAllergy = pgTable(
     },
     (t) => [primaryKey({ columns: [t.userId, t.allergySlug] })],
 );
-
-export const userAllergyRelations = relations(userAllergy, ({ one }) => ({
-    userSettings: one(userSettings, {
-        fields: [userAllergy.userId],
-        references: [userSettings.userId],
-    }),
-    allergy: one(allergy, {
-        fields: [userAllergy.allergySlug],
-        references: [allergy.slug],
-    }),
-}));

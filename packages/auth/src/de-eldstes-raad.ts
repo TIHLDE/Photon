@@ -1,6 +1,6 @@
 import { and, eq, inArray } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { DbSchema } from "@photon/db";
+import type { DbRelations } from "@photon/db";
 import {
     group,
     groupMembership,
@@ -52,7 +52,7 @@ const FORVALTNING_GROUP_SLUG = "forvaltningsgruppen";
  * added by hand, and nothing in here ever removes anybody.
  */
 export async function syncDeEldstesRaad(
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     userId: string,
 ): Promise<void> {
     /**

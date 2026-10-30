@@ -1,6 +1,5 @@
 import { hasScopedPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { FormScheduleOutOfOrderException } from "~/lib/form/exceptions";
@@ -48,7 +47,7 @@ export const createGroupFormRoute = route().post(
 
         // Check if group exists
         const group = await db.query.group.findFirst({
-            where: eq(schema.group.slug, groupSlug),
+            where: { slug: groupSlug },
         });
 
         if (!group) {
@@ -68,12 +67,7 @@ export const createGroupFormRoute = route().post(
             `group:${groupSlug}`,
         );
         const isGroupLeader = await db.query.groupMembership.findFirst({
-            where: (membership, { and, eq }) =>
-                and(
-                    eq(membership.groupSlug, groupSlug),
-                    eq(membership.userId, user.id),
-                    eq(membership.role, "leader"),
-                ),
+            where: { groupSlug, userId: user.id, role: "leader" },
         });
 
         if (!hasFormsCreate && !isGroupLeader) {
@@ -135,13 +129,13 @@ export const createGroupFormRoute = route().post(
 
         // Fetch complete form
         const createdForm = await db.query.form.findFirst({
-            where: eq(schema.form.id, form.id),
+            where: { id: form.id },
             with: {
                 fields: {
-                    orderBy: (fields, { asc }) => [asc(fields.order)],
+                    orderBy: { order: "asc" },
                     with: {
                         options: {
-                            orderBy: (options, { asc }) => [asc(options.order)],
+                            orderBy: { order: "asc" },
                         },
                     },
                 },
@@ -149,7 +143,7 @@ export const createGroupFormRoute = route().post(
         });
 
         const groupForm = await db.query.formGroupForm.findFirst({
-            where: (gf, { eq }) => eq(gf.formId, form.id),
+            where: { formId: form.id },
         });
 
         return c.json(

@@ -1,3 +1,4 @@
+import { EmptyFilter } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import z from "zod";
 import { describeRoute } from "~/lib/openapi";
@@ -34,8 +35,8 @@ export const listAllergiesRoute = route().get(
         const { curated } = c.req.valid("query");
 
         const allergies = await db.query.allergy.findMany({
-            where: curated ? (a, { eq }) => eq(a.curated, true) : undefined,
-            orderBy: (a, { asc }) => [asc(a.label)],
+            where: curated ? { curated: true } : EmptyFilter,
+            orderBy: { label: "asc" },
             columns: {
                 slug: true,
                 label: true,

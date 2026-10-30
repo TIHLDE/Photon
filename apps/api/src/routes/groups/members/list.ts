@@ -56,7 +56,7 @@ export const listMembersRoute = route().get(
 
         // Get members with their public user info (name/image for display)
         const members = await db.query.groupMembership.findMany({
-            where: eq(schema.groupMembership.groupSlug, groupSlug),
+            where: { groupSlug },
             with: {
                 user: {
                     columns: {

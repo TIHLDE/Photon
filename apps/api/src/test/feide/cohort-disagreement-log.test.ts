@@ -4,7 +4,7 @@ import {
     partitionByCampus,
     resolveCampus,
 } from "@photon/auth/feide";
-import { type DbSchema, schema } from "@photon/db";
+import { type DbRelations, schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { afterEach, beforeEach, describe, expect, vi } from "vitest";
@@ -47,7 +47,7 @@ const AUTUMN_2026 = new Date("2026-09-17T10:00:00Z");
 
 type FeideGroups = Parameters<typeof parseValidStudyPrograms>[0];
 
-const seedProgrammes = async (db: NodePgDatabase<DbSchema>) => {
+const seedProgrammes = async (db: NodePgDatabase<DbRelations>) => {
     await db
         .insert(schema.group)
         .values({
@@ -76,7 +76,7 @@ const seedProgrammes = async (db: NodePgDatabase<DbSchema>) => {
 };
 
 const joinCohortGroup = async (
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     userId: string,
     year: string,
 ) => {
@@ -98,7 +98,7 @@ const joinCohortGroup = async (
 };
 
 const signInWithFeide = async (
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     userId: string,
     groups: FeideGroups,
     now = AUTUMN_2026,

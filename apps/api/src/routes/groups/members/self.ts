@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 import { env } from "~/lib/env";
 import { HTTPAppException } from "~/lib/errors";
@@ -14,7 +14,7 @@ type Group = typeof schema.group.$inferSelect;
 
 export async function findGroup(ctx: AppContext, slug: string): Promise<Group> {
     const group = await ctx.db.query.group.findFirst({
-        where: eq(schema.group.slug, slug),
+        where: { slug },
     });
     if (!group) {
         throw HTTPAppException.NotFound("Group");
@@ -24,10 +24,7 @@ export async function findGroup(ctx: AppContext, slug: string): Promise<Group> {
 
 async function findMembership(ctx: AppContext, slug: string, userId: string) {
     return ctx.db.query.groupMembership.findFirst({
-        where: and(
-            eq(schema.groupMembership.groupSlug, slug),
-            eq(schema.groupMembership.userId, userId),
-        ),
+        where: { groupSlug: slug, userId },
     });
 }
 
@@ -44,14 +41,11 @@ async function notifyLeadersOfJoinRequest(
     requesterId: string,
 ): Promise<void> {
     const requester = await ctx.db.query.user.findFirst({
-        where: eq(schema.user.id, requesterId),
+        where: { id: requesterId },
         columns: { name: true },
     });
     const leaders = await ctx.db.query.groupMembership.findMany({
-        where: and(
-            eq(schema.groupMembership.groupSlug, group.slug),
-            eq(schema.groupMembership.role, "leader"),
-        ),
+        where: { groupSlug: group.slug, role: "leader" },
         columns: { userId: true },
     });
 
@@ -210,11 +204,11 @@ export const leaveGroupRoute = route().post(
         }
         if (membership.role === "leader") {
             const otherLeader = await ctx.db.query.groupMembership.findFirst({
-                where: and(
-                    eq(schema.groupMembership.groupSlug, group.slug),
-                    eq(schema.groupMembership.role, "leader"),
-                    ne(schema.groupMembership.userId, userId),
-                ),
+                where: {
+                    groupSlug: group.slug,
+                    role: "leader",
+                    userId: { ne: userId },
+                },
                 columns: { userId: true },
             });
             if (!otherLeader) {

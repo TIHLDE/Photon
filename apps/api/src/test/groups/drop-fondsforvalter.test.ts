@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { type DbSchema, schema } from "@photon/db";
+import { type DbRelations, schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -30,13 +30,13 @@ const migration = async () => {
     return file.split("--> statement-breakpoint");
 };
 
-const runMigration = async (db: NodePgDatabase<DbSchema>) => {
+const runMigration = async (db: NodePgDatabase<DbRelations>) => {
     for (const statement of await migration()) {
         await db.execute(sql.raw(statement));
     }
 };
 
-const seedStub = async (db: NodePgDatabase<DbSchema>) => {
+const seedStub = async (db: NodePgDatabase<DbRelations>) => {
     await db
         .insert(schema.group)
         .values({
@@ -49,7 +49,7 @@ const seedStub = async (db: NodePgDatabase<DbSchema>) => {
         .onConflictDoNothing();
 };
 
-const stubExists = async (db: NodePgDatabase<DbSchema>) => {
+const stubExists = async (db: NodePgDatabase<DbRelations>) => {
     const rows = await db
         .select({ slug: schema.group.slug })
         .from(schema.group)

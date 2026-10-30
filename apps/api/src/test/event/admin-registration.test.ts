@@ -49,7 +49,7 @@ describe("Admin add registration", () => {
             expect(body.userId).toBe(guest.id);
 
             const rows = await ctx.db.query.eventRegistration.findMany({
-                where: (reg, { eq }) => eq(reg.eventId, event.id),
+                where: { eventId: event.id },
             });
             expect(rows).toHaveLength(1);
             expect(rows[0]?.status).toBe("registered");
@@ -89,7 +89,7 @@ describe("Admin add registration", () => {
             expect(res.status).toBe(403);
 
             const rows = await ctx.db.query.eventRegistration.findMany({
-                where: (reg, { eq }) => eq(reg.eventId, event.id),
+                where: { eventId: event.id },
             });
             expect(rows).toHaveLength(0);
         },
@@ -148,7 +148,7 @@ describe("Admin add registration", () => {
             expect(res.status).toBe(409);
 
             const rows = await ctx.db.query.eventRegistration.findMany({
-                where: (reg, { eq }) => eq(reg.eventId, event.id),
+                where: { eventId: event.id },
             });
             expect(rows).toHaveLength(0);
         },
@@ -162,8 +162,7 @@ function registration(
     userId: string,
 ) {
     return ctx.db.query.eventRegistration.findFirst({
-        where: (reg, { and, eq }) =>
-            and(eq(reg.eventId, eventId), eq(reg.userId, userId)),
+        where: { eventId, userId },
     });
 }
 
@@ -220,11 +219,7 @@ describe("Organizer registration resolution", () => {
                 }
                 if (scenario === "paid") {
                     const payment = await ctx.db.query.eventPayment.findFirst({
-                        where: (p, { and, eq }) =>
-                            and(
-                                eq(p.eventId, event.id),
-                                eq(p.userId, guest.id),
-                            ),
+                        where: { eventId: event.id, userId: guest.id },
                     });
                     expect(payment?.amountMinor).toBe(10000);
                 }
@@ -261,7 +256,7 @@ describe("Organizer registration resolution", () => {
                     await registration(ctx, event.id, guest.id),
                 ).toBeUndefined();
                 const priority = await ctx.db.query.eventPriorityUser.findMany({
-                    where: (p, { eq }) => eq(p.eventId, event.id),
+                    where: { eventId: event.id },
                 });
                 expect(priority).toHaveLength(0);
             },
@@ -295,7 +290,7 @@ describe("Organizer registration resolution", () => {
             });
             expect(response.status).toBe(200);
             const priority = await ctx.db.query.eventPriorityUser.findMany({
-                where: (p, { eq }) => eq(p.eventId, event.id),
+                where: { eventId: event.id },
             });
             expect(priority.map((p) => p.userId)).toEqual([guest.id]);
             await ctx.db
@@ -334,11 +329,11 @@ describe("Organizer registration resolution", () => {
             );
             const registrations = await ctx.db.query.eventRegistration.findMany(
                 {
-                    where: (r, { eq }) => eq(r.eventId, event.id),
+                    where: { eventId: event.id },
                 },
             );
             const priority = await ctx.db.query.eventPriorityUser.findMany({
-                where: (p, { eq }) => eq(p.eventId, event.id),
+                where: { eventId: event.id },
             });
             expect(registrations).toHaveLength(1);
             expect(priority.map((p) => p.userId)).toEqual(

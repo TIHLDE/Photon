@@ -4,7 +4,7 @@ import {
 } from "@photon/auth/de-eldstes-raad";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { type DbSchema, schema } from "@photon/db";
+import { type DbRelations, schema } from "@photon/db";
 import { and, eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { describe, expect } from "vitest";
@@ -23,7 +23,7 @@ import { integrationTest } from "~/test/config/integration";
 const HS = "hs";
 const FORVALTNING = "forvaltningsgruppen";
 
-const seedGroups = async (db: NodePgDatabase<DbSchema>) => {
+const seedGroups = async (db: NodePgDatabase<DbRelations>) => {
     await db
         .insert(schema.group)
         .values([
@@ -46,7 +46,7 @@ const seedGroups = async (db: NodePgDatabase<DbSchema>) => {
 };
 
 const join = async (
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     userId: string,
     groupSlug: string,
     role: "member" | "leader" = "member",
@@ -59,7 +59,7 @@ const join = async (
 
 /** An ended stint, i.e. what a former officeholder leaves behind. */
 const endStint = async (
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     userId: string,
     groupSlug: string,
     role = "member",
@@ -74,7 +74,10 @@ const endStint = async (
     });
 };
 
-const membershipOf = async (db: NodePgDatabase<DbSchema>, userId: string) => {
+const membershipOf = async (
+    db: NodePgDatabase<DbRelations>,
+    userId: string,
+) => {
     const [row] = await db
         .select({ role: schema.groupMembership.role })
         .from(schema.groupMembership)

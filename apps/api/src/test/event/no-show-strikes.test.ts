@@ -27,8 +27,7 @@ async function strikeTotal(
     userId: string,
 ) {
     const rows = await ctx.db.query.eventStrike.findMany({
-        where: (s, { and, eq }) =>
-            and(eq(s.userId, userId), eq(s.eventId, eventId)),
+        where: { userId, eventId },
     });
     return sumBy(rows, (r) => r.count);
 }
@@ -39,8 +38,7 @@ async function statusOf(
     userId: string,
 ) {
     const reg = await ctx.db.query.eventRegistration.findFirst({
-        where: (r, { and, eq }) =>
-            and(eq(r.eventId, eventId), eq(r.userId, userId)),
+        where: { eventId, userId },
     });
     return reg?.status;
 }
@@ -80,7 +78,7 @@ describe("No-show strikes", () => {
             expect(await strikeTotal(ctx, event.id, attendee.id)).toBe(0);
 
             const updated = await ctx.db.query.event.findFirst({
-                where: (e, { eq }) => eq(e.id, event.id),
+                where: { id: event.id },
             });
             expect(updated?.noShowProcessedAt).not.toBeNull();
         },
@@ -106,7 +104,7 @@ describe("No-show strikes", () => {
 
             // Left unprocessed so a later run can pick it up after check-in.
             const updated = await ctx.db.query.event.findFirst({
-                where: (e, { eq }) => eq(e.id, event.id),
+                where: { id: event.id },
             });
             expect(updated?.noShowProcessedAt).toBeNull();
         },

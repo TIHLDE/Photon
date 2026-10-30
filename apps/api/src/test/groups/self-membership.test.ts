@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { describe, expect, vi } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 import type { IntegrationTestContext as TestContext } from "~/test/config/integration";
@@ -28,10 +28,7 @@ async function interestGroupWithLeaders(
 
 async function membershipOf(ctx: TestContext, slug: string, userId: string) {
     return ctx.db.query.groupMembership.findFirst({
-        where: and(
-            eq(schema.groupMembership.groupSlug, slug),
-            eq(schema.groupMembership.userId, userId),
-        ),
+        where: { groupSlug: slug, userId },
     });
 }
 
@@ -58,10 +55,7 @@ describe("asking to join an interest group", () => {
             expect((await detail.json()).viewerHasJoinRequest).toBe(true);
 
             const notifications = await ctx.db.query.notification.findMany({
-                where: eq(
-                    schema.notification.title,
-                    "Ny forespørsel i Brettspill",
-                ),
+                where: { title: "Ny forespørsel i Brettspill" },
             });
             expect(notifications.map((n) => n.userId).sort()).toEqual(
                 leaders.map((l) => l.id).sort(),
@@ -332,11 +326,11 @@ describe("answering join requests", () => {
                 (await membershipOf(ctx, group.slug, requester.id))?.role,
             ).toBe("member");
             const remaining = await ctx.db.query.groupJoinRequest.findMany({
-                where: eq(schema.groupJoinRequest.groupSlug, group.slug),
+                where: { groupSlug: group.slug },
             });
             expect(remaining).toHaveLength(0);
             const notice = await ctx.db.query.notification.findFirst({
-                where: eq(schema.notification.userId, requester.id),
+                where: { userId: requester.id },
             });
             expect(notice?.title).toBe("Du er med i Brettspill");
         },
@@ -367,7 +361,7 @@ describe("answering join requests", () => {
                 await membershipOf(ctx, group.slug, requester.id),
             ).toBeUndefined();
             const notice = await ctx.db.query.notification.findFirst({
-                where: eq(schema.notification.userId, requester.id),
+                where: { userId: requester.id },
             });
             expect(notice?.title).toBe(
                 "Forespørselen til Brettspill ble avslått",
@@ -451,7 +445,7 @@ describe("answering join requests", () => {
             });
 
             const remaining = await ctx.db.query.groupJoinRequest.findMany({
-                where: eq(schema.groupJoinRequest.groupSlug, group.slug),
+                where: { groupSlug: group.slug },
             });
             expect(remaining).toHaveLength(0);
         },

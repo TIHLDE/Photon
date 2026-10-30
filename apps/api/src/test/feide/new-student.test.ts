@@ -4,7 +4,7 @@ import {
     partitionByCampus,
     resolveCampus,
 } from "@photon/auth/feide";
-import { type DbSchema, schema } from "@photon/db";
+import { type DbRelations, schema } from "@photon/db";
 import { and, eq, inArray } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { describe, expect } from "vitest";
@@ -56,7 +56,7 @@ type FeideGroups = Parameters<typeof parseValidStudyPrograms>[0];
  * refuses to invent study groups — they carry curated names and images — so
  * without this seed a real login would log a warning and write nothing.
  */
-const seedProgramme = async (db: NodePgDatabase<DbSchema>) => {
+const seedProgramme = async (db: NodePgDatabase<DbRelations>) => {
     await db
         .insert(schema.group)
         .values({
@@ -96,7 +96,7 @@ const seedProgramme = async (db: NodePgDatabase<DbSchema>) => {
  * which side of August the login falls on.
  */
 const signInWithFeide = async (
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     userId: string,
     groups: FeideGroups,
     now = new Date(),
@@ -117,7 +117,10 @@ const signInWithFeide = async (
     );
 };
 
-const groupSlugsOf = async (db: NodePgDatabase<DbSchema>, userId: string) => {
+const groupSlugsOf = async (
+    db: NodePgDatabase<DbRelations>,
+    userId: string,
+) => {
     const rows = await db
         .select({ slug: schema.groupMembership.groupSlug })
         .from(schema.groupMembership)
@@ -125,7 +128,7 @@ const groupSlugsOf = async (db: NodePgDatabase<DbSchema>, userId: string) => {
     return rows.map((r) => r.slug).sort();
 };
 
-const rolesOf = async (db: NodePgDatabase<DbSchema>, userId: string) => {
+const rolesOf = async (db: NodePgDatabase<DbRelations>, userId: string) => {
     const rows = await db
         .select({ name: schema.role.name })
         .from(schema.userRole)

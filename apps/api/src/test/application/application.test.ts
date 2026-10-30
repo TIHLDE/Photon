@@ -70,7 +70,7 @@ describe("Søknader", () => {
             expect(asset?.status).toBe("ready");
 
             const stored = await ctx.db.query.application.findFirst({
-                where: eq(schema.application.id, created.id),
+                where: { id: created.id },
             });
             expect(stored?.status).toBe("new");
             expect(stored?.pdfAssetKey).toBeTruthy();
@@ -156,7 +156,7 @@ describe("Søknader", () => {
             expect(created.pdfGenerated).toBe(true);
 
             const stored = await ctx.db.query.applicationExpense.findFirst({
-                where: eq(schema.applicationExpense.applicationId, created.id),
+                where: { applicationId: created.id },
             });
             expect(stored?.amountNok).toBe(249.9);
 

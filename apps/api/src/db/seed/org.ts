@@ -68,7 +68,7 @@ export async function backfillGroupData({ db }: AppContext) {
         await groupMemberGlobalPermissions(),
     )) {
         const existingGroup = await db.query.group.findFirst({
-            where: eq(schema.group.slug, groupSlug),
+            where: { slug: groupSlug },
         });
         if (!existingGroup) continue;
         if ((existingGroup.memberGlobalPermissions ?? []).length > 0) continue;
@@ -128,7 +128,7 @@ export async function backfillInstitutes({ db }: AppContext) {
             .onConflictDoNothing({ target: schema.institute.slug });
 
         const inserted = await db.query.institute.findFirst({
-            where: eq(schema.institute.slug, slug),
+            where: { slug },
         });
         if (!inserted) continue;
 
@@ -156,7 +156,7 @@ export async function backfillInstitutes({ db }: AppContext) {
  */
 export async function syncHsPositions({ db }: AppContext) {
     const hsGroup = await db.query.group.findFirst({
-        where: eq(schema.group.slug, "hs"),
+        where: { slug: "hs" },
     });
     if (!hsGroup) return;
 
@@ -251,8 +251,7 @@ export async function syncHsPositions({ db }: AppContext) {
     // position), so idempotency is an explicit existence check.
     for (const position of hsPositions) {
         const existing = await db.query.groupPosition.findFirst({
-            where: (t, { and }) =>
-                and(eq(t.groupSlug, "hs"), eq(t.name, position.name)),
+            where: { groupSlug: "hs", name: position.name },
         });
         if (existing) {
             // An environment seeded before a permission existed would never

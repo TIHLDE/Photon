@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { describe, expect, vi } from "vitest";
 import { imageVariantKey } from "~/lib/asset/image";
 import { removeUserFromGroup } from "~/lib/group";
@@ -223,7 +222,7 @@ describe("fine images", () => {
             expect(response.status).toBe(201);
 
             const asset = await ctx.db.query.asset.findFirst({
-                where: eq(schema.asset.key, key),
+                where: { key },
             });
 
             expect(asset?.visibility).toBe("private");
@@ -260,7 +259,7 @@ describe("deleting a fine releases its picture", () => {
             expect(await ctx.bucket.getObject(variantKey)).toBeNull();
             expect(
                 await ctx.db.query.asset.findFirst({
-                    where: eq(schema.asset.key, key),
+                    where: { key },
                 }),
             ).toBeUndefined();
         },
@@ -311,7 +310,7 @@ describe("deleting a fine releases its picture", () => {
             expect(response.status).toBe(204);
             expect(
                 await ctx.db.query.asset.findFirst({
-                    where: eq(schema.asset.key, external),
+                    where: { key: external },
                 }),
             ).toBeDefined();
         },
@@ -348,7 +347,7 @@ describe("deleting a fine releases its picture", () => {
             expect(await ctx.bucket.exists(key)).toBe(true);
             expect(
                 await ctx.db.query.asset.findFirst({
-                    where: eq(schema.asset.key, key),
+                    where: { key },
                 }),
             ).toBeDefined();
         },
@@ -387,14 +386,14 @@ describe("replacing a fine's picture", () => {
             expect(await ctx.bucket.exists(newKey)).toBe(true);
 
             const replacement = await ctx.db.query.asset.findFirst({
-                where: eq(schema.asset.key, newKey),
+                where: { key: newKey },
             });
 
             expect(replacement?.visibility).toBe("private");
             expect(replacement?.status).toBe("ready");
 
             const updated = await ctx.db.query.fine.findFirst({
-                where: eq(schema.fine.id, fine.id),
+                where: { id: fine.id },
             });
 
             expect(updated?.image).toContain(newKey);
@@ -446,7 +445,7 @@ describe("archiving a group deletes its fines", () => {
 
             expect(
                 await ctx.db.query.fine.findMany({
-                    where: eq(schema.fine.groupSlug, group.slug),
+                    where: { groupSlug: group.slug },
                 }),
             ).toEqual([]);
 
@@ -456,13 +455,13 @@ describe("archiving a group deletes its fines", () => {
                 expect(await ctx.bucket.getObject(variantKey)).toBeNull();
                 expect(
                     await ctx.db.query.asset.findFirst({
-                        where: eq(schema.asset.key, key),
+                        where: { key },
                     }),
                 ).toBeUndefined();
             }, CLEANUP_TIMEOUT);
 
             const otherFine = await ctx.db.query.fine.findFirst({
-                where: eq(schema.fine.id, other.fine.id),
+                where: { id: other.fine.id },
             });
             expect(otherFine).toBeDefined();
             expect(await ctx.bucket.exists(other.key)).toBe(true);
@@ -479,7 +478,7 @@ describe("archiving a group deletes its fines", () => {
             expect(restored.status).toBe(200);
             expect(
                 await ctx.db.query.fine.findMany({
-                    where: eq(schema.fine.groupSlug, group.slug),
+                    where: { groupSlug: group.slug },
                 }),
             ).toEqual([]);
         },
@@ -514,14 +513,14 @@ describe("deleting a group releases its fines' pictures", () => {
                 expect(await ctx.bucket.getObject(variantKey)).toBeNull();
                 expect(
                     await ctx.db.query.asset.findFirst({
-                        where: eq(schema.asset.key, key),
+                        where: { key },
                     }),
                 ).toBeUndefined();
             }, CLEANUP_TIMEOUT);
 
             expect(
                 await ctx.db.query.fine.findFirst({
-                    where: eq(schema.fine.id, other.fine.id),
+                    where: { id: other.fine.id },
                 }),
             ).toBeDefined();
             expect(await ctx.bucket.exists(other.key)).toBe(true);

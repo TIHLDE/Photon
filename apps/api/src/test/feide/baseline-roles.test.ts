@@ -1,5 +1,5 @@
 import { syncBaselineRoles } from "@photon/auth/feide";
-import { type DbSchema, schema } from "@photon/db";
+import { type DbRelations, schema } from "@photon/db";
 import { eq, inArray } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { describe, expect } from "vitest";
@@ -19,7 +19,7 @@ describe("syncBaselineRoles", () => {
     const OUTSIDE_WINDOW = new Date("2026-10-01T09:00:00Z");
     const INSIDE_WINDOW = new Date("2026-08-20T09:00:00Z");
 
-    const seedRoles = async (db: NodePgDatabase<DbSchema>) => {
+    const seedRoles = async (db: NodePgDatabase<DbRelations>) => {
         await db
             .insert(schema.role)
             .values([{ name: "member" }, { name: "alumni" }])
@@ -39,7 +39,7 @@ describe("syncBaselineRoles", () => {
         return { member, alumni };
     };
 
-    const rolesOf = async (db: NodePgDatabase<DbSchema>, userId: string) => {
+    const rolesOf = async (db: NodePgDatabase<DbRelations>, userId: string) => {
         const rows = await db
             .select({ name: schema.role.name })
             .from(schema.userRole)

@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -46,7 +45,7 @@ export const getFineRoute = route().get(
         // Include public user info (name/image) so the UI can display names
         // instead of user IDs
         const fine = await db.query.fine.findFirst({
-            where: eq(schema.fine.id, fineId),
+            where: { id: fineId },
             with: {
                 user: {
                     columns: {

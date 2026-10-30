@@ -41,7 +41,7 @@ export const createReactionRoute = route().post(
 
         // Check if news exists and reactions are allowed
         const newsArticle = await db.query.news.findFirst({
-            where: eq(schema.news.id, newsId),
+            where: { id: newsId },
         });
 
         if (!newsArticle) {
@@ -67,10 +67,7 @@ export const createReactionRoute = route().post(
 
         // Check if user already has a reaction
         const existingReaction = await db.query.newsReaction.findFirst({
-            where: and(
-                eq(schema.newsReaction.userId, userId),
-                eq(schema.newsReaction.newsId, newsId),
-            ),
+            where: { userId, newsId },
         });
 
         if (existingReaction) {

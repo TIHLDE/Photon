@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import {
     notifyOrganizersOfPaymentsWithoutSpot,
@@ -87,7 +86,7 @@ describe("Betalinger uten plass — varsel til arrangør", () => {
             expect(notified).toBe(1);
 
             const notifications = await ctx.db.query.notification.findMany({
-                where: (n, { eq }) => eq(n.userId, leader.id),
+                where: { userId: leader.id },
             });
             expect(notifications).toHaveLength(1);
             expect(notifications[0]?.description).toContain("Fortrengt Medlem");
@@ -151,13 +150,13 @@ describe("Betalinger uten plass — varsel til arrangør", () => {
             await reviewPaymentsForStartedEvents(ctx);
 
             const notifications = await ctx.db.query.notification.findMany({
-                where: (n, { eq }) => eq(n.userId, leader.id),
+                where: { userId: leader.id },
             });
             expect(notifications).toHaveLength(1);
             expect(notifications[0]?.description).toContain("Avmeldt Medlem");
 
             const marked = await ctx.db.query.event.findFirst({
-                where: eq(schema.event.id, event.id),
+                where: { id: event.id },
             });
             expect(marked?.paymentReviewNotifiedAt).not.toBeNull();
         },
@@ -210,7 +209,7 @@ describe("Betalinger uten plass — varsel til arrangør", () => {
             expect(notified).toBe(0);
 
             const notifications = await ctx.db.query.notification.findMany({
-                where: (n, { eq }) => eq(n.userId, leader.id),
+                where: { userId: leader.id },
             });
             expect(notifications).toHaveLength(0);
         },

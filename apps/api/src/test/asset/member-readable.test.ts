@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import {
     type IntegrationTestContext,
@@ -183,7 +182,7 @@ describe("assets that require a session", () => {
             expect(response.status).toBe(201);
 
             const asset = await ctx.db.query.asset.findFirst({
-                where: eq(schema.asset.key, key),
+                where: { key },
             });
             expect(asset?.visibility).toBe("private");
             expect(asset?.status).toBe("ready");

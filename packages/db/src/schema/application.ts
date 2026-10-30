@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
     index,
     integer,
@@ -250,95 +249,6 @@ export const applicationAttachment = pgTable(
     },
     (table) => [index().on(table.applicationId)],
 );
-
-export const applicationRelations = relations(application, ({ one, many }) => ({
-    submittedBy: one(user, {
-        fields: [application.submittedById],
-        references: [user.id],
-        relationName: "applicationSubmitter",
-    }),
-    handledBy: one(user, {
-        fields: [application.handledById],
-        references: [user.id],
-        relationName: "applicationHandler",
-    }),
-    expense: one(applicationExpense, {
-        fields: [application.id],
-        references: [applicationExpense.applicationId],
-    }),
-    support: one(applicationSupport, {
-        fields: [application.id],
-        references: [applicationSupport.applicationId],
-    }),
-    hsCase: one(applicationHsCase, {
-        fields: [application.id],
-        references: [applicationHsCase.applicationId],
-    }),
-    companyContact: one(applicationCompanyContact, {
-        fields: [application.id],
-        references: [applicationCompanyContact.applicationId],
-    }),
-    attachments: many(applicationAttachment),
-}));
-
-export const applicationExpenseRelations = relations(
-    applicationExpense,
-    ({ one }) => ({
-        application: one(application, {
-            fields: [applicationExpense.applicationId],
-            references: [application.id],
-        }),
-        group: one(group, {
-            fields: [applicationExpense.groupSlug],
-            references: [group.slug],
-        }),
-    }),
-);
-
-export const applicationSupportRelations = relations(
-    applicationSupport,
-    ({ one }) => ({
-        application: one(application, {
-            fields: [applicationSupport.applicationId],
-            references: [application.id],
-        }),
-        group: one(group, {
-            fields: [applicationSupport.groupSlug],
-            references: [group.slug],
-        }),
-    }),
-);
-
-export const applicationHsCaseRelations = relations(
-    applicationHsCase,
-    ({ one }) => ({
-        application: one(application, {
-            fields: [applicationHsCase.applicationId],
-            references: [application.id],
-        }),
-    }),
-);
-
-export const applicationCompanyContactRelations = relations(
-    applicationCompanyContact,
-    ({ one }) => ({
-        application: one(application, {
-            fields: [applicationCompanyContact.applicationId],
-            references: [application.id],
-        }),
-    }),
-);
-
-export const applicationAttachmentRelations = relations(
-    applicationAttachment,
-    ({ one }) => ({
-        application: one(application, {
-            fields: [applicationAttachment.applicationId],
-            references: [application.id],
-        }),
-    }),
-);
-
 export type Application = typeof application.$inferSelect;
 export type NewApplication = typeof application.$inferInsert;
 export type ApplicationExpense = typeof applicationExpense.$inferSelect;

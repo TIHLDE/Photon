@@ -41,7 +41,7 @@ export const confirmPaymentRoute = route().post(
 
         const event = await ctx.db.query.event.findFirst({
             columns: { id: true },
-            where: (event, { eq }) => eq(event.id, eventId),
+            where: { id: eventId },
         });
 
         if (!event) {

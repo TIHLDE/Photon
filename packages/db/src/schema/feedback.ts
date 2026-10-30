@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
     boolean,
     index,
@@ -127,41 +126,6 @@ export const feedbackComment = pgTable(
         ),
     ],
 );
-
-export const feedbackRelations = relations(feedback, ({ one, many }) => ({
-    author: one(user, {
-        fields: [feedback.authorId],
-        references: [user.id],
-    }),
-    votes: many(feedbackVote),
-    comments: many(feedbackComment),
-}));
-
-export const feedbackCommentRelations = relations(
-    feedbackComment,
-    ({ one }) => ({
-        feedback: one(feedback, {
-            fields: [feedbackComment.feedbackId],
-            references: [feedback.id],
-        }),
-        author: one(user, {
-            fields: [feedbackComment.authorId],
-            references: [user.id],
-        }),
-    }),
-);
-
-export const feedbackVoteRelations = relations(feedbackVote, ({ one }) => ({
-    feedback: one(feedback, {
-        fields: [feedbackVote.feedbackId],
-        references: [feedback.id],
-    }),
-    user: one(user, {
-        fields: [feedbackVote.userId],
-        references: [user.id],
-    }),
-}));
-
 export type Feedback = typeof feedback.$inferSelect;
 export type FeedbackVote = typeof feedbackVote.$inferSelect;
 export type FeedbackComment = typeof feedbackComment.$inferSelect;

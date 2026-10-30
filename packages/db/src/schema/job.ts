@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
     boolean,
     pgEnum,
@@ -60,10 +59,3 @@ export const jobPost = pgTable("job_post", {
     }),
     ...timestamps,
 });
-
-export const jobPostRelations = relations(jobPost, ({ one }) => ({
-    creator: one(user, {
-        fields: [jobPost.createdById],
-        references: [user.id],
-    }),
-}));

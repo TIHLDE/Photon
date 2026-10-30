@@ -42,7 +42,7 @@ export const getCalendarFeedRoute = route().get(
         const token = c.req.param("token");
 
         const owner = await db.query.userCalendarToken.findFirst({
-            where: eq(schema.userCalendarToken.token, token),
+            where: { token },
             columns: { userId: true },
         });
 

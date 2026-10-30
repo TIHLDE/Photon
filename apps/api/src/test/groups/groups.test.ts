@@ -358,7 +358,7 @@ describe("groups", () => {
                 expect(mistyped.status).toBe(400);
 
                 const stillThere = await ctx.db.query.group.findFirst({
-                    where: eq(schema.group.slug, group.slug),
+                    where: { slug: group.slug },
                 });
                 expect(stillThere).toBeDefined();
 
@@ -625,7 +625,7 @@ describe("groups", () => {
                 expect(restoreRefused.status).toBe(403);
 
                 const stillArchived = await ctx.db.query.group.findFirst({
-                    where: eq(schema.group.slug, group.slug),
+                    where: { slug: group.slug },
                 });
                 expect(stillArchived?.archivedAt).not.toBeNull();
             },
@@ -743,16 +743,13 @@ describe("groups", () => {
 
                 expect(
                     await ctx.db.query.groupMembership.findMany({
-                        where: eq(schema.groupMembership.groupSlug, group.slug),
+                        where: { groupSlug: group.slug },
                     }),
                 ).toEqual([]);
 
                 const history =
                     await ctx.db.query.groupMembershipHistory.findMany({
-                        where: eq(
-                            schema.groupMembershipHistory.groupSlug,
-                            group.slug,
-                        ),
+                        where: { groupSlug: group.slug },
                     });
                 expect(
                     history
@@ -767,22 +764,19 @@ describe("groups", () => {
 
                 // The botsjef is an appointment, not a membership: it goes too.
                 const after = await ctx.db.query.group.findFirst({
-                    where: eq(schema.group.slug, group.slug),
+                    where: { slug: group.slug },
                 });
                 expect(after?.finesAdminId).toBeNull();
 
                 // The verv stays, its holder does not.
                 expect(
                     await ctx.db.query.groupPosition.findFirst({
-                        where: eq(schema.groupPosition.id, position!.id),
+                        where: { id: position!.id },
                     }),
                 ).toBeDefined();
                 expect(
                     await ctx.db.query.groupPositionHolder.findMany({
-                        where: eq(
-                            schema.groupPositionHolder.positionId,
-                            position!.id,
-                        ),
+                        where: { positionId: position!.id },
                     }),
                 ).toEqual([]);
 
@@ -1149,7 +1143,7 @@ describe("groups", () => {
                 expect(response.status).toBe(200);
 
                 const promoted = await db.query.asset.findMany({
-                    where: eq(schema.asset.status, "ready"),
+                    where: { status: "ready" },
                 });
                 expect(promoted.map((a) => a.key)).toEqual(
                     expect.arrayContaining([imageKey, logoKey]),

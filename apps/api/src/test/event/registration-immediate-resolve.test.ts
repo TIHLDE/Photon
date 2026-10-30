@@ -51,16 +51,14 @@ describe("registration is queued for resolution without waiting for the cron", (
             // Ruten svarer før plassen er avgjort, så raden er «pending» til
             // workeren har kjørt.
             const queued = await ctx.db.query.eventRegistration.findFirst({
-                where: (reg, { and, eq }) =>
-                    and(eq(reg.eventId, event.id), eq(reg.userId, user.id)),
+                where: { eventId: event.id, userId: user.id },
             });
             expect(queued?.status).toBe("pending");
 
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const resolved = await ctx.db.query.eventRegistration.findFirst({
-                where: (reg, { and, eq }) =>
-                    and(eq(reg.eventId, event.id), eq(reg.userId, user.id)),
+                where: { eventId: event.id, userId: user.id },
             });
             expect(resolved?.status).toBe("registered");
         },
@@ -107,7 +105,7 @@ describe("registration is queued for resolution without waiting for the cron", (
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const rows = await ctx.db.query.eventRegistration.findMany({
-                where: (reg, { eq }) => eq(reg.eventId, event.id),
+                where: { eventId: event.id },
             });
             const status = (userId: string) =>
                 rows.find((row) => row.userId === userId)?.status;

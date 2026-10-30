@@ -1,6 +1,6 @@
 import { getPermissionGroupScopes } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { EmptyFilter } from "drizzle-orm";
 import { HTTPAppException } from "~/lib/errors";
 import { acceptsJoinRequests, addUserToGroup } from "~/lib/group";
 import { isGroupLeader } from "~/lib/group/middleware";
@@ -43,11 +43,8 @@ export const listJoinRequestsRoute = route().get(
     async (c) => {
         const { db } = c.get("ctx");
         const requests = await db.query.groupJoinRequest.findMany({
-            where: eq(
-                schema.groupJoinRequest.groupSlug,
-                c.req.param("groupSlug"),
-            ),
-            orderBy: asc(schema.groupJoinRequest.createdAt),
+            where: { groupSlug: c.req.param("groupSlug") },
+            orderBy: { createdAt: "asc" },
             with: {
                 user: {
                     columns: {
@@ -214,10 +211,7 @@ export const listMyPendingJoinRequestsRoute = route().get(
         let slugs: string[] | null = null;
         if (managed !== "*") {
             const led = await ctx.db.query.groupMembership.findMany({
-                where: and(
-                    eq(schema.groupMembership.userId, userId),
-                    eq(schema.groupMembership.role, "leader"),
-                ),
+                where: { userId, role: "leader" },
                 columns: { groupSlug: true },
             });
             slugs = [...new Set([...managed, ...led.map((m) => m.groupSlug)])];
@@ -225,10 +219,8 @@ export const listMyPendingJoinRequestsRoute = route().get(
         }
 
         const requests = await ctx.db.query.groupJoinRequest.findMany({
-            where: slugs
-                ? inArray(schema.groupJoinRequest.groupSlug, slugs)
-                : undefined,
-            orderBy: asc(schema.groupJoinRequest.createdAt),
+            where: slugs ? { groupSlug: { in: slugs } } : EmptyFilter,
+            orderBy: { createdAt: "asc" },
             with: {
                 user: {
                     columns: {

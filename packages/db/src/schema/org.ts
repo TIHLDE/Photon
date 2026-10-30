@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
     boolean,
     index,
@@ -165,21 +164,6 @@ export const studyProgramMembership = pgTable(
     },
     (t) => [primaryKey({ columns: [t.userId, t.studyProgramId] })],
 );
-
-export const studyProgramMembershipRelations = relations(
-    studyProgramMembership,
-    ({ one }) => ({
-        user: one(user, {
-            fields: [studyProgramMembership.userId],
-            references: [user.id],
-        }),
-        studyProgram: one(studyProgram, {
-            fields: [studyProgramMembership.studyProgramId],
-            references: [studyProgram.id],
-        }),
-    }),
-);
-
 /**
  * NB: `group.type` is a `varchar`, not this enum, and holds upper-case values
  * from the Lepton migration — including `SPORTSTEAM`, which is not listed
@@ -349,18 +333,6 @@ export const group = pgTable("group", {
     archivedAt: timestamp("archived_at"),
     ...timestamps,
 });
-
-export const groupRelations = relations(group, ({ one }) => ({
-    institute: one(institute, {
-        fields: [group.instituteId],
-        references: [institute.id],
-    }),
-}));
-
-export const instituteRelations = relations(institute, ({ many }) => ({
-    groups: many(group),
-}));
-
 export const groupMembershipRole = pgEnum("org_group_membership_role", [
     "member",
     "leader",
@@ -392,21 +364,6 @@ export const groupMembership = pgTable(
         index("group_membership_group_slug_idx").on(t.groupSlug),
     ],
 );
-
-export const groupMembershipRelations = relations(
-    groupMembership,
-    ({ one }) => ({
-        user: one(user, {
-            fields: [groupMembership.userId],
-            references: [user.id],
-        }),
-        group: one(group, {
-            fields: [groupMembership.groupSlug],
-            references: [group.slug],
-        }),
-    }),
-);
-
 /**
  * Pending requests to join an interest group. A row lives only until a leader
  * answers it: approving turns it into a membership, declining deletes it.
@@ -427,21 +384,6 @@ export const groupJoinRequest = pgTable(
         index("group_join_request_group_slug_idx").on(t.groupSlug),
     ],
 );
-
-export const groupJoinRequestRelations = relations(
-    groupJoinRequest,
-    ({ one }) => ({
-        user: one(user, {
-            fields: [groupJoinRequest.userId],
-            references: [user.id],
-        }),
-        group: one(group, {
-            fields: [groupJoinRequest.groupSlug],
-            references: [group.slug],
-        }),
-    }),
-);
-
 /**
  * Ended group memberships — the "tidligere medlemmer" list on a group page.
  *
@@ -499,21 +441,6 @@ export const groupMembershipHistory = pgTable(
         ),
     ],
 );
-
-export const groupMembershipHistoryRelations = relations(
-    groupMembershipHistory,
-    ({ one }) => ({
-        user: one(user, {
-            fields: [groupMembershipHistory.userId],
-            references: [user.id],
-        }),
-        group: one(group, {
-            fields: [groupMembershipHistory.groupSlug],
-            references: [group.slug],
-        }),
-    }),
-);
-
 /**
  * Scope for permissions granted by a group position (verv/tittel).
  *
@@ -600,32 +527,6 @@ export const groupPositionHolder = pgTable(
         }),
     ],
 );
-
-export const groupPositionRelations = relations(
-    groupPosition,
-    ({ one, many }) => ({
-        group: one(group, {
-            fields: [groupPosition.groupSlug],
-            references: [group.slug],
-        }),
-        holders: many(groupPositionHolder),
-    }),
-);
-
-export const groupPositionHolderRelations = relations(
-    groupPositionHolder,
-    ({ one }) => ({
-        position: one(groupPosition, {
-            fields: [groupPositionHolder.positionId],
-            references: [groupPosition.id],
-        }),
-        user: one(user, {
-            fields: [groupPositionHolder.userId],
-            references: [user.id],
-        }),
-    }),
-);
-
 export const fineStatus = pgEnum("org_fine_status", [
     "pending",
     "approved",
@@ -681,24 +582,6 @@ export const fine = pgTable(
         index("fine_group_slug_user_id_idx").on(t.groupSlug, t.userId),
     ],
 );
-
-export const fineRelations = relations(fine, ({ one }) => ({
-    user: one(user, {
-        fields: [fine.userId],
-        references: [user.id],
-        relationName: "fineUser",
-    }),
-    createdByUser: one(user, {
-        fields: [fine.createdByUserId],
-        references: [user.id],
-        relationName: "fineCreatedByUser",
-    }),
-    law: one(groupLaw, {
-        fields: [fine.lawId],
-        references: [groupLaw.id],
-    }),
-}));
-
 /**
  * A group's fine law ("lovverk"): the numbered paragraphs members can be
  * fined under. Ported from Lepton's `group_law` table. `amount` is the
@@ -716,14 +599,6 @@ export const groupLaw = pgTable("group_law", {
     amount: integer("amount").notNull().default(1),
     ...timestamps,
 });
-
-export const groupLawRelations = relations(groupLaw, ({ one }) => ({
-    group: one(group, {
-        fields: [groupLaw.groupSlug],
-        references: [group.slug],
-    }),
-}));
-
 /**
  * Where a signature is drawn on the contract PDF.
  *

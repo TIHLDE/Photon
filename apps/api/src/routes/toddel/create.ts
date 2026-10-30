@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
@@ -41,7 +40,7 @@ export const createRoute = route().post(
         const { db, bucket } = c.get("ctx");
 
         const existing = await db.query.toddel.findFirst({
-            where: eq(schema.toddel.edition, body.edition),
+            where: { edition: body.edition },
         });
 
         if (existing) {

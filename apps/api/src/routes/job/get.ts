@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -25,7 +24,7 @@ export const getRoute = route().get(
         const { id } = c.req.param();
 
         const job = await db.query.jobPost.findFirst({
-            where: eq(schema.jobPost.id, id),
+            where: { id },
             with: {
                 creator: {
                     columns: {

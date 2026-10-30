@@ -8,10 +8,10 @@
 import { and, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { userPermission } from "@photon/db/schema";
-import type { DbSchema } from "@photon/db";
+import type { DbRelations } from "@photon/db";
 import { GLOBAL_SCOPE } from "../permission-parser";
 
-type DbCtx = { db: NodePgDatabase<DbSchema> };
+type DbCtx = { db: NodePgDatabase<DbRelations> };
 
 /**
  * Grant a direct permission to a user.

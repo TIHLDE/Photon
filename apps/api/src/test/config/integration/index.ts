@@ -3,7 +3,7 @@ import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { PGlite } from "@electric-sql/pglite";
-import { type DbSchema, schema } from "@photon/db";
+import { type DbRelations, relations } from "@photon/db";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -62,11 +62,7 @@ async function getMigratedBaselinePath(): Promise<string> {
 
     const pglite = new PGlite();
     try {
-        const db = drizzle({
-            client: pglite,
-            casing: "snake_case",
-            schema,
-        });
+        const db = drizzle({ client: pglite });
 
         await migrate(db, { migrationsFolder });
 
@@ -181,14 +177,10 @@ async function createWorkerDatabase(): Promise<WorkerDatabase> {
  * Builds the per-test app context on top of the worker's database.
  */
 async function createTestAppContext(pglite: PGlite): Promise<TestAppContext> {
-    const db = drizzle({
-        client: pglite,
-        casing: "snake_case",
-        schema,
-    });
+    const db = drizzle({ client: pglite, relations });
 
     const defaultContext = await createBaseTestAppContext({
-        db: db as unknown as NodePgDatabase<DbSchema>,
+        db: db as unknown as NodePgDatabase<DbRelations>,
     });
 
     return {

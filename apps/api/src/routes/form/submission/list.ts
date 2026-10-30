@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { canManageForm, submissionSpotHolders } from "~/lib/form/service";
 import { computeClassStanding } from "~/lib/event/priority";
@@ -41,7 +40,7 @@ export const listSubmissionsRoute = route().get(
 
         // Check if form exists
         const form = await db.query.form.findFirst({
-            where: eq(schema.form.id, formId),
+            where: { id: formId },
         });
 
         if (!form) {
@@ -62,7 +61,7 @@ export const listSubmissionsRoute = route().get(
 
         // Get submissions
         let submissions = await db.query.formSubmission.findMany({
-            where: eq(schema.formSubmission.formId, formId),
+            where: { formId },
             with: {
                 user: true,
                 answers: {
@@ -75,7 +74,7 @@ export const listSubmissionsRoute = route().get(
                     },
                 },
             },
-            orderBy: (submissions, { desc }) => [desc(submissions.createdAt)],
+            orderBy: { createdAt: "desc" },
         });
 
         const spotHolders = await submissionSpotHolders(db, formId);

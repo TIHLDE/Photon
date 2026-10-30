@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
     boolean,
     check,
@@ -198,31 +198,6 @@ export const event = pgTable("event", {
     visibility: eventVisibility("visibility").default("public").notNull(),
     ...timestamps,
 });
-
-export const eventRelations = relations(event, ({ one, many }) => ({
-    category: one(eventCategory, {
-        fields: [event.categorySlug],
-        references: [eventCategory.slug],
-    }),
-    organizer: one(group, {
-        fields: [event.organizerGroupSlug],
-        references: [group.slug],
-    }),
-    restrictedToInstitute: one(institute, {
-        fields: [event.restrictedToInstituteId],
-        references: [institute.id],
-    }),
-    contactPerson: one(user, {
-        fields: [event.contactPersonId],
-        references: [user.id],
-    }),
-    reactions: many(eventReaction),
-    pools: many(eventPriorityPool),
-    priorityUsers: many(eventPriorityUser),
-    favorites: many(eventFavorite),
-    registrations: many(eventRegistration),
-}));
-
 export const eventRegistration = pgTable(
     "registration",
     {
@@ -281,21 +256,6 @@ export const eventRegistration = pgTable(
             .where(sql`${t.status} = 'pending'`),
     ],
 );
-
-export const eventRegistrationRelations = relations(
-    eventRegistration,
-    ({ one }) => ({
-        event: one(event, {
-            fields: [eventRegistration.eventId],
-            references: [event.id],
-        }),
-        user: one(user, {
-            fields: [eventRegistration.userId],
-            references: [user.id],
-        }),
-    }),
-);
-
 export const eventStrike = pgTable(
     "strike",
     {
@@ -320,18 +280,6 @@ export const eventStrike = pgTable(
         index("strike_user_id_idx").on(table.userId),
     ],
 );
-
-export const eventStrikeRelations = relations(eventStrike, ({ one }) => ({
-    event: one(event, {
-        fields: [eventStrike.eventId],
-        references: [event.id],
-    }),
-    user: one(user, {
-        fields: [eventStrike.userId],
-        references: [user.id],
-    }),
-}));
-
 export const eventPayment = pgTable(
     "payment",
     {
@@ -378,18 +326,6 @@ export const eventPayment = pgTable(
         index("payment_event_id_user_id_idx").on(t.eventId, t.userId),
     ],
 );
-
-export const eventPaymentRelations = relations(eventPayment, ({ one }) => ({
-    event: one(event, {
-        fields: [eventPayment.eventId],
-        references: [event.id],
-    }),
-    user: one(user, {
-        fields: [eventPayment.userId],
-        references: [user.id],
-    }),
-}));
-
 export const eventFeedback = pgTable("feedback", {
     id: uuid("id").primaryKey().defaultRandom(),
     eventId: uuid("event_id")
@@ -400,27 +336,10 @@ export const eventFeedback = pgTable("feedback", {
     comment: text("comment"),
     ...timestamps,
 });
-
-export const eventFeedbackRelations = relations(eventFeedback, ({ one }) => ({
-    event: one(event, {
-        fields: [eventFeedback.eventId],
-        references: [event.id],
-    }),
-    user: one(user, {
-        fields: [eventFeedback.userId],
-        references: [user.id],
-    }),
-}));
-
 export const eventCategory = pgTable("category", {
     slug: varchar("slug", { length: 64 }).primaryKey(),
     label: varchar("label", { length: 128 }).notNull(),
 });
-
-export const eventCategoryRelations = relations(eventCategory, ({ many }) => ({
-    events: many(event),
-}));
-
 export const eventReaction = pgTable(
     "reaction",
     {
@@ -443,18 +362,6 @@ export const eventReaction = pgTable(
         index("reaction_event_id_idx").on(t.eventId),
     ],
 );
-
-export const eventReactionRelations = relations(eventReaction, ({ one }) => ({
-    user: one(user, {
-        fields: [eventReaction.userId],
-        references: [user.id],
-    }),
-    event: one(event, {
-        fields: [eventReaction.eventId],
-        references: [event.id],
-    }),
-}));
-
 /**
  * One criterion that earns a member priority on an event.
  *
@@ -504,21 +411,6 @@ export const eventPriorityPool = pgTable(
         index("priority_pool_event_id_idx").on(t.eventId),
     ],
 );
-
-export const eventPriorityPoolRelations = relations(
-    eventPriorityPool,
-    ({ one }) => ({
-        event: one(event, {
-            fields: [eventPriorityPool.eventId],
-            references: [event.id],
-        }),
-        group: one(group, {
-            fields: [eventPriorityPool.groupSlug],
-            references: [group.slug],
-        }),
-    }),
-);
-
 /**
  * Frozen archive of the pre-2026 priority pools, when a pool was a set of
  * group slugs ANDed together.
@@ -543,21 +435,6 @@ export const eventPriorityPoolGroup = pgTable(
     },
     (t) => [primaryKey({ columns: [t.priorityPoolId, t.groupSlug] })],
 );
-
-export const eventPriorityPoolGroupRelations = relations(
-    eventPriorityPoolGroup,
-    ({ one }) => ({
-        priorityPool: one(eventPriorityPool, {
-            fields: [eventPriorityPoolGroup.priorityPoolId],
-            references: [eventPriorityPool.id],
-        }),
-        group: one(group, {
-            fields: [eventPriorityPoolGroup.groupSlug],
-            references: [group.slug],
-        }),
-    }),
-);
-
 /**
  * Enkeltpersoner som er prioritert på et arrangement.
  *
@@ -580,21 +457,6 @@ export const eventPriorityUser = pgTable(
     },
     (t) => [primaryKey({ columns: [t.eventId, t.userId] })],
 );
-
-export const eventPriorityUserRelations = relations(
-    eventPriorityUser,
-    ({ one }) => ({
-        event: one(event, {
-            fields: [eventPriorityUser.eventId],
-            references: [event.id],
-        }),
-        user: one(user, {
-            fields: [eventPriorityUser.userId],
-            references: [user.id],
-        }),
-    }),
-);
-
 export const eventFavorite = pgTable(
     "favorite",
     {
@@ -608,18 +470,6 @@ export const eventFavorite = pgTable(
     },
     (t) => [primaryKey({ columns: [t.userId, t.eventId] })],
 );
-
-export const eventFavoriteRelations = relations(eventFavorite, ({ one }) => ({
-    user: one(user, {
-        fields: [eventFavorite.userId],
-        references: [user.id],
-    }),
-    event: one(event, {
-        fields: [eventFavorite.eventId],
-        references: [event.id],
-    }),
-}));
-
 export const eventMessage = pgTable(
     "message",
     {
@@ -638,18 +488,6 @@ export const eventMessage = pgTable(
     },
     (t) => [index("message_event_id_idx").on(t.eventId)],
 );
-
-export const eventMessageRelations = relations(eventMessage, ({ one }) => ({
-    event: one(event, {
-        fields: [eventMessage.eventId],
-        references: [event.id],
-    }),
-    sentBy: one(user, {
-        fields: [eventMessage.sentById],
-        references: [user.id],
-    }),
-}));
-
 // Vipps utsteder hemmeligheten én gang, ved registrering, og viser den aldri
 // igjen. Lå den bare i Redis, mistet vi den ved hver deploy — og siden en
 // glemt registrering ikke kan gjenfinnes, ble det registrert en ny hver gang.

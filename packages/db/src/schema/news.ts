@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
     boolean,
     pgTableCreator,
@@ -34,15 +33,6 @@ export const news = pgTable("news", {
     archivedAt: timestamp("archived_at"),
     ...timestamps,
 });
-
-export const newsRelations = relations(news, ({ one, many }) => ({
-    creator: one(user, {
-        fields: [news.createdById],
-        references: [user.id],
-    }),
-    reactions: many(newsReaction),
-}));
-
 export const newsReaction = pgTable(
     "reaction",
     {
@@ -57,14 +47,3 @@ export const newsReaction = pgTable(
     },
     (t) => [primaryKey({ columns: [t.userId, t.newsId] })],
 );
-
-export const newsReactionRelations = relations(newsReaction, ({ one }) => ({
-    user: one(user, {
-        fields: [newsReaction.userId],
-        references: [user.id],
-    }),
-    news: one(news, {
-        fields: [newsReaction.newsId],
-        references: [news.id],
-    }),
-}));

@@ -390,7 +390,7 @@ export const updateRoute = route().put(
 
             if (priorityChanged) {
                 const refreshed = await tx.query.event.findFirst({
-                    where: (e, { eq }) => eq(e.id, eventId),
+                    where: { id: eventId },
                     columns: {
                         enforcesPreviousStrikes: true,
                         isPaidEvent: true,
@@ -486,7 +486,7 @@ export const updateRoute = route().put(
          */
         if (capacityGrew) {
             const event = await db.query.event.findFirst({
-                where: (e, { eq }) => eq(e.id, eventId),
+                where: { id: eventId },
                 with: { pools: true, priorityUsers: true },
             });
 

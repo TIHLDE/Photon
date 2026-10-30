@@ -1,5 +1,6 @@
 import { schema } from "@photon/db";
 import {
+    EmptyFilter,
     and,
     asc,
     desc,
@@ -30,6 +31,8 @@ import {
     eventListResponseSchema,
 } from "./schema";
 
+type EventTable = typeof schema.event;
+
 type EventOrdering = z.infer<typeof eventListFilterSchema>["ordering"];
 
 /**
@@ -44,31 +47,34 @@ type EventOrdering = z.infer<typeof eventListFilterSchema>["ordering"];
  * Without `ordering` the legacy behaviour is kept: ascending when the caller
  * asked for upcoming events only, descending otherwise.
  */
-function buildOrderBy(ordering: EventOrdering, expired: boolean | undefined) {
+function buildOrderBy(
+    event: EventTable,
+    ordering: EventOrdering,
+    expired: boolean | undefined,
+) {
     // Several events share a start time, and without a unique last key Postgres
     // may order ties differently per query, so offset pages overlap or skip rows.
-    return [...buildPrimaryOrder(ordering, expired), asc(schema.event.id)];
+    return [...buildPrimaryOrder(event, ordering, expired), asc(event.id)];
 }
 
 function buildPrimaryOrder(
+    event: EventTable,
     ordering: EventOrdering,
     expired: boolean | undefined,
 ) {
     switch (ordering) {
         case "newest":
-            return [desc(schema.event.start)];
+            return [desc(event.start)];
         case "oldest":
-            return [asc(schema.event.start)];
+            return [asc(event.start)];
         case "upcoming":
             return [
-                sql`${schema.event.end} < NOW()`,
-                sql`CASE WHEN ${schema.event.end} >= NOW() THEN ${schema.event.start} END ASC NULLS LAST`,
-                desc(schema.event.start),
+                sql`${event.end} < NOW()`,
+                sql`CASE WHEN ${event.end} >= NOW() THEN ${event.start} END ASC NULLS LAST`,
+                desc(event.start),
             ];
         default:
-            return expired === false
-                ? [asc(schema.event.start)]
-                : [desc(schema.event.start)];
+            return expired === false ? [asc(event.start)] : [desc(event.start)];
     }
 }
 
@@ -110,62 +116,63 @@ export const listRoute = route().get(
         // what a visitor sees.
         const isMember = isMemberAudience(c.get("user"));
 
-        const filters = and(
-            ...[
-                isMember ? undefined : eq(schema.event.visibility, "public"),
-                search ? ilike(schema.event.title, `%${search}%`) : undefined,
-                category
-                    ? inArray(schema.event.categorySlug, category)
-                    : undefined,
-                organizerGroupSlug
-                    ? eq(schema.event.organizerGroupSlug, organizerGroupSlug)
-                    : undefined,
-                startFrom
-                    ? gte(schema.event.start, new Date(startFrom))
-                    : undefined,
-                startBefore
-                    ? lt(schema.event.start, new Date(startBefore))
-                    : undefined,
-                expired != null
-                    ? expired
-                        ? lt(schema.event.end, sql`NOW()`)
-                        : gte(schema.event.end, sql`NOW()`)
-                    : undefined,
-                // Påmeldingen er åpen når vinduet omslutter nå-tidspunktet:
-                // den har startet og ikke gått ut. Begge grensene er
-                // nullbare og betyr da «ingen grense» — åpnet med én gang,
-                // respektive ingen frist — så de teller som innenfor.
-                // `isRegistrationClosed` overstyrer vinduet, slik den gjør
-                // ellers i arrangementslogikken.
-                openSignUp === true
-                    ? and(
-                          eq(schema.event.requiresSigningUp, true),
-                          eq(schema.event.isRegistrationClosed, false),
-                          or(
-                              isNull(schema.event.registrationStart),
-                              lte(schema.event.registrationStart, sql`NOW()`),
-                          ),
-                          or(
-                              isNull(schema.event.registrationEnd),
-                              gte(schema.event.registrationEnd, sql`NOW()`),
-                          ),
-                      )
-                    : undefined,
-            ].filter(Boolean),
-        );
+        const filters = (event: EventTable) =>
+            and(
+                ...[
+                    isMember ? undefined : eq(event.visibility, "public"),
+                    search ? ilike(event.title, `%${search}%`) : undefined,
+                    category
+                        ? inArray(event.categorySlug, category)
+                        : undefined,
+                    organizerGroupSlug
+                        ? eq(event.organizerGroupSlug, organizerGroupSlug)
+                        : undefined,
+                    startFrom
+                        ? gte(event.start, new Date(startFrom))
+                        : undefined,
+                    startBefore
+                        ? lt(event.start, new Date(startBefore))
+                        : undefined,
+                    expired != null
+                        ? expired
+                            ? lt(event.end, sql`NOW()`)
+                            : gte(event.end, sql`NOW()`)
+                        : undefined,
+                    // Påmeldingen er åpen når vinduet omslutter nå-tidspunktet:
+                    // den har startet og ikke gått ut. Begge grensene er
+                    // nullbare og betyr da «ingen grense» — åpnet med én gang,
+                    // respektive ingen frist — så de teller som innenfor.
+                    // `isRegistrationClosed` overstyrer vinduet, slik den gjør
+                    // ellers i arrangementslogikken.
+                    openSignUp === true
+                        ? and(
+                              eq(event.requiresSigningUp, true),
+                              eq(event.isRegistrationClosed, false),
+                              or(
+                                  isNull(event.registrationStart),
+                                  lte(event.registrationStart, sql`NOW()`),
+                              ),
+                              or(
+                                  isNull(event.registrationEnd),
+                                  gte(event.registrationEnd, sql`NOW()`),
+                              ),
+                          )
+                        : undefined,
+                ].filter(Boolean),
+            );
 
-        const eventCount = await db.$count(schema.event, filters);
+        const eventCount = await db.$count(schema.event, filters(schema.event));
 
         const pageOffset = getPageOffset(page, pageSize);
         const totalPages = getTotalPages(eventCount, pageSize);
 
         const events = await db.query.event.findMany({
-            orderBy: buildOrderBy(ordering, expired),
+            orderBy: (event) => buildOrderBy(event, ordering, expired),
             with: {
                 organizer: true,
                 category: true,
             },
-            where: filters,
+            where: { RAW: (event) => filters(event) ?? EmptyFilter },
             limit: pageSize,
             offset: pageOffset,
         });

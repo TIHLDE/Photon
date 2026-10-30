@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
     boolean,
     pgTableCreator,
@@ -33,12 +32,4 @@ export const banner = pgTable("banner", {
     }),
     ...timestamps,
 });
-
-export const bannerRelations = relations(banner, ({ one }) => ({
-    creator: one(user, {
-        fields: [banner.createdById],
-        references: [user.id],
-    }),
-}));
-
 export type Banner = typeof banner.$inferSelect;

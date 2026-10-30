@@ -35,7 +35,7 @@ import {
  */
 async function requireGroup(ctx: AppContext, slug: string) {
     const group = await ctx.db.query.group.findFirst({
-        where: eq(schema.group.slug, slug),
+        where: { slug },
         columns: { slug: true, name: true, type: true, archivedAt: true },
     });
 
@@ -172,12 +172,11 @@ export const createExpenseRoute = route().post(
         // conventional økonomiansvarlig address is accepted.
         if (body.ccEmail) {
             const ccGroup = await ctx.db.query.group.findFirst({
-                where: eq(
-                    schema.group.slug,
-                    body.ccEmail
+                where: {
+                    slug: body.ccEmail
                         .replace(/^okonomiansvarlig\./, "")
                         .replace(/@tihlde\.org$/, ""),
-                ),
+                },
                 columns: { slug: true, type: true },
             });
 

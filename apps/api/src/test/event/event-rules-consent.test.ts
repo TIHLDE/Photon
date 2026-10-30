@@ -34,7 +34,7 @@ describe("event rules consent", () => {
             );
 
             const rows = await ctx.db.query.eventRegistration.findMany({
-                where: (reg, { eq }) => eq(reg.eventId, event.id),
+                where: { eventId: event.id },
             });
             expect(rows).toHaveLength(0);
         },

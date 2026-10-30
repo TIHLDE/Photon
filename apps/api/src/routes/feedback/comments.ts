@@ -30,7 +30,7 @@ function excerpt(text: string) {
 
 async function findFeedback(db: AppContext["db"], id: string) {
     const feedback = await db.query.feedback.findFirst({
-        where: eq(schema.feedback.id, id),
+        where: { id },
         columns: { id: true, title: true, authorId: true, isAnonymous: true },
     });
 
@@ -47,7 +47,7 @@ const isFeedbackCommentAuthor = async (
     userId: string,
 ): Promise<boolean> => {
     const comment = await ctx.db.query.feedbackComment.findFirst({
-        where: eq(schema.feedbackComment.id, commentId),
+        where: { id: commentId },
         columns: { authorId: true },
     });
 

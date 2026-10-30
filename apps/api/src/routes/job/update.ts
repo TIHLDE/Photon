@@ -43,7 +43,7 @@ export const updateRoute = route().patch(
 
         // Fetch the job posting for validation
         const job = await db.query.jobPost.findFirst({
-            where: eq(schema.jobPost.id, id),
+            where: { id },
         });
 
         if (!job) {

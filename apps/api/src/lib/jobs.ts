@@ -32,7 +32,7 @@ function startRegistrationResolverCron(ctx: AppContext): void {
             // Query database for distinct events with pending registrations
             const eventsWithPending =
                 await ctx.db.query.eventRegistration.findMany({
-                    where: (reg, { eq }) => eq(reg.status, "pending"),
+                    where: { status: "pending" },
                     columns: {
                         eventId: true,
                     },

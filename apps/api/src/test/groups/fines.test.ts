@@ -565,7 +565,7 @@ describe("fines", () => {
 
                 // Verify fine was deleted
                 const deletedFine = await ctx.db.query.fine.findFirst({
-                    where: (f, { eq }) => eq(f.id, fine.id),
+                    where: { id: fine.id },
                 });
 
                 expect(deletedFine).toBeUndefined();

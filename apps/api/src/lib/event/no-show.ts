@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, eq, gt, isNull, lt } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { AppContext } from "../ctx";
 import { issueStrike, wasPromotedAfterStart } from "./strikes";
 
@@ -36,7 +36,7 @@ export async function processEventNoShows(
         // ha begge deler satt i databasen.
         const event = await tx.query.event.findFirst({
             columns: { isPaidEvent: true, start: true },
-            where: eq(schema.event.id, eventId),
+            where: { id: eventId },
         });
 
         if (event?.isPaidEvent) {
@@ -49,7 +49,7 @@ export async function processEventNoShows(
                 status: true,
                 promotedFromWaitlistAt: true,
             },
-            where: eq(schema.eventRegistration.eventId, eventId),
+            where: { eventId },
         });
 
         const someoneCheckedIn = registrations.some(
@@ -122,13 +122,12 @@ export async function processNoShowStrikesForEndedEvents(
 
     const endedEvents = await ctx.db.query.event.findMany({
         columns: { id: true },
-        where: and(
-            eq(schema.event.canCauseStrikes, true),
-            eq(schema.event.isPaidEvent, false),
-            isNull(schema.event.noShowProcessedAt),
-            lt(schema.event.end, now),
-            gt(schema.event.end, lookbackCutoff),
-        ),
+        where: {
+            canCauseStrikes: true,
+            isPaidEvent: false,
+            noShowProcessedAt: { isNull: true },
+            end: { lt: now, gt: lookbackCutoff },
+        },
     });
 
     for (const event of endedEvents) {

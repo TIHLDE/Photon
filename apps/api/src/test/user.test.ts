@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 
@@ -258,7 +257,7 @@ describe("user endpoints", () => {
 
             // Verify isOnboarded is set to true in database
             const settings = await db.query.userSettings.findFirst({
-                where: (s, { eq }) => eq(s.userId, user.id),
+                where: { userId: user.id },
             });
             expect(settings?.isOnboarded).toBe(true);
         },
@@ -454,7 +453,7 @@ describe("user endpoints", () => {
 
             // Verify allergies in database
             const userAllergies = await db.query.userAllergy.findMany({
-                where: (ua, { eq }) => eq(ua.userId, user.id),
+                where: { userId: user.id },
             });
 
             expect(userAllergies.length).toBe(2);
@@ -524,7 +523,7 @@ describe("user endpoints", () => {
             expect(json.acceptsEventRules).toBe(true);
 
             const settings = await ctx.db.query.userSettings.findFirst({
-                where: (s, { eq }) => eq(s.userId, user.id),
+                where: { userId: user.id },
             });
             // The placeholder row is not a completed onboarding.
             expect(settings?.isOnboarded).toBe(false);
@@ -673,7 +672,7 @@ describe("user endpoints", () => {
 
             // Verify in database
             const userAllergies = await db.query.userAllergy.findMany({
-                where: (ua, { eq }) => eq(ua.userId, user.id),
+                where: { userId: user.id },
             });
 
             expect(userAllergies.length).toBe(2);
@@ -765,7 +764,7 @@ describe("user endpoints", () => {
             expect(response.status).toBe(200);
 
             const settings = await db.query.userSettings.findFirst({
-                where: eq(schema.userSettings.userId, user.id),
+                where: { userId: user.id },
             });
 
             // Tømt felt lagres som NULL, ikke tom streng — og feltene som ikke
@@ -802,7 +801,7 @@ describe("user endpoints", () => {
             expect(response.status).toBe(200);
 
             const settings = await db.query.userSettings.findFirst({
-                where: eq(schema.userSettings.userId, user.id),
+                where: { userId: user.id },
             });
 
             // NULL, ikke tom streng: profilen faller da tilbake på bildet fra
@@ -1008,7 +1007,7 @@ describe("user endpoints", () => {
 
             // Arrangøren skal fortsatt se at medlemmet ikke har svart selv.
             const settings = await db.query.userSettings.findFirst({
-                where: eq(schema.userSettings.userId, member.id),
+                where: { userId: member.id },
             });
             expect(settings?.allergiesConfirmedAt).toBeNull();
         },

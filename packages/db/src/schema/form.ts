@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
     boolean,
     index,
@@ -48,14 +47,6 @@ export const form = pgTable("form", {
     isTemplate: boolean("is_template").default(false).notNull(),
     ...timestamps,
 });
-
-export const formRelations = relations(form, ({ many }) => ({
-    fields: many(formField),
-    submissions: many(formSubmission),
-    eventForms: many(formEventForm),
-    groupForms: many(formGroupForm),
-}));
-
 // ===== EVENT FORM =====
 
 export const formEventForm = pgTable(
@@ -73,18 +64,6 @@ export const formEventForm = pgTable(
     },
     (t) => [unique("unique_event_type").on(t.eventId, t.type)],
 );
-
-export const formEventFormRelations = relations(formEventForm, ({ one }) => ({
-    form: one(form, {
-        fields: [formEventForm.formId],
-        references: [form.id],
-    }),
-    event: one(event, {
-        fields: [formEventForm.eventId],
-        references: [event.id],
-    }),
-}));
-
 // ===== GROUP FORM =====
 
 export const formGroupForm = pgTable(
@@ -134,18 +113,6 @@ export const formGroupForm = pgTable(
     // unwritten.
     (t) => [unique("unique_group_form").on(t.formId, t.groupSlug)],
 );
-
-export const formGroupFormRelations = relations(formGroupForm, ({ one }) => ({
-    form: one(form, {
-        fields: [formGroupForm.formId],
-        references: [form.id],
-    }),
-    group: one(group, {
-        fields: [formGroupForm.groupSlug],
-        references: [group.slug],
-    }),
-}));
-
 // ===== FIELD =====
 
 export const formField = pgTable("field", {
@@ -159,16 +126,6 @@ export const formField = pgTable("field", {
     order: integer("order").notNull().default(0),
     ...timestamps,
 });
-
-export const formFieldRelations = relations(formField, ({ one, many }) => ({
-    form: one(form, {
-        fields: [formField.formId],
-        references: [form.id],
-    }),
-    options: many(formOption),
-    answers: many(formAnswer),
-}));
-
 // ===== OPTION =====
 
 export const formOption = pgTable("option", {
@@ -180,15 +137,6 @@ export const formOption = pgTable("option", {
     order: integer("order").notNull().default(0),
     ...timestamps,
 });
-
-export const formOptionRelations = relations(formOption, ({ one, many }) => ({
-    field: one(formField, {
-        fields: [formOption.fieldId],
-        references: [formField.id],
-    }),
-    answers: many(formAnswerOption),
-}));
-
 // ===== SUBMISSION =====
 
 export const formSubmission = pgTable("submission", {
@@ -201,22 +149,6 @@ export const formSubmission = pgTable("submission", {
         .notNull(),
     ...timestamps,
 });
-
-export const formSubmissionRelations = relations(
-    formSubmission,
-    ({ one, many }) => ({
-        form: one(form, {
-            fields: [formSubmission.formId],
-            references: [form.id],
-        }),
-        user: one(user, {
-            fields: [formSubmission.userId],
-            references: [user.id],
-        }),
-        answers: many(formAnswer),
-    }),
-);
-
 // ===== ANSWER =====
 
 export const formAnswer = pgTable("answer", {
@@ -230,19 +162,6 @@ export const formAnswer = pgTable("answer", {
     answerText: text("answer_text"),
     ...timestamps,
 });
-
-export const formAnswerRelations = relations(formAnswer, ({ one, many }) => ({
-    submission: one(formSubmission, {
-        fields: [formAnswer.submissionId],
-        references: [formSubmission.id],
-    }),
-    field: one(formField, {
-        fields: [formAnswer.fieldId],
-        references: [formField.id],
-    }),
-    selectedOptions: many(formAnswerOption),
-}));
-
 // ===== ANSWER-OPTION (Many-to-Many) =====
 
 export const formAnswerOption = pgTable(
@@ -264,18 +183,4 @@ export const formAnswerOption = pgTable(
          */
         index("answer_option_answer_id_idx").on(t.answerId),
     ],
-);
-
-export const formAnswerOptionRelations = relations(
-    formAnswerOption,
-    ({ one }) => ({
-        answer: one(formAnswer, {
-            fields: [formAnswerOption.answerId],
-            references: [formAnswer.id],
-        }),
-        option: one(formOption, {
-            fields: [formAnswerOption.optionId],
-            references: [formOption.id],
-        }),
-    }),
 );

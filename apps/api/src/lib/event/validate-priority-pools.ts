@@ -2,7 +2,7 @@ import {
     MASTER_CLASS_OFFSET,
     isMasterStudySlug,
 } from "@photon/auth/academic-year";
-import type { DbSchema } from "@photon/db";
+import type { DbRelations } from "@photon/db";
 import { schema } from "@photon/db";
 import { uniq } from "es-toolkit";
 import { inArray } from "drizzle-orm";
@@ -49,7 +49,7 @@ type PoolInput = { groupSlug: string | null; classYear: number | null };
  *   prioritize them at all.
  */
 export async function validatePriorityPools(
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     pools: PoolInput[] | null | undefined,
     organizerGroupSlug: string | null,
 ): Promise<void> {

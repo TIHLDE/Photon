@@ -40,7 +40,7 @@ export const deleteStrikeRoute = route().delete(
         const { db } = c.get("ctx");
 
         const strike = await db.query.eventStrike.findFirst({
-            where: eq(schema.eventStrike.id, strikeId),
+            where: { id: strikeId },
         });
 
         if (!strike) {

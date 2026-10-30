@@ -33,28 +33,25 @@ export async function sendEvaluationReminders(
 ): Promise<number> {
     const eventForm = await ctx.db.query.formEventForm.findFirst({
         columns: { formId: true },
-        where: and(
-            eq(schema.formEventForm.eventId, eventId),
-            eq(schema.formEventForm.type, "evaluation"),
-        ),
+        where: { eventId, type: "evaluation" },
     });
 
     if (!eventForm) return 0;
 
     const event = await ctx.db.query.event.findFirst({
         columns: { title: true },
-        where: eq(schema.event.id, eventId),
+        where: { id: eventId },
     });
 
     if (!event) return 0;
 
     const attendees = await ctx.db.query.eventRegistration.findMany({
         columns: { userId: true },
-        where: and(
-            eq(schema.eventRegistration.eventId, eventId),
-            eq(schema.eventRegistration.status, "attended"),
-            isNull(schema.eventRegistration.evaluationReminderSentAt),
-        ),
+        where: {
+            eventId,
+            status: "attended",
+            evaluationReminderSentAt: { isNull: true },
+        },
     });
 
     const link = `/sporreskjema/${eventForm.formId}`;
@@ -78,10 +75,7 @@ export async function sendEvaluationReminders(
 
         const answered = await ctx.db.query.formSubmission.findFirst({
             columns: { id: true },
-            where: and(
-                eq(schema.formSubmission.formId, eventForm.formId),
-                eq(schema.formSubmission.userId, userId),
-            ),
+            where: { formId: eventForm.formId, userId },
         });
 
         if (answered) continue;

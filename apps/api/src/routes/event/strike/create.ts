@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import type z from "zod";
@@ -52,7 +51,7 @@ export const createStrikeRoute = route().post(
         const targetUser = await db.query.user.findFirst({
             columns: { id: true, name: true },
             extras: userImageExtra,
-            where: eq(schema.user.id, body.userId),
+            where: { id: body.userId },
         });
 
         if (!targetUser) {
@@ -63,7 +62,7 @@ export const createStrikeRoute = route().post(
 
         const targetEvent = await db.query.event.findFirst({
             columns: { id: true, title: true, slug: true, start: true },
-            where: eq(schema.event.id, body.eventId),
+            where: { id: body.eventId },
         });
 
         if (!targetEvent) {
@@ -88,10 +87,7 @@ export const createStrikeRoute = route().post(
 
         const registration = await db.query.eventRegistration.findFirst({
             columns: { promotedFromWaitlistAt: true },
-            where: and(
-                eq(schema.eventRegistration.userId, body.userId),
-                eq(schema.eventRegistration.eventId, body.eventId),
-            ),
+            where: { userId: body.userId, eventId: body.eventId },
         });
 
         if (

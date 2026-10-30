@@ -1,5 +1,3 @@
-import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 
@@ -66,7 +64,7 @@ describe("TÖDDEL archive", () => {
             // Both files must survive the staging cleanup now that an issue
             // links to them.
             const promoted = await db.query.asset.findMany({
-                where: eq(schema.asset.status, "ready"),
+                where: { status: "ready" },
             });
             expect(promoted.map((a) => a.key)).toEqual(
                 expect.arrayContaining([pdfKey, coverKey]),

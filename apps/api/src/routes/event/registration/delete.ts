@@ -47,7 +47,7 @@ export const deleteEventRegistrationRoute = route().delete(
                 pools: true,
                 priorityUsers: true,
             },
-            where: eq(schema.event.id, eventId),
+            where: { id: eventId },
         });
 
         // En betalt plass kan ikke gis fra seg av brukeren selv: pengene er
@@ -56,12 +56,7 @@ export const deleteEventRegistrationRoute = route().delete(
         if (event?.isPaidEvent) {
             const paidPayment = await db.query.eventPayment.findFirst({
                 columns: { id: true },
-                where: (payment, { eq, and }) =>
-                    and(
-                        eq(payment.userId, userId),
-                        eq(payment.eventId, eventId),
-                        eq(payment.status, "paid"),
-                    ),
+                where: { userId, eventId, status: "paid" },
             });
 
             if (paidPayment) {
@@ -85,13 +80,12 @@ export const deleteEventRegistrationRoute = route().delete(
              */
             const startedPayment = await db.query.eventPayment.findFirst({
                 columns: { id: true, providerPaymentId: true },
-                where: (payment, { eq, and, isNotNull }) =>
-                    and(
-                        eq(payment.userId, userId),
-                        eq(payment.eventId, eventId),
-                        eq(payment.status, "pending"),
-                        isNotNull(payment.providerPaymentId),
-                    ),
+                where: {
+                    userId,
+                    eventId,
+                    status: "pending",
+                    providerPaymentId: { isNotNull: true },
+                },
             });
 
             if (startedPayment?.providerPaymentId) {

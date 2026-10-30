@@ -32,7 +32,7 @@ export const activateContractRoute = route().patch(
         const { db } = c.get("ctx");
 
         const existing = await db.query.contract.findFirst({
-            where: eq(schema.contract.id, id),
+            where: { id },
         });
 
         if (!existing) {

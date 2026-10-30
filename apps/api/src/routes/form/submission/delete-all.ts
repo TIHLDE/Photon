@@ -37,7 +37,7 @@ export const deleteAllSubmissionsRoute = route().delete(
         }
 
         const form = await db.query.form.findFirst({
-            where: eq(schema.form.id, formId),
+            where: { id: formId },
         });
         if (!form) {
             throw new HTTPException(404, { message: "Form not found" });

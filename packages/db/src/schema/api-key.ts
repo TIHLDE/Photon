@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import { pgTableCreator, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { timestamps } from "../timestamps";
 import { user } from "./auth";
@@ -19,10 +18,3 @@ export const managedApiKey = pgTable("api_key", {
     metadata: text("metadata"), // JSON object
     ...timestamps,
 });
-
-export const managedApiKeyRelations = relations(managedApiKey, ({ one }) => ({
-    creator: one(user, {
-        fields: [managedApiKey.createdById],
-        references: [user.id],
-    }),
-}));

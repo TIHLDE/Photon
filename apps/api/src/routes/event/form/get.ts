@@ -66,8 +66,7 @@ export const getEventFormRoute = route().get(
             );
 
             const registration = await db.query.eventRegistration.findFirst({
-                where: (reg, { and, eq }) =>
-                    and(eq(reg.eventId, eventId), eq(reg.userId, user.id)),
+                where: { eventId, userId: user.id },
             });
 
             const isAttendee = registration?.status === "attended";

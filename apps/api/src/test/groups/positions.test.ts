@@ -2,7 +2,7 @@ import { syncBaselineRoles } from "@photon/auth/feide";
 import { getUserPermissions } from "@photon/auth/rbac";
 import { createTestingRole, getUserRoles } from "@photon/auth/roles";
 import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import {
     addUserToGroup,
@@ -556,10 +556,7 @@ describe("group positions", () => {
                 // In HS now
                 const hsMembership =
                     await ctx.db.query.groupMembership.findFirst({
-                        where: and(
-                            eq(schema.groupMembership.userId, leader.id),
-                            eq(schema.groupMembership.groupSlug, "hs"),
-                        ),
+                        where: { userId: leader.id, groupSlug: "hs" },
                     });
                 expect(hsMembership).toBeDefined();
 
@@ -708,17 +705,11 @@ describe("group positions", () => {
                 expect(holder?.userId).toBe(newLeader.id);
 
                 const oldHs = await ctx.db.query.groupMembership.findFirst({
-                    where: and(
-                        eq(schema.groupMembership.userId, oldLeader.id),
-                        eq(schema.groupMembership.groupSlug, "hs"),
-                    ),
+                    where: { userId: oldLeader.id, groupSlug: "hs" },
                 });
                 expect(oldHs).toBeDefined();
                 const newHs = await ctx.db.query.groupMembership.findFirst({
-                    where: and(
-                        eq(schema.groupMembership.userId, newLeader.id),
-                        eq(schema.groupMembership.groupSlug, "hs"),
-                    ),
+                    where: { userId: newLeader.id, groupSlug: "hs" },
                 });
                 expect(newHs).toBeDefined();
             },
@@ -766,10 +757,7 @@ describe("group positions", () => {
                 // Still in HS — the AU verv warrants the seat
                 const hsMembership =
                     await ctx.db.query.groupMembership.findFirst({
-                        where: and(
-                            eq(schema.groupMembership.userId, leader.id),
-                            eq(schema.groupMembership.groupSlug, "hs"),
-                        ),
+                        where: { userId: leader.id, groupSlug: "hs" },
                     });
                 expect(hsMembership).toBeDefined();
             },
@@ -861,13 +849,7 @@ describe("group positions", () => {
 
                 const membership = await ctx.db.query.groupMembership.findFirst(
                     {
-                        where: and(
-                            eq(
-                                schema.groupMembership.userId,
-                                finansminister.id,
-                            ),
-                            eq(schema.groupMembership.groupSlug, "hs"),
-                        ),
+                        where: { userId: finansminister.id, groupSlug: "hs" },
                     },
                 );
                 expect(membership).toBeUndefined();
@@ -913,10 +895,7 @@ describe("group positions", () => {
 
                 const membership = await ctx.db.query.groupMembership.findFirst(
                     {
-                        where: and(
-                            eq(schema.groupMembership.userId, minister.id),
-                            eq(schema.groupMembership.groupSlug, "hs"),
-                        ),
+                        where: { userId: minister.id, groupSlug: "hs" },
                     },
                 );
                 expect(membership).toBeDefined();
@@ -954,10 +933,7 @@ describe("group positions", () => {
 
                 const membership = await ctx.db.query.groupMembership.findFirst(
                     {
-                        where: and(
-                            eq(schema.groupMembership.userId, visepresident.id),
-                            eq(schema.groupMembership.groupSlug, "hs"),
-                        ),
+                        where: { userId: visepresident.id, groupSlug: "hs" },
                     },
                 );
                 expect(membership).toBeUndefined();
@@ -999,10 +975,7 @@ describe("group positions", () => {
                 // Ledervervet i HS er sin egen grunn til a sitte der.
                 const membership = await ctx.db.query.groupMembership.findFirst(
                     {
-                        where: and(
-                            eq(schema.groupMembership.userId, president.id),
-                            eq(schema.groupMembership.groupSlug, "hs"),
-                        ),
+                        where: { userId: president.id, groupSlug: "hs" },
                     },
                 );
                 expect(membership?.role).toBe("leader");

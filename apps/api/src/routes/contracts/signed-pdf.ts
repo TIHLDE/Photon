@@ -1,5 +1,3 @@
-import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import type { AppContext } from "~/lib/ctx";
 import { HTTPAppException } from "~/lib/errors";
@@ -22,7 +20,7 @@ async function streamSignedPdf(
     const { db, bucket } = ctx;
 
     const activeContract = await db.query.contract.findFirst({
-        where: eq(schema.contract.isActive, true),
+        where: { isActive: true },
     });
 
     if (!activeContract) {
@@ -30,10 +28,7 @@ async function streamSignedPdf(
     }
 
     const signature = await db.query.contractSignature.findFirst({
-        where: and(
-            eq(schema.contractSignature.contractId, activeContract.id),
-            eq(schema.contractSignature.userId, userId),
-        ),
+        where: { contractId: activeContract.id, userId },
     });
 
     if (!signature) {

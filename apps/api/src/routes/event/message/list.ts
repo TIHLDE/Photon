@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { desc, eq } from "drizzle-orm";
 import type z from "zod";
 import {
     EVENT_ARRANGER_PERMISSIONS,
@@ -47,8 +46,8 @@ export const listEventMessagesRoute = route().get(
         const [recipients, messages] = await Promise.all([
             findRecipientIds(ctx, eventId),
             ctx.db.query.eventMessage.findMany({
-                where: eq(schema.eventMessage.eventId, eventId),
-                orderBy: desc(schema.eventMessage.createdAt),
+                where: { eventId },
+                orderBy: { createdAt: "desc" },
                 with: { sentBy: { columns: { id: true, name: true } } },
             }),
         ]);

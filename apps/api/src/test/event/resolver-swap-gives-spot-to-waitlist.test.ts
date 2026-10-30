@@ -59,7 +59,7 @@ async function addMember(
 
 const statusOf = async (ctx: IntegrationTestContext, eventId: string) => {
     const rows = await ctx.db.query.eventRegistration.findMany({
-        where: (r, { eq }) => eq(r.eventId, eventId),
+        where: { eventId },
     });
     return (userId: string) => rows.find((r) => r.userId === userId);
 };
@@ -109,11 +109,7 @@ describe("A swap frees a spot for the waiting list, not for the newcomer", () =>
 
             const registered = (
                 await ctx.db.query.eventRegistration.findMany({
-                    where: (r, { eq, and }) =>
-                        and(
-                            eq(r.eventId, event.id),
-                            eq(r.status, "registered"),
-                        ),
+                    where: { eventId: event.id, status: "registered" },
                 })
             ).length;
             expect(registered).toBe(1);

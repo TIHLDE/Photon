@@ -6,7 +6,7 @@ import {
     isMasterStudySlug,
     programmeLength,
 } from "@photon/auth/academic-year";
-import type { DbSchema } from "@photon/db";
+import type { DbRelations } from "@photon/db";
 import { schema } from "@photon/db";
 import { uniq } from "es-toolkit";
 import { and, eq, gte, inArray, isNull, sql } from "drizzle-orm";
@@ -28,7 +28,7 @@ import { getStrikeActiveCutoff } from "./strikes";
  */
 export async function resolvePriorityUserIds(
     userIds: string[],
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
 ): Promise<string[]> {
     const ids = uniq(userIds);
 
@@ -314,7 +314,7 @@ const activeGroupsOnly = isNull(schema.group.archivedAt);
  */
 export async function getUserPriorityFacts(
     userId: string,
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     now = new Date(),
 ): Promise<UserPriorityFacts> {
     const rows = await db
@@ -481,7 +481,7 @@ export async function loadPrioritization(
     userIds: string[],
     event: EventPriorityRules,
     enforcesPreviousStrikes: boolean,
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     now = new Date(),
 ): Promise<PrioritizationLookup> {
     const ids = uniq(userIds);
@@ -606,7 +606,7 @@ export async function findSwapTarget(
     registeredUsers: Registration[],
     event: EventPriorityRules,
     enforcesPreviousStrikes: boolean,
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     now = new Date(),
 ): Promise<Registration | null> {
     // Filter to only registered users and sort by createdAt DESC (most recent first)
@@ -647,13 +647,12 @@ export async function calculateWaitlistPositions(
     eventId: string,
     event: EventPriorityRules,
     enforcesPreviousStrikes: boolean,
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     now = new Date(),
 ): Promise<Map<string, number>> {
     const waitlisted = await db.query.eventRegistration.findMany({
-        where: (reg, { and, eq }) =>
-            and(eq(reg.eventId, eventId), eq(reg.status, "waitlisted")),
-        orderBy: (reg, { asc }) => asc(reg.createdAt),
+        where: { eventId, status: "waitlisted" },
+        orderBy: { createdAt: "asc" },
     });
 
     const isPrioritized = await loadPrioritization(
@@ -694,7 +693,7 @@ export async function calculateWaitlistPosition(
     eventId: string,
     event: EventPriorityRules,
     enforcesPreviousStrikes: boolean,
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     now = new Date(),
 ): Promise<number> {
     const positions = await calculateWaitlistPositions(

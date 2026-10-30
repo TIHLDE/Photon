@@ -1,6 +1,6 @@
 import { getPermissionGroupScopes } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
-import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { EmptyFilter, and, eq, gte, inArray, sql } from "drizzle-orm";
 import { createMiddleware } from "hono/factory";
 import { validator } from "hono-openapi";
 import z from "zod";
@@ -18,6 +18,8 @@ import {
 import { strikePermissions } from "~/lib/event/access";
 import { getStrikeActiveCutoff } from "~/lib/event/strikes";
 import { strikeListResponseSchema } from "./schema";
+
+type StrikeTable = typeof schema.eventStrike;
 
 const requireStrikePermission = requireAccess({
     // Coarse gate only: a group-scoped grant is enough to have prikker to
@@ -95,11 +97,11 @@ export const listStrikesRoute = route().get(
                   strikePermissions("view"),
               );
 
-        const groupFilter =
+        const groupFilter = (strike: StrikeTable) =>
             scopes === "*"
                 ? undefined
                 : inArray(
-                      schema.eventStrike.eventId,
+                      strike.eventId,
                       db
                           .select({ id: schema.event.id })
                           .from(schema.event)
@@ -115,17 +117,21 @@ export const listStrikesRoute = route().get(
                           ),
                   );
 
-        const filters = and(
-            gte(schema.eventStrike.createdAt, activeCutoff),
-            userId ? eq(schema.eventStrike.userId, userId) : undefined,
-            groupFilter,
+        const filters = (strike: StrikeTable) =>
+            and(
+                gte(strike.createdAt, activeCutoff),
+                userId ? eq(strike.userId, userId) : undefined,
+                groupFilter(strike),
+            );
+
+        const totalCount = await db.$count(
+            schema.eventStrike,
+            filters(schema.eventStrike),
         );
 
-        const totalCount = await db.$count(schema.eventStrike, filters);
-
         const strikes = await db.query.eventStrike.findMany({
-            where: filters,
-            orderBy: (s) => [desc(s.createdAt)],
+            where: { RAW: (strike) => filters(strike) ?? EmptyFilter },
+            orderBy: { createdAt: "desc" },
             limit: pageSize,
             offset: pageOffset,
             with: {

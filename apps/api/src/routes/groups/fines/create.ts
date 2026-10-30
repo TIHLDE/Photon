@@ -170,7 +170,7 @@ export const createFineRoute = route().post(
         // Re-read with the relations the response schema promises — the insert
         // itself returns the bare row, without user, creator or paragraph.
         const newFine = await db.query.fine.findFirst({
-            where: eq(schema.fine.id, created.id),
+            where: { id: created.id },
             with: {
                 user: {
                     columns: { id: true, name: true },

@@ -2,8 +2,8 @@ import {
     type ObjectStorageService,
     S3ObjectStorageService,
 } from "@photon/core/services/storage";
-import { type DbSchema, schema } from "@photon/db";
-import { eq } from "drizzle-orm";
+import { type DbRelations, schema } from "@photon/db";
+import { EmptyFilter, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { env } from "~/lib/env";
 
@@ -62,7 +62,7 @@ export type StorageClient = AssetStorageService;
 export class DatabaseAssetStorageService implements AssetStorageService {
     constructor(
         private readonly objectStorage: ObjectStorageService,
-        private readonly db: NodePgDatabase<DbSchema>,
+        private readonly db: NodePgDatabase<DbRelations>,
     ) {}
 
     get bucketName(): string {
@@ -120,7 +120,7 @@ export class DatabaseAssetStorageService implements AssetStorageService {
 
     async getAsset(key: string): Promise<schema.Asset | null> {
         const asset = await this.db.query.asset.findFirst({
-            where: eq(schema.asset.key, key),
+            where: { key },
         });
 
         return asset ?? null;
@@ -155,11 +155,11 @@ export class DatabaseAssetStorageService implements AssetStorageService {
     }): Promise<schema.Asset[]> {
         return await this.db.query.asset.findMany({
             where: options?.uploadedById
-                ? eq(schema.asset.uploadedById, options.uploadedById)
-                : undefined,
+                ? { uploadedById: options.uploadedById }
+                : EmptyFilter,
             limit: options?.limit ?? 100,
             offset: options?.offset ?? 0,
-            orderBy: (asset, { desc }) => [desc(asset.createdAt)],
+            orderBy: { createdAt: "desc" },
         });
     }
 
@@ -192,7 +192,7 @@ export class DatabaseAssetStorageService implements AssetStorageService {
 }
 
 export async function createStorageClient(options: {
-    db: NodePgDatabase<DbSchema>;
+    db: NodePgDatabase<DbRelations>;
 }): Promise<AssetStorageService> {
     const objectStorage = await S3ObjectStorageService.create({
         endpoint: env.S3_ENDPOINT,

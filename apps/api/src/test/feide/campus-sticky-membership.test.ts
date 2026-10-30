@@ -1,5 +1,5 @@
 import { confirmCampus, keepExistingMemberships } from "@photon/auth/feide";
-import { type DbSchema, schema } from "@photon/db";
+import { type DbRelations, schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { describe, expect } from "vitest";
@@ -17,7 +17,7 @@ import { integrationTest } from "~/test/config/integration";
  */
 describe("campus rejection is not applied to existing members", () => {
     const seedProgram = async (
-        db: NodePgDatabase<DbSchema>,
+        db: NodePgDatabase<DbRelations>,
         feideCode: string,
         slug: string,
     ) => {
@@ -171,7 +171,7 @@ describe("campus rejection is not applied to existing members", () => {
  */
 describe("confirmCampus", () => {
     const seedMembership = async (
-        db: NodePgDatabase<DbSchema>,
+        db: NodePgDatabase<DbRelations>,
         userId: string,
         confirmedCampus: "trondheim" | "gjovik" | null,
     ) => {
@@ -197,7 +197,10 @@ describe("confirmCampus", () => {
         return program.id;
     };
 
-    const readBack = async (db: NodePgDatabase<DbSchema>, userId: string) => {
+    const readBack = async (
+        db: NodePgDatabase<DbRelations>,
+        userId: string,
+    ) => {
         const [row] = await db
             .select({
                 confirmedCampus: schema.studyProgramMembership.confirmedCampus,

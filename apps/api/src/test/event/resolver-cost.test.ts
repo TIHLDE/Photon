@@ -97,13 +97,12 @@ describe("Resolver cost", () => {
             );
 
             const registered = await ctx.db.query.eventRegistration.findMany({
-                where: (r, { and, eq }) =>
-                    and(eq(r.eventId, event.id), eq(r.status, "registered")),
+                where: { eventId: event.id, status: "registered" },
             });
             expect(registered).toHaveLength(MEMBERS);
 
             const payments = await ctx.db.query.eventPayment.findMany({
-                where: (p, { eq }) => eq(p.eventId, event.id),
+                where: { eventId: event.id },
             });
             expect(payments).toHaveLength(MEMBERS);
 

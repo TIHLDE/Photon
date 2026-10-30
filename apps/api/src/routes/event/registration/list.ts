@@ -1,6 +1,6 @@
 import { schema } from "@photon/db";
 import { registrationStatusVariants } from "@photon/db/schema";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { EmptyFilter, and, eq, inArray } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
@@ -98,25 +98,28 @@ export const getAllRegistrationsForEventsRoute = route().get(
             }
         }
 
-        const filters = and(
-            eq(schema.eventRegistration.eventId, eventId),
-            inArray(
-                schema.eventRegistration.status,
-                statuses as unknown as (typeof registrationStatusVariants)[number][],
-            ),
-        );
+        const filters = (registration: typeof schema.eventRegistration) =>
+            and(
+                eq(registration.eventId, eventId),
+                inArray(
+                    registration.status,
+                    statuses as unknown as (typeof registrationStatusVariants)[number][],
+                ),
+            );
 
         const registrationCount = await db.$count(
             schema.eventRegistration,
-            filters,
+            filters(schema.eventRegistration),
         );
 
         const registrations = await db.query.eventRegistration.findMany({
             // Eldste først, samme vei som ventelista leses. Nyeste først gjorde
             // at den som sist rykket opp fra ventelista sto øverst og så ut til
             // å ha vært først inne.
-            orderBy: (r) => [asc(r.createdAt)],
-            where: filters,
+            orderBy: { createdAt: "asc" },
+            where: {
+                RAW: (registration) => filters(registration) ?? EmptyFilter,
+            },
             limit: pageSize,
             offset: getPageOffset(page, pageSize),
             with: {
@@ -144,11 +147,10 @@ export const getAllRegistrationsForEventsRoute = route().get(
 
             if (others.length > 0) {
                 const settings = await db.query.userSettings.findMany({
-                    where: (s, { and, eq, inArray }) =>
-                        and(
-                            inArray(s.userId, others),
-                            eq(s.publicEventRegistrations, false),
-                        ),
+                    where: {
+                        userId: { in: others },
+                        publicEventRegistrations: false,
+                    },
                     columns: { userId: true },
                 });
 
@@ -167,8 +169,7 @@ export const getAllRegistrationsForEventsRoute = route().get(
         if (isEventAdmin && registrations.length > 0) {
             const userIds = registrations.map((r) => r.userId);
             const payments = await db.query.eventPayment.findMany({
-                where: (p, { and, eq, inArray }) =>
-                    and(eq(p.eventId, eventId), inArray(p.userId, userIds)),
+                where: { eventId, userId: { in: userIds } },
             });
 
             // A user can hold several payment rows for one event (a new

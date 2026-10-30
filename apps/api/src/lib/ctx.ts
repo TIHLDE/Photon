@@ -6,7 +6,7 @@ import {
 } from "@photon/core/services/queue";
 import { InMemoryObjectStorageService } from "@photon/core/services/storage";
 import { env } from "@photon/core/env";
-import { type DbSchema, createDb, schema } from "@photon/db";
+import { type DbRelations, createDb, schema } from "@photon/db";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { type ApiKeyService, createApiKeyService } from "./service/api-key";
 import {
@@ -28,7 +28,7 @@ import { RedisCache, InMemoryCache } from "@photon/core/services/cache";
  * This allows for dependency injection and makes testing easier.
  */
 export interface AppContext {
-    db: NodePgDatabase<DbSchema>;
+    db: NodePgDatabase<DbRelations>;
     auth: AuthInstance;
 
     /** Cache service instance */
@@ -110,7 +110,7 @@ export async function createAppContext(): Promise<AppContext> {
     };
 }
 export async function createTestAppContext(options?: {
-    db?: NodePgDatabase<DbSchema>;
+    db?: NodePgDatabase<DbRelations>;
 }): Promise<AppContext> {
     const db = options?.db ?? createDb({ connectionString: env.DATABASE_URL });
     const cache = new InMemoryCache();

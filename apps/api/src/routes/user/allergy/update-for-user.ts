@@ -50,7 +50,7 @@ export const updateUserAllergiesRoute = route().put(
         const { allergies } = c.req.valid("json");
 
         const user = await db.query.user.findFirst({
-            where: eq(schema.user.id, userId),
+            where: { id: userId },
             columns: { id: true },
         });
 

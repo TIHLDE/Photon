@@ -20,8 +20,7 @@ async function strikeTotal(
     userId: string,
 ) {
     const rows = await ctx.db.query.eventStrike.findMany({
-        where: (s, { and, eq }) =>
-            and(eq(s.userId, userId), eq(s.eventId, eventId)),
+        where: { userId, eventId },
     });
     return sumBy(rows, (r) => r.count);
 }
@@ -157,8 +156,7 @@ describe("Paid event rules", () => {
             // Registreringen skal fortsatt stå — sjekken kjører før slettingen.
             const registration = await ctx.db.query.eventRegistration.findFirst(
                 {
-                    where: (r, { and, eq }) =>
-                        and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 },
             );
             expect(registration).toBeDefined();
@@ -201,8 +199,7 @@ describe("Paid event rules", () => {
             // stående som `pending`, lever nedtellingen videre og faller til
             // forfall mot en påmelding brukeren gjør senere.
             const payment = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { and, eq }) =>
-                    and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                where: { eventId: event.id, userId: user.id },
             });
             expect(payment?.status).toBe("failed");
         },
@@ -307,12 +304,10 @@ describe("Paid event rules", () => {
             await resolveRegistrationsForEvent(free.id, ctx);
 
             const onPaid = await ctx.db.query.eventRegistration.findFirst({
-                where: (reg, { and, eq }) =>
-                    and(eq(reg.eventId, paid.id), eq(reg.userId, user.id)),
+                where: { eventId: paid.id, userId: user.id },
             });
             const onFree = await ctx.db.query.eventRegistration.findFirst({
-                where: (reg, { and, eq }) =>
-                    and(eq(reg.eventId, free.id), eq(reg.userId, user.id)),
+                where: { eventId: free.id, userId: user.id },
             });
 
             expect(onPaid?.status).toBe("registered");
@@ -354,7 +349,7 @@ describe("Paid event rules", () => {
             }
 
             const stored = await ctx.db.query.event.findFirst({
-                where: (e, { eq }) => eq(e.id, eventId),
+                where: { id: eventId },
             });
             expect(stored?.enforcesPreviousStrikes).toBe(false);
             expect(stored?.canCauseStrikes).toBe(false);
@@ -394,7 +389,7 @@ describe("Paid event rules", () => {
             expect(response.status).toBe(200);
 
             const stored = await ctx.db.query.event.findFirst({
-                where: (e, { eq }) => eq(e.id, eventId),
+                where: { id: eventId },
             });
             expect(stored?.canCauseStrikes).toBe(false);
             expect(stored?.enforcesPreviousStrikes).toBe(false);
@@ -429,7 +424,7 @@ describe("Paid event rules", () => {
             expect(response.status).toBe(200);
 
             const stored = await ctx.db.query.event.findFirst({
-                where: (e, { eq }) => eq(e.id, event.id),
+                where: { id: event.id },
             });
             expect(stored?.title).toBe("Nytt navn");
             expect(stored?.enforcesPreviousStrikes).toBe(false);
@@ -474,12 +469,10 @@ describe("Paid event rules", () => {
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const strikenEnd = await ctx.db.query.eventRegistration.findFirst({
-                where: (r, { and, eq }) =>
-                    and(eq(r.eventId, event.id), eq(r.userId, striken.id)),
+                where: { eventId: event.id, userId: striken.id },
             });
             const cleanEnd = await ctx.db.query.eventRegistration.findFirst({
-                where: (r, { and, eq }) =>
-                    and(eq(r.eventId, event.id), eq(r.userId, clean.id)),
+                where: { eventId: event.id, userId: clean.id },
             });
 
             // Prikkene teller ikke her, så plassen hans står — på et gratis
@@ -543,11 +536,7 @@ describe("Paid event rules", () => {
                 const position = async (userId: string) =>
                     (
                         await ctx.db.query.eventRegistration.findFirst({
-                            where: (reg, { and, eq }) =>
-                                and(
-                                    eq(reg.eventId, event.id),
-                                    eq(reg.userId, userId),
-                                ),
+                            where: { eventId: event.id, userId },
                         })
                     )?.waitlistPosition;
 

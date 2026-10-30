@@ -40,7 +40,7 @@ export const getSettingsRoute = route().get(
 
         // Fetch isOnboarded status
         const userRecord = await db.query.userSettings.findFirst({
-            where: (userSettings, { eq }) => eq(userSettings.userId, userId),
+            where: { userId },
             columns: {
                 isOnboarded: true,
             },

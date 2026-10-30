@@ -9,7 +9,7 @@ import { genericOAuth } from "better-auth/plugins";
 import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import type { AnyColumn, SQL } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { DbSchema } from "@photon/db";
+import type { DbRelations } from "@photon/db";
 import type { Campus, StudyYearSource } from "@photon/db/schema";
 import {
     account,
@@ -35,7 +35,7 @@ import {
  * Database access required by the Feide sync hook.
  */
 export type AuthCreateContext = {
-    db: NodePgDatabase<DbSchema>;
+    db: NodePgDatabase<DbRelations>;
 };
 
 /**
@@ -195,7 +195,7 @@ interface FeideGroup {
  * flow cannot start. A conditional spread in the plugins array would instead
  * widen the tuple and silently drop inferred fields like `banned`.
  */
-export const feidePlugin = (db: NodePgDatabase<DbSchema>) =>
+export const feidePlugin = (db: NodePgDatabase<DbRelations>) =>
     genericOAuth({
         config:
             env.FEIDE_CLIENT_ID && env.FEIDE_CLIENT_SECRET
@@ -1055,7 +1055,7 @@ export async function keepExistingMemberships(
 
 /** The transaction handle `db.transaction` hands to its callback. */
 type Transaction = Parameters<
-    Parameters<NodePgDatabase<DbSchema>["transaction"]>[0]
+    Parameters<NodePgDatabase<DbRelations>["transaction"]>[0]
 >[0];
 
 /**
@@ -2121,7 +2121,7 @@ function describeUserIdClaims(profile: Record<string, unknown>): string {
  * happens to equal someone else's NTNU username.
  */
 export async function resolveMigratedEmail(
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     profile: OpenIDProfile,
 ): Promise<string | null> {
     const username = feideUsernameOf(profile);
@@ -2211,7 +2211,7 @@ export async function resolveMigratedEmail(
  * Returns whether anything was revoked, so the caller can tell the member.
  */
 export async function revokeUnprovenCredentials(
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     userId: string,
 ): Promise<boolean> {
     const [owner] = await db
@@ -2479,7 +2479,7 @@ async function backfillUsername(
  * member: see {@link resolveMigratedEmail}.
  */
 const createGetUserInfo =
-    (db: NodePgDatabase<DbSchema>) =>
+    (db: NodePgDatabase<DbRelations>) =>
     async (tokens: OAuth2Tokens): Promise<OAuth2UserInfo> => {
         if (!tokens.accessToken) {
             throw new Error("No access token provided");

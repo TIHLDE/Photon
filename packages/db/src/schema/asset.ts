@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
     bigint,
     pgEnum,
@@ -87,13 +86,5 @@ export const asset = pgTable("file", {
 
     ...timestamps,
 });
-
-export const assetRelations = relations(asset, ({ one }) => ({
-    uploadedBy: one(user, {
-        fields: [asset.uploadedById],
-        references: [user.id],
-    }),
-}));
-
 export type Asset = typeof asset.$inferSelect;
 export type NewAsset = typeof asset.$inferInsert;

@@ -31,7 +31,7 @@ export const deleteReactionRoute = route().delete(
 
         // Check if news exists
         const newsArticle = await db.query.news.findFirst({
-            where: eq(schema.news.id, newsId),
+            where: { id: newsId },
         });
 
         if (!newsArticle) {
@@ -42,10 +42,7 @@ export const deleteReactionRoute = route().delete(
 
         // Check if reaction exists
         const reaction = await db.query.newsReaction.findFirst({
-            where: and(
-                eq(schema.newsReaction.userId, userId),
-                eq(schema.newsReaction.newsId, newsId),
-            ),
+            where: { userId, newsId },
         });
 
         if (!reaction) {

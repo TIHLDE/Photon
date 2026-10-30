@@ -1,5 +1,3 @@
-import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { assetKeyFromUrl } from "~/lib/asset";
 import { describeRoute } from "~/lib/openapi";
@@ -52,7 +50,7 @@ confirms that a given fine or picture exists.`,
         const group = await requireFinesGroup(ctx, groupSlug);
 
         const fine = await ctx.db.query.fine.findFirst({
-            where: eq(schema.fine.id, fineId),
+            where: { id: fineId },
             columns: {
                 image: true,
                 groupSlug: true,

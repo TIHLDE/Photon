@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
@@ -44,7 +43,7 @@ export const createEventReactionRoute = route().post(
 
         // Check if event exists and reactions are allowed
         const event = await db.query.event.findFirst({
-            where: eq(schema.event.id, eventId),
+            where: { id: eventId },
         });
 
         if (!event) {

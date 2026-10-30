@@ -202,10 +202,7 @@ export async function addUserToGroup(
     const membership =
         inserted ??
         (await db.query.groupMembership.findFirst({
-            where: and(
-                eq(schema.groupMembership.userId, userId),
-                eq(schema.groupMembership.groupSlug, groupSlug),
-            ),
+            where: { userId, groupSlug },
         }));
 
     if (!membership) {
