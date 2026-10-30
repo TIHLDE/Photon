@@ -3,18 +3,21 @@
 # Proves the migrations in packages/db/drizzle build the same schema production
 # has. Exits non-zero and prints the diff if they do not.
 #
-#   packages/db/scripts/compare-baseline.sh <production dump>
+#   packages/db/scripts/compare-baseline.sh <production dump> [ignore.sql]
 #
 # Takes a plain SQL dump or a `pg_dump -Fc` file. Everything happens in a
-# throwaway Postgres container; production is never touched.
+# throwaway Postgres container; production is never touched. ignore.sql, if
+# given, runs on that restored copy first, to set aside objects the schema does
+# not own.
 set -euo pipefail
 
-if [[ $# -ne 1 || ! -f "$1" ]]; then
-    echo "Usage: $0 <production dump>" >&2
+if [[ $# -lt 1 || $# -gt 2 || ! -f "$1" || ( $# -eq 2 && ! -f "$2" ) ]]; then
+    echo "Usage: $0 <production dump> [ignore.sql]" >&2
     exit 2
 fi
 
 DUMP="$1"
+IGNORE="${2:-}"
 DB_PACKAGE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONTAINER="photon-compare-baseline-$$"
 PASSWORD="compare"
@@ -64,6 +67,12 @@ else
         psql_on prod -c "DROP SCHEMA public"
     fi
     psql_on prod -f /tmp/prod.dump >/dev/null
+fi
+
+if [[ -n "$IGNORE" ]]; then
+    echo "Setting aside what $IGNORE lists"
+    docker cp "$IGNORE" "$CONTAINER:/tmp/ignore.sql" >/dev/null
+    psql_on prod -f /tmp/ignore.sql
 fi
 
 echo "Applying the migrations to baseline"
