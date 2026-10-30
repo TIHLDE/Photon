@@ -23,6 +23,7 @@ import { InfoBanner } from "#/components/info-banner";
 import { NewsCard } from "#/components/news-card";
 import { SectionError } from "#/components/section-error";
 import { TihldeLogo } from "#/components/icons/tihlde";
+import { TihldeBamse } from "#/components/tihlde-bamse";
 import { HeroSectionBackground } from "#/components/hero-section";
 import { formatEventDateTime } from "#/lib/event";
 import { ACTIVITY_CATEGORIES, EVENT_CATEGORIES } from "#/lib/event-categories";
@@ -345,8 +346,9 @@ function Hero({ banners }: { banners?: ReactNode }) {
                     <section className="container mx-auto flex w-full flex-1 flex-col items-center justify-center gap-6 px-4 py-16 text-center" />
                 }
             >
-                <div className="flex items-center text-logo">
+                <div className="flex items-center gap-4 text-logo">
                     <TihldeLogo variant="full" className="h-14 w-auto" />
+                    <TihldeBamse className="size-20" />
                 </div>
                 <p className="max-w-2xl text-balance">
                     Linjeforeningen for Dataingeniør, Digital infrastruktur og

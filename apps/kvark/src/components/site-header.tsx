@@ -14,6 +14,7 @@ import type { ReactNode } from "react";
 
 import { ThemeSwitcher } from "./theme-switcher";
 import { TihldeLogo } from "./icons/tihlde";
+import { TihldeBamse } from "./tihlde-bamse";
 
 import { loginSearchFor } from "#/api/auth";
 import { avatarImageUrl } from "#/lib/assets";
@@ -72,8 +73,9 @@ export function SiteHeader({
     return (
         <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur">
             <div className="container mx-auto flex h-14 items-center justify-between gap-4 px-4">
-                <Link to="/" className="flex items-center text-logo">
+                <Link to="/" className="flex items-center gap-2 text-logo">
                     <TihldeLogo variant="full" className="h-5 w-auto" />
+                    <TihldeBamse className="size-8" />
                 </Link>
 
                 <NavigationMenu className="hidden lg:flex">
