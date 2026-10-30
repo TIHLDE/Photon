@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { authQueryOptions } from "#/api/auth";
 
-/** Den ene brukeren som får bamse ved siden av logoen. */
+/** Brukerne som får bamse ved siden av logoen. */
 const BAMSE_USERNAMES = ["mayae", "ahevense", "siguraso"];
 
 export function TihldeBamse({ className }: { className?: string }) {
@@ -10,7 +10,7 @@ export function TihldeBamse({ className }: { className?: string }) {
 
     const username = session?.user?.username ?? "";
 
-    if (!(username in BAMSE_USERNAMES)) {
+    if (!BAMSE_USERNAMES.includes(username)) {
         return null;
     }
 
