@@ -1,13 +1,22 @@
 import { Button } from "@tihlde/ui/ui/button";
+import { Card } from "@tihlde/ui/ui/card";
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@tihlde/ui/ui/card";
-import { Check, Copy, RefreshCw } from "lucide-react";
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@tihlde/ui/ui/collapsible";
+import { Input } from "@tihlde/ui/ui/input";
+import {
+    CalendarDays,
+    Check,
+    ChevronDown,
+    Copy,
+    RefreshCw,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+
+import { ConfirmDeleteDialog } from "#/components/confirm-delete-dialog";
+import { cn } from "#/lib/utils";
 
 type CalendarSubscriptionProps = {
     url: string;
@@ -25,7 +34,10 @@ export function CalendarSubscription({
     onRegenerate,
     isRegenerating = false,
 }: CalendarSubscriptionProps) {
+    const [open, setOpen] = useState(false);
+    const [confirmRegenerate, setConfirmRegenerate] = useState(false);
     const [copied, setCopied] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
     const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(
@@ -42,34 +54,63 @@ export function CalendarSubscription({
             if (resetTimer.current) clearTimeout(resetTimer.current);
             resetTimer.current = setTimeout(() => setCopied(false), 2000);
         } catch {
-            // Utklippstavla kan være blokkert; da markerer vi teksten i
-            // stedet så brukeren kan kopiere selv.
+            inputRef.current?.focus();
+            inputRef.current?.select();
         }
     }
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Kalender-abonnement</CardTitle>
-                <CardDescription>
-                    Arrangementene du er påmeldt rett inn i kalenderen din. Nye
-                    påmeldinger dukker opp av seg selv — hvor raskt avhenger av
-                    kalenderen, noen sjekker bare én gang i døgnet.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
+        <Card
+            className="gap-0 py-0"
+            render={<Collapsible open={open} onOpenChange={setOpen} />}
+        >
+            <CollapsibleTrigger
+                render={
+                    <Button
+                        variant="ghost"
+                        className="h-auto w-full justify-start gap-3 p-4"
+                    />
+                }
+            >
+                <CalendarDays
+                    aria-hidden="true"
+                    className="size-5 shrink-0 text-muted-foreground"
+                />
+                <span className="flex min-w-0 flex-1 flex-col gap-1 text-left whitespace-normal">
+                    <span className="text-sm font-medium">
+                        Kalender-abonnement
+                    </span>
+                    <span className="text-sm font-normal text-muted-foreground">
+                        Få arrangementene du er påmeldt i kalenderen din.
+                    </span>
+                </span>
+                <ChevronDown
+                    aria-hidden="true"
+                    className={cn(
+                        "size-4 shrink-0 text-muted-foreground transition-transform",
+                        open && "rotate-180",
+                    )}
+                />
+            </CollapsibleTrigger>
+            <CollapsibleContent divided className="flex flex-col gap-3 p-4">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <code className="min-w-0 flex-1 overflow-x-auto">
-                        {url}
-                    </code>
+                    <Input
+                        ref={inputRef}
+                        aria-label="Personlig kalenderlenke"
+                        value={url}
+                        readOnly
+                        onFocus={(event) => event.currentTarget.select()}
+                        className="min-w-0 flex-1"
+                    />
                     <Button type="button" onClick={() => void copy()}>
                         {copied ? <Check /> : <Copy />}
                         {copied ? "Kopiert" : "Kopier lenke"}
                     </Button>
                 </div>
-                <CardDescription>
-                    Lim lenka inn i{" "}
+                <p className="text-sm text-muted-foreground">
+                    Legg lenken til i{" "}
                     <a
+                        className="underline underline-offset-4"
                         href="https://calendar.google.com/calendar/u/0/r/settings/addbyurl"
                         rel="noopener noreferrer"
                         target="_blank"
@@ -78,6 +119,7 @@ export function CalendarSubscription({
                     </a>
                     ,{" "}
                     <a
+                        className="underline underline-offset-4"
                         href="https://support.apple.com/no-no/guide/calendar/icl1022/mac"
                         rel="noopener noreferrer"
                         target="_blank"
@@ -86,27 +128,46 @@ export function CalendarSubscription({
                     </a>{" "}
                     eller{" "}
                     <a
+                        className="underline underline-offset-4"
                         href="https://support.microsoft.com/nb-no/office/cff1429c-5af6-41ec-a5b4-74f2c278e98c"
                         rel="noopener noreferrer"
                         target="_blank"
                     >
                         Outlook
                     </a>
-                    . Hvem som helst med lenka kan se påmeldingene dine, så del
-                    den ikke videre.
-                </CardDescription>
-                <div>
+                    . Kalenderen oppdateres automatisk. I noen kalendere kan det
+                    ta opptil 24 timer.
+                </p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-xs text-muted-foreground">
+                        Hold lenken privat – den viser påmeldingene dine.
+                    </p>
                     <Button
                         type="button"
-                        variant="outline"
-                        onClick={onRegenerate}
+                        variant="ghost"
+                        size="sm"
+                        className="self-start sm:self-auto"
+                        onClick={() => setConfirmRegenerate(true)}
                         disabled={isRegenerating}
                     >
                         <RefreshCw />
                         Lag ny lenke
                     </Button>
                 </div>
-            </CardContent>
+                <ConfirmDeleteDialog
+                    open={confirmRegenerate}
+                    onOpenChange={setConfirmRegenerate}
+                    title="Lage ny kalenderlenke?"
+                    description="Den gamle lenken slutter å virke. Du må oppdatere kalenderabonnementet ditt med den nye lenken."
+                    confirmLabel="Lag ny lenke"
+                    isPending={isRegenerating}
+                    onConfirm={() => {
+                        if (isRegenerating) return;
+                        setConfirmRegenerate(false);
+                        onRegenerate();
+                    }}
+                />
+            </CollapsibleContent>
         </Card>
     );
 }
