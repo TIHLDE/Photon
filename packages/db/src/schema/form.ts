@@ -56,13 +56,11 @@ export const formEventForm = pgTable(
         id: uuid("id").primaryKey().defaultRandom(),
         formId: uuid("form_id")
             .references(() => form.id, {
-                name: "form_event_form_form_id_form_form_id_fk",
                 onDelete: "cascade",
             })
             .notNull(),
         eventId: uuid("event_id")
             .references(() => event.id, {
-                name: "form_event_form_event_id_event_event_id_fk",
                 onDelete: "cascade",
             })
             .notNull(),
@@ -79,13 +77,11 @@ export const formGroupForm = pgTable(
         id: uuid("id").primaryKey().defaultRandom(),
         formId: uuid("form_id")
             .references(() => form.id, {
-                name: "form_group_form_form_id_form_form_id_fk",
                 onDelete: "cascade",
             })
             .notNull(),
         groupSlug: varchar("group_slug", { length: 128 })
             .references(() => group.slug, {
-                name: "form_group_form_group_slug_org_group_slug_fk",
                 onDelete: "cascade",
             })
             .notNull(),
@@ -132,7 +128,6 @@ export const formField = pgTable("field", {
     id: uuid("id").primaryKey().defaultRandom(),
     formId: uuid("form_id")
         .references(() => form.id, {
-            name: "form_field_form_id_form_form_id_fk",
             onDelete: "cascade",
         })
         .notNull(),
@@ -148,7 +143,6 @@ export const formOption = pgTable("option", {
     id: uuid("id").primaryKey().defaultRandom(),
     fieldId: uuid("field_id")
         .references(() => formField.id, {
-            name: "form_option_field_id_form_field_id_fk",
             onDelete: "cascade",
         })
         .notNull(),
@@ -162,13 +156,11 @@ export const formSubmission = pgTable("submission", {
     id: uuid("id").primaryKey().defaultRandom(),
     formId: uuid("form_id")
         .references(() => form.id, {
-            name: "form_submission_form_id_form_form_id_fk",
             onDelete: "cascade",
         })
         .notNull(),
     userId: text("user_id")
         .references(() => user.id, {
-            name: "form_submission_user_id_auth_user_id_fk",
             onDelete: "cascade",
         })
         .notNull(),
@@ -180,12 +172,10 @@ export const formAnswer = pgTable("answer", {
     id: uuid("id").primaryKey().defaultRandom(),
     submissionId: uuid("submission_id")
         .references(() => formSubmission.id, {
-            name: "form_answer_submission_id_form_submission_id_fk",
             onDelete: "cascade",
         })
         .notNull(),
     fieldId: uuid("field_id").references(() => formField.id, {
-        name: "form_answer_field_id_form_field_id_fk",
         onDelete: "set null",
     }),
     answerText: text("answer_text"),
@@ -198,13 +188,11 @@ export const formAnswerOption = pgTable(
     {
         answerId: uuid("answer_id")
             .references(() => formAnswer.id, {
-                name: "form_answer_option_answer_id_form_answer_id_fk",
                 onDelete: "cascade",
             })
             .notNull(),
         optionId: uuid("option_id")
             .references(() => formOption.id, {
-                name: "form_answer_option_option_id_form_option_id_fk",
                 onDelete: "cascade",
             })
             .notNull(),

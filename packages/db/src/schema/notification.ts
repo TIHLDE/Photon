@@ -18,7 +18,6 @@ export const notification = pgTable(
         userId: text("user_id")
             .notNull()
             .references(() => user.id, {
-                name: "notification_notification_user_id_auth_user_id_fk",
                 onDelete: "cascade",
             }),
         title: text("title").notNull(),
@@ -74,7 +73,6 @@ export const notificationDevice = pgTable(
         userId: text("user_id")
             .notNull()
             .references(() => user.id, {
-                name: "notification_device_user_id_auth_user_id_fk",
                 onDelete: "cascade",
             }),
         /** Expo push token, e.g. "ExponentPushToken[xxxxxxxx]". */

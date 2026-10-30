@@ -62,7 +62,6 @@ export const feedback = pgTable(
          * their own — no name reaches other members or moderators.
          */
         authorId: text("author_id").references(() => user.id, {
-            name: "feedback_item_author_id_auth_user_id_fk",
             onDelete: "set null",
         }),
         ...timestamps,
@@ -99,13 +98,11 @@ export const feedbackVote = pgTable(
         feedbackId: uuid("feedback_id")
             .notNull()
             .references(() => feedback.id, {
-                name: "feedback_vote_feedback_id_feedback_item_id_fk",
                 onDelete: "cascade",
             }),
         userId: text("user_id")
             .notNull()
             .references(() => user.id, {
-                name: "feedback_vote_user_id_auth_user_id_fk",
                 onDelete: "cascade",
             }),
         value: feedbackVoteValue("value").notNull(),
@@ -113,7 +110,6 @@ export const feedbackVote = pgTable(
     },
     (t) => [
         primaryKey({
-            name: "feedback_vote_feedback_id_user_id_pk",
             columns: [t.feedbackId, t.userId],
         }),
     ],
@@ -126,11 +122,9 @@ export const feedbackComment = pgTable(
         feedbackId: uuid("feedback_id")
             .notNull()
             .references(() => feedback.id, {
-                name: "feedback_comment_feedback_id_feedback_item_id_fk",
                 onDelete: "cascade",
             }),
         authorId: text("author_id").references(() => user.id, {
-            name: "feedback_comment_author_id_auth_user_id_fk",
             onDelete: "set null",
         }),
         body: text("body").notNull(),

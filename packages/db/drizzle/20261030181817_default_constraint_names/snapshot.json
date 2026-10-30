@@ -1,0 +1,4888 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "b7a1042e-a80b-4129-a181-646967f3cf80",
+  "prevIds": [
+    "62106cf9-f6d0-492b-b9a1-280735c6dd6d"
+  ],
+  "footprints": [
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_account"
+      ],
+      "writes": [
+        "s|fk|public.auth_account.auth_account_user_id_auth_user_id_fk",
+        "n|fk|public.auth_account.auth_account_user_id_auth_user_id_fk",
+        "n|con|public.auth_account.auth_account_user_id_auth_user_id_fk",
+        "s|fk|public.auth_account.auth_account_user_id_auth_user_id_fkey",
+        "n|fk|public.auth_account.auth_account_user_id_auth_user_id_fkey",
+        "n|con|public.auth_account.auth_account_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.auth_account",
+        "n|sch|public",
+        "e|col|public.auth_account.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_oauth_access_token"
+      ],
+      "writes": [
+        "s|fk|public.auth_oauth_access_token.auth_oauth_access_token_client_id_auth_oauth_client_client_id_f",
+        "n|fk|public.auth_oauth_access_token.auth_oauth_access_token_client_id_auth_oauth_client_client_id_f",
+        "n|con|public.auth_oauth_access_token.auth_oauth_access_token_client_id_auth_oauth_client_client_id_f",
+        "s|fk|public.auth_oauth_access_token.auth_oauth_access_token_naGWi3hIwfxW_fkey",
+        "n|fk|public.auth_oauth_access_token.auth_oauth_access_token_naGWi3hIwfxW_fkey",
+        "n|con|public.auth_oauth_access_token.auth_oauth_access_token_naGWi3hIwfxW_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_access_token",
+        "n|sch|public",
+        "e|col|public.auth_oauth_access_token.client_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_oauth_access_token"
+      ],
+      "writes": [
+        "s|fk|public.auth_oauth_access_token.auth_oauth_access_token_session_id_auth_session_id_fk",
+        "n|fk|public.auth_oauth_access_token.auth_oauth_access_token_session_id_auth_session_id_fk",
+        "n|con|public.auth_oauth_access_token.auth_oauth_access_token_session_id_auth_session_id_fk",
+        "s|fk|public.auth_oauth_access_token.auth_oauth_access_token_session_id_auth_session_id_fkey",
+        "n|fk|public.auth_oauth_access_token.auth_oauth_access_token_session_id_auth_session_id_fkey",
+        "n|con|public.auth_oauth_access_token.auth_oauth_access_token_session_id_auth_session_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_access_token",
+        "n|sch|public",
+        "e|col|public.auth_oauth_access_token.session_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_oauth_access_token"
+      ],
+      "writes": [
+        "s|fk|public.auth_oauth_access_token.auth_oauth_access_token_user_id_auth_user_id_fk",
+        "n|fk|public.auth_oauth_access_token.auth_oauth_access_token_user_id_auth_user_id_fk",
+        "n|con|public.auth_oauth_access_token.auth_oauth_access_token_user_id_auth_user_id_fk",
+        "s|fk|public.auth_oauth_access_token.auth_oauth_access_token_user_id_auth_user_id_fkey",
+        "n|fk|public.auth_oauth_access_token.auth_oauth_access_token_user_id_auth_user_id_fkey",
+        "n|con|public.auth_oauth_access_token.auth_oauth_access_token_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_access_token",
+        "n|sch|public",
+        "e|col|public.auth_oauth_access_token.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_oauth_access_token"
+      ],
+      "writes": [
+        "s|fk|public.auth_oauth_access_token.auth_oauth_access_token_refresh_id_auth_oauth_refresh_token_id_",
+        "n|fk|public.auth_oauth_access_token.auth_oauth_access_token_refresh_id_auth_oauth_refresh_token_id_",
+        "n|con|public.auth_oauth_access_token.auth_oauth_access_token_refresh_id_auth_oauth_refresh_token_id_",
+        "s|fk|public.auth_oauth_access_token.auth_oauth_access_token_QVDqdup4UBCC_fkey",
+        "n|fk|public.auth_oauth_access_token.auth_oauth_access_token_QVDqdup4UBCC_fkey",
+        "n|con|public.auth_oauth_access_token.auth_oauth_access_token_QVDqdup4UBCC_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_access_token",
+        "n|sch|public",
+        "e|col|public.auth_oauth_access_token.refresh_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_oauth_client"
+      ],
+      "writes": [
+        "s|fk|public.auth_oauth_client.auth_oauth_client_user_id_auth_user_id_fk",
+        "n|fk|public.auth_oauth_client.auth_oauth_client_user_id_auth_user_id_fk",
+        "n|con|public.auth_oauth_client.auth_oauth_client_user_id_auth_user_id_fk",
+        "s|fk|public.auth_oauth_client.auth_oauth_client_user_id_auth_user_id_fkey",
+        "n|fk|public.auth_oauth_client.auth_oauth_client_user_id_auth_user_id_fkey",
+        "n|con|public.auth_oauth_client.auth_oauth_client_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_client",
+        "n|sch|public",
+        "e|col|public.auth_oauth_client.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_oauth_consent"
+      ],
+      "writes": [
+        "s|fk|public.auth_oauth_consent.auth_oauth_consent_client_id_auth_oauth_client_client_id_fk",
+        "n|fk|public.auth_oauth_consent.auth_oauth_consent_client_id_auth_oauth_client_client_id_fk",
+        "n|con|public.auth_oauth_consent.auth_oauth_consent_client_id_auth_oauth_client_client_id_fk",
+        "s|fk|public.auth_oauth_consent.auth_oauth_consent_client_id_auth_oauth_client_client_id_fkey",
+        "n|fk|public.auth_oauth_consent.auth_oauth_consent_client_id_auth_oauth_client_client_id_fkey",
+        "n|con|public.auth_oauth_consent.auth_oauth_consent_client_id_auth_oauth_client_client_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_consent",
+        "n|sch|public",
+        "e|col|public.auth_oauth_consent.client_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_oauth_consent"
+      ],
+      "writes": [
+        "s|fk|public.auth_oauth_consent.auth_oauth_consent_user_id_auth_user_id_fk",
+        "n|fk|public.auth_oauth_consent.auth_oauth_consent_user_id_auth_user_id_fk",
+        "n|con|public.auth_oauth_consent.auth_oauth_consent_user_id_auth_user_id_fk",
+        "s|fk|public.auth_oauth_consent.auth_oauth_consent_user_id_auth_user_id_fkey",
+        "n|fk|public.auth_oauth_consent.auth_oauth_consent_user_id_auth_user_id_fkey",
+        "n|con|public.auth_oauth_consent.auth_oauth_consent_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_consent",
+        "n|sch|public",
+        "e|col|public.auth_oauth_consent.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_oauth_refresh_token"
+      ],
+      "writes": [
+        "s|fk|public.auth_oauth_refresh_token.auth_oauth_refresh_token_client_id_auth_oauth_client_client_id_",
+        "n|fk|public.auth_oauth_refresh_token.auth_oauth_refresh_token_client_id_auth_oauth_client_client_id_",
+        "n|con|public.auth_oauth_refresh_token.auth_oauth_refresh_token_client_id_auth_oauth_client_client_id_",
+        "s|fk|public.auth_oauth_refresh_token.auth_oauth_refresh_token_UbPvdcQS9AKh_fkey",
+        "n|fk|public.auth_oauth_refresh_token.auth_oauth_refresh_token_UbPvdcQS9AKh_fkey",
+        "n|con|public.auth_oauth_refresh_token.auth_oauth_refresh_token_UbPvdcQS9AKh_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_refresh_token",
+        "n|sch|public",
+        "e|col|public.auth_oauth_refresh_token.client_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_oauth_refresh_token"
+      ],
+      "writes": [
+        "s|fk|public.auth_oauth_refresh_token.auth_oauth_refresh_token_session_id_auth_session_id_fk",
+        "n|fk|public.auth_oauth_refresh_token.auth_oauth_refresh_token_session_id_auth_session_id_fk",
+        "n|con|public.auth_oauth_refresh_token.auth_oauth_refresh_token_session_id_auth_session_id_fk",
+        "s|fk|public.auth_oauth_refresh_token.auth_oauth_refresh_token_session_id_auth_session_id_fkey",
+        "n|fk|public.auth_oauth_refresh_token.auth_oauth_refresh_token_session_id_auth_session_id_fkey",
+        "n|con|public.auth_oauth_refresh_token.auth_oauth_refresh_token_session_id_auth_session_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_refresh_token",
+        "n|sch|public",
+        "e|col|public.auth_oauth_refresh_token.session_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_oauth_refresh_token"
+      ],
+      "writes": [
+        "s|fk|public.auth_oauth_refresh_token.auth_oauth_refresh_token_user_id_auth_user_id_fk",
+        "n|fk|public.auth_oauth_refresh_token.auth_oauth_refresh_token_user_id_auth_user_id_fk",
+        "n|con|public.auth_oauth_refresh_token.auth_oauth_refresh_token_user_id_auth_user_id_fk",
+        "s|fk|public.auth_oauth_refresh_token.auth_oauth_refresh_token_user_id_auth_user_id_fkey",
+        "n|fk|public.auth_oauth_refresh_token.auth_oauth_refresh_token_user_id_auth_user_id_fkey",
+        "n|con|public.auth_oauth_refresh_token.auth_oauth_refresh_token_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_refresh_token",
+        "n|sch|public",
+        "e|col|public.auth_oauth_refresh_token.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_session"
+      ],
+      "writes": [
+        "s|fk|public.auth_session.auth_session_user_id_auth_user_id_fk",
+        "n|fk|public.auth_session.auth_session_user_id_auth_user_id_fk",
+        "n|con|public.auth_session.auth_session_user_id_auth_user_id_fk",
+        "s|fk|public.auth_session.auth_session_user_id_auth_user_id_fkey",
+        "n|fk|public.auth_session.auth_session_user_id_auth_user_id_fkey",
+        "n|con|public.auth_session.auth_session_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.auth_session",
+        "n|sch|public",
+        "e|col|public.auth_session.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_contract"
+      ],
+      "writes": [
+        "s|fk|public.org_contract.org_contract_created_by_user_id_auth_user_id_fk",
+        "n|fk|public.org_contract.org_contract_created_by_user_id_auth_user_id_fk",
+        "n|con|public.org_contract.org_contract_created_by_user_id_auth_user_id_fk",
+        "s|fk|public.org_contract.org_contract_created_by_user_id_auth_user_id_fkey",
+        "n|fk|public.org_contract.org_contract_created_by_user_id_auth_user_id_fkey",
+        "n|con|public.org_contract.org_contract_created_by_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_contract",
+        "n|sch|public",
+        "e|col|public.org_contract.created_by_user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_contract_signature"
+      ],
+      "writes": [
+        "s|fk|public.org_contract_signature.org_contract_signature_contract_id_org_contract_id_fk",
+        "n|fk|public.org_contract_signature.org_contract_signature_contract_id_org_contract_id_fk",
+        "n|con|public.org_contract_signature.org_contract_signature_contract_id_org_contract_id_fk",
+        "s|fk|public.org_contract_signature.org_contract_signature_contract_id_org_contract_id_fkey",
+        "n|fk|public.org_contract_signature.org_contract_signature_contract_id_org_contract_id_fkey",
+        "n|con|public.org_contract_signature.org_contract_signature_contract_id_org_contract_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_contract_signature",
+        "n|sch|public",
+        "e|col|public.org_contract_signature.contract_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_contract_signature"
+      ],
+      "writes": [
+        "s|fk|public.org_contract_signature.org_contract_signature_user_id_auth_user_id_fk",
+        "n|fk|public.org_contract_signature.org_contract_signature_user_id_auth_user_id_fk",
+        "n|con|public.org_contract_signature.org_contract_signature_user_id_auth_user_id_fk",
+        "s|fk|public.org_contract_signature.org_contract_signature_user_id_auth_user_id_fkey",
+        "n|fk|public.org_contract_signature.org_contract_signature_user_id_auth_user_id_fkey",
+        "n|con|public.org_contract_signature.org_contract_signature_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_contract_signature",
+        "n|sch|public",
+        "e|col|public.org_contract_signature.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_fine"
+      ],
+      "writes": [
+        "s|fk|public.org_fine.org_fine_user_id_auth_user_id_fk",
+        "n|fk|public.org_fine.org_fine_user_id_auth_user_id_fk",
+        "n|con|public.org_fine.org_fine_user_id_auth_user_id_fk",
+        "s|fk|public.org_fine.org_fine_user_id_auth_user_id_fkey",
+        "n|fk|public.org_fine.org_fine_user_id_auth_user_id_fkey",
+        "n|con|public.org_fine.org_fine_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_fine",
+        "n|sch|public",
+        "e|col|public.org_fine.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_fine"
+      ],
+      "writes": [
+        "s|fk|public.org_fine.org_fine_group_slug_org_group_slug_fk",
+        "n|fk|public.org_fine.org_fine_group_slug_org_group_slug_fk",
+        "n|con|public.org_fine.org_fine_group_slug_org_group_slug_fk",
+        "s|fk|public.org_fine.org_fine_group_slug_org_group_slug_fkey",
+        "n|fk|public.org_fine.org_fine_group_slug_org_group_slug_fkey",
+        "n|con|public.org_fine.org_fine_group_slug_org_group_slug_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_fine",
+        "n|sch|public",
+        "e|col|public.org_fine.group_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_fine"
+      ],
+      "writes": [
+        "s|fk|public.org_fine.org_fine_created_by_user_id_auth_user_id_fk",
+        "n|fk|public.org_fine.org_fine_created_by_user_id_auth_user_id_fk",
+        "n|con|public.org_fine.org_fine_created_by_user_id_auth_user_id_fk",
+        "s|fk|public.org_fine.org_fine_created_by_user_id_auth_user_id_fkey",
+        "n|fk|public.org_fine.org_fine_created_by_user_id_auth_user_id_fkey",
+        "n|con|public.org_fine.org_fine_created_by_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_fine",
+        "n|sch|public",
+        "e|col|public.org_fine.created_by_user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_fine"
+      ],
+      "writes": [
+        "s|fk|public.org_fine.org_fine_approved_by_user_id_auth_user_id_fk",
+        "n|fk|public.org_fine.org_fine_approved_by_user_id_auth_user_id_fk",
+        "n|con|public.org_fine.org_fine_approved_by_user_id_auth_user_id_fk",
+        "s|fk|public.org_fine.org_fine_approved_by_user_id_auth_user_id_fkey",
+        "n|fk|public.org_fine.org_fine_approved_by_user_id_auth_user_id_fkey",
+        "n|con|public.org_fine.org_fine_approved_by_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_fine",
+        "n|sch|public",
+        "e|col|public.org_fine.approved_by_user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_fine"
+      ],
+      "writes": [
+        "s|fk|public.org_fine.org_fine_law_id_org_group_law_id_fk",
+        "n|fk|public.org_fine.org_fine_law_id_org_group_law_id_fk",
+        "n|con|public.org_fine.org_fine_law_id_org_group_law_id_fk",
+        "s|fk|public.org_fine.org_fine_law_id_org_group_law_id_fkey",
+        "n|fk|public.org_fine.org_fine_law_id_org_group_law_id_fkey",
+        "n|con|public.org_fine.org_fine_law_id_org_group_law_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_fine",
+        "n|sch|public",
+        "e|col|public.org_fine.law_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group"
+      ],
+      "writes": [
+        "s|fk|public.org_group.org_group_fines_admin_id_auth_user_id_fk",
+        "n|fk|public.org_group.org_group_fines_admin_id_auth_user_id_fk",
+        "n|con|public.org_group.org_group_fines_admin_id_auth_user_id_fk",
+        "s|fk|public.org_group.org_group_fines_admin_id_auth_user_id_fkey",
+        "n|fk|public.org_group.org_group_fines_admin_id_auth_user_id_fkey",
+        "n|con|public.org_group.org_group_fines_admin_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group",
+        "n|sch|public",
+        "e|col|public.org_group.fines_admin_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group"
+      ],
+      "writes": [
+        "s|fk|public.org_group.org_group_institute_id_org_institute_id_fk",
+        "n|fk|public.org_group.org_group_institute_id_org_institute_id_fk",
+        "n|con|public.org_group.org_group_institute_id_org_institute_id_fk",
+        "s|fk|public.org_group.org_group_institute_id_org_institute_id_fkey",
+        "n|fk|public.org_group.org_group_institute_id_org_institute_id_fkey",
+        "n|con|public.org_group.org_group_institute_id_org_institute_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group",
+        "n|sch|public",
+        "e|col|public.org_group.institute_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group"
+      ],
+      "writes": [
+        "s|fk|public.org_group.org_group_study_program_id_org_study_program_id_fk",
+        "n|fk|public.org_group.org_group_study_program_id_org_study_program_id_fk",
+        "n|con|public.org_group.org_group_study_program_id_org_study_program_id_fk",
+        "s|fk|public.org_group.org_group_study_program_id_org_study_program_id_fkey",
+        "n|fk|public.org_group.org_group_study_program_id_org_study_program_id_fkey",
+        "n|con|public.org_group.org_group_study_program_id_org_study_program_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group",
+        "n|sch|public",
+        "e|col|public.org_group.study_program_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group_join_request"
+      ],
+      "writes": [
+        "s|fk|public.org_group_join_request.org_group_join_request_user_id_auth_user_id_fk",
+        "n|fk|public.org_group_join_request.org_group_join_request_user_id_auth_user_id_fk",
+        "n|con|public.org_group_join_request.org_group_join_request_user_id_auth_user_id_fk",
+        "s|fk|public.org_group_join_request.org_group_join_request_user_id_auth_user_id_fkey",
+        "n|fk|public.org_group_join_request.org_group_join_request_user_id_auth_user_id_fkey",
+        "n|con|public.org_group_join_request.org_group_join_request_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group_join_request",
+        "n|sch|public",
+        "e|col|public.org_group_join_request.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group_join_request"
+      ],
+      "writes": [
+        "s|fk|public.org_group_join_request.org_group_join_request_group_slug_org_group_slug_fk",
+        "n|fk|public.org_group_join_request.org_group_join_request_group_slug_org_group_slug_fk",
+        "n|con|public.org_group_join_request.org_group_join_request_group_slug_org_group_slug_fk",
+        "s|fk|public.org_group_join_request.org_group_join_request_group_slug_org_group_slug_fkey",
+        "n|fk|public.org_group_join_request.org_group_join_request_group_slug_org_group_slug_fkey",
+        "n|con|public.org_group_join_request.org_group_join_request_group_slug_org_group_slug_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group_join_request",
+        "n|sch|public",
+        "e|col|public.org_group_join_request.group_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group_law"
+      ],
+      "writes": [
+        "s|fk|public.org_group_law.org_group_law_group_slug_org_group_slug_fk",
+        "n|fk|public.org_group_law.org_group_law_group_slug_org_group_slug_fk",
+        "n|con|public.org_group_law.org_group_law_group_slug_org_group_slug_fk",
+        "s|fk|public.org_group_law.org_group_law_group_slug_org_group_slug_fkey",
+        "n|fk|public.org_group_law.org_group_law_group_slug_org_group_slug_fkey",
+        "n|con|public.org_group_law.org_group_law_group_slug_org_group_slug_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group_law",
+        "n|sch|public",
+        "e|col|public.org_group_law.group_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group_membership"
+      ],
+      "writes": [
+        "s|fk|public.org_group_membership.org_group_membership_user_id_auth_user_id_fk",
+        "n|fk|public.org_group_membership.org_group_membership_user_id_auth_user_id_fk",
+        "n|con|public.org_group_membership.org_group_membership_user_id_auth_user_id_fk",
+        "s|fk|public.org_group_membership.org_group_membership_user_id_auth_user_id_fkey",
+        "n|fk|public.org_group_membership.org_group_membership_user_id_auth_user_id_fkey",
+        "n|con|public.org_group_membership.org_group_membership_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group_membership",
+        "n|sch|public",
+        "e|col|public.org_group_membership.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group_membership"
+      ],
+      "writes": [
+        "s|fk|public.org_group_membership.org_group_membership_group_slug_org_group_slug_fk",
+        "n|fk|public.org_group_membership.org_group_membership_group_slug_org_group_slug_fk",
+        "n|con|public.org_group_membership.org_group_membership_group_slug_org_group_slug_fk",
+        "s|fk|public.org_group_membership.org_group_membership_group_slug_org_group_slug_fkey",
+        "n|fk|public.org_group_membership.org_group_membership_group_slug_org_group_slug_fkey",
+        "n|con|public.org_group_membership.org_group_membership_group_slug_org_group_slug_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group_membership",
+        "n|sch|public",
+        "e|col|public.org_group_membership.group_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group_membership_history"
+      ],
+      "writes": [
+        "s|fk|public.org_group_membership_history.org_group_membership_history_user_id_auth_user_id_fk",
+        "n|fk|public.org_group_membership_history.org_group_membership_history_user_id_auth_user_id_fk",
+        "n|con|public.org_group_membership_history.org_group_membership_history_user_id_auth_user_id_fk",
+        "s|fk|public.org_group_membership_history.org_group_membership_history_user_id_auth_user_id_fkey",
+        "n|fk|public.org_group_membership_history.org_group_membership_history_user_id_auth_user_id_fkey",
+        "n|con|public.org_group_membership_history.org_group_membership_history_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group_membership_history",
+        "n|sch|public",
+        "e|col|public.org_group_membership_history.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group_membership_history"
+      ],
+      "writes": [
+        "s|fk|public.org_group_membership_history.org_group_membership_history_group_slug_org_group_slug_fk",
+        "n|fk|public.org_group_membership_history.org_group_membership_history_group_slug_org_group_slug_fk",
+        "n|con|public.org_group_membership_history.org_group_membership_history_group_slug_org_group_slug_fk",
+        "s|fk|public.org_group_membership_history.org_group_membership_history_group_slug_org_group_slug_fkey",
+        "n|fk|public.org_group_membership_history.org_group_membership_history_group_slug_org_group_slug_fkey",
+        "n|con|public.org_group_membership_history.org_group_membership_history_group_slug_org_group_slug_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group_membership_history",
+        "n|sch|public",
+        "e|col|public.org_group_membership_history.group_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group_position"
+      ],
+      "writes": [
+        "s|fk|public.org_group_position.org_group_position_group_slug_org_group_slug_fk",
+        "n|fk|public.org_group_position.org_group_position_group_slug_org_group_slug_fk",
+        "n|con|public.org_group_position.org_group_position_group_slug_org_group_slug_fk",
+        "s|fk|public.org_group_position.org_group_position_group_slug_org_group_slug_fkey",
+        "n|fk|public.org_group_position.org_group_position_group_slug_org_group_slug_fkey",
+        "n|con|public.org_group_position.org_group_position_group_slug_org_group_slug_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group_position",
+        "n|sch|public",
+        "e|col|public.org_group_position.group_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group_position"
+      ],
+      "writes": [
+        "s|fk|public.org_group_position.org_group_position_linked_group_slug_org_group_slug_fk",
+        "n|fk|public.org_group_position.org_group_position_linked_group_slug_org_group_slug_fk",
+        "n|con|public.org_group_position.org_group_position_linked_group_slug_org_group_slug_fk",
+        "s|fk|public.org_group_position.org_group_position_linked_group_slug_org_group_slug_fkey",
+        "n|fk|public.org_group_position.org_group_position_linked_group_slug_org_group_slug_fkey",
+        "n|con|public.org_group_position.org_group_position_linked_group_slug_org_group_slug_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group_position",
+        "n|sch|public",
+        "e|col|public.org_group_position.linked_group_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group_position_holder"
+      ],
+      "writes": [
+        "s|fk|public.org_group_position_holder.org_group_position_holder_position_id_org_group_position_id_fk",
+        "n|fk|public.org_group_position_holder.org_group_position_holder_position_id_org_group_position_id_fk",
+        "n|con|public.org_group_position_holder.org_group_position_holder_position_id_org_group_position_id_fk",
+        "s|fk|public.org_group_position_holder.org_group_position_holder_kz7H67Ql9Udc_fkey",
+        "n|fk|public.org_group_position_holder.org_group_position_holder_kz7H67Ql9Udc_fkey",
+        "n|con|public.org_group_position_holder.org_group_position_holder_kz7H67Ql9Udc_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group_position_holder",
+        "n|sch|public",
+        "e|col|public.org_group_position_holder.position_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group_position_holder"
+      ],
+      "writes": [
+        "s|fk|public.org_group_position_holder.org_group_position_holder_user_id_auth_user_id_fk",
+        "n|fk|public.org_group_position_holder.org_group_position_holder_user_id_auth_user_id_fk",
+        "n|con|public.org_group_position_holder.org_group_position_holder_user_id_auth_user_id_fk",
+        "s|fk|public.org_group_position_holder.org_group_position_holder_user_id_auth_user_id_fkey",
+        "n|fk|public.org_group_position_holder.org_group_position_holder_user_id_auth_user_id_fkey",
+        "n|con|public.org_group_position_holder.org_group_position_holder_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group_position_holder",
+        "n|sch|public",
+        "e|col|public.org_group_position_holder.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group_position_holder"
+      ],
+      "writes": [
+        "s|fk|public.org_group_position_holder.org_group_position_holder_granted_by_auth_user_id_fk",
+        "n|fk|public.org_group_position_holder.org_group_position_holder_granted_by_auth_user_id_fk",
+        "n|con|public.org_group_position_holder.org_group_position_holder_granted_by_auth_user_id_fk",
+        "s|fk|public.org_group_position_holder.org_group_position_holder_granted_by_auth_user_id_fkey",
+        "n|fk|public.org_group_position_holder.org_group_position_holder_granted_by_auth_user_id_fkey",
+        "n|con|public.org_group_position_holder.org_group_position_holder_granted_by_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group_position_holder",
+        "n|sch|public",
+        "e|col|public.org_group_position_holder.granted_by"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_study_program_membership"
+      ],
+      "writes": [
+        "s|fk|public.org_study_program_membership.org_study_program_membership_user_id_auth_user_id_fk",
+        "n|fk|public.org_study_program_membership.org_study_program_membership_user_id_auth_user_id_fk",
+        "n|con|public.org_study_program_membership.org_study_program_membership_user_id_auth_user_id_fk",
+        "s|fk|public.org_study_program_membership.org_study_program_membership_user_id_auth_user_id_fkey",
+        "n|fk|public.org_study_program_membership.org_study_program_membership_user_id_auth_user_id_fkey",
+        "n|con|public.org_study_program_membership.org_study_program_membership_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_study_program_membership",
+        "n|sch|public",
+        "e|col|public.org_study_program_membership.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_study_program_membership"
+      ],
+      "writes": [
+        "s|fk|public.org_study_program_membership.org_study_program_membership_study_program_id_org_study_program",
+        "n|fk|public.org_study_program_membership.org_study_program_membership_study_program_id_org_study_program",
+        "n|con|public.org_study_program_membership.org_study_program_membership_study_program_id_org_study_program",
+        "s|fk|public.org_study_program_membership.org_study_program_membership_gNDIJTnzJ0AV_fkey",
+        "n|fk|public.org_study_program_membership.org_study_program_membership_gNDIJTnzJ0AV_fkey",
+        "n|con|public.org_study_program_membership.org_study_program_membership_gNDIJTnzJ0AV_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_study_program_membership",
+        "n|sch|public",
+        "e|col|public.org_study_program_membership.study_program_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_event"
+      ],
+      "writes": [
+        "s|fk|public.event_event.event_event_category_slug_event_category_slug_fk",
+        "n|fk|public.event_event.event_event_category_slug_event_category_slug_fk",
+        "n|con|public.event_event.event_event_category_slug_event_category_slug_fk",
+        "s|fk|public.event_event.event_event_category_slug_event_category_slug_fkey",
+        "n|fk|public.event_event.event_event_category_slug_event_category_slug_fkey",
+        "n|con|public.event_event.event_event_category_slug_event_category_slug_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_event",
+        "n|sch|public",
+        "e|col|public.event_event.category_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_event"
+      ],
+      "writes": [
+        "s|fk|public.event_event.event_event_contact_person_id_auth_user_id_fk",
+        "n|fk|public.event_event.event_event_contact_person_id_auth_user_id_fk",
+        "n|con|public.event_event.event_event_contact_person_id_auth_user_id_fk",
+        "s|fk|public.event_event.event_event_contact_person_id_auth_user_id_fkey",
+        "n|fk|public.event_event.event_event_contact_person_id_auth_user_id_fkey",
+        "n|con|public.event_event.event_event_contact_person_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_event",
+        "n|sch|public",
+        "e|col|public.event_event.contact_person_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_event"
+      ],
+      "writes": [
+        "s|fk|public.event_event.event_event_created_by_user_id_auth_user_id_fk",
+        "n|fk|public.event_event.event_event_created_by_user_id_auth_user_id_fk",
+        "n|con|public.event_event.event_event_created_by_user_id_auth_user_id_fk",
+        "s|fk|public.event_event.event_event_created_by_user_id_auth_user_id_fkey",
+        "n|fk|public.event_event.event_event_created_by_user_id_auth_user_id_fkey",
+        "n|con|public.event_event.event_event_created_by_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_event",
+        "n|sch|public",
+        "e|col|public.event_event.created_by_user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_event"
+      ],
+      "writes": [
+        "s|fk|public.event_event.event_event_update_by_user_id_auth_user_id_fk",
+        "n|fk|public.event_event.event_event_update_by_user_id_auth_user_id_fk",
+        "n|con|public.event_event.event_event_update_by_user_id_auth_user_id_fk",
+        "s|fk|public.event_event.event_event_update_by_user_id_auth_user_id_fkey",
+        "n|fk|public.event_event.event_event_update_by_user_id_auth_user_id_fkey",
+        "n|con|public.event_event.event_event_update_by_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_event",
+        "n|sch|public",
+        "e|col|public.event_event.update_by_user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_event"
+      ],
+      "writes": [
+        "s|fk|public.event_event.event_event_organizer_group_slug_org_group_slug_fk",
+        "n|fk|public.event_event.event_event_organizer_group_slug_org_group_slug_fk",
+        "n|con|public.event_event.event_event_organizer_group_slug_org_group_slug_fk",
+        "s|fk|public.event_event.event_event_organizer_group_slug_org_group_slug_fkey",
+        "n|fk|public.event_event.event_event_organizer_group_slug_org_group_slug_fkey",
+        "n|con|public.event_event.event_event_organizer_group_slug_org_group_slug_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_event",
+        "n|sch|public",
+        "e|col|public.event_event.organizer_group_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_event"
+      ],
+      "writes": [
+        "s|fk|public.event_event.event_event_restricted_to_institute_id_org_institute_id_fk",
+        "n|fk|public.event_event.event_event_restricted_to_institute_id_org_institute_id_fk",
+        "n|con|public.event_event.event_event_restricted_to_institute_id_org_institute_id_fk",
+        "s|fk|public.event_event.event_event_restricted_to_institute_id_org_institute_id_fkey",
+        "n|fk|public.event_event.event_event_restricted_to_institute_id_org_institute_id_fkey",
+        "n|con|public.event_event.event_event_restricted_to_institute_id_org_institute_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_event",
+        "n|sch|public",
+        "e|col|public.event_event.restricted_to_institute_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_favorite"
+      ],
+      "writes": [
+        "s|fk|public.event_favorite.event_favorite_user_id_auth_user_id_fk",
+        "n|fk|public.event_favorite.event_favorite_user_id_auth_user_id_fk",
+        "n|con|public.event_favorite.event_favorite_user_id_auth_user_id_fk",
+        "s|fk|public.event_favorite.event_favorite_user_id_auth_user_id_fkey",
+        "n|fk|public.event_favorite.event_favorite_user_id_auth_user_id_fkey",
+        "n|con|public.event_favorite.event_favorite_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_favorite",
+        "n|sch|public",
+        "e|col|public.event_favorite.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_favorite"
+      ],
+      "writes": [
+        "s|fk|public.event_favorite.event_favorite_event_id_event_event_id_fk",
+        "n|fk|public.event_favorite.event_favorite_event_id_event_event_id_fk",
+        "n|con|public.event_favorite.event_favorite_event_id_event_event_id_fk",
+        "s|fk|public.event_favorite.event_favorite_event_id_event_event_id_fkey",
+        "n|fk|public.event_favorite.event_favorite_event_id_event_event_id_fkey",
+        "n|con|public.event_favorite.event_favorite_event_id_event_event_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_favorite",
+        "n|sch|public",
+        "e|col|public.event_favorite.event_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_feedback"
+      ],
+      "writes": [
+        "s|fk|public.event_feedback.event_feedback_event_id_event_event_id_fk",
+        "n|fk|public.event_feedback.event_feedback_event_id_event_event_id_fk",
+        "n|con|public.event_feedback.event_feedback_event_id_event_event_id_fk",
+        "s|fk|public.event_feedback.event_feedback_event_id_event_event_id_fkey",
+        "n|fk|public.event_feedback.event_feedback_event_id_event_event_id_fkey",
+        "n|con|public.event_feedback.event_feedback_event_id_event_event_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_feedback",
+        "n|sch|public",
+        "e|col|public.event_feedback.event_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_feedback"
+      ],
+      "writes": [
+        "s|fk|public.event_feedback.event_feedback_user_id_auth_user_id_fk",
+        "n|fk|public.event_feedback.event_feedback_user_id_auth_user_id_fk",
+        "n|con|public.event_feedback.event_feedback_user_id_auth_user_id_fk",
+        "s|fk|public.event_feedback.event_feedback_user_id_auth_user_id_fkey",
+        "n|fk|public.event_feedback.event_feedback_user_id_auth_user_id_fkey",
+        "n|con|public.event_feedback.event_feedback_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_feedback",
+        "n|sch|public",
+        "e|col|public.event_feedback.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_message"
+      ],
+      "writes": [
+        "s|fk|public.event_message.event_message_event_id_event_event_id_fk",
+        "n|fk|public.event_message.event_message_event_id_event_event_id_fk",
+        "n|con|public.event_message.event_message_event_id_event_event_id_fk",
+        "s|fk|public.event_message.event_message_event_id_event_event_id_fkey",
+        "n|fk|public.event_message.event_message_event_id_event_event_id_fkey",
+        "n|con|public.event_message.event_message_event_id_event_event_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_message",
+        "n|sch|public",
+        "e|col|public.event_message.event_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_message"
+      ],
+      "writes": [
+        "s|fk|public.event_message.event_message_sent_by_id_auth_user_id_fk",
+        "n|fk|public.event_message.event_message_sent_by_id_auth_user_id_fk",
+        "n|con|public.event_message.event_message_sent_by_id_auth_user_id_fk",
+        "s|fk|public.event_message.event_message_sent_by_id_auth_user_id_fkey",
+        "n|fk|public.event_message.event_message_sent_by_id_auth_user_id_fkey",
+        "n|con|public.event_message.event_message_sent_by_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_message",
+        "n|sch|public",
+        "e|col|public.event_message.sent_by_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_payment"
+      ],
+      "writes": [
+        "s|fk|public.event_payment.event_payment_event_id_event_event_id_fk",
+        "n|fk|public.event_payment.event_payment_event_id_event_event_id_fk",
+        "n|con|public.event_payment.event_payment_event_id_event_event_id_fk",
+        "s|fk|public.event_payment.event_payment_event_id_event_event_id_fkey",
+        "n|fk|public.event_payment.event_payment_event_id_event_event_id_fkey",
+        "n|con|public.event_payment.event_payment_event_id_event_event_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_payment",
+        "n|sch|public",
+        "e|col|public.event_payment.event_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_payment"
+      ],
+      "writes": [
+        "s|fk|public.event_payment.event_payment_user_id_auth_user_id_fk",
+        "n|fk|public.event_payment.event_payment_user_id_auth_user_id_fk",
+        "n|con|public.event_payment.event_payment_user_id_auth_user_id_fk",
+        "s|fk|public.event_payment.event_payment_user_id_auth_user_id_fkey",
+        "n|fk|public.event_payment.event_payment_user_id_auth_user_id_fkey",
+        "n|con|public.event_payment.event_payment_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_payment",
+        "n|sch|public",
+        "e|col|public.event_payment.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_priority_pool"
+      ],
+      "writes": [
+        "s|fk|public.event_priority_pool.event_priority_pool_event_id_event_event_id_fk",
+        "n|fk|public.event_priority_pool.event_priority_pool_event_id_event_event_id_fk",
+        "n|con|public.event_priority_pool.event_priority_pool_event_id_event_event_id_fk",
+        "s|fk|public.event_priority_pool.event_priority_pool_event_id_event_event_id_fkey",
+        "n|fk|public.event_priority_pool.event_priority_pool_event_id_event_event_id_fkey",
+        "n|con|public.event_priority_pool.event_priority_pool_event_id_event_event_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_priority_pool",
+        "n|sch|public",
+        "e|col|public.event_priority_pool.event_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_priority_pool"
+      ],
+      "writes": [
+        "s|fk|public.event_priority_pool.event_priority_pool_group_slug_org_group_slug_fk",
+        "n|fk|public.event_priority_pool.event_priority_pool_group_slug_org_group_slug_fk",
+        "n|con|public.event_priority_pool.event_priority_pool_group_slug_org_group_slug_fk",
+        "s|fk|public.event_priority_pool.event_priority_pool_group_slug_org_group_slug_fkey",
+        "n|fk|public.event_priority_pool.event_priority_pool_group_slug_org_group_slug_fkey",
+        "n|con|public.event_priority_pool.event_priority_pool_group_slug_org_group_slug_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_priority_pool",
+        "n|sch|public",
+        "e|col|public.event_priority_pool.group_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_priority_pool_group"
+      ],
+      "writes": [
+        "s|fk|public.event_priority_pool_group.event_priority_pool_group_priority_pool_id_event_priority_pool_",
+        "n|fk|public.event_priority_pool_group.event_priority_pool_group_priority_pool_id_event_priority_pool_",
+        "n|con|public.event_priority_pool_group.event_priority_pool_group_priority_pool_id_event_priority_pool_",
+        "s|fk|public.event_priority_pool_group.event_priority_pool_group_C7Qd2ITc9bwf_fkey",
+        "n|fk|public.event_priority_pool_group.event_priority_pool_group_C7Qd2ITc9bwf_fkey",
+        "n|con|public.event_priority_pool_group.event_priority_pool_group_C7Qd2ITc9bwf_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_priority_pool_group",
+        "n|sch|public",
+        "e|col|public.event_priority_pool_group.priority_pool_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_priority_pool_group"
+      ],
+      "writes": [
+        "s|fk|public.event_priority_pool_group.event_priority_pool_group_group_slug_org_group_slug_fk",
+        "n|fk|public.event_priority_pool_group.event_priority_pool_group_group_slug_org_group_slug_fk",
+        "n|con|public.event_priority_pool_group.event_priority_pool_group_group_slug_org_group_slug_fk",
+        "s|fk|public.event_priority_pool_group.event_priority_pool_group_group_slug_org_group_slug_fkey",
+        "n|fk|public.event_priority_pool_group.event_priority_pool_group_group_slug_org_group_slug_fkey",
+        "n|con|public.event_priority_pool_group.event_priority_pool_group_group_slug_org_group_slug_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_priority_pool_group",
+        "n|sch|public",
+        "e|col|public.event_priority_pool_group.group_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_priority_user"
+      ],
+      "writes": [
+        "s|fk|public.event_priority_user.event_priority_user_event_id_event_event_id_fk",
+        "n|fk|public.event_priority_user.event_priority_user_event_id_event_event_id_fk",
+        "n|con|public.event_priority_user.event_priority_user_event_id_event_event_id_fk",
+        "s|fk|public.event_priority_user.event_priority_user_event_id_event_event_id_fkey",
+        "n|fk|public.event_priority_user.event_priority_user_event_id_event_event_id_fkey",
+        "n|con|public.event_priority_user.event_priority_user_event_id_event_event_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_priority_user",
+        "n|sch|public",
+        "e|col|public.event_priority_user.event_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_priority_user"
+      ],
+      "writes": [
+        "s|fk|public.event_priority_user.event_priority_user_user_id_auth_user_id_fk",
+        "n|fk|public.event_priority_user.event_priority_user_user_id_auth_user_id_fk",
+        "n|con|public.event_priority_user.event_priority_user_user_id_auth_user_id_fk",
+        "s|fk|public.event_priority_user.event_priority_user_user_id_auth_user_id_fkey",
+        "n|fk|public.event_priority_user.event_priority_user_user_id_auth_user_id_fkey",
+        "n|con|public.event_priority_user.event_priority_user_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_priority_user",
+        "n|sch|public",
+        "e|col|public.event_priority_user.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_reaction"
+      ],
+      "writes": [
+        "s|fk|public.event_reaction.event_reaction_user_id_auth_user_id_fk",
+        "n|fk|public.event_reaction.event_reaction_user_id_auth_user_id_fk",
+        "n|con|public.event_reaction.event_reaction_user_id_auth_user_id_fk",
+        "s|fk|public.event_reaction.event_reaction_user_id_auth_user_id_fkey",
+        "n|fk|public.event_reaction.event_reaction_user_id_auth_user_id_fkey",
+        "n|con|public.event_reaction.event_reaction_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_reaction",
+        "n|sch|public",
+        "e|col|public.event_reaction.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_reaction"
+      ],
+      "writes": [
+        "s|fk|public.event_reaction.event_reaction_event_id_event_event_id_fk",
+        "n|fk|public.event_reaction.event_reaction_event_id_event_event_id_fk",
+        "n|con|public.event_reaction.event_reaction_event_id_event_event_id_fk",
+        "s|fk|public.event_reaction.event_reaction_event_id_event_event_id_fkey",
+        "n|fk|public.event_reaction.event_reaction_event_id_event_event_id_fkey",
+        "n|con|public.event_reaction.event_reaction_event_id_event_event_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_reaction",
+        "n|sch|public",
+        "e|col|public.event_reaction.event_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_registration"
+      ],
+      "writes": [
+        "s|fk|public.event_registration.event_registration_event_id_event_event_id_fk",
+        "n|fk|public.event_registration.event_registration_event_id_event_event_id_fk",
+        "n|con|public.event_registration.event_registration_event_id_event_event_id_fk",
+        "s|fk|public.event_registration.event_registration_event_id_event_event_id_fkey",
+        "n|fk|public.event_registration.event_registration_event_id_event_event_id_fkey",
+        "n|con|public.event_registration.event_registration_event_id_event_event_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_registration",
+        "n|sch|public",
+        "e|col|public.event_registration.event_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_registration"
+      ],
+      "writes": [
+        "s|fk|public.event_registration.event_registration_user_id_auth_user_id_fk",
+        "n|fk|public.event_registration.event_registration_user_id_auth_user_id_fk",
+        "n|con|public.event_registration.event_registration_user_id_auth_user_id_fk",
+        "s|fk|public.event_registration.event_registration_user_id_auth_user_id_fkey",
+        "n|fk|public.event_registration.event_registration_user_id_auth_user_id_fkey",
+        "n|con|public.event_registration.event_registration_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_registration",
+        "n|sch|public",
+        "e|col|public.event_registration.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_strike"
+      ],
+      "writes": [
+        "s|fk|public.event_strike.event_strike_event_id_event_event_id_fk",
+        "n|fk|public.event_strike.event_strike_event_id_event_event_id_fk",
+        "n|con|public.event_strike.event_strike_event_id_event_event_id_fk",
+        "s|fk|public.event_strike.event_strike_event_id_event_event_id_fkey",
+        "n|fk|public.event_strike.event_strike_event_id_event_event_id_fkey",
+        "n|con|public.event_strike.event_strike_event_id_event_event_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_strike",
+        "n|sch|public",
+        "e|col|public.event_strike.event_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_strike"
+      ],
+      "writes": [
+        "s|fk|public.event_strike.event_strike_user_id_auth_user_id_fk",
+        "n|fk|public.event_strike.event_strike_user_id_auth_user_id_fk",
+        "n|con|public.event_strike.event_strike_user_id_auth_user_id_fk",
+        "s|fk|public.event_strike.event_strike_user_id_auth_user_id_fkey",
+        "n|fk|public.event_strike.event_strike_user_id_auth_user_id_fkey",
+        "n|con|public.event_strike.event_strike_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_strike",
+        "n|sch|public",
+        "e|col|public.event_strike.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "rbac_user_permission"
+      ],
+      "writes": [
+        "s|fk|public.rbac_user_permission.rbac_user_permission_user_id_auth_user_id_fk",
+        "n|fk|public.rbac_user_permission.rbac_user_permission_user_id_auth_user_id_fk",
+        "n|con|public.rbac_user_permission.rbac_user_permission_user_id_auth_user_id_fk",
+        "s|fk|public.rbac_user_permission.rbac_user_permission_user_id_auth_user_id_fkey",
+        "n|fk|public.rbac_user_permission.rbac_user_permission_user_id_auth_user_id_fkey",
+        "n|con|public.rbac_user_permission.rbac_user_permission_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.rbac_user_permission",
+        "n|sch|public",
+        "e|col|public.rbac_user_permission.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "rbac_user_permission"
+      ],
+      "writes": [
+        "s|fk|public.rbac_user_permission.rbac_user_permission_granted_by_auth_user_id_fk",
+        "n|fk|public.rbac_user_permission.rbac_user_permission_granted_by_auth_user_id_fk",
+        "n|con|public.rbac_user_permission.rbac_user_permission_granted_by_auth_user_id_fk",
+        "s|fk|public.rbac_user_permission.rbac_user_permission_granted_by_auth_user_id_fkey",
+        "n|fk|public.rbac_user_permission.rbac_user_permission_granted_by_auth_user_id_fkey",
+        "n|con|public.rbac_user_permission.rbac_user_permission_granted_by_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.rbac_user_permission",
+        "n|sch|public",
+        "e|col|public.rbac_user_permission.granted_by"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "rbac_user_role"
+      ],
+      "writes": [
+        "s|fk|public.rbac_user_role.rbac_user_role_user_id_auth_user_id_fk",
+        "n|fk|public.rbac_user_role.rbac_user_role_user_id_auth_user_id_fk",
+        "n|con|public.rbac_user_role.rbac_user_role_user_id_auth_user_id_fk",
+        "s|fk|public.rbac_user_role.rbac_user_role_user_id_auth_user_id_fkey",
+        "n|fk|public.rbac_user_role.rbac_user_role_user_id_auth_user_id_fkey",
+        "n|con|public.rbac_user_role.rbac_user_role_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.rbac_user_role",
+        "n|sch|public",
+        "e|col|public.rbac_user_role.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "rbac_user_role"
+      ],
+      "writes": [
+        "s|fk|public.rbac_user_role.rbac_user_role_role_id_rbac_role_id_fk",
+        "n|fk|public.rbac_user_role.rbac_user_role_role_id_rbac_role_id_fk",
+        "n|con|public.rbac_user_role.rbac_user_role_role_id_rbac_role_id_fk",
+        "s|fk|public.rbac_user_role.rbac_user_role_role_id_rbac_role_id_fkey",
+        "n|fk|public.rbac_user_role.rbac_user_role_role_id_rbac_role_id_fkey",
+        "n|con|public.rbac_user_role.rbac_user_role_role_id_rbac_role_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.rbac_user_role",
+        "n|sch|public",
+        "e|col|public.rbac_user_role.role_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "notification_notification"
+      ],
+      "writes": [
+        "s|fk|public.notification_notification.notification_notification_user_id_auth_user_id_fk",
+        "n|fk|public.notification_notification.notification_notification_user_id_auth_user_id_fk",
+        "n|con|public.notification_notification.notification_notification_user_id_auth_user_id_fk",
+        "s|fk|public.notification_notification.notification_notification_user_id_auth_user_id_fkey",
+        "n|fk|public.notification_notification.notification_notification_user_id_auth_user_id_fkey",
+        "n|con|public.notification_notification.notification_notification_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.notification_notification",
+        "n|sch|public",
+        "e|col|public.notification_notification.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "notification_device"
+      ],
+      "writes": [
+        "s|fk|public.notification_device.notification_device_user_id_auth_user_id_fk",
+        "n|fk|public.notification_device.notification_device_user_id_auth_user_id_fk",
+        "n|con|public.notification_device.notification_device_user_id_auth_user_id_fk",
+        "s|fk|public.notification_device.notification_device_user_id_auth_user_id_fkey",
+        "n|fk|public.notification_device.notification_device_user_id_auth_user_id_fkey",
+        "n|con|public.notification_device.notification_device_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.notification_device",
+        "n|sch|public",
+        "e|col|public.notification_device.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "form_answer"
+      ],
+      "writes": [
+        "s|fk|public.form_answer.form_answer_submission_id_form_submission_id_fk",
+        "n|fk|public.form_answer.form_answer_submission_id_form_submission_id_fk",
+        "n|con|public.form_answer.form_answer_submission_id_form_submission_id_fk",
+        "s|fk|public.form_answer.form_answer_submission_id_form_submission_id_fkey",
+        "n|fk|public.form_answer.form_answer_submission_id_form_submission_id_fkey",
+        "n|con|public.form_answer.form_answer_submission_id_form_submission_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.form_answer",
+        "n|sch|public",
+        "e|col|public.form_answer.submission_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "form_answer"
+      ],
+      "writes": [
+        "s|fk|public.form_answer.form_answer_field_id_form_field_id_fk",
+        "n|fk|public.form_answer.form_answer_field_id_form_field_id_fk",
+        "n|con|public.form_answer.form_answer_field_id_form_field_id_fk",
+        "s|fk|public.form_answer.form_answer_field_id_form_field_id_fkey",
+        "n|fk|public.form_answer.form_answer_field_id_form_field_id_fkey",
+        "n|con|public.form_answer.form_answer_field_id_form_field_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.form_answer",
+        "n|sch|public",
+        "e|col|public.form_answer.field_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "form_answer_option"
+      ],
+      "writes": [
+        "s|fk|public.form_answer_option.form_answer_option_answer_id_form_answer_id_fk",
+        "n|fk|public.form_answer_option.form_answer_option_answer_id_form_answer_id_fk",
+        "n|con|public.form_answer_option.form_answer_option_answer_id_form_answer_id_fk",
+        "s|fk|public.form_answer_option.form_answer_option_answer_id_form_answer_id_fkey",
+        "n|fk|public.form_answer_option.form_answer_option_answer_id_form_answer_id_fkey",
+        "n|con|public.form_answer_option.form_answer_option_answer_id_form_answer_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.form_answer_option",
+        "n|sch|public",
+        "e|col|public.form_answer_option.answer_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "form_answer_option"
+      ],
+      "writes": [
+        "s|fk|public.form_answer_option.form_answer_option_option_id_form_option_id_fk",
+        "n|fk|public.form_answer_option.form_answer_option_option_id_form_option_id_fk",
+        "n|con|public.form_answer_option.form_answer_option_option_id_form_option_id_fk",
+        "s|fk|public.form_answer_option.form_answer_option_option_id_form_option_id_fkey",
+        "n|fk|public.form_answer_option.form_answer_option_option_id_form_option_id_fkey",
+        "n|con|public.form_answer_option.form_answer_option_option_id_form_option_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.form_answer_option",
+        "n|sch|public",
+        "e|col|public.form_answer_option.option_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "form_event_form"
+      ],
+      "writes": [
+        "s|fk|public.form_event_form.form_event_form_form_id_form_form_id_fk",
+        "n|fk|public.form_event_form.form_event_form_form_id_form_form_id_fk",
+        "n|con|public.form_event_form.form_event_form_form_id_form_form_id_fk",
+        "s|fk|public.form_event_form.form_event_form_form_id_form_form_id_fkey",
+        "n|fk|public.form_event_form.form_event_form_form_id_form_form_id_fkey",
+        "n|con|public.form_event_form.form_event_form_form_id_form_form_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.form_event_form",
+        "n|sch|public",
+        "e|col|public.form_event_form.form_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "form_event_form"
+      ],
+      "writes": [
+        "s|fk|public.form_event_form.form_event_form_event_id_event_event_id_fk",
+        "n|fk|public.form_event_form.form_event_form_event_id_event_event_id_fk",
+        "n|con|public.form_event_form.form_event_form_event_id_event_event_id_fk",
+        "s|fk|public.form_event_form.form_event_form_event_id_event_event_id_fkey",
+        "n|fk|public.form_event_form.form_event_form_event_id_event_event_id_fkey",
+        "n|con|public.form_event_form.form_event_form_event_id_event_event_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.form_event_form",
+        "n|sch|public",
+        "e|col|public.form_event_form.event_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "form_field"
+      ],
+      "writes": [
+        "s|fk|public.form_field.form_field_form_id_form_form_id_fk",
+        "n|fk|public.form_field.form_field_form_id_form_form_id_fk",
+        "n|con|public.form_field.form_field_form_id_form_form_id_fk",
+        "s|fk|public.form_field.form_field_form_id_form_form_id_fkey",
+        "n|fk|public.form_field.form_field_form_id_form_form_id_fkey",
+        "n|con|public.form_field.form_field_form_id_form_form_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.form_field",
+        "n|sch|public",
+        "e|col|public.form_field.form_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "form_group_form"
+      ],
+      "writes": [
+        "s|fk|public.form_group_form.form_group_form_form_id_form_form_id_fk",
+        "n|fk|public.form_group_form.form_group_form_form_id_form_form_id_fk",
+        "n|con|public.form_group_form.form_group_form_form_id_form_form_id_fk",
+        "s|fk|public.form_group_form.form_group_form_form_id_form_form_id_fkey",
+        "n|fk|public.form_group_form.form_group_form_form_id_form_form_id_fkey",
+        "n|con|public.form_group_form.form_group_form_form_id_form_form_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.form_group_form",
+        "n|sch|public",
+        "e|col|public.form_group_form.form_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "form_group_form"
+      ],
+      "writes": [
+        "s|fk|public.form_group_form.form_group_form_group_slug_org_group_slug_fk",
+        "n|fk|public.form_group_form.form_group_form_group_slug_org_group_slug_fk",
+        "n|con|public.form_group_form.form_group_form_group_slug_org_group_slug_fk",
+        "s|fk|public.form_group_form.form_group_form_group_slug_org_group_slug_fkey",
+        "n|fk|public.form_group_form.form_group_form_group_slug_org_group_slug_fkey",
+        "n|con|public.form_group_form.form_group_form_group_slug_org_group_slug_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.form_group_form",
+        "n|sch|public",
+        "e|col|public.form_group_form.group_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "form_option"
+      ],
+      "writes": [
+        "s|fk|public.form_option.form_option_field_id_form_field_id_fk",
+        "n|fk|public.form_option.form_option_field_id_form_field_id_fk",
+        "n|con|public.form_option.form_option_field_id_form_field_id_fk",
+        "s|fk|public.form_option.form_option_field_id_form_field_id_fkey",
+        "n|fk|public.form_option.form_option_field_id_form_field_id_fkey",
+        "n|con|public.form_option.form_option_field_id_form_field_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.form_option",
+        "n|sch|public",
+        "e|col|public.form_option.field_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "form_submission"
+      ],
+      "writes": [
+        "s|fk|public.form_submission.form_submission_form_id_form_form_id_fk",
+        "n|fk|public.form_submission.form_submission_form_id_form_form_id_fk",
+        "n|con|public.form_submission.form_submission_form_id_form_form_id_fk",
+        "s|fk|public.form_submission.form_submission_form_id_form_form_id_fkey",
+        "n|fk|public.form_submission.form_submission_form_id_form_form_id_fkey",
+        "n|con|public.form_submission.form_submission_form_id_form_form_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.form_submission",
+        "n|sch|public",
+        "e|col|public.form_submission.form_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "form_submission"
+      ],
+      "writes": [
+        "s|fk|public.form_submission.form_submission_user_id_auth_user_id_fk",
+        "n|fk|public.form_submission.form_submission_user_id_auth_user_id_fk",
+        "n|con|public.form_submission.form_submission_user_id_auth_user_id_fk",
+        "s|fk|public.form_submission.form_submission_user_id_auth_user_id_fkey",
+        "n|fk|public.form_submission.form_submission_user_id_auth_user_id_fkey",
+        "n|con|public.form_submission.form_submission_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.form_submission",
+        "n|sch|public",
+        "e|col|public.form_submission.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "news_news"
+      ],
+      "writes": [
+        "s|fk|public.news_news.news_news_created_by_user_id_auth_user_id_fk",
+        "n|fk|public.news_news.news_news_created_by_user_id_auth_user_id_fk",
+        "n|con|public.news_news.news_news_created_by_user_id_auth_user_id_fk",
+        "s|fk|public.news_news.news_news_created_by_user_id_auth_user_id_fkey",
+        "n|fk|public.news_news.news_news_created_by_user_id_auth_user_id_fkey",
+        "n|con|public.news_news.news_news_created_by_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.news_news",
+        "n|sch|public",
+        "e|col|public.news_news.created_by_user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "news_reaction"
+      ],
+      "writes": [
+        "s|fk|public.news_reaction.news_reaction_user_id_auth_user_id_fk",
+        "n|fk|public.news_reaction.news_reaction_user_id_auth_user_id_fk",
+        "n|con|public.news_reaction.news_reaction_user_id_auth_user_id_fk",
+        "s|fk|public.news_reaction.news_reaction_user_id_auth_user_id_fkey",
+        "n|fk|public.news_reaction.news_reaction_user_id_auth_user_id_fkey",
+        "n|con|public.news_reaction.news_reaction_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.news_reaction",
+        "n|sch|public",
+        "e|col|public.news_reaction.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "news_reaction"
+      ],
+      "writes": [
+        "s|fk|public.news_reaction.news_reaction_news_id_news_news_id_fk",
+        "n|fk|public.news_reaction.news_reaction_news_id_news_news_id_fk",
+        "n|con|public.news_reaction.news_reaction_news_id_news_news_id_fk",
+        "s|fk|public.news_reaction.news_reaction_news_id_news_news_id_fkey",
+        "n|fk|public.news_reaction.news_reaction_news_id_news_news_id_fkey",
+        "n|con|public.news_reaction.news_reaction_news_id_news_news_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.news_reaction",
+        "n|sch|public",
+        "e|col|public.news_reaction.news_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "job_job_post"
+      ],
+      "writes": [
+        "s|fk|public.job_job_post.job_job_post_created_by_user_id_auth_user_id_fk",
+        "n|fk|public.job_job_post.job_job_post_created_by_user_id_auth_user_id_fk",
+        "n|con|public.job_job_post.job_job_post_created_by_user_id_auth_user_id_fk",
+        "s|fk|public.job_job_post.job_job_post_created_by_user_id_auth_user_id_fkey",
+        "n|fk|public.job_job_post.job_job_post_created_by_user_id_auth_user_id_fkey",
+        "n|con|public.job_job_post.job_job_post_created_by_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.job_job_post",
+        "n|sch|public",
+        "e|col|public.job_job_post.created_by_user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "user_user_setting_allergy"
+      ],
+      "writes": [
+        "s|fk|public.user_user_setting_allergy.user_user_setting_allergy_user_id_user_settings_user_id_fk",
+        "n|fk|public.user_user_setting_allergy.user_user_setting_allergy_user_id_user_settings_user_id_fk",
+        "n|con|public.user_user_setting_allergy.user_user_setting_allergy_user_id_user_settings_user_id_fk",
+        "s|fk|public.user_user_setting_allergy.user_user_setting_allergy_user_id_user_settings_user_id_fkey",
+        "n|fk|public.user_user_setting_allergy.user_user_setting_allergy_user_id_user_settings_user_id_fkey",
+        "n|con|public.user_user_setting_allergy.user_user_setting_allergy_user_id_user_settings_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.user_user_setting_allergy",
+        "n|sch|public",
+        "e|col|public.user_user_setting_allergy.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "user_user_setting_allergy"
+      ],
+      "writes": [
+        "s|fk|public.user_user_setting_allergy.user_user_setting_allergy_allergy_slug_user_allergy_slug_fk",
+        "n|fk|public.user_user_setting_allergy.user_user_setting_allergy_allergy_slug_user_allergy_slug_fk",
+        "n|con|public.user_user_setting_allergy.user_user_setting_allergy_allergy_slug_user_allergy_slug_fk",
+        "s|fk|public.user_user_setting_allergy.user_user_setting_allergy_allergy_slug_user_allergy_slug_fkey",
+        "n|fk|public.user_user_setting_allergy.user_user_setting_allergy_allergy_slug_user_allergy_slug_fkey",
+        "n|con|public.user_user_setting_allergy.user_user_setting_allergy_allergy_slug_user_allergy_slug_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.user_user_setting_allergy",
+        "n|sch|public",
+        "e|col|public.user_user_setting_allergy.allergy_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "user_calendar_token"
+      ],
+      "writes": [
+        "s|fk|public.user_calendar_token.user_calendar_token_user_id_auth_user_id_fk",
+        "n|fk|public.user_calendar_token.user_calendar_token_user_id_auth_user_id_fk",
+        "n|con|public.user_calendar_token.user_calendar_token_user_id_auth_user_id_fk",
+        "s|fk|public.user_calendar_token.user_calendar_token_user_id_auth_user_id_fkey",
+        "n|fk|public.user_calendar_token.user_calendar_token_user_id_auth_user_id_fkey",
+        "n|con|public.user_calendar_token.user_calendar_token_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.user_calendar_token",
+        "n|sch|public",
+        "e|col|public.user_calendar_token.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "user_settings"
+      ],
+      "writes": [
+        "s|fk|public.user_settings.user_settings_user_id_auth_user_id_fk",
+        "n|fk|public.user_settings.user_settings_user_id_auth_user_id_fk",
+        "n|con|public.user_settings.user_settings_user_id_auth_user_id_fk",
+        "s|fk|public.user_settings.user_settings_user_id_auth_user_id_fkey",
+        "n|fk|public.user_settings.user_settings_user_id_auth_user_id_fkey",
+        "n|con|public.user_settings.user_settings_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.user_settings",
+        "n|sch|public",
+        "e|col|public.user_settings.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "apikey_api_key"
+      ],
+      "writes": [
+        "s|fk|public.apikey_api_key.apikey_api_key_created_by_user_id_auth_user_id_fk",
+        "n|fk|public.apikey_api_key.apikey_api_key_created_by_user_id_auth_user_id_fk",
+        "n|con|public.apikey_api_key.apikey_api_key_created_by_user_id_auth_user_id_fk",
+        "s|fk|public.apikey_api_key.apikey_api_key_created_by_user_id_auth_user_id_fkey",
+        "n|fk|public.apikey_api_key.apikey_api_key_created_by_user_id_auth_user_id_fkey",
+        "n|con|public.apikey_api_key.apikey_api_key_created_by_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.apikey_api_key",
+        "n|sch|public",
+        "e|col|public.apikey_api_key.created_by_user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "asset_file"
+      ],
+      "writes": [
+        "s|fk|public.asset_file.asset_file_uploaded_by_id_auth_user_id_fk",
+        "n|fk|public.asset_file.asset_file_uploaded_by_id_auth_user_id_fk",
+        "n|con|public.asset_file.asset_file_uploaded_by_id_auth_user_id_fk",
+        "s|fk|public.asset_file.asset_file_uploaded_by_id_auth_user_id_fkey",
+        "n|fk|public.asset_file.asset_file_uploaded_by_id_auth_user_id_fkey",
+        "n|con|public.asset_file.asset_file_uploaded_by_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.asset_file",
+        "n|sch|public",
+        "e|col|public.asset_file.uploaded_by_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "banner_banner"
+      ],
+      "writes": [
+        "s|fk|public.banner_banner.banner_banner_created_by_user_id_auth_user_id_fk",
+        "n|fk|public.banner_banner.banner_banner_created_by_user_id_auth_user_id_fk",
+        "n|con|public.banner_banner.banner_banner_created_by_user_id_auth_user_id_fk",
+        "s|fk|public.banner_banner.banner_banner_created_by_user_id_auth_user_id_fkey",
+        "n|fk|public.banner_banner.banner_banner_created_by_user_id_auth_user_id_fkey",
+        "n|con|public.banner_banner.banner_banner_created_by_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.banner_banner",
+        "n|sch|public",
+        "e|col|public.banner_banner.created_by_user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "application"
+      ],
+      "writes": [
+        "s|fk|public.application.application_submitted_by_id_auth_user_id_fk",
+        "n|fk|public.application.application_submitted_by_id_auth_user_id_fk",
+        "n|con|public.application.application_submitted_by_id_auth_user_id_fk",
+        "s|fk|public.application.application_submitted_by_id_auth_user_id_fkey",
+        "n|fk|public.application.application_submitted_by_id_auth_user_id_fkey",
+        "n|con|public.application.application_submitted_by_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.application",
+        "n|sch|public",
+        "e|col|public.application.submitted_by_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "application"
+      ],
+      "writes": [
+        "s|fk|public.application.application_handled_by_id_auth_user_id_fk",
+        "n|fk|public.application.application_handled_by_id_auth_user_id_fk",
+        "n|con|public.application.application_handled_by_id_auth_user_id_fk",
+        "s|fk|public.application.application_handled_by_id_auth_user_id_fkey",
+        "n|fk|public.application.application_handled_by_id_auth_user_id_fkey",
+        "n|con|public.application.application_handled_by_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.application",
+        "n|sch|public",
+        "e|col|public.application.handled_by_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "application_attachment"
+      ],
+      "writes": [
+        "s|fk|public.application_attachment.application_attachment_application_id_application_id_fk",
+        "n|fk|public.application_attachment.application_attachment_application_id_application_id_fk",
+        "n|con|public.application_attachment.application_attachment_application_id_application_id_fk",
+        "s|fk|public.application_attachment.application_attachment_application_id_application_id_fkey",
+        "n|fk|public.application_attachment.application_attachment_application_id_application_id_fkey",
+        "n|con|public.application_attachment.application_attachment_application_id_application_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.application_attachment",
+        "n|sch|public",
+        "e|col|public.application_attachment.application_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "application_company_contact"
+      ],
+      "writes": [
+        "s|fk|public.application_company_contact.application_company_contact_application_id_application_id_fk",
+        "n|fk|public.application_company_contact.application_company_contact_application_id_application_id_fk",
+        "n|con|public.application_company_contact.application_company_contact_application_id_application_id_fk",
+        "s|fk|public.application_company_contact.application_company_contact_application_id_application_id_fkey",
+        "n|fk|public.application_company_contact.application_company_contact_application_id_application_id_fkey",
+        "n|con|public.application_company_contact.application_company_contact_application_id_application_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.application_company_contact",
+        "n|sch|public",
+        "e|col|public.application_company_contact.application_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "application_expense"
+      ],
+      "writes": [
+        "s|fk|public.application_expense.application_expense_application_id_application_id_fk",
+        "n|fk|public.application_expense.application_expense_application_id_application_id_fk",
+        "n|con|public.application_expense.application_expense_application_id_application_id_fk",
+        "s|fk|public.application_expense.application_expense_application_id_application_id_fkey",
+        "n|fk|public.application_expense.application_expense_application_id_application_id_fkey",
+        "n|con|public.application_expense.application_expense_application_id_application_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.application_expense",
+        "n|sch|public",
+        "e|col|public.application_expense.application_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "application_expense"
+      ],
+      "writes": [
+        "s|fk|public.application_expense.application_expense_group_slug_org_group_slug_fk",
+        "n|fk|public.application_expense.application_expense_group_slug_org_group_slug_fk",
+        "n|con|public.application_expense.application_expense_group_slug_org_group_slug_fk",
+        "s|fk|public.application_expense.application_expense_group_slug_org_group_slug_fkey",
+        "n|fk|public.application_expense.application_expense_group_slug_org_group_slug_fkey",
+        "n|con|public.application_expense.application_expense_group_slug_org_group_slug_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.application_expense",
+        "n|sch|public",
+        "e|col|public.application_expense.group_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "application_hs_case"
+      ],
+      "writes": [
+        "s|fk|public.application_hs_case.application_hs_case_application_id_application_id_fk",
+        "n|fk|public.application_hs_case.application_hs_case_application_id_application_id_fk",
+        "n|con|public.application_hs_case.application_hs_case_application_id_application_id_fk",
+        "s|fk|public.application_hs_case.application_hs_case_application_id_application_id_fkey",
+        "n|fk|public.application_hs_case.application_hs_case_application_id_application_id_fkey",
+        "n|con|public.application_hs_case.application_hs_case_application_id_application_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.application_hs_case",
+        "n|sch|public",
+        "e|col|public.application_hs_case.application_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "application_support"
+      ],
+      "writes": [
+        "s|fk|public.application_support.application_support_application_id_application_id_fk",
+        "n|fk|public.application_support.application_support_application_id_application_id_fk",
+        "n|con|public.application_support.application_support_application_id_application_id_fk",
+        "s|fk|public.application_support.application_support_application_id_application_id_fkey",
+        "n|fk|public.application_support.application_support_application_id_application_id_fkey",
+        "n|con|public.application_support.application_support_application_id_application_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.application_support",
+        "n|sch|public",
+        "e|col|public.application_support.application_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "application_support"
+      ],
+      "writes": [
+        "s|fk|public.application_support.application_support_group_slug_org_group_slug_fk",
+        "n|fk|public.application_support.application_support_group_slug_org_group_slug_fk",
+        "n|con|public.application_support.application_support_group_slug_org_group_slug_fk",
+        "s|fk|public.application_support.application_support_group_slug_org_group_slug_fkey",
+        "n|fk|public.application_support.application_support_group_slug_org_group_slug_fkey",
+        "n|con|public.application_support.application_support_group_slug_org_group_slug_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.application_support",
+        "n|sch|public",
+        "e|col|public.application_support.group_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "feedback_item"
+      ],
+      "writes": [
+        "s|fk|public.feedback_item.feedback_item_author_id_auth_user_id_fk",
+        "n|fk|public.feedback_item.feedback_item_author_id_auth_user_id_fk",
+        "n|con|public.feedback_item.feedback_item_author_id_auth_user_id_fk",
+        "s|fk|public.feedback_item.feedback_item_author_id_auth_user_id_fkey",
+        "n|fk|public.feedback_item.feedback_item_author_id_auth_user_id_fkey",
+        "n|con|public.feedback_item.feedback_item_author_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.feedback_item",
+        "n|sch|public",
+        "e|col|public.feedback_item.author_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "feedback_comment"
+      ],
+      "writes": [
+        "s|fk|public.feedback_comment.feedback_comment_feedback_id_feedback_item_id_fk",
+        "n|fk|public.feedback_comment.feedback_comment_feedback_id_feedback_item_id_fk",
+        "n|con|public.feedback_comment.feedback_comment_feedback_id_feedback_item_id_fk",
+        "s|fk|public.feedback_comment.feedback_comment_feedback_id_feedback_item_id_fkey",
+        "n|fk|public.feedback_comment.feedback_comment_feedback_id_feedback_item_id_fkey",
+        "n|con|public.feedback_comment.feedback_comment_feedback_id_feedback_item_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.feedback_comment",
+        "n|sch|public",
+        "e|col|public.feedback_comment.feedback_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "feedback_comment"
+      ],
+      "writes": [
+        "s|fk|public.feedback_comment.feedback_comment_author_id_auth_user_id_fk",
+        "n|fk|public.feedback_comment.feedback_comment_author_id_auth_user_id_fk",
+        "n|con|public.feedback_comment.feedback_comment_author_id_auth_user_id_fk",
+        "s|fk|public.feedback_comment.feedback_comment_author_id_auth_user_id_fkey",
+        "n|fk|public.feedback_comment.feedback_comment_author_id_auth_user_id_fkey",
+        "n|con|public.feedback_comment.feedback_comment_author_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.feedback_comment",
+        "n|sch|public",
+        "e|col|public.feedback_comment.author_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "feedback_vote"
+      ],
+      "writes": [
+        "s|fk|public.feedback_vote.feedback_vote_feedback_id_feedback_item_id_fk",
+        "n|fk|public.feedback_vote.feedback_vote_feedback_id_feedback_item_id_fk",
+        "n|con|public.feedback_vote.feedback_vote_feedback_id_feedback_item_id_fk",
+        "s|fk|public.feedback_vote.feedback_vote_feedback_id_feedback_item_id_fkey",
+        "n|fk|public.feedback_vote.feedback_vote_feedback_id_feedback_item_id_fkey",
+        "n|con|public.feedback_vote.feedback_vote_feedback_id_feedback_item_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.feedback_vote",
+        "n|sch|public",
+        "e|col|public.feedback_vote.feedback_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "feedback_vote"
+      ],
+      "writes": [
+        "s|fk|public.feedback_vote.feedback_vote_user_id_auth_user_id_fk",
+        "n|fk|public.feedback_vote.feedback_vote_user_id_auth_user_id_fk",
+        "n|con|public.feedback_vote.feedback_vote_user_id_auth_user_id_fk",
+        "s|fk|public.feedback_vote.feedback_vote_user_id_auth_user_id_fkey",
+        "n|fk|public.feedback_vote.feedback_vote_user_id_auth_user_id_fkey",
+        "n|con|public.feedback_vote.feedback_vote_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.feedback_vote",
+        "n|sch|public",
+        "e|col|public.feedback_vote.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "gallery_album"
+      ],
+      "writes": [
+        "s|fk|public.gallery_album.gallery_album_event_id_event_event_id_fk",
+        "n|fk|public.gallery_album.gallery_album_event_id_event_event_id_fk",
+        "n|con|public.gallery_album.gallery_album_event_id_event_event_id_fk",
+        "s|fk|public.gallery_album.gallery_album_event_id_event_event_id_fkey",
+        "n|fk|public.gallery_album.gallery_album_event_id_event_event_id_fkey",
+        "n|con|public.gallery_album.gallery_album_event_id_event_event_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.gallery_album",
+        "n|sch|public",
+        "e|col|public.gallery_album.event_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "gallery_album"
+      ],
+      "writes": [
+        "s|fk|public.gallery_album.gallery_album_created_by_user_id_auth_user_id_fk",
+        "n|fk|public.gallery_album.gallery_album_created_by_user_id_auth_user_id_fk",
+        "n|con|public.gallery_album.gallery_album_created_by_user_id_auth_user_id_fk",
+        "s|fk|public.gallery_album.gallery_album_created_by_user_id_auth_user_id_fkey",
+        "n|fk|public.gallery_album.gallery_album_created_by_user_id_auth_user_id_fkey",
+        "n|con|public.gallery_album.gallery_album_created_by_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.gallery_album",
+        "n|sch|public",
+        "e|col|public.gallery_album.created_by_user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "gallery_picture"
+      ],
+      "writes": [
+        "s|fk|public.gallery_picture.gallery_picture_album_id_gallery_album_id_fk",
+        "n|fk|public.gallery_picture.gallery_picture_album_id_gallery_album_id_fk",
+        "n|con|public.gallery_picture.gallery_picture_album_id_gallery_album_id_fk",
+        "s|fk|public.gallery_picture.gallery_picture_album_id_gallery_album_id_fkey",
+        "n|fk|public.gallery_picture.gallery_picture_album_id_gallery_album_id_fkey",
+        "n|con|public.gallery_picture.gallery_picture_album_id_gallery_album_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.gallery_picture",
+        "n|sch|public",
+        "e|col|public.gallery_picture.album_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group_join_request"
+      ],
+      "writes": [
+        "s|pk|public.org_group_join_request",
+        "n|pk|public.org_group_join_request",
+        "n|con|public.org_group_join_request.org_group_join_request_user_id_group_slug_pk",
+        "n|rel|public.org_group_join_request_user_id_group_slug_pk",
+        "n|con|public.org_group_join_request.org_group_join_request_pkey",
+        "n|rel|public.org_group_join_request_pkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group_join_request",
+        "n|sch|public",
+        "e|col|public.org_group_join_request.user_id",
+        "e|col|public.org_group_join_request.group_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group_membership"
+      ],
+      "writes": [
+        "s|pk|public.org_group_membership",
+        "n|pk|public.org_group_membership",
+        "n|con|public.org_group_membership.org_group_membership_user_id_group_slug_pk",
+        "n|rel|public.org_group_membership_user_id_group_slug_pk",
+        "n|con|public.org_group_membership.org_group_membership_pkey",
+        "n|rel|public.org_group_membership_pkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group_membership",
+        "n|sch|public",
+        "e|col|public.org_group_membership.user_id",
+        "e|col|public.org_group_membership.group_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group_position_holder"
+      ],
+      "writes": [
+        "s|pk|public.org_group_position_holder",
+        "n|pk|public.org_group_position_holder",
+        "n|con|public.org_group_position_holder.org_group_position_holder_position_id_user_id_pk",
+        "n|rel|public.org_group_position_holder_position_id_user_id_pk",
+        "n|con|public.org_group_position_holder.org_group_position_holder_pkey",
+        "n|rel|public.org_group_position_holder_pkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group_position_holder",
+        "n|sch|public",
+        "e|col|public.org_group_position_holder.position_id",
+        "e|col|public.org_group_position_holder.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_study_program_membership"
+      ],
+      "writes": [
+        "s|pk|public.org_study_program_membership",
+        "n|pk|public.org_study_program_membership",
+        "n|con|public.org_study_program_membership.org_study_program_membership_user_id_study_program_id_pk",
+        "n|rel|public.org_study_program_membership_user_id_study_program_id_pk",
+        "n|con|public.org_study_program_membership.org_study_program_membership_pkey",
+        "n|rel|public.org_study_program_membership_pkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_study_program_membership",
+        "n|sch|public",
+        "e|col|public.org_study_program_membership.user_id",
+        "e|col|public.org_study_program_membership.study_program_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_favorite"
+      ],
+      "writes": [
+        "s|pk|public.event_favorite",
+        "n|pk|public.event_favorite",
+        "n|con|public.event_favorite.event_favorite_user_id_event_id_pk",
+        "n|rel|public.event_favorite_user_id_event_id_pk",
+        "n|con|public.event_favorite.event_favorite_pkey",
+        "n|rel|public.event_favorite_pkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_favorite",
+        "n|sch|public",
+        "e|col|public.event_favorite.user_id",
+        "e|col|public.event_favorite.event_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_priority_pool_group"
+      ],
+      "writes": [
+        "s|pk|public.event_priority_pool_group",
+        "n|pk|public.event_priority_pool_group",
+        "n|con|public.event_priority_pool_group.event_priority_pool_group_priority_pool_id_group_slug_pk",
+        "n|rel|public.event_priority_pool_group_priority_pool_id_group_slug_pk",
+        "n|con|public.event_priority_pool_group.event_priority_pool_group_pkey",
+        "n|rel|public.event_priority_pool_group_pkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_priority_pool_group",
+        "n|sch|public",
+        "e|col|public.event_priority_pool_group.priority_pool_id",
+        "e|col|public.event_priority_pool_group.group_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_priority_user"
+      ],
+      "writes": [
+        "s|pk|public.event_priority_user",
+        "n|pk|public.event_priority_user",
+        "n|con|public.event_priority_user.event_priority_user_event_id_user_id_pk",
+        "n|rel|public.event_priority_user_event_id_user_id_pk",
+        "n|con|public.event_priority_user.event_priority_user_pkey",
+        "n|rel|public.event_priority_user_pkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_priority_user",
+        "n|sch|public",
+        "e|col|public.event_priority_user.event_id",
+        "e|col|public.event_priority_user.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_reaction"
+      ],
+      "writes": [
+        "s|pk|public.event_reaction",
+        "n|pk|public.event_reaction",
+        "n|con|public.event_reaction.event_reaction_user_id_event_id_pk",
+        "n|rel|public.event_reaction_user_id_event_id_pk",
+        "n|con|public.event_reaction.event_reaction_pkey",
+        "n|rel|public.event_reaction_pkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_reaction",
+        "n|sch|public",
+        "e|col|public.event_reaction.user_id",
+        "e|col|public.event_reaction.event_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_registration"
+      ],
+      "writes": [
+        "s|pk|public.event_registration",
+        "n|pk|public.event_registration",
+        "n|con|public.event_registration.event_registration_user_id_event_id_pk",
+        "n|rel|public.event_registration_user_id_event_id_pk",
+        "n|con|public.event_registration.event_registration_pkey",
+        "n|rel|public.event_registration_pkey"
+      ],
+      "reads": [
+        "n|tbl|public.event_registration",
+        "n|sch|public",
+        "e|col|public.event_registration.user_id",
+        "e|col|public.event_registration.event_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "rbac_user_permission"
+      ],
+      "writes": [
+        "s|pk|public.rbac_user_permission",
+        "n|pk|public.rbac_user_permission",
+        "n|con|public.rbac_user_permission.rbac_user_permission_user_id_permission_scope_pk",
+        "n|rel|public.rbac_user_permission_user_id_permission_scope_pk",
+        "n|con|public.rbac_user_permission.rbac_user_permission_pkey",
+        "n|rel|public.rbac_user_permission_pkey"
+      ],
+      "reads": [
+        "n|tbl|public.rbac_user_permission",
+        "n|sch|public",
+        "e|col|public.rbac_user_permission.user_id",
+        "e|col|public.rbac_user_permission.permission",
+        "e|col|public.rbac_user_permission.scope"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "rbac_user_role"
+      ],
+      "writes": [
+        "s|pk|public.rbac_user_role",
+        "n|pk|public.rbac_user_role",
+        "n|con|public.rbac_user_role.rbac_user_role_user_id_role_id_pk",
+        "n|rel|public.rbac_user_role_user_id_role_id_pk",
+        "n|con|public.rbac_user_role.rbac_user_role_pkey",
+        "n|rel|public.rbac_user_role_pkey"
+      ],
+      "reads": [
+        "n|tbl|public.rbac_user_role",
+        "n|sch|public",
+        "e|col|public.rbac_user_role.user_id",
+        "e|col|public.rbac_user_role.role_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "news_reaction"
+      ],
+      "writes": [
+        "s|pk|public.news_reaction",
+        "n|pk|public.news_reaction",
+        "n|con|public.news_reaction.news_reaction_user_id_news_id_pk",
+        "n|rel|public.news_reaction_user_id_news_id_pk",
+        "n|con|public.news_reaction.news_reaction_pkey",
+        "n|rel|public.news_reaction_pkey"
+      ],
+      "reads": [
+        "n|tbl|public.news_reaction",
+        "n|sch|public",
+        "e|col|public.news_reaction.user_id",
+        "e|col|public.news_reaction.news_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "user_user_setting_allergy"
+      ],
+      "writes": [
+        "s|pk|public.user_user_setting_allergy",
+        "n|pk|public.user_user_setting_allergy",
+        "n|con|public.user_user_setting_allergy.user_user_setting_allergy_user_id_allergy_slug_pk",
+        "n|rel|public.user_user_setting_allergy_user_id_allergy_slug_pk",
+        "n|con|public.user_user_setting_allergy.user_user_setting_allergy_pkey",
+        "n|rel|public.user_user_setting_allergy_pkey"
+      ],
+      "reads": [
+        "n|tbl|public.user_user_setting_allergy",
+        "n|sch|public",
+        "e|col|public.user_user_setting_allergy.user_id",
+        "e|col|public.user_user_setting_allergy.allergy_slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "feedback_vote"
+      ],
+      "writes": [
+        "s|pk|public.feedback_vote",
+        "n|pk|public.feedback_vote",
+        "n|con|public.feedback_vote.feedback_vote_feedback_id_user_id_pk",
+        "n|rel|public.feedback_vote_feedback_id_user_id_pk",
+        "n|con|public.feedback_vote.feedback_vote_pkey",
+        "n|rel|public.feedback_vote_pkey"
+      ],
+      "reads": [
+        "n|tbl|public.feedback_vote",
+        "n|sch|public",
+        "e|col|public.feedback_vote.feedback_id",
+        "e|col|public.feedback_vote.user_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_oauth_access_token"
+      ],
+      "writes": [
+        "s|uq|public.auth_oauth_access_token.auth_oauth_access_token_token_unique",
+        "n|uq|public.auth_oauth_access_token.auth_oauth_access_token_token_unique",
+        "n|con|public.auth_oauth_access_token.auth_oauth_access_token_token_unique",
+        "n|rel|public.auth_oauth_access_token_token_unique",
+        "s|uq|public.auth_oauth_access_token.auth_oauth_access_token_token_key",
+        "n|uq|public.auth_oauth_access_token.auth_oauth_access_token_token_key",
+        "n|con|public.auth_oauth_access_token.auth_oauth_access_token_token_key",
+        "n|rel|public.auth_oauth_access_token_token_key"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_access_token",
+        "n|sch|public",
+        "e|col|public.auth_oauth_access_token.token"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_oauth_client"
+      ],
+      "writes": [
+        "s|uq|public.auth_oauth_client.auth_oauth_client_client_id_unique",
+        "n|uq|public.auth_oauth_client.auth_oauth_client_client_id_unique",
+        "n|con|public.auth_oauth_client.auth_oauth_client_client_id_unique",
+        "n|rel|public.auth_oauth_client_client_id_unique",
+        "s|uq|public.auth_oauth_client.auth_oauth_client_client_id_key",
+        "n|uq|public.auth_oauth_client.auth_oauth_client_client_id_key",
+        "n|con|public.auth_oauth_client.auth_oauth_client_client_id_key",
+        "n|rel|public.auth_oauth_client_client_id_key"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_client",
+        "n|sch|public",
+        "e|col|public.auth_oauth_client.client_id"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_oauth_refresh_token"
+      ],
+      "writes": [
+        "s|uq|public.auth_oauth_refresh_token.auth_oauth_refresh_token_token_unique",
+        "n|uq|public.auth_oauth_refresh_token.auth_oauth_refresh_token_token_unique",
+        "n|con|public.auth_oauth_refresh_token.auth_oauth_refresh_token_token_unique",
+        "n|rel|public.auth_oauth_refresh_token_token_unique",
+        "s|uq|public.auth_oauth_refresh_token.auth_oauth_refresh_token_token_key",
+        "n|uq|public.auth_oauth_refresh_token.auth_oauth_refresh_token_token_key",
+        "n|con|public.auth_oauth_refresh_token.auth_oauth_refresh_token_token_key",
+        "n|rel|public.auth_oauth_refresh_token_token_key"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_refresh_token",
+        "n|sch|public",
+        "e|col|public.auth_oauth_refresh_token.token"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_session"
+      ],
+      "writes": [
+        "s|uq|public.auth_session.auth_session_token_unique",
+        "n|uq|public.auth_session.auth_session_token_unique",
+        "n|con|public.auth_session.auth_session_token_unique",
+        "n|rel|public.auth_session_token_unique",
+        "s|uq|public.auth_session.auth_session_token_key",
+        "n|uq|public.auth_session.auth_session_token_key",
+        "n|con|public.auth_session.auth_session_token_key",
+        "n|rel|public.auth_session_token_key"
+      ],
+      "reads": [
+        "n|tbl|public.auth_session",
+        "n|sch|public",
+        "e|col|public.auth_session.token"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_user"
+      ],
+      "writes": [
+        "s|uq|public.auth_user.auth_user_email_unique",
+        "n|uq|public.auth_user.auth_user_email_unique",
+        "n|con|public.auth_user.auth_user_email_unique",
+        "n|rel|public.auth_user_email_unique",
+        "s|uq|public.auth_user.auth_user_email_key",
+        "n|uq|public.auth_user.auth_user_email_key",
+        "n|con|public.auth_user.auth_user_email_key",
+        "n|rel|public.auth_user_email_key"
+      ],
+      "reads": [
+        "n|tbl|public.auth_user",
+        "n|sch|public",
+        "e|col|public.auth_user.email"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_user"
+      ],
+      "writes": [
+        "s|uq|public.auth_user.auth_user_username_unique",
+        "n|uq|public.auth_user.auth_user_username_unique",
+        "n|con|public.auth_user.auth_user_username_unique",
+        "n|rel|public.auth_user_username_unique",
+        "s|uq|public.auth_user.auth_user_username_key",
+        "n|uq|public.auth_user.auth_user_username_key",
+        "n|con|public.auth_user.auth_user_username_key",
+        "n|rel|public.auth_user_username_key"
+      ],
+      "reads": [
+        "n|tbl|public.auth_user",
+        "n|sch|public",
+        "e|col|public.auth_user.username"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_institute"
+      ],
+      "writes": [
+        "s|uq|public.org_institute.org_institute_slug_unique",
+        "n|uq|public.org_institute.org_institute_slug_unique",
+        "n|con|public.org_institute.org_institute_slug_unique",
+        "n|rel|public.org_institute_slug_unique",
+        "s|uq|public.org_institute.org_institute_slug_key",
+        "n|uq|public.org_institute.org_institute_slug_key",
+        "n|con|public.org_institute.org_institute_slug_key",
+        "n|rel|public.org_institute_slug_key"
+      ],
+      "reads": [
+        "n|tbl|public.org_institute",
+        "n|sch|public",
+        "e|col|public.org_institute.slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_study_program"
+      ],
+      "writes": [
+        "s|uq|public.org_study_program.org_study_program_slug_unique",
+        "n|uq|public.org_study_program.org_study_program_slug_unique",
+        "n|con|public.org_study_program.org_study_program_slug_unique",
+        "n|rel|public.org_study_program_slug_unique",
+        "s|uq|public.org_study_program.org_study_program_slug_key",
+        "n|uq|public.org_study_program.org_study_program_slug_key",
+        "n|con|public.org_study_program.org_study_program_slug_key",
+        "n|rel|public.org_study_program_slug_key"
+      ],
+      "reads": [
+        "n|tbl|public.org_study_program",
+        "n|sch|public",
+        "e|col|public.org_study_program.slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_study_program"
+      ],
+      "writes": [
+        "s|uq|public.org_study_program.org_study_program_feide_code_unique",
+        "n|uq|public.org_study_program.org_study_program_feide_code_unique",
+        "n|con|public.org_study_program.org_study_program_feide_code_unique",
+        "n|rel|public.org_study_program_feide_code_unique",
+        "s|uq|public.org_study_program.org_study_program_feide_code_key",
+        "n|uq|public.org_study_program.org_study_program_feide_code_key",
+        "n|con|public.org_study_program.org_study_program_feide_code_key",
+        "n|rel|public.org_study_program_feide_code_key"
+      ],
+      "reads": [
+        "n|tbl|public.org_study_program",
+        "n|sch|public",
+        "e|col|public.org_study_program.feide_code"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "event_event"
+      ],
+      "writes": [
+        "s|uq|public.event_event.event_event_slug_unique",
+        "n|uq|public.event_event.event_event_slug_unique",
+        "n|con|public.event_event.event_event_slug_unique",
+        "n|rel|public.event_event_slug_unique",
+        "s|uq|public.event_event.event_event_slug_key",
+        "n|uq|public.event_event.event_event_slug_key",
+        "n|con|public.event_event.event_event_slug_key",
+        "n|rel|public.event_event_slug_key"
+      ],
+      "reads": [
+        "n|tbl|public.event_event",
+        "n|sch|public",
+        "e|col|public.event_event.slug"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "rbac_role"
+      ],
+      "writes": [
+        "s|uq|public.rbac_role.rbac_role_name_unique",
+        "n|uq|public.rbac_role.rbac_role_name_unique",
+        "n|con|public.rbac_role.rbac_role_name_unique",
+        "n|rel|public.rbac_role_name_unique",
+        "s|uq|public.rbac_role.rbac_role_name_key",
+        "n|uq|public.rbac_role.rbac_role_name_key",
+        "n|con|public.rbac_role.rbac_role_name_key",
+        "n|rel|public.rbac_role_name_key"
+      ],
+      "reads": [
+        "n|tbl|public.rbac_role",
+        "n|sch|public",
+        "e|col|public.rbac_role.name"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "user_calendar_token"
+      ],
+      "writes": [
+        "s|uq|public.user_calendar_token.user_calendar_token_token_unique",
+        "n|uq|public.user_calendar_token.user_calendar_token_token_unique",
+        "n|con|public.user_calendar_token.user_calendar_token_token_unique",
+        "n|rel|public.user_calendar_token_token_unique",
+        "s|uq|public.user_calendar_token.user_calendar_token_token_key",
+        "n|uq|public.user_calendar_token.user_calendar_token_token_key",
+        "n|con|public.user_calendar_token.user_calendar_token_token_key",
+        "n|rel|public.user_calendar_token_token_key"
+      ],
+      "reads": [
+        "n|tbl|public.user_calendar_token",
+        "n|sch|public",
+        "e|col|public.user_calendar_token.token"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "apikey_api_key"
+      ],
+      "writes": [
+        "s|uq|public.apikey_api_key.apikey_api_key_key_hash_unique",
+        "n|uq|public.apikey_api_key.apikey_api_key_key_hash_unique",
+        "n|con|public.apikey_api_key.apikey_api_key_key_hash_unique",
+        "n|rel|public.apikey_api_key_key_hash_unique",
+        "s|uq|public.apikey_api_key.apikey_api_key_key_hash_key",
+        "n|uq|public.apikey_api_key.apikey_api_key_key_hash_key",
+        "n|con|public.apikey_api_key.apikey_api_key_key_hash_key",
+        "n|rel|public.apikey_api_key_key_hash_key"
+      ],
+      "reads": [
+        "n|tbl|public.apikey_api_key",
+        "n|sch|public",
+        "e|col|public.apikey_api_key.key_hash"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "asset_file"
+      ],
+      "writes": [
+        "s|uq|public.asset_file.asset_file_key_unique",
+        "n|uq|public.asset_file.asset_file_key_unique",
+        "n|con|public.asset_file.asset_file_key_unique",
+        "n|rel|public.asset_file_key_unique",
+        "s|uq|public.asset_file.asset_file_key_key",
+        "n|uq|public.asset_file.asset_file_key_key",
+        "n|con|public.asset_file.asset_file_key_key",
+        "n|rel|public.asset_file_key_key"
+      ],
+      "reads": [
+        "n|tbl|public.asset_file",
+        "n|sch|public",
+        "e|col|public.asset_file.key"
+      ]
+    },
+    {
+      "statementType": "rename_constraint",
+      "statementTarget": [
+        "table",
+        "public",
+        "gallery_album"
+      ],
+      "writes": [
+        "s|uq|public.gallery_album.gallery_album_slug_unique",
+        "n|uq|public.gallery_album.gallery_album_slug_unique",
+        "n|con|public.gallery_album.gallery_album_slug_unique",
+        "n|rel|public.gallery_album_slug_unique",
+        "s|uq|public.gallery_album.gallery_album_slug_key",
+        "n|uq|public.gallery_album.gallery_album_slug_key",
+        "n|con|public.gallery_album.gallery_album_slug_key",
+        "n|rel|public.gallery_album_slug_key"
+      ],
+      "reads": [
+        "n|tbl|public.gallery_album",
+        "n|sch|public",
+        "e|col|public.gallery_album.slug"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "rename",
+      "key": "uniques\u0000[\"public\",\"auth_oauth_access_token\",\"auth_oauth_access_token_token_unique\"]",
+      "set": {
+        "name": "auth_oauth_access_token_token_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "uniques\u0000[\"public\",\"auth_oauth_client\",\"auth_oauth_client_client_id_unique\"]",
+      "set": {
+        "name": "auth_oauth_client_client_id_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "uniques\u0000[\"public\",\"auth_oauth_refresh_token\",\"auth_oauth_refresh_token_token_unique\"]",
+      "set": {
+        "name": "auth_oauth_refresh_token_token_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "uniques\u0000[\"public\",\"auth_session\",\"auth_session_token_unique\"]",
+      "set": {
+        "name": "auth_session_token_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "uniques\u0000[\"public\",\"auth_user\",\"auth_user_email_unique\"]",
+      "set": {
+        "name": "auth_user_email_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "uniques\u0000[\"public\",\"auth_user\",\"auth_user_username_unique\"]",
+      "set": {
+        "name": "auth_user_username_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "uniques\u0000[\"public\",\"org_institute\",\"org_institute_slug_unique\"]",
+      "set": {
+        "name": "org_institute_slug_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "uniques\u0000[\"public\",\"org_study_program\",\"org_study_program_slug_unique\"]",
+      "set": {
+        "name": "org_study_program_slug_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "uniques\u0000[\"public\",\"org_study_program\",\"org_study_program_feide_code_unique\"]",
+      "set": {
+        "name": "org_study_program_feide_code_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "uniques\u0000[\"public\",\"event_event\",\"event_event_slug_unique\"]",
+      "set": {
+        "name": "event_event_slug_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "uniques\u0000[\"public\",\"rbac_role\",\"rbac_role_name_unique\"]",
+      "set": {
+        "name": "rbac_role_name_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "uniques\u0000[\"public\",\"user_calendar_token\",\"user_calendar_token_token_unique\"]",
+      "set": {
+        "name": "user_calendar_token_token_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "uniques\u0000[\"public\",\"apikey_api_key\",\"apikey_api_key_key_hash_unique\"]",
+      "set": {
+        "name": "apikey_api_key_key_hash_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "uniques\u0000[\"public\",\"asset_file\",\"asset_file_key_unique\"]",
+      "set": {
+        "name": "asset_file_key_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "uniques\u0000[\"public\",\"gallery_album\",\"gallery_album_slug_unique\"]",
+      "set": {
+        "name": "gallery_album_slug_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "pks\u0000[\"public\",\"org_group_join_request\",\"org_group_join_request_user_id_group_slug_pk\"]",
+      "set": {
+        "name": "org_group_join_request_pkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "pks\u0000[\"public\",\"org_group_membership\",\"org_group_membership_user_id_group_slug_pk\"]",
+      "set": {
+        "name": "org_group_membership_pkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "pks\u0000[\"public\",\"org_group_position_holder\",\"org_group_position_holder_position_id_user_id_pk\"]",
+      "set": {
+        "name": "org_group_position_holder_pkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "pks\u0000[\"public\",\"org_study_program_membership\",\"org_study_program_membership_user_id_study_program_id_pk\"]",
+      "set": {
+        "name": "org_study_program_membership_pkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "pks\u0000[\"public\",\"event_favorite\",\"event_favorite_user_id_event_id_pk\"]",
+      "set": {
+        "name": "event_favorite_pkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "pks\u0000[\"public\",\"event_priority_pool_group\",\"event_priority_pool_group_priority_pool_id_group_slug_pk\"]",
+      "set": {
+        "name": "event_priority_pool_group_pkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "pks\u0000[\"public\",\"event_priority_user\",\"event_priority_user_event_id_user_id_pk\"]",
+      "set": {
+        "name": "event_priority_user_pkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "pks\u0000[\"public\",\"event_reaction\",\"event_reaction_user_id_event_id_pk\"]",
+      "set": {
+        "name": "event_reaction_pkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "pks\u0000[\"public\",\"event_registration\",\"event_registration_user_id_event_id_pk\"]",
+      "set": {
+        "name": "event_registration_pkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "pks\u0000[\"public\",\"rbac_user_permission\",\"rbac_user_permission_user_id_permission_scope_pk\"]",
+      "set": {
+        "name": "rbac_user_permission_pkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "pks\u0000[\"public\",\"rbac_user_role\",\"rbac_user_role_user_id_role_id_pk\"]",
+      "set": {
+        "name": "rbac_user_role_pkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "pks\u0000[\"public\",\"news_reaction\",\"news_reaction_user_id_news_id_pk\"]",
+      "set": {
+        "name": "news_reaction_pkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "pks\u0000[\"public\",\"user_user_setting_allergy\",\"user_user_setting_allergy_user_id_allergy_slug_pk\"]",
+      "set": {
+        "name": "user_user_setting_allergy_pkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "pks\u0000[\"public\",\"feedback_vote\",\"feedback_vote_feedback_id_user_id_pk\"]",
+      "set": {
+        "name": "feedback_vote_pkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"auth_account\",\"auth_account_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "auth_account_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"auth_oauth_access_token\",\"auth_oauth_access_token_client_id_auth_oauth_client_client_id_f\"]",
+      "set": {
+        "name": "auth_oauth_access_token_naGWi3hIwfxW_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"auth_oauth_access_token\",\"auth_oauth_access_token_session_id_auth_session_id_fk\"]",
+      "set": {
+        "name": "auth_oauth_access_token_session_id_auth_session_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"auth_oauth_access_token\",\"auth_oauth_access_token_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "auth_oauth_access_token_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"auth_oauth_access_token\",\"auth_oauth_access_token_refresh_id_auth_oauth_refresh_token_id_\"]",
+      "set": {
+        "name": "auth_oauth_access_token_QVDqdup4UBCC_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"auth_oauth_client\",\"auth_oauth_client_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "auth_oauth_client_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"auth_oauth_consent\",\"auth_oauth_consent_client_id_auth_oauth_client_client_id_fk\"]",
+      "set": {
+        "name": "auth_oauth_consent_client_id_auth_oauth_client_client_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"auth_oauth_consent\",\"auth_oauth_consent_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "auth_oauth_consent_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"auth_oauth_refresh_token\",\"auth_oauth_refresh_token_client_id_auth_oauth_client_client_id_\"]",
+      "set": {
+        "name": "auth_oauth_refresh_token_UbPvdcQS9AKh_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"auth_oauth_refresh_token\",\"auth_oauth_refresh_token_session_id_auth_session_id_fk\"]",
+      "set": {
+        "name": "auth_oauth_refresh_token_session_id_auth_session_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"auth_oauth_refresh_token\",\"auth_oauth_refresh_token_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "auth_oauth_refresh_token_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"auth_session\",\"auth_session_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "auth_session_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_contract\",\"org_contract_created_by_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "org_contract_created_by_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_contract_signature\",\"org_contract_signature_contract_id_org_contract_id_fk\"]",
+      "set": {
+        "name": "org_contract_signature_contract_id_org_contract_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_contract_signature\",\"org_contract_signature_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "org_contract_signature_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_fine\",\"org_fine_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "org_fine_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_fine\",\"org_fine_group_slug_org_group_slug_fk\"]",
+      "set": {
+        "name": "org_fine_group_slug_org_group_slug_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_fine\",\"org_fine_created_by_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "org_fine_created_by_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_fine\",\"org_fine_approved_by_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "org_fine_approved_by_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_fine\",\"org_fine_law_id_org_group_law_id_fk\"]",
+      "set": {
+        "name": "org_fine_law_id_org_group_law_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_group\",\"org_group_fines_admin_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "org_group_fines_admin_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_group\",\"org_group_institute_id_org_institute_id_fk\"]",
+      "set": {
+        "name": "org_group_institute_id_org_institute_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_group\",\"org_group_study_program_id_org_study_program_id_fk\"]",
+      "set": {
+        "name": "org_group_study_program_id_org_study_program_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_group_join_request\",\"org_group_join_request_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "org_group_join_request_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_group_join_request\",\"org_group_join_request_group_slug_org_group_slug_fk\"]",
+      "set": {
+        "name": "org_group_join_request_group_slug_org_group_slug_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_group_law\",\"org_group_law_group_slug_org_group_slug_fk\"]",
+      "set": {
+        "name": "org_group_law_group_slug_org_group_slug_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_group_membership\",\"org_group_membership_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "org_group_membership_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_group_membership\",\"org_group_membership_group_slug_org_group_slug_fk\"]",
+      "set": {
+        "name": "org_group_membership_group_slug_org_group_slug_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_group_membership_history\",\"org_group_membership_history_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "org_group_membership_history_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_group_membership_history\",\"org_group_membership_history_group_slug_org_group_slug_fk\"]",
+      "set": {
+        "name": "org_group_membership_history_group_slug_org_group_slug_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_group_position\",\"org_group_position_group_slug_org_group_slug_fk\"]",
+      "set": {
+        "name": "org_group_position_group_slug_org_group_slug_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_group_position\",\"org_group_position_linked_group_slug_org_group_slug_fk\"]",
+      "set": {
+        "name": "org_group_position_linked_group_slug_org_group_slug_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_group_position_holder\",\"org_group_position_holder_position_id_org_group_position_id_fk\"]",
+      "set": {
+        "name": "org_group_position_holder_kz7H67Ql9Udc_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_group_position_holder\",\"org_group_position_holder_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "org_group_position_holder_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_group_position_holder\",\"org_group_position_holder_granted_by_auth_user_id_fk\"]",
+      "set": {
+        "name": "org_group_position_holder_granted_by_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_study_program_membership\",\"org_study_program_membership_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "org_study_program_membership_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"org_study_program_membership\",\"org_study_program_membership_study_program_id_org_study_program\"]",
+      "set": {
+        "name": "org_study_program_membership_gNDIJTnzJ0AV_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_event\",\"event_event_category_slug_event_category_slug_fk\"]",
+      "set": {
+        "name": "event_event_category_slug_event_category_slug_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_event\",\"event_event_contact_person_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "event_event_contact_person_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_event\",\"event_event_created_by_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "event_event_created_by_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_event\",\"event_event_update_by_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "event_event_update_by_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_event\",\"event_event_organizer_group_slug_org_group_slug_fk\"]",
+      "set": {
+        "name": "event_event_organizer_group_slug_org_group_slug_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_event\",\"event_event_restricted_to_institute_id_org_institute_id_fk\"]",
+      "set": {
+        "name": "event_event_restricted_to_institute_id_org_institute_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_favorite\",\"event_favorite_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "event_favorite_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_favorite\",\"event_favorite_event_id_event_event_id_fk\"]",
+      "set": {
+        "name": "event_favorite_event_id_event_event_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_feedback\",\"event_feedback_event_id_event_event_id_fk\"]",
+      "set": {
+        "name": "event_feedback_event_id_event_event_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_feedback\",\"event_feedback_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "event_feedback_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_message\",\"event_message_event_id_event_event_id_fk\"]",
+      "set": {
+        "name": "event_message_event_id_event_event_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_message\",\"event_message_sent_by_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "event_message_sent_by_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_payment\",\"event_payment_event_id_event_event_id_fk\"]",
+      "set": {
+        "name": "event_payment_event_id_event_event_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_payment\",\"event_payment_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "event_payment_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_priority_pool\",\"event_priority_pool_event_id_event_event_id_fk\"]",
+      "set": {
+        "name": "event_priority_pool_event_id_event_event_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_priority_pool\",\"event_priority_pool_group_slug_org_group_slug_fk\"]",
+      "set": {
+        "name": "event_priority_pool_group_slug_org_group_slug_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_priority_pool_group\",\"event_priority_pool_group_priority_pool_id_event_priority_pool_\"]",
+      "set": {
+        "name": "event_priority_pool_group_C7Qd2ITc9bwf_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_priority_pool_group\",\"event_priority_pool_group_group_slug_org_group_slug_fk\"]",
+      "set": {
+        "name": "event_priority_pool_group_group_slug_org_group_slug_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_priority_user\",\"event_priority_user_event_id_event_event_id_fk\"]",
+      "set": {
+        "name": "event_priority_user_event_id_event_event_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_priority_user\",\"event_priority_user_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "event_priority_user_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_reaction\",\"event_reaction_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "event_reaction_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_reaction\",\"event_reaction_event_id_event_event_id_fk\"]",
+      "set": {
+        "name": "event_reaction_event_id_event_event_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_registration\",\"event_registration_event_id_event_event_id_fk\"]",
+      "set": {
+        "name": "event_registration_event_id_event_event_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_registration\",\"event_registration_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "event_registration_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_strike\",\"event_strike_event_id_event_event_id_fk\"]",
+      "set": {
+        "name": "event_strike_event_id_event_event_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"event_strike\",\"event_strike_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "event_strike_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"rbac_user_permission\",\"rbac_user_permission_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "rbac_user_permission_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"rbac_user_permission\",\"rbac_user_permission_granted_by_auth_user_id_fk\"]",
+      "set": {
+        "name": "rbac_user_permission_granted_by_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"rbac_user_role\",\"rbac_user_role_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "rbac_user_role_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"rbac_user_role\",\"rbac_user_role_role_id_rbac_role_id_fk\"]",
+      "set": {
+        "name": "rbac_user_role_role_id_rbac_role_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"notification_notification\",\"notification_notification_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "notification_notification_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"notification_device\",\"notification_device_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "notification_device_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"form_answer\",\"form_answer_submission_id_form_submission_id_fk\"]",
+      "set": {
+        "name": "form_answer_submission_id_form_submission_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"form_answer\",\"form_answer_field_id_form_field_id_fk\"]",
+      "set": {
+        "name": "form_answer_field_id_form_field_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"form_answer_option\",\"form_answer_option_answer_id_form_answer_id_fk\"]",
+      "set": {
+        "name": "form_answer_option_answer_id_form_answer_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"form_answer_option\",\"form_answer_option_option_id_form_option_id_fk\"]",
+      "set": {
+        "name": "form_answer_option_option_id_form_option_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"form_event_form\",\"form_event_form_form_id_form_form_id_fk\"]",
+      "set": {
+        "name": "form_event_form_form_id_form_form_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"form_event_form\",\"form_event_form_event_id_event_event_id_fk\"]",
+      "set": {
+        "name": "form_event_form_event_id_event_event_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"form_field\",\"form_field_form_id_form_form_id_fk\"]",
+      "set": {
+        "name": "form_field_form_id_form_form_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"form_group_form\",\"form_group_form_form_id_form_form_id_fk\"]",
+      "set": {
+        "name": "form_group_form_form_id_form_form_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"form_group_form\",\"form_group_form_group_slug_org_group_slug_fk\"]",
+      "set": {
+        "name": "form_group_form_group_slug_org_group_slug_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"form_option\",\"form_option_field_id_form_field_id_fk\"]",
+      "set": {
+        "name": "form_option_field_id_form_field_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"form_submission\",\"form_submission_form_id_form_form_id_fk\"]",
+      "set": {
+        "name": "form_submission_form_id_form_form_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"form_submission\",\"form_submission_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "form_submission_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"news_news\",\"news_news_created_by_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "news_news_created_by_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"news_reaction\",\"news_reaction_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "news_reaction_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"news_reaction\",\"news_reaction_news_id_news_news_id_fk\"]",
+      "set": {
+        "name": "news_reaction_news_id_news_news_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"job_job_post\",\"job_job_post_created_by_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "job_job_post_created_by_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"user_user_setting_allergy\",\"user_user_setting_allergy_user_id_user_settings_user_id_fk\"]",
+      "set": {
+        "name": "user_user_setting_allergy_user_id_user_settings_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"user_user_setting_allergy\",\"user_user_setting_allergy_allergy_slug_user_allergy_slug_fk\"]",
+      "set": {
+        "name": "user_user_setting_allergy_allergy_slug_user_allergy_slug_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"user_calendar_token\",\"user_calendar_token_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "user_calendar_token_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"user_settings\",\"user_settings_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "user_settings_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"apikey_api_key\",\"apikey_api_key_created_by_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "apikey_api_key_created_by_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"asset_file\",\"asset_file_uploaded_by_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "asset_file_uploaded_by_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"banner_banner\",\"banner_banner_created_by_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "banner_banner_created_by_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"application\",\"application_submitted_by_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "application_submitted_by_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"application\",\"application_handled_by_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "application_handled_by_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"application_attachment\",\"application_attachment_application_id_application_id_fk\"]",
+      "set": {
+        "name": "application_attachment_application_id_application_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"application_company_contact\",\"application_company_contact_application_id_application_id_fk\"]",
+      "set": {
+        "name": "application_company_contact_application_id_application_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"application_expense\",\"application_expense_application_id_application_id_fk\"]",
+      "set": {
+        "name": "application_expense_application_id_application_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"application_expense\",\"application_expense_group_slug_org_group_slug_fk\"]",
+      "set": {
+        "name": "application_expense_group_slug_org_group_slug_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"application_hs_case\",\"application_hs_case_application_id_application_id_fk\"]",
+      "set": {
+        "name": "application_hs_case_application_id_application_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"application_support\",\"application_support_application_id_application_id_fk\"]",
+      "set": {
+        "name": "application_support_application_id_application_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"application_support\",\"application_support_group_slug_org_group_slug_fk\"]",
+      "set": {
+        "name": "application_support_group_slug_org_group_slug_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"feedback_item\",\"feedback_item_author_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "feedback_item_author_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"feedback_comment\",\"feedback_comment_feedback_id_feedback_item_id_fk\"]",
+      "set": {
+        "name": "feedback_comment_feedback_id_feedback_item_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"feedback_comment\",\"feedback_comment_author_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "feedback_comment_author_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"feedback_vote\",\"feedback_vote_feedback_id_feedback_item_id_fk\"]",
+      "set": {
+        "name": "feedback_vote_feedback_id_feedback_item_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"feedback_vote\",\"feedback_vote_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "feedback_vote_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"gallery_album\",\"gallery_album_event_id_event_event_id_fk\"]",
+      "set": {
+        "name": "gallery_album_event_id_event_event_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"gallery_album\",\"gallery_album_created_by_user_id_auth_user_id_fk\"]",
+      "set": {
+        "name": "gallery_album_created_by_user_id_auth_user_id_fkey"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "fks\u0000[\"public\",\"gallery_picture\",\"gallery_picture_album_id_gallery_album_id_fk\"]",
+      "set": {
+        "name": "gallery_picture_album_id_gallery_album_id_fkey"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"auth_account\",\"auth_account_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"auth_oauth_access_token\",\"auth_oauth_access_token_naGWi3hIwfxW_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"auth_oauth_access_token\",\"auth_oauth_access_token_session_id_auth_session_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"auth_oauth_access_token\",\"auth_oauth_access_token_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"auth_oauth_access_token\",\"auth_oauth_access_token_QVDqdup4UBCC_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"auth_oauth_client\",\"auth_oauth_client_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"auth_oauth_consent\",\"auth_oauth_consent_client_id_auth_oauth_client_client_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"auth_oauth_consent\",\"auth_oauth_consent_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"auth_oauth_refresh_token\",\"auth_oauth_refresh_token_UbPvdcQS9AKh_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"auth_oauth_refresh_token\",\"auth_oauth_refresh_token_session_id_auth_session_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"auth_oauth_refresh_token\",\"auth_oauth_refresh_token_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"auth_session\",\"auth_session_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_contract\",\"org_contract_created_by_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_contract_signature\",\"org_contract_signature_contract_id_org_contract_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_contract_signature\",\"org_contract_signature_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_fine\",\"org_fine_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_fine\",\"org_fine_group_slug_org_group_slug_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_fine\",\"org_fine_created_by_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_fine\",\"org_fine_approved_by_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_fine\",\"org_fine_law_id_org_group_law_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_group\",\"org_group_fines_admin_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_group\",\"org_group_institute_id_org_institute_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_group\",\"org_group_study_program_id_org_study_program_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_group_join_request\",\"org_group_join_request_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_group_join_request\",\"org_group_join_request_group_slug_org_group_slug_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_group_law\",\"org_group_law_group_slug_org_group_slug_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_group_membership\",\"org_group_membership_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_group_membership\",\"org_group_membership_group_slug_org_group_slug_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_group_membership_history\",\"org_group_membership_history_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_group_membership_history\",\"org_group_membership_history_group_slug_org_group_slug_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_group_position\",\"org_group_position_group_slug_org_group_slug_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_group_position\",\"org_group_position_linked_group_slug_org_group_slug_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_group_position_holder\",\"org_group_position_holder_kz7H67Ql9Udc_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_group_position_holder\",\"org_group_position_holder_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_group_position_holder\",\"org_group_position_holder_granted_by_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_study_program_membership\",\"org_study_program_membership_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"org_study_program_membership\",\"org_study_program_membership_gNDIJTnzJ0AV_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_event\",\"event_event_category_slug_event_category_slug_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_event\",\"event_event_contact_person_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_event\",\"event_event_created_by_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_event\",\"event_event_update_by_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_event\",\"event_event_organizer_group_slug_org_group_slug_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_event\",\"event_event_restricted_to_institute_id_org_institute_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_favorite\",\"event_favorite_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_favorite\",\"event_favorite_event_id_event_event_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_feedback\",\"event_feedback_event_id_event_event_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_feedback\",\"event_feedback_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_message\",\"event_message_event_id_event_event_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_message\",\"event_message_sent_by_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_payment\",\"event_payment_event_id_event_event_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_payment\",\"event_payment_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_priority_pool\",\"event_priority_pool_event_id_event_event_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_priority_pool\",\"event_priority_pool_group_slug_org_group_slug_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_priority_pool_group\",\"event_priority_pool_group_C7Qd2ITc9bwf_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_priority_pool_group\",\"event_priority_pool_group_group_slug_org_group_slug_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_priority_user\",\"event_priority_user_event_id_event_event_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_priority_user\",\"event_priority_user_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_reaction\",\"event_reaction_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_reaction\",\"event_reaction_event_id_event_event_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_registration\",\"event_registration_event_id_event_event_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_registration\",\"event_registration_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_strike\",\"event_strike_event_id_event_event_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"event_strike\",\"event_strike_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"rbac_user_permission\",\"rbac_user_permission_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"rbac_user_permission\",\"rbac_user_permission_granted_by_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"rbac_user_role\",\"rbac_user_role_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"rbac_user_role\",\"rbac_user_role_role_id_rbac_role_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"notification_notification\",\"notification_notification_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"notification_device\",\"notification_device_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"form_answer\",\"form_answer_submission_id_form_submission_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"form_answer\",\"form_answer_field_id_form_field_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"form_answer_option\",\"form_answer_option_answer_id_form_answer_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"form_answer_option\",\"form_answer_option_option_id_form_option_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"form_event_form\",\"form_event_form_form_id_form_form_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"form_event_form\",\"form_event_form_event_id_event_event_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"form_field\",\"form_field_form_id_form_form_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"form_group_form\",\"form_group_form_form_id_form_form_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"form_group_form\",\"form_group_form_group_slug_org_group_slug_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"form_option\",\"form_option_field_id_form_field_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"form_submission\",\"form_submission_form_id_form_form_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"form_submission\",\"form_submission_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"news_news\",\"news_news_created_by_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"news_reaction\",\"news_reaction_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"news_reaction\",\"news_reaction_news_id_news_news_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"job_job_post\",\"job_job_post_created_by_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"user_user_setting_allergy\",\"user_user_setting_allergy_user_id_user_settings_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"user_user_setting_allergy\",\"user_user_setting_allergy_allergy_slug_user_allergy_slug_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"user_calendar_token\",\"user_calendar_token_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"user_settings\",\"user_settings_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"apikey_api_key\",\"apikey_api_key_created_by_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"asset_file\",\"asset_file_uploaded_by_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"banner_banner\",\"banner_banner_created_by_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"application\",\"application_submitted_by_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"application\",\"application_handled_by_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"application_attachment\",\"application_attachment_application_id_application_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"application_company_contact\",\"application_company_contact_application_id_application_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"application_expense\",\"application_expense_application_id_application_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"application_expense\",\"application_expense_group_slug_org_group_slug_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"application_hs_case\",\"application_hs_case_application_id_application_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"application_support\",\"application_support_application_id_application_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"application_support\",\"application_support_group_slug_org_group_slug_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"feedback_item\",\"feedback_item_author_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"feedback_comment\",\"feedback_comment_feedback_id_feedback_item_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"feedback_comment\",\"feedback_comment_author_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"feedback_vote\",\"feedback_vote_feedback_id_feedback_item_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"feedback_vote\",\"feedback_vote_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"gallery_album\",\"gallery_album_event_id_event_event_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"gallery_album\",\"gallery_album_created_by_user_id_auth_user_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"gallery_picture\",\"gallery_picture_album_id_gallery_album_id_fkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "pks\u0000[\"public\",\"org_group_join_request\",\"org_group_join_request_pkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "pks\u0000[\"public\",\"org_group_membership\",\"org_group_membership_pkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "pks\u0000[\"public\",\"org_group_position_holder\",\"org_group_position_holder_pkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "pks\u0000[\"public\",\"org_study_program_membership\",\"org_study_program_membership_pkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "pks\u0000[\"public\",\"event_favorite\",\"event_favorite_pkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "pks\u0000[\"public\",\"event_priority_pool_group\",\"event_priority_pool_group_pkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "pks\u0000[\"public\",\"event_priority_user\",\"event_priority_user_pkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "pks\u0000[\"public\",\"event_reaction\",\"event_reaction_pkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "pks\u0000[\"public\",\"event_registration\",\"event_registration_pkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "pks\u0000[\"public\",\"rbac_user_permission\",\"rbac_user_permission_pkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "pks\u0000[\"public\",\"rbac_user_role\",\"rbac_user_role_pkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "pks\u0000[\"public\",\"news_reaction\",\"news_reaction_pkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "pks\u0000[\"public\",\"user_user_setting_allergy\",\"user_user_setting_allergy_pkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "pks\u0000[\"public\",\"feedback_vote\",\"feedback_vote_pkey\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "uniques\u0000[\"public\",\"auth_oauth_access_token\",\"auth_oauth_access_token_token_key\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "uniques\u0000[\"public\",\"auth_oauth_client\",\"auth_oauth_client_client_id_key\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "uniques\u0000[\"public\",\"auth_oauth_refresh_token\",\"auth_oauth_refresh_token_token_key\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "uniques\u0000[\"public\",\"auth_session\",\"auth_session_token_key\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "uniques\u0000[\"public\",\"auth_user\",\"auth_user_email_key\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "uniques\u0000[\"public\",\"auth_user\",\"auth_user_username_key\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "uniques\u0000[\"public\",\"org_institute\",\"org_institute_slug_key\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "uniques\u0000[\"public\",\"org_study_program\",\"org_study_program_slug_key\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "uniques\u0000[\"public\",\"org_study_program\",\"org_study_program_feide_code_key\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "uniques\u0000[\"public\",\"event_event\",\"event_event_slug_key\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "uniques\u0000[\"public\",\"rbac_role\",\"rbac_role_name_key\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "uniques\u0000[\"public\",\"user_calendar_token\",\"user_calendar_token_token_key\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "uniques\u0000[\"public\",\"apikey_api_key\",\"apikey_api_key_key_hash_key\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "uniques\u0000[\"public\",\"asset_file\",\"asset_file_key_key\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "uniques\u0000[\"public\",\"gallery_album\",\"gallery_album_slug_key\"]",
+      "set": {
+        "nameExplicit": false
+      }
+    }
+  ]
+}

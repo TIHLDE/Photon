@@ -30,9 +30,7 @@ const pgTable = pgTableCreator((name) => `org_${name}`);
  */
 export const institute = pgTable("institute", {
     id: serial("id").primaryKey(),
-    slug: varchar("slug", { length: 64 })
-        .notNull()
-        .unique("org_institute_slug_unique"),
+    slug: varchar("slug", { length: 64 }).notNull().unique(),
     /** Short form used in the UI, e.g. "IDI". */
     shortName: varchar("short_name", { length: 16 }).notNull(),
     name: varchar("name", { length: 160 }).notNull(),
@@ -48,12 +46,8 @@ export type StudyProgramType = (typeof studyProgramType)["enumValues"][number];
 
 export const studyProgram = pgTable("study_program", {
     id: serial("id").primaryKey(),
-    slug: varchar("slug", { length: 64 })
-        .notNull()
-        .unique("org_study_program_slug_unique"),
-    feideCode: varchar("feide_code", { length: 32 })
-        .notNull()
-        .unique("org_study_program_feide_code_unique"),
+    slug: varchar("slug", { length: 64 }).notNull().unique(),
+    feideCode: varchar("feide_code", { length: 32 }).notNull().unique(),
     displayName: varchar("display_name", { length: 128 }).notNull(),
     type: studyProgramType("type").notNull(),
     ...timestamps,
@@ -103,13 +97,11 @@ export const studyProgramMembership = pgTable(
         userId: varchar("user_id", { length: 255 })
             .notNull()
             .references(() => user.id, {
-                name: "org_study_program_membership_user_id_auth_user_id_fk",
                 onDelete: "cascade",
             }),
         studyProgramId: serial("study_program_id")
             .notNull()
             .references(() => studyProgram.id, {
-                name: "org_study_program_membership_study_program_id_org_study_program",
                 onDelete: "cascade",
             }),
         /**
@@ -177,7 +169,6 @@ export const studyProgramMembership = pgTable(
     },
     (t) => [
         primaryKey({
-            name: "org_study_program_membership_user_id_study_program_id_pk",
             columns: [t.userId, t.studyProgramId],
         }),
     ],
@@ -214,9 +205,7 @@ export const group = pgTable("group", {
     type: varchar("type", { length: 50 }).notNull(),
     finesInfo: text("fine_info").notNull(),
     finesActivated: boolean("fines_activated").notNull(),
-    finesAdminId: text("fines_admin_id").references(() => user.id, {
-        name: "org_group_fines_admin_id_auth_user_id_fk",
-    }),
+    finesAdminId: text("fines_admin_id").references(() => user.id),
     ...timestamps,
     contractSigningRequired: boolean("contract_signing_required")
         .notNull()
@@ -229,7 +218,6 @@ export const group = pgTable("group", {
      * access — an institute-restricted event admits nobody without a match.
      */
     instituteId: integer("institute_id").references(() => institute.id, {
-        name: "org_group_institute_id_org_institute_id_fk",
         onDelete: "set null",
     }),
     /**
@@ -343,7 +331,6 @@ export const group = pgTable("group", {
     studyProgramId: integer("study_program_id").references(
         () => studyProgram.id,
         {
-            name: "org_group_study_program_id_org_study_program_id_fk",
             onDelete: "set null",
         },
     ),
@@ -371,13 +358,11 @@ export const groupMembership = pgTable(
         userId: varchar("user_id", { length: 255 })
             .notNull()
             .references(() => user.id, {
-                name: "org_group_membership_user_id_auth_user_id_fk",
                 onDelete: "cascade",
             }),
         groupSlug: varchar("group_slug", { length: 128 })
             .notNull()
             .references(() => group.slug, {
-                name: "org_group_membership_group_slug_org_group_slug_fk",
                 onDelete: "cascade",
             }),
         role: groupMembershipRole("role").notNull().default("member"),
@@ -385,7 +370,6 @@ export const groupMembership = pgTable(
     },
     (t) => [
         primaryKey({
-            name: "org_group_membership_user_id_group_slug_pk",
             columns: [t.userId, t.groupSlug],
         }),
         /**
@@ -407,20 +391,17 @@ export const groupJoinRequest = pgTable(
         userId: varchar("user_id", { length: 255 })
             .notNull()
             .references(() => user.id, {
-                name: "org_group_join_request_user_id_auth_user_id_fk",
                 onDelete: "cascade",
             }),
         groupSlug: varchar("group_slug", { length: 128 })
             .notNull()
             .references(() => group.slug, {
-                name: "org_group_join_request_group_slug_org_group_slug_fk",
                 onDelete: "cascade",
             }),
         ...timestamps,
     },
     (t) => [
         primaryKey({
-            name: "org_group_join_request_user_id_group_slug_pk",
             columns: [t.userId, t.groupSlug],
         }),
         index("group_join_request_group_slug_idx").on(t.groupSlug),
@@ -449,13 +430,11 @@ export const groupMembershipHistory = pgTable(
         userId: varchar("user_id", { length: 255 })
             .notNull()
             .references(() => user.id, {
-                name: "org_group_membership_history_user_id_auth_user_id_fk",
                 onDelete: "cascade",
             }),
         groupSlug: varchar("group_slug", { length: 128 })
             .notNull()
             .references(() => group.slug, {
-                name: "org_group_membership_history_group_slug_org_group_slug_fk",
                 onDelete: "cascade",
             }),
         role: varchar("role", { length: 50 }).notNull().default("member"),
@@ -520,7 +499,6 @@ export const groupPosition = pgTable("group_position", {
     groupSlug: varchar("group_slug", { length: 128 })
         .notNull()
         .references(() => group.slug, {
-            name: "org_group_position_group_slug_org_group_slug_fk",
             onDelete: "cascade",
         }),
     name: varchar("name", { length: 128 }).notNull(),
@@ -538,7 +516,6 @@ export const groupPosition = pgTable("group_position", {
     linkedGroupSlug: varchar("linked_group_slug", { length: 128 }).references(
         () => group.slug,
         {
-            name: "org_group_position_linked_group_slug_org_group_slug_fk",
             onDelete: "cascade",
         },
     ),
@@ -565,20 +542,17 @@ export const groupPositionHolder = pgTable(
         positionId: uuid("position_id")
             .notNull()
             .references(() => groupPosition.id, {
-                name: "org_group_position_holder_position_id_org_group_position_id_fk",
                 onDelete: "cascade",
             }),
         userId: varchar("user_id", { length: 255 })
             .notNull()
             .references(() => user.id, {
-                name: "org_group_position_holder_user_id_auth_user_id_fk",
                 onDelete: "cascade",
             }),
         /** User who assigned the position (audit trail) */
         grantedBy: varchar("granted_by", { length: 255 }).references(
             () => user.id,
             {
-                name: "org_group_position_holder_granted_by_auth_user_id_fk",
                 onDelete: "set null",
             },
         ),
@@ -586,7 +560,6 @@ export const groupPositionHolder = pgTable(
     },
     (table) => [
         primaryKey({
-            name: "org_group_position_holder_position_id_user_id_pk",
             columns: [table.positionId, table.userId],
         }),
     ],
@@ -607,13 +580,11 @@ export const fine = pgTable(
         userId: varchar("user_id", { length: 255 })
             .notNull()
             .references(() => user.id, {
-                name: "org_fine_user_id_auth_user_id_fk",
                 onDelete: "cascade",
             }),
         groupSlug: varchar("group_slug", { length: 128 })
             .notNull()
             .references(() => group.slug, {
-                name: "org_fine_group_slug_org_group_slug_fk",
                 onDelete: "cascade",
             }),
         reason: text("reason").notNull(),
@@ -623,13 +594,11 @@ export const fine = pgTable(
         createdByUserId: varchar("created_by_user_id", {
             length: 255,
         }).references(() => user.id, {
-            name: "org_fine_created_by_user_id_auth_user_id_fk",
             onDelete: "set null",
         }),
         approvedByUserId: varchar("approved_by_user_id", {
             length: 255,
         }).references(() => user.id, {
-            name: "org_fine_approved_by_user_id_auth_user_id_fk",
             onDelete: "set null",
         }),
         approvedAt: timestamp("approved_at"),
@@ -647,7 +616,6 @@ export const fine = pgTable(
          * rather than the fine.
          */
         lawId: uuid("law_id").references((): AnyPgColumn => groupLaw.id, {
-            name: "org_fine_law_id_org_group_law_id_fk",
             onDelete: "set null",
         }),
     },
@@ -670,7 +638,6 @@ export const groupLaw = pgTable("group_law", {
     groupSlug: varchar("group_slug", { length: 128 })
         .notNull()
         .references(() => group.slug, {
-            name: "org_group_law_group_slug_org_group_slug_fk",
             onDelete: "cascade",
         }),
     /** Paragraph number, e.g. 1.00 or 3.12 — mirrors Lepton's decimal(4,2). */
@@ -704,7 +671,6 @@ export const contract = pgTable("contract", {
     createdByUserId: varchar("created_by_user_id", { length: 255 }).references(
         () => user.id,
         {
-            name: "org_contract_created_by_user_id_auth_user_id_fk",
             onDelete: "set null",
         },
     ),
@@ -724,13 +690,11 @@ export const contractSignature = pgTable(
         contractId: uuid("contract_id")
             .notNull()
             .references(() => contract.id, {
-                name: "org_contract_signature_contract_id_org_contract_id_fk",
                 onDelete: "cascade",
             }),
         userId: varchar("user_id", { length: 255 })
             .notNull()
             .references(() => user.id, {
-                name: "org_contract_signature_user_id_auth_user_id_fk",
                 onDelete: "cascade",
             }),
         signedAt: timestamp("signed_at").defaultNow().notNull(),

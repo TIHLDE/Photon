@@ -92,29 +92,22 @@ export type EventVisibility = (typeof eventVisibilityVariants)[number];
 export const event = pgTable("event", {
     id: uuid("id").primaryKey().defaultRandom(),
     title: varchar("title", { length: 256 }).notNull(),
-    slug: varchar("slug", { length: 256 })
-        .notNull()
-        .unique("event_event_slug_unique"),
+    slug: varchar("slug", { length: 256 }).notNull().unique(),
     description: text("description"),
     categorySlug: varchar("category_slug", { length: 64 })
-        .references(() => eventCategory.slug, {
-            name: "event_event_category_slug_event_category_slug_fk",
-        })
+        .references(() => eventCategory.slug)
         .notNull(),
     location: varchar("location", { length: 256 }),
     imageUrl: text("image_url"),
     capacity: integer("capacity"),
     allowWaitlist: boolean("allow_waitlist").default(true).notNull(),
     contactPersonId: text("contact_person_id").references(() => user.id, {
-        name: "event_event_contact_person_id_auth_user_id_fk",
         onDelete: "set null",
     }),
     createdByUserId: text("created_by_user_id").references(() => user.id, {
-        name: "event_event_created_by_user_id_auth_user_id_fk",
         onDelete: "set null",
     }),
     updateByUserId: text("update_by_user_id").references(() => user.id, {
-        name: "event_event_update_by_user_id_auth_user_id_fk",
         onDelete: "set null",
     }),
     start: timestamp("start").notNull(),
@@ -132,7 +125,6 @@ export const event = pgTable("event", {
     organizerGroupSlug: varchar("organizer_group_slug", {
         length: 128,
     }).references(() => group.slug, {
-        name: "event_event_organizer_group_slug_org_group_slug_fk",
         onDelete: "set null",
     }),
     enforcesPreviousStrikes: boolean("enforces_previous_strikes").notNull(),
@@ -178,7 +170,6 @@ export const event = pgTable("event", {
     restrictedToInstituteId: integer("restricted_to_institute_id").references(
         () => institute.id,
         {
-            name: "event_event_restricted_to_institute_id_org_institute_id_fk",
             onDelete: "set null",
         },
     ),
@@ -217,13 +208,11 @@ export const eventRegistration = pgTable(
         eventId: uuid("event_id")
             .notNull()
             .references(() => event.id, {
-                name: "event_registration_event_id_event_event_id_fk",
                 onDelete: "cascade",
             }),
         userId: text("user_id")
             .notNull()
             .references(() => user.id, {
-                name: "event_registration_user_id_auth_user_id_fk",
                 onDelete: "cascade",
             }),
         status: registrationStatus("status").notNull().default("registered"),
@@ -249,7 +238,6 @@ export const eventRegistration = pgTable(
     },
     (t) => [
         primaryKey({
-            name: "event_registration_user_id_event_id_pk",
             columns: [t.userId, t.eventId],
         }),
         /**
@@ -285,13 +273,11 @@ export const eventStrike = pgTable(
         eventId: uuid("event_id")
             .notNull()
             .references(() => event.id, {
-                name: "event_strike_event_id_event_event_id_fk",
                 onDelete: "cascade",
             }),
         userId: text("user_id")
             .notNull()
             .references(() => user.id, {
-                name: "event_strike_user_id_auth_user_id_fk",
                 onDelete: "cascade",
             }),
         count: integer("count").notNull(),
@@ -315,13 +301,11 @@ export const eventPayment = pgTable(
         eventId: uuid("event_id")
             .notNull()
             .references(() => event.id, {
-                name: "event_payment_event_id_event_event_id_fk",
                 onDelete: "cascade",
             }),
         userId: text("user_id")
             .notNull()
             .references(() => user.id, {
-                name: "event_payment_user_id_auth_user_id_fk",
                 onDelete: "cascade",
             }),
         amountMinor: integer("amount_minor").notNull(),
@@ -366,11 +350,9 @@ export const eventFeedback = pgTable("feedback", {
     eventId: uuid("event_id")
         .notNull()
         .references(() => event.id, {
-            name: "event_feedback_event_id_event_event_id_fk",
             onDelete: "cascade",
         }),
     userId: text("user_id").references(() => user.id, {
-        name: "event_feedback_user_id_auth_user_id_fk",
         onDelete: "set null",
     }),
     rating: integer("rating"), // 1-5 optional
@@ -387,13 +369,11 @@ export const eventReaction = pgTable(
         userId: text("user_id")
             .notNull()
             .references(() => user.id, {
-                name: "event_reaction_user_id_auth_user_id_fk",
                 onDelete: "cascade",
             }),
         eventId: uuid("event_id")
             .notNull()
             .references(() => event.id, {
-                name: "event_reaction_event_id_event_event_id_fk",
                 onDelete: "cascade",
             }),
         emoji: varchar("emoji", { length: 32 }).notNull(),
@@ -401,7 +381,6 @@ export const eventReaction = pgTable(
     },
     (t) => [
         primaryKey({
-            name: "event_reaction_user_id_event_id_pk",
             columns: [t.userId, t.eventId],
         }),
         /**
@@ -432,7 +411,6 @@ export const eventPriorityPool = pgTable(
         eventId: uuid("event_id")
             .notNull()
             .references(() => event.id, {
-                name: "event_priority_pool_event_id_event_event_id_fk",
                 onDelete: "cascade",
             }),
         ...timestamps,
@@ -448,7 +426,6 @@ export const eventPriorityPool = pgTable(
         groupSlug: varchar("group_slug", { length: 128 }).references(
             () => group.slug,
             {
-                name: "event_priority_pool_group_slug_org_group_slug_fk",
                 onDelete: "cascade",
             },
         ),
@@ -484,20 +461,17 @@ export const eventPriorityPoolGroup = pgTable(
         priorityPoolId: uuid("priority_pool_id")
             .notNull()
             .references(() => eventPriorityPool.id, {
-                name: "event_priority_pool_group_priority_pool_id_event_priority_pool_",
                 onDelete: "cascade",
             }),
         groupSlug: varchar("group_slug", { length: 128 })
             .notNull()
             .references(() => group.slug, {
-                name: "event_priority_pool_group_group_slug_org_group_slug_fk",
                 onDelete: "cascade",
             }),
         ...timestamps,
     },
     (t) => [
         primaryKey({
-            name: "event_priority_pool_group_priority_pool_id_group_slug_pk",
             columns: [t.priorityPoolId, t.groupSlug],
         }),
     ],
@@ -517,20 +491,17 @@ export const eventPriorityUser = pgTable(
         eventId: uuid("event_id")
             .notNull()
             .references(() => event.id, {
-                name: "event_priority_user_event_id_event_event_id_fk",
                 onDelete: "cascade",
             }),
         userId: text("user_id")
             .notNull()
             .references(() => user.id, {
-                name: "event_priority_user_user_id_auth_user_id_fk",
                 onDelete: "cascade",
             }),
         ...timestamps,
     },
     (t) => [
         primaryKey({
-            name: "event_priority_user_event_id_user_id_pk",
             columns: [t.eventId, t.userId],
         }),
     ],
@@ -541,20 +512,17 @@ export const eventFavorite = pgTable(
         userId: text("user_id")
             .notNull()
             .references(() => user.id, {
-                name: "event_favorite_user_id_auth_user_id_fk",
                 onDelete: "cascade",
             }),
         eventId: uuid("event_id")
             .notNull()
             .references(() => event.id, {
-                name: "event_favorite_event_id_event_event_id_fk",
                 onDelete: "cascade",
             }),
         createdAt: timestamp("created_at").defaultNow().notNull(),
     },
     (t) => [
         primaryKey({
-            name: "event_favorite_user_id_event_id_pk",
             columns: [t.userId, t.eventId],
         }),
     ],
@@ -566,11 +534,9 @@ export const eventMessage = pgTable(
         eventId: uuid("event_id")
             .notNull()
             .references(() => event.id, {
-                name: "event_message_event_id_event_event_id_fk",
                 onDelete: "cascade",
             }),
         sentById: text("sent_by_id").references(() => user.id, {
-            name: "event_message_sent_by_id_auth_user_id_fk",
             onDelete: "set null",
         }),
         title: varchar("title", { length: 80 }).notNull(),

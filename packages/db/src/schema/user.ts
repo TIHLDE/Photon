@@ -27,7 +27,6 @@ export const userSettings = pgTable("settings", {
     userId: text("user_id")
         .primaryKey()
         .references(() => user.id, {
-            name: "user_settings_user_id_auth_user_id_fk",
             onDelete: "cascade",
         }),
     gender: gender("gender").notNull(),
@@ -81,12 +80,9 @@ export const userCalendarToken = pgTable("calendar_token", {
     userId: text("user_id")
         .primaryKey()
         .references(() => user.id, {
-            name: "user_calendar_token_user_id_auth_user_id_fk",
             onDelete: "cascade",
         }),
-    token: varchar("token", { length: 64 })
-        .notNull()
-        .unique("user_calendar_token_token_unique"),
+    token: varchar("token", { length: 64 }).notNull().unique(),
     ...timestamps,
 });
 
@@ -108,20 +104,17 @@ export const userAllergy = pgTable(
         userId: text("user_id")
             .notNull()
             .references(() => userSettings.userId, {
-                name: "user_user_setting_allergy_user_id_user_settings_user_id_fk",
                 onDelete: "cascade",
             }),
         allergySlug: varchar("allergy_slug", { length: 64 })
             .notNull()
             .references(() => allergy.slug, {
-                name: "user_user_setting_allergy_allergy_slug_user_allergy_slug_fk",
                 onDelete: "cascade",
             }),
         ...timestamps,
     },
     (t) => [
         primaryKey({
-            name: "user_user_setting_allergy_user_id_allergy_slug_pk",
             columns: [t.userId, t.allergySlug],
         }),
     ],
