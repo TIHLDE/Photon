@@ -1,3 +1,4 @@
+import { defineRelationsPart } from "drizzle-orm";
 import {
     boolean,
     pgEnum,
@@ -124,4 +125,34 @@ export const userAllergy = pgTable(
             columns: [t.userId, t.allergySlug],
         }),
     ],
+);
+
+export const userSettingsRelations = defineRelationsPart(
+    { userSettings, allergy, userAllergy },
+    (r) => ({
+        userSettings: {
+            allergies: r.many.userAllergy({
+                from: r.userSettings.userId,
+                to: r.userAllergy.userId,
+            }),
+        },
+        allergy: {
+            userSettings: r.many.userAllergy({
+                from: r.allergy.slug,
+                to: r.userAllergy.allergySlug,
+            }),
+        },
+        userAllergy: {
+            userSettings: r.one.userSettings({
+                from: r.userAllergy.userId,
+                to: r.userSettings.userId,
+                optional: false,
+            }),
+            allergy: r.one.allergy({
+                from: r.userAllergy.allergySlug,
+                to: r.allergy.slug,
+                optional: false,
+            }),
+        },
+    }),
 );

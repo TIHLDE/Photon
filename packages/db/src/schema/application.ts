@@ -1,3 +1,4 @@
+import { defineRelationsPart } from "drizzle-orm";
 import {
     index,
     integer,
@@ -280,3 +281,95 @@ export type ApplicationHsCase = typeof applicationHsCase.$inferSelect;
 export type ApplicationCompanyContact =
     typeof applicationCompanyContact.$inferSelect;
 export type ApplicationAttachment = typeof applicationAttachment.$inferSelect;
+
+export const applicationRelations = defineRelationsPart(
+    {
+        application,
+        applicationExpense,
+        applicationSupport,
+        applicationHsCase,
+        applicationCompanyContact,
+        applicationAttachment,
+        user,
+        group,
+    },
+    (r) => ({
+        application: {
+            submittedBy: r.one.user({
+                from: r.application.submittedById,
+                to: r.user.id,
+                alias: "applicationSubmitter",
+            }),
+            handledBy: r.one.user({
+                from: r.application.handledById,
+                to: r.user.id,
+                alias: "applicationHandler",
+            }),
+            expense: r.one.applicationExpense({
+                from: r.application.id,
+                to: r.applicationExpense.applicationId,
+            }),
+            support: r.one.applicationSupport({
+                from: r.application.id,
+                to: r.applicationSupport.applicationId,
+            }),
+            hsCase: r.one.applicationHsCase({
+                from: r.application.id,
+                to: r.applicationHsCase.applicationId,
+            }),
+            companyContact: r.one.applicationCompanyContact({
+                from: r.application.id,
+                to: r.applicationCompanyContact.applicationId,
+            }),
+            attachments: r.many.applicationAttachment({
+                from: r.application.id,
+                to: r.applicationAttachment.applicationId,
+            }),
+        },
+        applicationExpense: {
+            application: r.one.application({
+                from: r.applicationExpense.applicationId,
+                to: r.application.id,
+                optional: false,
+            }),
+            group: r.one.group({
+                from: r.applicationExpense.groupSlug,
+                to: r.group.slug,
+                optional: false,
+            }),
+        },
+        applicationSupport: {
+            application: r.one.application({
+                from: r.applicationSupport.applicationId,
+                to: r.application.id,
+                optional: false,
+            }),
+            group: r.one.group({
+                from: r.applicationSupport.groupSlug,
+                to: r.group.slug,
+                optional: false,
+            }),
+        },
+        applicationHsCase: {
+            application: r.one.application({
+                from: r.applicationHsCase.applicationId,
+                to: r.application.id,
+                optional: false,
+            }),
+        },
+        applicationCompanyContact: {
+            application: r.one.application({
+                from: r.applicationCompanyContact.applicationId,
+                to: r.application.id,
+                optional: false,
+            }),
+        },
+        applicationAttachment: {
+            application: r.one.application({
+                from: r.applicationAttachment.applicationId,
+                to: r.application.id,
+                optional: false,
+            }),
+        },
+    }),
+);

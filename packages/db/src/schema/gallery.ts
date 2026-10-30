@@ -1,3 +1,4 @@
+import { defineRelationsPart } from "drizzle-orm";
 import {
     index,
     pgTableCreator,
@@ -91,3 +92,30 @@ export type GalleryAlbum = typeof galleryAlbum.$inferSelect;
 export type NewGalleryAlbum = typeof galleryAlbum.$inferInsert;
 export type GalleryPicture = typeof galleryPicture.$inferSelect;
 export type NewGalleryPicture = typeof galleryPicture.$inferInsert;
+
+export const galleryRelations = defineRelationsPart(
+    { galleryAlbum, galleryPicture, user, event },
+    (r) => ({
+        galleryAlbum: {
+            creator: r.one.user({
+                from: r.galleryAlbum.createdById,
+                to: r.user.id,
+            }),
+            event: r.one.event({
+                from: r.galleryAlbum.eventId,
+                to: r.event.id,
+            }),
+            pictures: r.many.galleryPicture({
+                from: r.galleryAlbum.id,
+                to: r.galleryPicture.albumId,
+            }),
+        },
+        galleryPicture: {
+            album: r.one.galleryAlbum({
+                from: r.galleryPicture.albumId,
+                to: r.galleryAlbum.id,
+                optional: false,
+            }),
+        },
+    }),
+);

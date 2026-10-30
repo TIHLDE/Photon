@@ -1,3 +1,4 @@
+import { defineRelationsPart } from "drizzle-orm";
 import {
     bigint,
     pgEnum,
@@ -80,3 +81,12 @@ export const asset = pgTable("file", {
 });
 export type Asset = typeof asset.$inferSelect;
 export type NewAsset = typeof asset.$inferInsert;
+
+export const assetRelations = defineRelationsPart({ asset, user }, (r) => ({
+    asset: {
+        uploadedBy: r.one.user({
+            from: r.asset.uploadedById,
+            to: r.user.id,
+        }),
+    },
+}));

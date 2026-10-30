@@ -1,3 +1,4 @@
+import { defineRelationsPart } from "drizzle-orm";
 import {
     boolean,
     index,
@@ -217,4 +218,133 @@ export const formAnswerOption = pgTable(
          */
         index("answer_option_answer_id_idx").on(t.answerId),
     ],
+);
+
+export const formRelations = defineRelationsPart(
+    {
+        form,
+        formEventForm,
+        formGroupForm,
+        formField,
+        formOption,
+        formSubmission,
+        formAnswer,
+        formAnswerOption,
+        event,
+        group,
+        user,
+    },
+    (r) => ({
+        form: {
+            fields: r.many.formField({
+                from: r.form.id,
+                to: r.formField.formId,
+            }),
+            submissions: r.many.formSubmission({
+                from: r.form.id,
+                to: r.formSubmission.formId,
+            }),
+            eventForms: r.many.formEventForm({
+                from: r.form.id,
+                to: r.formEventForm.formId,
+            }),
+            groupForms: r.many.formGroupForm({
+                from: r.form.id,
+                to: r.formGroupForm.formId,
+            }),
+        },
+        formEventForm: {
+            form: r.one.form({
+                from: r.formEventForm.formId,
+                to: r.form.id,
+                optional: false,
+            }),
+            event: r.one.event({
+                from: r.formEventForm.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+        },
+        formGroupForm: {
+            form: r.one.form({
+                from: r.formGroupForm.formId,
+                to: r.form.id,
+                optional: false,
+            }),
+            group: r.one.group({
+                from: r.formGroupForm.groupSlug,
+                to: r.group.slug,
+                optional: false,
+            }),
+        },
+        formField: {
+            form: r.one.form({
+                from: r.formField.formId,
+                to: r.form.id,
+                optional: false,
+            }),
+            options: r.many.formOption({
+                from: r.formField.id,
+                to: r.formOption.fieldId,
+            }),
+            answers: r.many.formAnswer({
+                from: r.formField.id,
+                to: r.formAnswer.fieldId,
+            }),
+        },
+        formOption: {
+            field: r.one.formField({
+                from: r.formOption.fieldId,
+                to: r.formField.id,
+                optional: false,
+            }),
+            answers: r.many.formAnswerOption({
+                from: r.formOption.id,
+                to: r.formAnswerOption.optionId,
+            }),
+        },
+        formSubmission: {
+            form: r.one.form({
+                from: r.formSubmission.formId,
+                to: r.form.id,
+                optional: false,
+            }),
+            user: r.one.user({
+                from: r.formSubmission.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+            answers: r.many.formAnswer({
+                from: r.formSubmission.id,
+                to: r.formAnswer.submissionId,
+            }),
+        },
+        formAnswer: {
+            submission: r.one.formSubmission({
+                from: r.formAnswer.submissionId,
+                to: r.formSubmission.id,
+                optional: false,
+            }),
+            field: r.one.formField({
+                from: r.formAnswer.fieldId,
+                to: r.formField.id,
+            }),
+            selectedOptions: r.many.formAnswerOption({
+                from: r.formAnswer.id,
+                to: r.formAnswerOption.answerId,
+            }),
+        },
+        formAnswerOption: {
+            answer: r.one.formAnswer({
+                from: r.formAnswerOption.answerId,
+                to: r.formAnswer.id,
+                optional: false,
+            }),
+            option: r.one.formOption({
+                from: r.formAnswerOption.optionId,
+                to: r.formOption.id,
+                optional: false,
+            }),
+        },
+    }),
 );

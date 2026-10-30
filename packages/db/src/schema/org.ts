@@ -1,3 +1,4 @@
+import { defineRelationsPart } from "drizzle-orm";
 import {
     boolean,
     index,
@@ -754,4 +755,130 @@ export const contractSignature = pgTable(
     (t) => [
         uniqueIndex("contract_signature_unique_idx").on(t.contractId, t.userId),
     ],
+);
+
+export const orgRelations = defineRelationsPart(
+    {
+        studyProgramMembership,
+        group,
+        institute,
+        groupMembership,
+        groupJoinRequest,
+        groupMembershipHistory,
+        groupPosition,
+        groupPositionHolder,
+        fine,
+        groupLaw,
+        user,
+        studyProgram,
+    },
+    (r) => ({
+        studyProgramMembership: {
+            user: r.one.user({
+                from: r.studyProgramMembership.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+            studyProgram: r.one.studyProgram({
+                from: r.studyProgramMembership.studyProgramId,
+                to: r.studyProgram.id,
+                optional: false,
+            }),
+        },
+        group: {
+            institute: r.one.institute({
+                from: r.group.instituteId,
+                to: r.institute.id,
+            }),
+        },
+        institute: {
+            groups: r.many.group({
+                from: r.institute.id,
+                to: r.group.instituteId,
+            }),
+        },
+        groupMembership: {
+            user: r.one.user({
+                from: r.groupMembership.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+            group: r.one.group({
+                from: r.groupMembership.groupSlug,
+                to: r.group.slug,
+                optional: false,
+            }),
+        },
+        groupJoinRequest: {
+            user: r.one.user({
+                from: r.groupJoinRequest.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+            group: r.one.group({
+                from: r.groupJoinRequest.groupSlug,
+                to: r.group.slug,
+                optional: false,
+            }),
+        },
+        groupMembershipHistory: {
+            user: r.one.user({
+                from: r.groupMembershipHistory.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+            group: r.one.group({
+                from: r.groupMembershipHistory.groupSlug,
+                to: r.group.slug,
+                optional: false,
+            }),
+        },
+        groupPosition: {
+            group: r.one.group({
+                from: r.groupPosition.groupSlug,
+                to: r.group.slug,
+                optional: false,
+            }),
+            holders: r.many.groupPositionHolder({
+                from: r.groupPosition.id,
+                to: r.groupPositionHolder.positionId,
+            }),
+        },
+        groupPositionHolder: {
+            position: r.one.groupPosition({
+                from: r.groupPositionHolder.positionId,
+                to: r.groupPosition.id,
+                optional: false,
+            }),
+            user: r.one.user({
+                from: r.groupPositionHolder.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+        },
+        fine: {
+            user: r.one.user({
+                from: r.fine.userId,
+                to: r.user.id,
+                alias: "fineUser",
+                optional: false,
+            }),
+            createdByUser: r.one.user({
+                from: r.fine.createdByUserId,
+                to: r.user.id,
+                alias: "fineCreatedByUser",
+            }),
+            law: r.one.groupLaw({
+                from: r.fine.lawId,
+                to: r.groupLaw.id,
+            }),
+        },
+        groupLaw: {
+            group: r.one.group({
+                from: r.groupLaw.groupSlug,
+                to: r.group.slug,
+                optional: false,
+            }),
+        },
+    }),
 );

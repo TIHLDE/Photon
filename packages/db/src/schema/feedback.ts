@@ -1,3 +1,4 @@
+import { defineRelationsPart } from "drizzle-orm";
 import {
     boolean,
     index,
@@ -145,3 +146,46 @@ export const feedbackComment = pgTable(
 export type Feedback = typeof feedback.$inferSelect;
 export type FeedbackVote = typeof feedbackVote.$inferSelect;
 export type FeedbackComment = typeof feedbackComment.$inferSelect;
+
+export const feedbackRelations = defineRelationsPart(
+    { feedback, feedbackComment, feedbackVote, user },
+    (r) => ({
+        feedback: {
+            author: r.one.user({
+                from: r.feedback.authorId,
+                to: r.user.id,
+            }),
+            votes: r.many.feedbackVote({
+                from: r.feedback.id,
+                to: r.feedbackVote.feedbackId,
+            }),
+            comments: r.many.feedbackComment({
+                from: r.feedback.id,
+                to: r.feedbackComment.feedbackId,
+            }),
+        },
+        feedbackComment: {
+            feedback: r.one.feedback({
+                from: r.feedbackComment.feedbackId,
+                to: r.feedback.id,
+                optional: false,
+            }),
+            author: r.one.user({
+                from: r.feedbackComment.authorId,
+                to: r.user.id,
+            }),
+        },
+        feedbackVote: {
+            feedback: r.one.feedback({
+                from: r.feedbackVote.feedbackId,
+                to: r.feedback.id,
+                optional: false,
+            }),
+            user: r.one.user({
+                from: r.feedbackVote.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+        },
+    }),
+);

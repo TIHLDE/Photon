@@ -1,3 +1,4 @@
+import { defineRelationsPart } from "drizzle-orm";
 import { pgTableCreator, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { timestamps } from "../timestamps";
 import { user } from "./auth";
@@ -21,3 +22,15 @@ export const managedApiKey = pgTable("api_key", {
     metadata: text("metadata"), // JSON object
     ...timestamps,
 });
+
+export const apiKeyRelations = defineRelationsPart(
+    { managedApiKey, user },
+    (r) => ({
+        managedApiKey: {
+            creator: r.one.user({
+                from: r.managedApiKey.createdById,
+                to: r.user.id,
+            }),
+        },
+    }),
+);

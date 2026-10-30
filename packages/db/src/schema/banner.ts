@@ -1,3 +1,4 @@
+import { defineRelationsPart } from "drizzle-orm";
 import {
     boolean,
     pgTableCreator,
@@ -34,3 +35,12 @@ export const banner = pgTable("banner", {
     openInNewTab: boolean("open_in_new_tab").notNull().default(true),
 });
 export type Banner = typeof banner.$inferSelect;
+
+export const bannerRelations = defineRelationsPart({ banner, user }, (r) => ({
+    banner: {
+        creator: r.one.user({
+            from: r.banner.createdById,
+            to: r.user.id,
+        }),
+    },
+}));

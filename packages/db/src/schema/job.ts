@@ -1,3 +1,4 @@
+import { defineRelationsPart } from "drizzle-orm";
 import {
     boolean,
     pgEnum,
@@ -60,3 +61,12 @@ export const jobPost = pgTable("job_post", {
     }),
     ...timestamps,
 });
+
+export const jobRelations = defineRelationsPart({ jobPost, user }, (r) => ({
+    jobPost: {
+        creator: r.one.user({
+            from: r.jobPost.createdById,
+            to: r.user.id,
+        }),
+    },
+}));

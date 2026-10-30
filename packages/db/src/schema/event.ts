@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { defineRelationsPart, sql } from "drizzle-orm";
 import {
     boolean,
     check,
@@ -591,3 +591,187 @@ export const vippsWebhook = pgTable("vipps_webhook", {
     url: text("url").notNull(),
     ...timestamps,
 });
+
+export const eventRelations = defineRelationsPart(
+    {
+        event,
+        eventRegistration,
+        eventStrike,
+        eventPayment,
+        eventFeedback,
+        eventCategory,
+        eventReaction,
+        eventPriorityPool,
+        eventPriorityPoolGroup,
+        eventPriorityUser,
+        eventFavorite,
+        eventMessage,
+        group,
+        institute,
+        user,
+    },
+    (r) => ({
+        event: {
+            category: r.one.eventCategory({
+                from: r.event.categorySlug,
+                to: r.eventCategory.slug,
+                optional: false,
+            }),
+            organizer: r.one.group({
+                from: r.event.organizerGroupSlug,
+                to: r.group.slug,
+            }),
+            restrictedToInstitute: r.one.institute({
+                from: r.event.restrictedToInstituteId,
+                to: r.institute.id,
+            }),
+            contactPerson: r.one.user({
+                from: r.event.contactPersonId,
+                to: r.user.id,
+            }),
+            reactions: r.many.eventReaction({
+                from: r.event.id,
+                to: r.eventReaction.eventId,
+            }),
+            pools: r.many.eventPriorityPool({
+                from: r.event.id,
+                to: r.eventPriorityPool.eventId,
+            }),
+            priorityUsers: r.many.eventPriorityUser({
+                from: r.event.id,
+                to: r.eventPriorityUser.eventId,
+            }),
+            favorites: r.many.eventFavorite({
+                from: r.event.id,
+                to: r.eventFavorite.eventId,
+            }),
+            registrations: r.many.eventRegistration({
+                from: r.event.id,
+                to: r.eventRegistration.eventId,
+            }),
+        },
+        eventRegistration: {
+            event: r.one.event({
+                from: r.eventRegistration.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+            user: r.one.user({
+                from: r.eventRegistration.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+        },
+        eventStrike: {
+            event: r.one.event({
+                from: r.eventStrike.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+            user: r.one.user({
+                from: r.eventStrike.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+        },
+        eventPayment: {
+            event: r.one.event({
+                from: r.eventPayment.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+            user: r.one.user({
+                from: r.eventPayment.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+        },
+        eventFeedback: {
+            event: r.one.event({
+                from: r.eventFeedback.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+            user: r.one.user({
+                from: r.eventFeedback.userId,
+                to: r.user.id,
+            }),
+        },
+        eventCategory: {
+            events: r.many.event({
+                from: r.eventCategory.slug,
+                to: r.event.categorySlug,
+            }),
+        },
+        eventReaction: {
+            user: r.one.user({
+                from: r.eventReaction.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+            event: r.one.event({
+                from: r.eventReaction.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+        },
+        eventPriorityPool: {
+            event: r.one.event({
+                from: r.eventPriorityPool.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+            group: r.one.group({
+                from: r.eventPriorityPool.groupSlug,
+                to: r.group.slug,
+            }),
+        },
+        eventPriorityPoolGroup: {
+            priorityPool: r.one.eventPriorityPool({
+                from: r.eventPriorityPoolGroup.priorityPoolId,
+                to: r.eventPriorityPool.id,
+                optional: false,
+            }),
+            group: r.one.group({
+                from: r.eventPriorityPoolGroup.groupSlug,
+                to: r.group.slug,
+                optional: false,
+            }),
+        },
+        eventPriorityUser: {
+            event: r.one.event({
+                from: r.eventPriorityUser.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+            user: r.one.user({
+                from: r.eventPriorityUser.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+        },
+        eventFavorite: {
+            user: r.one.user({
+                from: r.eventFavorite.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+            event: r.one.event({
+                from: r.eventFavorite.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+        },
+        eventMessage: {
+            event: r.one.event({
+                from: r.eventMessage.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+            sentBy: r.one.user({
+                from: r.eventMessage.sentById,
+                to: r.user.id,
+            }),
+        },
+    }),
+);

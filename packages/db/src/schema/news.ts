@@ -1,3 +1,4 @@
+import { defineRelationsPart } from "drizzle-orm";
 import {
     boolean,
     pgTableCreator,
@@ -58,4 +59,32 @@ export const newsReaction = pgTable(
             columns: [t.userId, t.newsId],
         }),
     ],
+);
+
+export const newsRelations = defineRelationsPart(
+    { news, newsReaction, user },
+    (r) => ({
+        news: {
+            creator: r.one.user({
+                from: r.news.createdById,
+                to: r.user.id,
+            }),
+            reactions: r.many.newsReaction({
+                from: r.news.id,
+                to: r.newsReaction.newsId,
+            }),
+        },
+        newsReaction: {
+            user: r.one.user({
+                from: r.newsReaction.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+            news: r.one.news({
+                from: r.newsReaction.newsId,
+                to: r.news.id,
+                optional: false,
+            }),
+        },
+    }),
 );
