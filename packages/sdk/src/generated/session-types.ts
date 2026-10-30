@@ -20,8 +20,8 @@ export type ExtendedSession = {
             githubUrl: string | null;
             linkedinUrl: string | null;
             receiveMailCommunication: boolean;
-            publicEventRegistrations: boolean;
             isOnboarded: boolean;
+            publicEventRegistrations: boolean;
             customAllergies: string[];
             allergiesConfirmedAt: Date | null;
 

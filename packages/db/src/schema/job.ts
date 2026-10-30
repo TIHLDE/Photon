@@ -55,6 +55,7 @@ export const jobPost = pgTable("job_post", {
     imageUrl: text("image_url"),
     imageAlt: varchar("image_alt", { length: 255 }),
     createdById: text("created_by_user_id").references(() => user.id, {
+        name: "job_job_post_created_by_user_id_auth_user_id_fk",
         onDelete: "set null",
     }),
     ...timestamps,

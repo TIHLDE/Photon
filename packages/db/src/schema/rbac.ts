@@ -13,11 +13,13 @@ const pgTable = pgTableCreator((name) => `rbac_${name}`);
 
 export const role = pgTable("role", {
     id: serial("id").primaryKey(),
-    name: varchar("name", { length: 64 }).notNull().unique(),
+    name: varchar("name", { length: 64 })
+        .notNull()
+        .unique("rbac_role_name_unique"),
     description: varchar("description", { length: 256 }),
     position: integer("position").notNull().default(1000),
-    permissions: text("permissions").array(),
     ...timestamps,
+    permissions: text("permissions").array(),
 });
 
 export const userRole = pgTable(
@@ -25,13 +27,24 @@ export const userRole = pgTable(
     {
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                name: "rbac_user_role_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
         roleId: integer("role_id")
             .notNull()
-            .references(() => role.id, { onDelete: "cascade" }),
+            .references(() => role.id, {
+                name: "rbac_user_role_role_id_rbac_role_id_fk",
+                onDelete: "cascade",
+            }),
         ...timestamps,
     },
-    (t) => [primaryKey({ columns: [t.userId, t.roleId] })],
+    (t) => [
+        primaryKey({
+            name: "rbac_user_role_user_id_role_id_pk",
+            columns: [t.userId, t.roleId],
+        }),
+    ],
 );
 
 /**
@@ -48,7 +61,10 @@ export const userPermission = pgTable(
     {
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                name: "rbac_user_permission_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
         permission: varchar("permission", { length: 64 }).notNull(),
         /**
          * Scope for the permission. "*" means global (no restriction).
@@ -60,6 +76,7 @@ export const userPermission = pgTable(
          * User who granted this permission (for audit trail)
          */
         grantedBy: text("granted_by").references(() => user.id, {
+            name: "rbac_user_permission_granted_by_auth_user_id_fk",
             onDelete: "set null",
         }),
         ...timestamps,
@@ -67,6 +84,7 @@ export const userPermission = pgTable(
     (t) => [
         // Composite primary key: userId + permission + scope ("*" means global)
         primaryKey({
+            name: "rbac_user_permission_user_id_permission_scope_pk",
             columns: [t.userId, t.permission, t.scope],
         }),
     ],

@@ -22,7 +22,9 @@ const pgTable = pgTableCreator((name) => `gallery_${name}`);
  */
 export const galleryAlbum = pgTable("album", {
     id: uuid("id").primaryKey().defaultRandom(),
-    slug: varchar("slug", { length: 80 }).notNull().unique(),
+    slug: varchar("slug", { length: 80 })
+        .notNull()
+        .unique("gallery_album_slug_unique"),
     title: varchar("title", { length: 100 }).notNull(),
     description: text("description"),
 
@@ -38,10 +40,12 @@ export const galleryAlbum = pgTable("album", {
      * the pictures with it.
      */
     eventId: uuid("event_id").references(() => event.id, {
+        name: "gallery_album_event_id_event_event_id_fk",
         onDelete: "set null",
     }),
 
     createdById: text("created_by_user_id").references(() => user.id, {
+        name: "gallery_album_created_by_user_id_auth_user_id_fk",
         onDelete: "set null",
     }),
 
@@ -60,7 +64,10 @@ export const galleryPicture = pgTable(
         id: uuid("id").primaryKey().defaultRandom(),
         albumId: uuid("album_id")
             .notNull()
-            .references(() => galleryAlbum.id, { onDelete: "cascade" }),
+            .references(() => galleryAlbum.id, {
+                name: "gallery_picture_album_id_gallery_album_id_fk",
+                onDelete: "cascade",
+            }),
         imageUrl: text("image_url").notNull(),
 
         /**

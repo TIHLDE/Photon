@@ -54,10 +54,16 @@ export const formEventForm = pgTable(
     {
         id: uuid("id").primaryKey().defaultRandom(),
         formId: uuid("form_id")
-            .references(() => form.id, { onDelete: "cascade" })
+            .references(() => form.id, {
+                name: "form_event_form_form_id_form_form_id_fk",
+                onDelete: "cascade",
+            })
             .notNull(),
         eventId: uuid("event_id")
-            .references(() => event.id, { onDelete: "cascade" })
+            .references(() => event.id, {
+                name: "form_event_form_event_id_event_event_id_fk",
+                onDelete: "cascade",
+            })
             .notNull(),
         type: eventFormType("type").notNull(),
         ...timestamps,
@@ -71,10 +77,16 @@ export const formGroupForm = pgTable(
     {
         id: uuid("id").primaryKey().defaultRandom(),
         formId: uuid("form_id")
-            .references(() => form.id, { onDelete: "cascade" })
+            .references(() => form.id, {
+                name: "form_group_form_form_id_form_form_id_fk",
+                onDelete: "cascade",
+            })
             .notNull(),
         groupSlug: varchar("group_slug", { length: 128 })
-            .references(() => group.slug, { onDelete: "cascade" })
+            .references(() => group.slug, {
+                name: "form_group_form_group_slug_org_group_slug_fk",
+                onDelete: "cascade",
+            })
             .notNull(),
         emailReceiverOnSubmit: varchar("email_receiver_on_submit", {
             length: 256,
@@ -85,6 +97,10 @@ export const formGroupForm = pgTable(
         isOpenForSubmissions: boolean("is_open_for_submissions")
             .default(false)
             .notNull(),
+        onlyForGroupMembers: boolean("only_for_group_members")
+            .default(false)
+            .notNull(),
+        ...timestamps,
         /**
          * Når skjemaet skal åpne seg selv. Null betyr «med en gang», altså at
          * `is_open_for_submissions` alene avgjør. Er tidspunktet satt og ikke
@@ -99,10 +115,6 @@ export const formGroupForm = pgTable(
          * svarfrist uten å måtte huske å stenge skjemaet.
          */
         closesAt: timestamp("closes_at"),
-        onlyForGroupMembers: boolean("only_for_group_members")
-            .default(false)
-            .notNull(),
-        ...timestamps,
     },
     // A form belongs to a group once. Several read paths look the row up on
     // form_id alone with findFirst, so a duplicate does not surface as an
@@ -118,7 +130,10 @@ export const formGroupForm = pgTable(
 export const formField = pgTable("field", {
     id: uuid("id").primaryKey().defaultRandom(),
     formId: uuid("form_id")
-        .references(() => form.id, { onDelete: "cascade" })
+        .references(() => form.id, {
+            name: "form_field_form_id_form_form_id_fk",
+            onDelete: "cascade",
+        })
         .notNull(),
     title: varchar("title", { length: 400 }).notNull(),
     type: formFieldType("type").notNull(),
@@ -131,7 +146,10 @@ export const formField = pgTable("field", {
 export const formOption = pgTable("option", {
     id: uuid("id").primaryKey().defaultRandom(),
     fieldId: uuid("field_id")
-        .references(() => formField.id, { onDelete: "cascade" })
+        .references(() => formField.id, {
+            name: "form_option_field_id_form_field_id_fk",
+            onDelete: "cascade",
+        })
         .notNull(),
     title: varchar("title", { length: 400 }).notNull(),
     order: integer("order").notNull().default(0),
@@ -142,10 +160,16 @@ export const formOption = pgTable("option", {
 export const formSubmission = pgTable("submission", {
     id: uuid("id").primaryKey().defaultRandom(),
     formId: uuid("form_id")
-        .references(() => form.id, { onDelete: "cascade" })
+        .references(() => form.id, {
+            name: "form_submission_form_id_form_form_id_fk",
+            onDelete: "cascade",
+        })
         .notNull(),
     userId: text("user_id")
-        .references(() => user.id, { onDelete: "cascade" })
+        .references(() => user.id, {
+            name: "form_submission_user_id_auth_user_id_fk",
+            onDelete: "cascade",
+        })
         .notNull(),
     ...timestamps,
 });
@@ -154,9 +178,13 @@ export const formSubmission = pgTable("submission", {
 export const formAnswer = pgTable("answer", {
     id: uuid("id").primaryKey().defaultRandom(),
     submissionId: uuid("submission_id")
-        .references(() => formSubmission.id, { onDelete: "cascade" })
+        .references(() => formSubmission.id, {
+            name: "form_answer_submission_id_form_submission_id_fk",
+            onDelete: "cascade",
+        })
         .notNull(),
     fieldId: uuid("field_id").references(() => formField.id, {
+        name: "form_answer_field_id_form_field_id_fk",
         onDelete: "set null",
     }),
     answerText: text("answer_text"),
@@ -168,10 +196,16 @@ export const formAnswerOption = pgTable(
     "answer_option",
     {
         answerId: uuid("answer_id")
-            .references(() => formAnswer.id, { onDelete: "cascade" })
+            .references(() => formAnswer.id, {
+                name: "form_answer_option_answer_id_form_answer_id_fk",
+                onDelete: "cascade",
+            })
             .notNull(),
         optionId: uuid("option_id")
-            .references(() => formOption.id, { onDelete: "cascade" })
+            .references(() => formOption.id, {
+                name: "form_answer_option_option_id_form_option_id_fk",
+                onDelete: "cascade",
+            })
             .notNull(),
         ...timestamps,
     },

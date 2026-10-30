@@ -1,1 +1,0 @@
-ALTER TABLE "org_group" ADD COLUMN "leader_global_permissions" text[] DEFAULT '{}' NOT NULL;

@@ -23,13 +23,14 @@ export const banner = pgTable("banner", {
     title: varchar("title", { length: 200 }).notNull(),
     description: varchar("description", { length: 500 }).notNull(),
     url: text("url"),
-    linkText: varchar("link_text", { length: 100 }),
-    openInNewTab: boolean("open_in_new_tab").notNull().default(true),
     visibleFrom: timestamp("visible_from").notNull(),
     visibleUntil: timestamp("visible_until").notNull(),
     createdById: text("created_by_user_id").references(() => user.id, {
+        name: "banner_banner_created_by_user_id_auth_user_id_fk",
         onDelete: "set null",
     }),
     ...timestamps,
+    linkText: varchar("link_text", { length: 100 }),
+    openInNewTab: boolean("open_in_new_tab").notNull().default(true),
 });
 export type Banner = typeof banner.$inferSelect;

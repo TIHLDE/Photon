@@ -120,6 +120,7 @@ export const application = pgTable(
          * record of what they submitted.
          */
         submittedById: text("submitted_by_id").references(() => user.id, {
+            name: "application_submitted_by_id_auth_user_id_fk",
             onDelete: "set null",
         }),
         /** Contact details as given on the form — kept even if the user goes. */
@@ -136,6 +137,7 @@ export const application = pgTable(
         /** Handler-only note. Never serialized to the submitter. */
         internalComment: text("internal_comment"),
         handledById: text("handled_by_id").references(() => user.id, {
+            name: "application_handled_by_id_auth_user_id_fk",
             onDelete: "set null",
         }),
         handledAt: timestamp("handled_at"),
@@ -151,7 +153,10 @@ export const application = pgTable(
 export const applicationExpense = pgTable("application_expense", {
     applicationId: uuid("application_id")
         .primaryKey()
-        .references(() => application.id, { onDelete: "cascade" }),
+        .references(() => application.id, {
+            name: "application_expense_application_id_application_id_fk",
+            onDelete: "cascade",
+        }),
     /** Optional copy to a group's økonomiansvarlig. Validated as an allowlist. */
     ccEmail: text("cc_email"),
     /**
@@ -172,7 +177,10 @@ export const applicationExpense = pgTable("application_expense", {
     expenseDate: varchar("expense_date", { length: 10 }).notNull(),
     groupSlug: varchar("group_slug", { length: 128 })
         .notNull()
-        .references(() => group.slug, { onDelete: "restrict" }),
+        .references(() => group.slug, {
+            name: "application_expense_group_slug_org_group_slug_fk",
+            onDelete: "restrict",
+        }),
     budgetType: applicationBudgetType("budget_type").notNull(),
     description: text("description").notNull(),
     /** Canonical "xxxx.xx.xxxxx". */
@@ -183,10 +191,16 @@ export const applicationExpense = pgTable("application_expense", {
 export const applicationSupport = pgTable("application_support", {
     applicationId: uuid("application_id")
         .primaryKey()
-        .references(() => application.id, { onDelete: "cascade" }),
+        .references(() => application.id, {
+            name: "application_support_application_id_application_id_fk",
+            onDelete: "cascade",
+        }),
     groupSlug: varchar("group_slug", { length: 128 })
         .notNull()
-        .references(() => group.slug, { onDelete: "restrict" }),
+        .references(() => group.slug, {
+            name: "application_support_group_slug_org_group_slug_fk",
+            onDelete: "restrict",
+        }),
     purpose: text("purpose").notNull(),
     eventDescription: text("event_description").notNull(),
     justification: text("justification").notNull(),
@@ -199,7 +213,10 @@ export const applicationSupport = pgTable("application_support", {
 export const applicationHsCase = pgTable("application_hs_case", {
     applicationId: uuid("application_id")
         .primaryKey()
-        .references(() => application.id, { onDelete: "cascade" }),
+        .references(() => application.id, {
+            name: "application_hs_case_application_id_application_id_fk",
+            onDelete: "cascade",
+        }),
     caseName: text("case_name").notNull(),
     caseType: applicationCaseType("case_type").notNull(),
     background: text("background").notNull(),
@@ -224,7 +241,10 @@ export const applicationCompanyContact = pgTable(
     {
         applicationId: uuid("application_id")
             .primaryKey()
-            .references(() => application.id, { onDelete: "cascade" }),
+            .references(() => application.id, {
+                name: "application_company_contact_application_id_application_id_fk",
+                onDelete: "cascade",
+            }),
         company: text("company").notNull(),
         /** Which kinds of arrangement the company is interested in. */
         eventTypes: text("event_types").array().notNull(),
@@ -240,7 +260,10 @@ export const applicationAttachment = pgTable(
         id: uuid("id").primaryKey().defaultRandom(),
         applicationId: uuid("application_id")
             .notNull()
-            .references(() => application.id, { onDelete: "cascade" }),
+            .references(() => application.id, {
+                name: "application_attachment_application_id_application_id_fk",
+                onDelete: "cascade",
+            }),
         /** S3 object key, stored as plain text like contract.fileKey. */
         assetKey: text("asset_key").notNull(),
         kind: applicationAttachmentKind("kind").notNull(),

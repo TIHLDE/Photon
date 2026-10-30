@@ -25,7 +25,10 @@ export type Gender = (typeof genderVariants)[number];
 export const userSettings = pgTable("settings", {
     userId: text("user_id")
         .primaryKey()
-        .references(() => user.id, { onDelete: "cascade" }),
+        .references(() => user.id, {
+            name: "user_settings_user_id_auth_user_id_fk",
+            onDelete: "cascade",
+        }),
     gender: gender("gender").notNull(),
     allowsPhotosByDefault: boolean("allows_photos_by_default")
         .default(false)
@@ -36,6 +39,8 @@ export const userSettings = pgTable("settings", {
     githubUrl: varchar("github_url", { length: 256 }),
     linkedinUrl: varchar("linkedin_url", { length: 256 }),
     receiveMailCommunication: boolean("receive_mail_communication").notNull(),
+    isOnboarded: boolean("is_onboarded").default(false).notNull(),
+    ...timestamps,
     /**
      * Whether the member is listed by name in deltakerlister. Off means they
      * still register as normal, but other members see them as anonymous.
@@ -44,7 +49,6 @@ export const userSettings = pgTable("settings", {
     publicEventRegistrations: boolean("public_event_registrations")
         .default(true)
         .notNull(),
-    isOnboarded: boolean("is_onboarded").default(false).notNull(),
     /**
      * Allergier medlemmet har skrevet inn selv, i tillegg til avhukingene i
      * `user_allergy`. De ligger her og ikke i katalogen fordi Lepton-importen
@@ -63,7 +67,6 @@ export const userSettings = pgTable("settings", {
      * av noen er ikke en bekreftelse fra medlemmet.
      */
     allergiesConfirmedAt: timestamp("allergies_confirmed_at"),
-    ...timestamps,
 });
 /**
  * Hemmelig nøkkel som gir tilgang til brukerens egen kalenderstrøm
@@ -76,8 +79,13 @@ export const userSettings = pgTable("settings", {
 export const userCalendarToken = pgTable("calendar_token", {
     userId: text("user_id")
         .primaryKey()
-        .references(() => user.id, { onDelete: "cascade" }),
-    token: varchar("token", { length: 64 }).notNull().unique(),
+        .references(() => user.id, {
+            name: "user_calendar_token_user_id_auth_user_id_fk",
+            onDelete: "cascade",
+        }),
+    token: varchar("token", { length: 64 })
+        .notNull()
+        .unique("user_calendar_token_token_unique"),
     ...timestamps,
 });
 
@@ -98,11 +106,22 @@ export const userAllergy = pgTable(
     {
         userId: text("user_id")
             .notNull()
-            .references(() => userSettings.userId, { onDelete: "cascade" }),
+            .references(() => userSettings.userId, {
+                name: "user_user_setting_allergy_user_id_user_settings_user_id_fk",
+                onDelete: "cascade",
+            }),
         allergySlug: varchar("allergy_slug", { length: 64 })
             .notNull()
-            .references(() => allergy.slug, { onDelete: "cascade" }),
+            .references(() => allergy.slug, {
+                name: "user_user_setting_allergy_allergy_slug_user_allergy_slug_fk",
+                onDelete: "cascade",
+            }),
         ...timestamps,
     },
-    (t) => [primaryKey({ columns: [t.userId, t.allergySlug] })],
+    (t) => [
+        primaryKey({
+            name: "user_user_setting_allergy_user_id_allergy_slug_pk",
+            columns: [t.userId, t.allergySlug],
+        }),
+    ],
 );

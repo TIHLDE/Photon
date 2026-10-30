@@ -1,1 +1,0 @@
-ALTER TABLE "event_payment" ADD COLUMN "expires_at" timestamp;

@@ -20,9 +20,11 @@ export const news = pgTable("news", {
     imageUrl: text("image_url"),
     imageAlt: varchar("image_alt", { length: 255 }),
     createdById: text("created_by_user_id").references(() => user.id, {
+        name: "news_news_created_by_user_id_auth_user_id_fk",
         onDelete: "set null",
     }),
     emojisAllowed: boolean("emojis_allowed").default(false).notNull(),
+    ...timestamps,
     /**
      * When the article was taken off the public pages.
      *
@@ -31,19 +33,29 @@ export const news = pgTable("news", {
      * Null means the article is live.
      */
     archivedAt: timestamp("archived_at"),
-    ...timestamps,
 });
 export const newsReaction = pgTable(
     "reaction",
     {
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                name: "news_reaction_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
         newsId: uuid("news_id")
             .notNull()
-            .references(() => news.id, { onDelete: "cascade" }),
+            .references(() => news.id, {
+                name: "news_reaction_news_id_news_news_id_fk",
+                onDelete: "cascade",
+            }),
         emoji: varchar("emoji", { length: 32 }).notNull(),
         createdAt: timestamp("created_at").defaultNow().notNull(),
     },
-    (t) => [primaryKey({ columns: [t.userId, t.newsId] })],
+    (t) => [
+        primaryKey({
+            name: "news_reaction_user_id_news_id_pk",
+            columns: [t.userId, t.newsId],
+        }),
+    ],
 );

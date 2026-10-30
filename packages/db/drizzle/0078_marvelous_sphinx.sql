@@ -1,1 +1,0 @@
-ALTER TABLE "news_news" ADD COLUMN "archived_at" timestamp;

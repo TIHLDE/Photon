@@ -92,30 +92,29 @@ export type EventVisibility = (typeof eventVisibilityVariants)[number];
 export const event = pgTable("event", {
     id: uuid("id").primaryKey().defaultRandom(),
     title: varchar("title", { length: 256 }).notNull(),
-    slug: varchar("slug", { length: 256 }).notNull().unique(),
+    slug: varchar("slug", { length: 256 })
+        .notNull()
+        .unique("event_event_slug_unique"),
     description: text("description"),
     categorySlug: varchar("category_slug", { length: 64 })
-        .references(() => eventCategory.slug)
+        .references(() => eventCategory.slug, {
+            name: "event_event_category_slug_event_category_slug_fk",
+        })
         .notNull(),
     location: varchar("location", { length: 256 }),
-    /**
-     * Koordinater for stedet, satt når adressen er valgt fra adressesøket
-     * (Kartverket). Er null for fritekst-steder som "Digitalt" eller "R1".
-     * Brukes til å lage en kartlenke på arrangementssiden.
-     */
-    locationLat: doublePrecision("location_lat"),
-    locationLng: doublePrecision("location_lng"),
     imageUrl: text("image_url"),
-    imageAlt: varchar("image_alt", { length: 255 }),
     capacity: integer("capacity"),
     allowWaitlist: boolean("allow_waitlist").default(true).notNull(),
     contactPersonId: text("contact_person_id").references(() => user.id, {
+        name: "event_event_contact_person_id_auth_user_id_fk",
         onDelete: "set null",
     }),
     createdByUserId: text("created_by_user_id").references(() => user.id, {
+        name: "event_event_created_by_user_id_auth_user_id_fk",
         onDelete: "set null",
     }),
     updateByUserId: text("update_by_user_id").references(() => user.id, {
+        name: "event_event_update_by_user_id_auth_user_id_fk",
         onDelete: "set null",
     }),
     start: timestamp("start").notNull(),
@@ -132,8 +131,22 @@ export const event = pgTable("event", {
     reactionsAllowed: boolean("reactions_allowed").default(true).notNull(),
     organizerGroupSlug: varchar("organizer_group_slug", {
         length: 128,
-    }).references(() => group.slug, { onDelete: "set null" }),
+    }).references(() => group.slug, {
+        name: "event_event_organizer_group_slug_org_group_slug_fk",
+        onDelete: "set null",
+    }),
     enforcesPreviousStrikes: boolean("enforces_previous_strikes").notNull(),
+    ...timestamps,
+    imageAlt: varchar("image_alt", { length: 255 }),
+    /** Only members covered by a priority pool may register. */
+    onlyAllowPrioritized: boolean("only_allow_prioritized")
+        .default(false)
+        .notNull(),
+    /**
+     * Who may see the event. "public" is visible to everyone including
+     * logged-out visitors; "members" hides it from unauthenticated callers.
+     */
+    visibility: eventVisibility("visibility").default("public").notNull(),
     /**
      * When true, this event automatically issues strikes (prikker): 1 strike
      * for unregistering after `cancellationDeadline`, and 2 strikes for
@@ -145,6 +158,30 @@ export const event = pgTable("event", {
      * Used as an idempotency marker so no-show strikes are issued only once.
      */
     noShowProcessedAt: timestamp("no_show_processed_at"),
+    /**
+     * Koordinater for stedet, satt når adressen er valgt fra adressesøket
+     * (Kartverket). Er null for fritekst-steder som "Digitalt" eller "R1".
+     * Brukes til å lage en kartlenke på arrangementssiden.
+     */
+    locationLat: doublePrecision("location_lat"),
+    locationLng: doublePrecision("location_lng"),
+    /**
+     * Restricts registration to members of a single NTNU institute, matched
+     * through the study groups they belong to. NULL — the default — means the
+     * event is open to every institute, which is what nearly all events are.
+     * Set it for arrangements that belong to one institute, so DigSec (IIK)
+     * students cannot take IDI seats and the other way around.
+     *
+     * This gates registration only; the event stays visible to everyone, the
+     * same way a priority-pool-only event does.
+     */
+    restrictedToInstituteId: integer("restricted_to_institute_id").references(
+        () => institute.id,
+        {
+            name: "event_event_restricted_to_institute_id_org_institute_id_fk",
+            onDelete: "set null",
+        },
+    ),
     /**
      * Set once the "påmeldingen åpner snart" reminder has been sent to everyone
      * who favourited the event. Idempotency marker so the reminder goes out at
@@ -158,10 +195,6 @@ export const event = pgTable("event", {
      * at most once per event.
      */
     paymentReviewNotifiedAt: timestamp("payment_review_notified_at"),
-    /** Only members covered by a priority pool may register. */
-    onlyAllowPrioritized: boolean("only_allow_prioritized")
-        .default(false)
-        .notNull(),
     /**
      * Lets alumni register too, not just active members.
      *
@@ -177,40 +210,26 @@ export const event = pgTable("event", {
      * registration only: it changes nothing about who can see the event.
      */
     openToAlumni: boolean("open_to_alumni").default(false).notNull(),
-    /**
-     * Restricts registration to members of a single NTNU institute, matched
-     * through the study groups they belong to. NULL — the default — means the
-     * event is open to every institute, which is what nearly all events are.
-     * Set it for arrangements that belong to one institute, so DigSec (IIK)
-     * students cannot take IDI seats and the other way around.
-     *
-     * This gates registration only; the event stays visible to everyone, the
-     * same way a priority-pool-only event does.
-     */
-    restrictedToInstituteId: integer("restricted_to_institute_id").references(
-        () => institute.id,
-        { onDelete: "set null" },
-    ),
-    /**
-     * Who may see the event. "public" is visible to everyone including
-     * logged-out visitors; "members" hides it from unauthenticated callers.
-     */
-    visibility: eventVisibility("visibility").default("public").notNull(),
-    ...timestamps,
 });
 export const eventRegistration = pgTable(
     "registration",
     {
         eventId: uuid("event_id")
             .notNull()
-            .references(() => event.id, { onDelete: "cascade" }),
+            .references(() => event.id, {
+                name: "event_registration_event_id_event_event_id_fk",
+                onDelete: "cascade",
+            }),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                name: "event_registration_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
         status: registrationStatus("status").notNull().default("registered"),
         waitlistPosition: integer("waitlist_position"),
         attendedAt: timestamp("attended_at"),
-        promotedFromWaitlistAt: timestamp("promoted_from_waitlist_at"),
+        ...timestamps,
         /**
          * Photo consent for THIS event, overriding the account-level
          * `allowsPhotosByDefault`. Carried over from Lepton, where members
@@ -226,10 +245,13 @@ export const eventRegistration = pgTable(
          * the registration gate still blocks them.
          */
         evaluationReminderSentAt: timestamp("evaluation_reminder_sent_at"),
-        ...timestamps,
+        promotedFromWaitlistAt: timestamp("promoted_from_waitlist_at"),
     },
     (t) => [
-        primaryKey({ columns: [t.userId, t.eventId] }),
+        primaryKey({
+            name: "event_registration_user_id_event_id_pk",
+            columns: [t.userId, t.eventId],
+        }),
         /**
          * The primary key leads on `user_id`, so it cannot serve a lookup by
          * event — and looking up by event is what this table mostly does:
@@ -262,10 +284,16 @@ export const eventStrike = pgTable(
         id: uuid("id").primaryKey().defaultRandom(),
         eventId: uuid("event_id")
             .notNull()
-            .references(() => event.id, { onDelete: "cascade" }),
+            .references(() => event.id, {
+                name: "event_strike_event_id_event_event_id_fk",
+                onDelete: "cascade",
+            }),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                name: "event_strike_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
         count: integer("count").notNull(),
         reason: varchar("reason", { length: 256 }),
         ...timestamps,
@@ -286,16 +314,24 @@ export const eventPayment = pgTable(
         id: uuid("id").primaryKey().defaultRandom(),
         eventId: uuid("event_id")
             .notNull()
-            .references(() => event.id, { onDelete: "cascade" }),
+            .references(() => event.id, {
+                name: "event_payment_event_id_event_event_id_fk",
+                onDelete: "cascade",
+            }),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
-        amountMinor: integer("amount_minor").notNull(), // cents/øre
+            .references(() => user.id, {
+                name: "event_payment_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
+        amountMinor: integer("amount_minor").notNull(),
+        // cents/øre
         currency: varchar("currency", { length: 3 }).default("NOK").notNull(),
         provider: varchar("provider", { length: 64 }),
         providerPaymentId: text("provider_payment_id"),
         status: paymentStatus("status").notNull().default("pending"),
         receivedPaymentAt: timestamp("received_payment_at"),
+        ...timestamps,
         /**
          * Deadline for when this payment obligation must be fulfilled. Set to
          * `now + DEFAULT_PAYMENT_GRACE_MINUTES` when a user is registered to a
@@ -315,7 +351,6 @@ export const eventPayment = pgTable(
         flag: paymentFlag("flag"),
         /** When {@link flag} was raised. */
         flaggedAt: timestamp("flagged_at"),
-        ...timestamps,
     },
     (t) => [
         /**
@@ -330,8 +365,14 @@ export const eventFeedback = pgTable("feedback", {
     id: uuid("id").primaryKey().defaultRandom(),
     eventId: uuid("event_id")
         .notNull()
-        .references(() => event.id, { onDelete: "cascade" }),
-    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+        .references(() => event.id, {
+            name: "event_feedback_event_id_event_event_id_fk",
+            onDelete: "cascade",
+        }),
+    userId: text("user_id").references(() => user.id, {
+        name: "event_feedback_user_id_auth_user_id_fk",
+        onDelete: "set null",
+    }),
     rating: integer("rating"), // 1-5 optional
     comment: text("comment"),
     ...timestamps,
@@ -345,15 +386,24 @@ export const eventReaction = pgTable(
     {
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                name: "event_reaction_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
         eventId: uuid("event_id")
             .notNull()
-            .references(() => event.id, { onDelete: "cascade" }),
+            .references(() => event.id, {
+                name: "event_reaction_event_id_event_event_id_fk",
+                onDelete: "cascade",
+            }),
         emoji: varchar("emoji", { length: 32 }).notNull(),
         createdAt: timestamp("created_at").defaultNow().notNull(),
     },
     (t) => [
-        primaryKey({ columns: [t.userId, t.eventId] }),
+        primaryKey({
+            name: "event_reaction_user_id_event_id_pk",
+            columns: [t.userId, t.eventId],
+        }),
         /**
          * The primary key leads on `user_id`, so "every reaction on this
          * event" — which is what the event page asks for — could not use it
@@ -381,7 +431,11 @@ export const eventPriorityPool = pgTable(
         id: uuid("id").primaryKey().defaultRandom(),
         eventId: uuid("event_id")
             .notNull()
-            .references(() => event.id, { onDelete: "cascade" }),
+            .references(() => event.id, {
+                name: "event_priority_pool_event_id_event_event_id_fk",
+                onDelete: "cascade",
+            }),
+        ...timestamps,
         /**
          * The group a member must belong to, or null when the pool is a pure
          * class-level rule.
@@ -393,11 +447,13 @@ export const eventPriorityPool = pgTable(
          */
         groupSlug: varchar("group_slug", { length: 128 }).references(
             () => group.slug,
-            { onDelete: "cascade" },
+            {
+                name: "event_priority_pool_group_slug_org_group_slug_fk",
+                onDelete: "cascade",
+            },
         ),
         /** 1-5, or null when the pool does not care about class level. */
         classYear: smallint("class_year"),
-        ...timestamps,
     },
     (t) => [
         check(
@@ -427,13 +483,24 @@ export const eventPriorityPoolGroup = pgTable(
     {
         priorityPoolId: uuid("priority_pool_id")
             .notNull()
-            .references(() => eventPriorityPool.id, { onDelete: "cascade" }),
+            .references(() => eventPriorityPool.id, {
+                name: "event_priority_pool_group_priority_pool_id_event_priority_pool_",
+                onDelete: "cascade",
+            }),
         groupSlug: varchar("group_slug", { length: 128 })
             .notNull()
-            .references(() => group.slug, { onDelete: "cascade" }),
+            .references(() => group.slug, {
+                name: "event_priority_pool_group_group_slug_org_group_slug_fk",
+                onDelete: "cascade",
+            }),
         ...timestamps,
     },
-    (t) => [primaryKey({ columns: [t.priorityPoolId, t.groupSlug] })],
+    (t) => [
+        primaryKey({
+            name: "event_priority_pool_group_priority_pool_id_group_slug_pk",
+            columns: [t.priorityPoolId, t.groupSlug],
+        }),
+    ],
 );
 /**
  * Enkeltpersoner som er prioritert på et arrangement.
@@ -449,26 +516,48 @@ export const eventPriorityUser = pgTable(
     {
         eventId: uuid("event_id")
             .notNull()
-            .references(() => event.id, { onDelete: "cascade" }),
+            .references(() => event.id, {
+                name: "event_priority_user_event_id_event_event_id_fk",
+                onDelete: "cascade",
+            }),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                name: "event_priority_user_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
         ...timestamps,
     },
-    (t) => [primaryKey({ columns: [t.eventId, t.userId] })],
+    (t) => [
+        primaryKey({
+            name: "event_priority_user_event_id_user_id_pk",
+            columns: [t.eventId, t.userId],
+        }),
+    ],
 );
 export const eventFavorite = pgTable(
     "favorite",
     {
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                name: "event_favorite_user_id_auth_user_id_fk",
+                onDelete: "cascade",
+            }),
         eventId: uuid("event_id")
             .notNull()
-            .references(() => event.id, { onDelete: "cascade" }),
+            .references(() => event.id, {
+                name: "event_favorite_event_id_event_event_id_fk",
+                onDelete: "cascade",
+            }),
         createdAt: timestamp("created_at").defaultNow().notNull(),
     },
-    (t) => [primaryKey({ columns: [t.userId, t.eventId] })],
+    (t) => [
+        primaryKey({
+            name: "event_favorite_user_id_event_id_pk",
+            columns: [t.userId, t.eventId],
+        }),
+    ],
 );
 export const eventMessage = pgTable(
     "message",
@@ -476,8 +565,12 @@ export const eventMessage = pgTable(
         id: uuid("id").primaryKey().defaultRandom(),
         eventId: uuid("event_id")
             .notNull()
-            .references(() => event.id, { onDelete: "cascade" }),
+            .references(() => event.id, {
+                name: "event_message_event_id_event_event_id_fk",
+                onDelete: "cascade",
+            }),
         sentById: text("sent_by_id").references(() => user.id, {
+            name: "event_message_sent_by_id_auth_user_id_fk",
             onDelete: "set null",
         }),
         title: varchar("title", { length: 80 }).notNull(),
