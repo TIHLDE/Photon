@@ -27,7 +27,6 @@ export const banner = pgTable("banner", {
     visibleFrom: timestamp("visible_from").notNull(),
     visibleUntil: timestamp("visible_until").notNull(),
     createdById: text("created_by_user_id").references(() => user.id, {
-        name: "banner_banner_created_by_user_id_auth_user_id_fk",
         onDelete: "set null",
     }),
     ...timestamps,

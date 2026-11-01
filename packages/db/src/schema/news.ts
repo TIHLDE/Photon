@@ -21,7 +21,6 @@ export const news = pgTable("news", {
     imageUrl: text("image_url"),
     imageAlt: varchar("image_alt", { length: 255 }),
     createdById: text("created_by_user_id").references(() => user.id, {
-        name: "news_news_created_by_user_id_auth_user_id_fk",
         onDelete: "set null",
     }),
     emojisAllowed: boolean("emojis_allowed").default(false).notNull(),
@@ -41,13 +40,11 @@ export const newsReaction = pgTable(
         userId: text("user_id")
             .notNull()
             .references(() => user.id, {
-                name: "news_reaction_user_id_auth_user_id_fk",
                 onDelete: "cascade",
             }),
         newsId: uuid("news_id")
             .notNull()
             .references(() => news.id, {
-                name: "news_reaction_news_id_news_news_id_fk",
                 onDelete: "cascade",
             }),
         emoji: varchar("emoji", { length: 32 }).notNull(),
@@ -55,7 +52,6 @@ export const newsReaction = pgTable(
     },
     (t) => [
         primaryKey({
-            name: "news_reaction_user_id_news_id_pk",
             columns: [t.userId, t.newsId],
         }),
     ],

@@ -41,7 +41,7 @@ export const asset = pgTable("file", {
     /**
      * The S3 object key/path (e.g., "uploads/2024/01/file.pdf")
      */
-    key: text("key").notNull().unique("asset_file_key_unique"),
+    key: text("key").notNull().unique(),
     /**
      * The original filename when uploaded
      */
@@ -59,7 +59,6 @@ export const asset = pgTable("file", {
      * Note: auth_user.id is text type, so we must use text here
      */
     uploadedById: text("uploaded_by_id").references(() => user.id, {
-        name: "asset_file_uploaded_by_id_auth_user_id_fk",
         onDelete: "set null",
     }),
     ...timestamps,
