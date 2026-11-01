@@ -21,7 +21,6 @@ export type ExtendedSession = {
             linkedinUrl: string | null;
             receiveMailCommunication: boolean;
             isOnboarded: boolean;
-            publicEventRegistrations: boolean;
             customAllergies: string[];
             allergiesConfirmedAt: Date | null;
 

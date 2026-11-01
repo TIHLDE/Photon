@@ -134,32 +134,6 @@ export const getAllRegistrationsForEventsRoute = route().get(
             },
         });
 
-        // Members who turned off «offentlige arrangementspåmeldinger» are
-        // listed without name or picture for everyone but themselves and the
-        // event admins — they still occupy their spot, so the counts hold.
-        // Missing settings row means the default, which is to be listed.
-        const anonymousUserIds = new Set<string>();
-
-        if (!isEventAdmin && registrations.length > 0) {
-            const others = registrations
-                .map((r) => r.userId)
-                .filter((id) => id !== user.id);
-
-            if (others.length > 0) {
-                const settings = await db.query.userSettings.findMany({
-                    where: {
-                        userId: { in: others },
-                        publicEventRegistrations: false,
-                    },
-                    columns: { userId: true },
-                });
-
-                for (const s of settings) {
-                    anonymousUserIds.add(s.userId);
-                }
-            }
-        }
-
         // `eventRegistration` and `eventPayment` have no relation — payment
         // references (userId, eventId) independently — so payments for the
         // current page are fetched separately and joined in memory.
@@ -203,9 +177,8 @@ export const getAllRegistrationsForEventsRoute = route().get(
 
         const totalPages = getTotalPages(registrationCount, pageSize);
 
-        const returnRegistrations = registrations.map((r, index) => {
+        const returnRegistrations = registrations.map((r) => {
             const payment = paymentByUserId.get(r.userId);
-            const isAnonymous = anonymousUserIds.has(r.userId);
             const studyRows = studyByUser.get(r.userId) ?? [];
             const study = deriveStudyFromGroups(studyRows);
             /**
@@ -217,14 +190,9 @@ export const getAllRegistrationsForEventsRoute = route().get(
              */
             const standing = computeClassStanding(studyRows);
             return {
-                // The user id is left out for anonymised rows: it identifies
-                // the member just as well as the name does.
-                id: isAnonymous
-                    ? `anonymous-${getPageOffset(page, pageSize) + index}`
-                    : r.userId,
-                image: isAnonymous ? null : r.user.image,
-                name: isAnonymous ? "Anonym påmeldt" : r.user.name,
-                isAnonymous,
+                id: r.userId,
+                image: r.user.image,
+                name: r.user.name,
                 ...(isEventAdmin
                     ? {
                           allowPhoto: r.allowPhoto,
