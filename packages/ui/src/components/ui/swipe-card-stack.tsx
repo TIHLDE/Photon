@@ -135,7 +135,13 @@ function SwipeCardStack({
         const moved = event.clientX - current.startX;
         if (!current.captured && Math.abs(moved) >= CAPTURE_AFTER_PX) {
             current.captured = true;
-            event.currentTarget.setPointerCapture(event.pointerId);
+            // Throws when the pointer is already gone (released between two
+            // events). The drag still works without it, just not past the edge.
+            try {
+                event.currentTarget.setPointerCapture(event.pointerId);
+            } catch {
+                current.captured = false;
+            }
         }
         setDx(moved);
     }
@@ -203,12 +209,17 @@ function SwipeCardStack({
     // One list for every mounted card, the departing one included, so a card
     // keeps its element — and its transition — as its role changes.
     const mounted: Mounted[] = [];
+    // After a swipe back, the departing card is also the next one in line.
+    // It is mounted once, as the departing card; it takes its place behind
+    // the top once it has flown out.
+    const isDeparting = (cardIndex: number) =>
+        departing !== null && departing.index === cardIndex;
     if (goingBack) {
         mounted.push({ cardIndex: index - 1, role: "behind", depth: 1 });
     } else {
         for (let depth = AHEAD; depth >= 1; depth--) {
             const cardIndex = index + depth;
-            if (cardIndex < cards.length) {
+            if (cardIndex < cards.length && !isDeparting(cardIndex)) {
                 mounted.push({ cardIndex, role: "behind", depth });
             }
         }
