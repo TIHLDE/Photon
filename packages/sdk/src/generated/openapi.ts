@@ -1344,7 +1344,7 @@ export interface paths {
         put?: never;
         /**
          * Publish the event's Wrapped story
-         * @description Put the picked photos live as the event's story for every logged-in member. The first publish notifies everyone who held a spot on the event (registered, attended or no-show) in the bell and by push; publishing again after an unpublish notifies nobody. Requires 'events:update' or 'events:manage', globally or for the arranging group.
+         * @description Put the picked photos live as the event's story for every logged-in member. Every publish that takes the story live notifies everyone who held a spot on the event (registered, attended or no-show) in the bell and by push. Unpublishing deletes those notifications, so publishing again notifies again; publishing a story that is already live notifies nobody. Requires 'events:update' or 'events:manage', globally or for the arranging group.
          */
         post: operations["publishWrappedStory"];
         delete?: never;
@@ -1364,7 +1364,7 @@ export interface paths {
         put?: never;
         /**
          * Unpublish the event's Wrapped story
-         * @description Take the story down for members. Nothing is deleted: likes and comments come back if the story is published again, and that publish notifies nobody. Requires 'events:update' or 'events:manage', globally or for the arranging group.
+         * @description Take the story down for members, and delete the notifications that point to it. Likes and comments stay and come back if the story is published again, and that publish notifies the attendees again. Requires 'events:update' or 'events:manage', globally or for the arranging group.
          */
         post: operations["unpublishWrappedStory"];
         delete?: never;
@@ -4975,7 +4975,7 @@ export interface components {
             draftCount: number;
             /** @description When the story went live for members, or null while it is not published */
             publishedAt: string | null;
-            /** @description When the story was first published. Stays set after unpublishing; attendees are only notified on the first publish. */
+            /** @description When the story was first published. Stays set after unpublishing. */
             firstPublishedAt: string | null;
             /** @description Whether the caller arranges the event */
             canManage: boolean;
