@@ -39,8 +39,8 @@ type Confirm = "publish" | "unpublish" | null;
 
 /**
  * Organisatorens publisering av storyen: av eller på, med en bekreftelse
- * før hvert av dem. Bare første publisering varsler deltakerne, og det sier
- * dialogen.
+ * før hvert av dem. Hver publisering varsler deltakerne, og avpublisering
+ * sletter varslene igjen.
  */
 export function WrappedStoryPublish({
     selectedCount,
@@ -54,7 +54,7 @@ export function WrappedStoryPublish({
 }: WrappedStoryPublishProps) {
     const [confirm, setConfirm] = useState<Confirm>(null);
     const isPublished = publishedAt !== null;
-    const willNotify = firstPublishedAt === null;
+    const publishedBefore = firstPublishedAt !== null;
 
     return (
         <Card>
@@ -123,16 +123,14 @@ export function WrappedStoryPublish({
                         <AlertDialogTitle>
                             {confirm === "unpublish"
                                 ? "Avpubliser storyen?"
-                                : willNotify
-                                  ? "Publiser storyen?"
-                                  : "Publiser storyen igjen?"}
+                                : publishedBefore
+                                  ? "Publiser storyen igjen?"
+                                  : "Publiser storyen?"}
                         </AlertDialogTitle>
                         <AlertDialogDescription>
                             {confirm === "unpublish"
-                                ? "Storyen blir borte for medlemmene. Likes og kommentarer slettes ikke, og kommer tilbake om du publiserer igjen."
-                                : willNotify
-                                  ? `${selectedCount === 1 ? "1 bilde" : `${selectedCount} bilder`} blir synlige for alle med TIHLDE-konto. Alle som var påmeldt får et varsel.`
-                                  : "Storyen blir synlig igjen. Deltakerne fikk varsel første gang, så ingen varsles nå."}
+                                ? "Storyen blir borte for medlemmene, og varslene om den slettes. Likes og kommentarer blir liggende og kommer tilbake om du publiserer igjen."
+                                : `${selectedCount === 1 ? "1 bilde" : `${selectedCount} bilder`} blir synlige for alle med TIHLDE-konto. Alle som var påmeldt får et varsel.`}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
