@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "43a1071e-d92f-4d28-b53e-ee422a555638",
+  "id": "c84c51d1-d85b-4e03-95dd-5c38dacab0a1",
   "prevIds": [
     "5635aa20-cb81-4b00-a92d-a9c95df5484a"
   ],
@@ -75,6 +75,24 @@
         "s|col|public.wrapped_camera.first_published_at",
         "n|col|public.wrapped_camera.first_published_at",
         "e|col|public.wrapped_camera.first_published_at"
+      ],
+      "reads": [
+        "n|tbl|public.wrapped_camera",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "wrapped_camera",
+        "story_layout"
+      ],
+      "writes": [
+        "s|col|public.wrapped_camera.story_layout",
+        "n|col|public.wrapped_camera.story_layout",
+        "e|col|public.wrapped_camera.story_layout"
       ],
       "reads": [
         "n|tbl|public.wrapped_camera",
@@ -193,6 +211,25 @@
         "n|col|public.auth_user.id",
         "e|uniqueness|public.auth_user.id"
       ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "public",
+        "wrapped_camera"
+      ],
+      "writes": [
+        "s|ck|public.wrapped_camera.wrapped_camera_story_layout_valid",
+        "n|ck|public.wrapped_camera.wrapped_camera_story_layout_valid",
+        "e|ck|public.wrapped_camera.wrapped_camera_story_layout_valid",
+        "n|con|public.wrapped_camera.wrapped_camera_story_layout_valid"
+      ],
+      "reads": [
+        "n|tbl|public.wrapped_camera",
+        "n|sch|public",
+        "n|col|public.wrapped_camera.story_layout"
+      ]
     }
   ],
   "deltas": [
@@ -241,6 +278,22 @@
         "notNull": false,
         "dimensions": 0,
         "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_camera",
+        "name": "story_layout",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'feed'",
         "generated": null,
         "identity": null,
         "entityType": "columns"
@@ -526,6 +579,16 @@
         ],
         "nameExplicit": false,
         "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_camera",
+        "name": "wrapped_camera_story_layout_valid",
+        "value": "\"story_layout\" in ('feed', 'cards')",
+        "entityType": "checks"
       }
     },
     {

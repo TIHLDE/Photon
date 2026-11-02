@@ -24,6 +24,13 @@ export const wrappedPhotoSources = ["camera", "camera_roll"] as const;
 export type WrappedPhotoSource = (typeof wrappedPhotoSources)[number];
 
 /**
+ * How the story is watched: scrolled up and down like TikTok, or swiped to
+ * the side as a stack of cards like Tinder. The organizer picks.
+ */
+export const wrappedStoryLayouts = ["feed", "cards"] as const;
+export type WrappedStoryLayout = (typeof wrappedStoryLayouts)[number];
+
+/**
  * The disposable camera of one arrangement.
  *
  * Its own table rather than columns on `event`: the camera is an add-on most
@@ -55,12 +62,20 @@ export const wrappedCamera = pgTable(
          */
         firstPublishedAt: timestamp("first_published_at"),
 
+        storyLayout: text("story_layout", { enum: wrappedStoryLayouts })
+            .notNull()
+            .default("feed"),
+
         ...timestamps,
     },
     (t) => [
         check(
             "wrapped_camera_shots_per_person_positive",
             sql`${t.shotsPerPerson} > 0`,
+        ),
+        check(
+            "wrapped_camera_story_layout_valid",
+            sql`${t.storyLayout} in ('feed', 'cards')`,
         ),
     ],
 );
