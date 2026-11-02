@@ -1,6 +1,7 @@
 import { useRender } from "@base-ui/react/use-render";
 import type * as React from "react";
 
+import { IMAGE_PRESETS } from "#/components/ui/image-preset";
 import { cn } from "#/lib/utils";
 
 type LiveCardProps = React.ComponentProps<"div"> & {
@@ -90,13 +91,12 @@ function LiveCardTitle({ className, ...props }: React.ComponentProps<"h2">) {
 
 /**
  * A picture in the card: the event's banner, or a drawing in its place.
- * Children fill the frame (`absolute inset-0`); the frame takes the height
- * the card's layout gives it, never less than `min-h-48`.
+ * Children fill the frame (`absolute inset-0`). The frame is 21:9, the ratio
+ * of `cover-wide`, so a banner shows across its whole width.
  *
- * `overlay` sits on the frame's bottom edge over a scrim in the card colour,
- * for a {@link LiveCardAction} that should take no room of its own. The scrim
- * keeps the action apart from any photo, light or dark, and turns solid when
- * the member asks for more contrast or less transparency.
+ * `overlay` sits on the frame's bottom edge, for a {@link LiveCardAction}
+ * that should take no room of its own. There is no scrim: the action is solid,
+ * so it reads against any photo.
  */
 function LiveCardMedia({
     className,
@@ -108,7 +108,8 @@ function LiveCardMedia({
         <div
             data-slot="live-card-media"
             className={cn(
-                "relative min-h-48 overflow-hidden rounded-2xl bg-muted",
+                "relative w-full overflow-hidden rounded-2xl bg-muted",
+                IMAGE_PRESETS["cover-wide"].aspectClassName,
                 className,
             )}
             {...props}
@@ -117,7 +118,7 @@ function LiveCardMedia({
             {overlay ? (
                 <div
                     data-slot="live-card-media-overlay"
-                    className="absolute inset-x-0 bottom-0 bg-linear-to-t from-card via-card/70 to-transparent p-3 pt-12 contrast-more:via-card [@media(prefers-reduced-transparency:reduce)]:via-card"
+                    className="absolute inset-x-0 bottom-0 p-3"
                 >
                     {overlay}
                 </div>

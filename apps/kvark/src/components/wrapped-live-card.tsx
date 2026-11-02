@@ -1,7 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { cn } from "@tihlde/ui/lib/utils";
 import { Button } from "@tihlde/ui/ui/button";
-import { DisposableCamera } from "@tihlde/ui/ui/disposable-camera";
 import {
     LiveCard,
     LiveCardAction,
@@ -16,14 +14,14 @@ import { ArrowDown, Camera, Send, TriangleAlert } from "lucide-react";
 
 import { assetImageProps } from "#/lib/assets";
 import { formatOsloDateTime } from "#/lib/date";
+import { DEFAULT_COVER_IMAGE } from "#/lib/image";
 import type { CameraShortcut } from "#/lib/wrapped";
 
 type WrappedLiveCardProps = {
     slug: string;
     title: string;
     closesAt: string;
-    shotsLeft: number;
-    /** The event's banner; without one the card draws the camera instead. */
+    /** The event's banner; without one the card shows the default cover. */
     imageUrl: string | null;
     imageAlt: string | null;
     shortcut: CameraShortcut;
@@ -39,7 +37,7 @@ type WrappedLiveCardProps = {
 
 /**
  * The first screen of the home page while the member has an open camera: the
- * event, its banner (or the camera drawing when it has none), when the camera
+ * event, its banner (or the default cover when it has none), when the camera
  * closes, and one tap to it — or to Mine bilder when sending in is what is
  * left. The whole card is the link.
  */
@@ -47,7 +45,6 @@ export function WrappedLiveCard({
     slug,
     title,
     closesAt,
-    shotsLeft,
     imageUrl,
     imageAlt,
     shortcut,
@@ -74,11 +71,7 @@ export function WrappedLiveCard({
     );
 
     return (
-        // Fills what the first screen offers on a phone: the viewport minus
-        // the 3.5rem header and the 4rem bottom bar with its safe-area inset.
-        // The camera banner is hidden on the home page while this shows, so
-        // the bottom bar is at its short height.
-        <div className="container mx-auto flex min-h-[calc(100dvh_-_3.5rem_-_4rem_-_env(safe-area-inset-bottom))] w-full flex-col gap-2 px-4 pt-4 pb-2 lg:min-h-0 lg:py-8">
+        <div className="container mx-auto flex w-full flex-col gap-2 px-4 pt-4 pb-2 lg:py-8">
             <LiveCard
                 render={
                     target === "mine" ? (
@@ -94,41 +87,24 @@ export function WrappedLiveCard({
                     )
                 }
                 aria-label={`${action} på ${title}, ${detail}`}
-                className="flex-1 lg:min-h-[32rem]"
             >
                 <LiveCardHeader>
                     <LiveCardIndicator>Pågår nå</LiveCardIndicator>
                     <LiveCardMeta>Åpent til {closesAtTime}</LiveCardMeta>
                 </LiveCardHeader>
                 <LiveCardTitle>{title}</LiveCardTitle>
-                <LiveCardMedia
-                    overlay={overlay ? actionPill : undefined}
-                    className="flex-1"
-                >
-                    {imageUrl ? (
-                        // Above the fold and the reason the card exists,
-                        // so loaded eagerly at high priority like DetailHero.
-                        <LiveCardImage
-                            {...assetImageProps(imageUrl, "hero")}
-                            alt={imageAlt ?? ""}
-                            fetchPriority="high"
-                            decoding="async"
-                        />
-                    ) : (
-                        // No banner: the camera stands in. `pb-32` keeps it
-                        // clear of an action laid over the frame's foot.
-                        <div
-                            className={cn(
-                                "absolute inset-0 flex items-center justify-center p-6",
-                                overlay && "pb-32",
-                            )}
-                        >
-                            <DisposableCamera
-                                shotsLeft={shotsLeft}
-                                className="max-h-full max-w-sm"
-                            />
-                        </div>
-                    )}
+                <LiveCardMedia overlay={overlay ? actionPill : undefined}>
+                    {/* Above the fold and the reason the card exists,
+                     * so loaded eagerly at high priority like DetailHero. */}
+                    <LiveCardImage
+                        {...assetImageProps(
+                            imageUrl || DEFAULT_COVER_IMAGE,
+                            "hero",
+                        )}
+                        alt={imageUrl ? (imageAlt ?? "") : ""}
+                        fetchPriority="high"
+                        decoding="async"
+                    />
                 </LiveCardMedia>
                 {overlay ? null : actionPill}
             </LiveCard>
