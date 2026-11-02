@@ -11,6 +11,7 @@ import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { Plus } from "lucide-react";
 import { type ReactNode, Suspense } from "react";
+import { z } from "zod";
 
 import { authQueryOptions } from "#/api/auth";
 import { useAnyScopePermission } from "#/hooks/use-permission";
@@ -73,8 +74,18 @@ const upcomingActivitiesQuery = () =>
 const NEWS_PREVIEW_COUNT = 3;
 const latestNewsQuery = () => getNewsQuery(0, {}, NEWS_PREVIEW_COUNT);
 
+/**
+ * `?kort=b` legger knappen på kamerakortet under bildet i stedet for oppå
+ * det, så teamet kan sammenligne de to på testsida. Alt annet gir A.
+ * ponytail: slettes sammen med varianten som taper.
+ */
+const searchSchema = z.object({
+    kort: z.enum(["a", "b"]).optional().catch(undefined),
+});
+
 export const Route = createFileRoute("/_app/")({
     component: Home,
+    validateSearch: searchSchema,
     // Bare arrangementene blokkerer — de er grunnen til at forsida finnes.
     // Bannere og nyheter henter seg selv bak hver sin Suspense- og feilgrense,
     // så et feilende kall der koster oss den seksjonen og ikke hele sida.
@@ -92,6 +103,7 @@ function Home() {
     ]);
     const canCreateNews = useAnyScopePermission(["news:create", "news:manage"]);
     const liveCamera = useLiveCamera();
+    const { kort } = Route.useSearch();
     // Kortet er det snarveien i bunnlinja er på resten av sida, og må varsle
     // om usendte bilder på samme måte: klokka tikker til stengetid.
     const now = useNow(liveCamera?.closesAt);
@@ -122,7 +134,10 @@ function Home() {
                         title={liveCamera.title}
                         closesAt={liveCamera.closesAt}
                         shotsLeft={liveCamera.shotsLeft}
+                        imageUrl={liveCamera.imageUrl}
+                        imageAlt={liveCamera.imageAlt}
                         shortcut={cameraShortcut(liveCamera, now)}
+                        actionPlacement={kort === "b" ? "below" : "overlay"}
                         restId={REST_OF_HOME_ID}
                     />
                     {banners}

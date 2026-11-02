@@ -89,6 +89,63 @@ function LiveCardTitle({ className, ...props }: React.ComponentProps<"h2">) {
 }
 
 /**
+ * A picture in the card: the event's banner, or a drawing in its place.
+ * Children fill the frame (`absolute inset-0`); the frame takes the height
+ * the card's layout gives it, never less than `min-h-48`.
+ *
+ * `overlay` sits on the frame's bottom edge over a scrim in the card colour,
+ * for a {@link LiveCardAction} that should take no room of its own. The scrim
+ * keeps the action apart from any photo, light or dark, and turns solid when
+ * the member asks for more contrast or less transparency.
+ */
+function LiveCardMedia({
+    className,
+    children,
+    overlay,
+    ...props
+}: React.ComponentProps<"div"> & { overlay?: React.ReactNode }) {
+    return (
+        <div
+            data-slot="live-card-media"
+            className={cn(
+                "relative min-h-48 overflow-hidden rounded-2xl bg-muted",
+                className,
+            )}
+            {...props}
+        >
+            {children}
+            {overlay ? (
+                <div
+                    data-slot="live-card-media-overlay"
+                    className="absolute inset-x-0 bottom-0 bg-linear-to-t from-card via-card/70 to-transparent p-3 pt-12 contrast-more:via-card [@media(prefers-reduced-transparency:reduce)]:via-card"
+                >
+                    {overlay}
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
+/**
+ * The banner photo, cropped to fill {@link LiveCardMedia} without distortion.
+ * `alt` is required: pass "" when the card's label already says it all.
+ */
+function LiveCardImage({
+    className,
+    alt,
+    ...props
+}: React.ComponentProps<"img"> & { alt: string }) {
+    return (
+        <img
+            data-slot="live-card-image"
+            alt={alt}
+            className={cn("absolute inset-0 size-full object-cover", className)}
+            {...props}
+        />
+    );
+}
+
+/**
  * The card's call to action, drawn as a large button across its foot.
  * `warning` when something is lost unless the member acts soon.
  */
@@ -116,7 +173,9 @@ export {
     LiveCard,
     LiveCardAction,
     LiveCardHeader,
+    LiveCardImage,
     LiveCardIndicator,
+    LiveCardMedia,
     LiveCardMeta,
     LiveCardTitle,
 };
