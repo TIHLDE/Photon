@@ -262,3 +262,5 @@ export type WrappedCamera = Schemas["WrappedCamera"];
 export type WrappedPhoto = Schemas["WrappedPhoto"];
 export type WrappedPhotoList = Schemas["WrappedPhotoList"];
 export type WrappedPhotoUploaded = Schemas["WrappedPhotoUploaded"];
+export type WrappedStory = Schemas["WrappedStory"];
+export type WrappedStoryPhoto = Schemas["WrappedStoryPhoto"];

@@ -1373,6 +1373,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/event/{eventId}/wrapped/story": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the event's Wrapped story
+         * @description The published story of an event: the event itself, shown first, then the photos the organizer picked, in the order they were taken, with who took them and their likes and comments. Any logged-in member can read a published story. Before it is published only the organizer can, as a preview; everyone else gets 404.
+         */
+        get: operations["getWrappedStory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/wrapped/story/photos/{photoId}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the image of a photo in the event's story
+         * @description The image bytes of one picked photo in a published story, for any logged-in member. Pass `w` for a smaller WebP variant. A photo that is not picked, or a story that is not published, answers 404 — except to the organizer, who can preview.
+         */
+        get: operations["getWrappedStoryPhotoImage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/event/{eventId}/reactions": {
         parameters: {
             query?: never;
@@ -5069,6 +5109,53 @@ export interface components {
         MyWrappedPhotoDeleted: {
             shotsUsed: number;
             shotsLeft: number;
+        };
+        WrappedStoryPhoto: {
+            /**
+             * Format: uuid
+             * @description Photo ID
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When the photo was taken
+             */
+            takenAt: string;
+            photographer: {
+                id: string;
+                name: string;
+                /** @description Avatar URL */
+                image: string | null;
+            };
+            /** @description Path on the API that serves the image. Needs the session, so fetch it with credentials rather than using it as an `<img src>` from another origin. */
+            imageUrl: string;
+            likeCount: number;
+            likedByMe: boolean;
+            commentCount: number;
+        };
+        WrappedStory: {
+            /** @description Total number of items available */
+            totalCount: number;
+            /** @description Total number of pages available */
+            pages: number;
+            /** @description The next page number that can be fetched */
+            nextPage: number | null;
+            /** @description The event, shown as the first item of the story */
+            event: {
+                /** Format: uuid */
+                id: string;
+                slug: string;
+                title: string;
+                /** Format: date-time */
+                start: string;
+                /** Format: date-time */
+                end: string;
+                imageUrl: string | null;
+            };
+            /** @description When the story went live. Null only for an organizer previewing an unpublished story. */
+            publishedAt: string | null;
+            /** @description The picked photos, in the order they were taken */
+            items: components["schemas"]["WrappedStoryPhoto"][];
         };
         EventReaction: {
             /** @description User ID */
@@ -10727,6 +10814,110 @@ export interface operations {
                 };
             };
             /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getWrappedStory: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrappedStory"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - No published story for this event */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getWrappedStoryPhotoImage: {
+        parameters: {
+            query?: {
+                /** @description Width of a resized WebP variant: 480 for a grid tile, 1920 for a lightbox. Omit for the stored photo. */
+                w?: "480" | "1920";
+            };
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+                /** @description Photo ID */
+                photoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The image */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Photo not found */
             404: {
                 headers: {
                     [name: string]: unknown;

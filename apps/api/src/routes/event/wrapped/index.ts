@@ -11,3 +11,5 @@ export { updateWrappedPhotoRoute } from "./update";
 export { uploadWrappedPhotoRoute } from "./upload";
 export { publishWrappedStoryRoute } from "./publish";
 export { unpublishWrappedStoryRoute } from "./unpublish";
+export { getWrappedStoryRoute } from "./story";
+export { getWrappedStoryPhotoImageRoute } from "./story-image";

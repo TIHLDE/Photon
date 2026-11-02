@@ -38,6 +38,8 @@ import {
     getMyWrappedPhotosRoute,
     getWrappedCameraRoute,
     getWrappedPhotoImageRoute,
+    getWrappedStoryPhotoImageRoute,
+    getWrappedStoryRoute,
     listOpenWrappedCamerasRoute,
     listWrappedPhotosRoute,
     publishWrappedStoryRoute,
@@ -119,6 +121,8 @@ export const eventRoutes = route()
     // Wrapped: storyen etter utvelgelsen
     .route("/", publishWrappedStoryRoute)
     .route("/", unpublishWrappedStoryRoute)
+    .route("/", getWrappedStoryRoute)
+    .route("/", getWrappedStoryPhotoImageRoute)
     // Reactions
     .route("/", createEventReactionRoute)
     .route("/", deleteEventReactionRoute);
