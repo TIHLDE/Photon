@@ -4116,6 +4116,10 @@ export interface components {
             /** @description The event's slug, for linking to its camera */
             slug: string;
             title: string;
+            /** @description The event's banner image, or null when it has none */
+            imageUrl: string | null;
+            /** @description Alt text for the banner image (nullable) */
+            imageAlt: string | null;
             /** Format: date-time */
             start: string;
             /** Format: date-time */

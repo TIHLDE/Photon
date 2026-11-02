@@ -239,6 +239,9 @@ export type OpenCamera = {
     eventId: string;
     slug: string;
     title: string;
+    /** The event's banner, or null when it has none. */
+    imageUrl: string | null;
+    imageAlt: string | null;
     start: Date;
     end: Date;
     closesAt: Date;
@@ -267,6 +270,8 @@ export async function listOpenCameras(
             eventId: schema.event.id,
             slug: schema.event.slug,
             title: schema.event.title,
+            imageUrl: schema.event.imageUrl,
+            imageAlt: schema.event.imageAlt,
             start: schema.event.start,
             end: schema.event.end,
             shotsPerPerson: schema.wrappedCamera.shotsPerPerson,
