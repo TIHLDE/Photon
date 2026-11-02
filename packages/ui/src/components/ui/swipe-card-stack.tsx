@@ -6,12 +6,15 @@ import { cn } from "#/lib/utils";
 
 /**
  * A stack of cards swiped to the side, like Tinder. The top card follows the
- * finger or the mouse with a slight tilt; the next one waits behind it,
- * slightly smaller, and grows into place as the top card is dragged away.
+ * finger or the mouse with a slight tilt, and the card it will reveal waits
+ * behind it, slightly smaller, growing into place as the top card is dragged
+ * away.
  *
- * Right is forward: the top card flies out to the right and the one behind
- * it comes forward. Left is back: the previous card flies in from the left
- * onto the top. On the first card a swipe to the left springs back.
+ * The two directions mirror each other. Dragging right uncovers the next
+ * card, and letting go flies the top card out to the right. Dragging left
+ * uncovers the previous card, and letting go flies the top card out to the
+ * left. On the first card there is nothing before it, so a swipe to the left
+ * springs back.
  *
  * Controlled: the parent owns `index` and changes it in `onIndexChange`. A
  * change made from outside — a key press, a button — animates the same way
@@ -19,7 +22,7 @@ import { cn } from "#/lib/utils";
  */
 
 type SwipeCardStackProps = Omit<React.ComponentProps<"div">, "children"> & {
-    /** Every card, in order. Only the top three and a departing one are mounted. */
+    /** Every card, in order. Only the top one, the ones behind it and a departing one are mounted. */
     cards: readonly React.ReactNode[];
     index: number;
     onIndexChange: (index: number) => void;
@@ -34,15 +37,8 @@ const FLICK_MIN_PX = 30;
 /** Degrees of tilt when the card has travelled one full width. */
 const TILT_DEG = 18;
 const DURATION_MS = 300;
-/** Cards shown behind the top one. */
-const BEHIND = 2;
-
-type Drag = {
-    pointerId: number;
-    startX: number;
-    startTime: number;
-    captured: boolean;
-};
+/** Cards waiting behind the top one while it is dragged to the right. */
+const AHEAD = 2;
 
 /**
  * The pointer is captured only once it has moved this far. Capturing at once
@@ -51,7 +47,21 @@ type Drag = {
  */
 const CAPTURE_AFTER_PX = 6;
 
-type Departure = { index: number; fromX: number };
+type Drag = {
+    pointerId: number;
+    startX: number;
+    startTime: number;
+    captured: boolean;
+};
+
+/** The card flying out, and which way: 1 to the right, -1 to the left. */
+type Departure = { index: number; fromX: number; direction: 1 | -1 };
+
+type Mounted = {
+    cardIndex: number;
+    role: "behind" | "top" | "out";
+    depth: number;
+};
 
 function prefersReducedMotion(): boolean {
     return (
@@ -71,14 +81,9 @@ function SwipeCardStack({
     const drag = React.useRef<Drag | null>(null);
     const [dx, setDx] = React.useState(0);
     const [dragging, setDragging] = React.useState(false);
-    // The card that just flew out to the right, kept until its animation ends.
+    // The card that just flew out, kept until its animation ends.
     const [departing, setDeparting] = React.useState<Departure | null>(null);
-    // The card coming back from the left: `false` while it waits off-screen
-    // for one frame, `true` once it is moving into place.
-    const [arriving, setArriving] = React.useState<{
-        index: number;
-        moving: boolean;
-    } | null>(null);
+    // Where the finger let go, so the card flies on from there.
     const releasedAt = React.useRef(0);
 
     // A change of `index`, from a swipe or from outside, is turned into an
@@ -89,11 +94,11 @@ function SwipeCardStack({
     if (index !== shownIndex) {
         setShownIndex(index);
         if (!prefersReducedMotion()) {
-            if (index > shownIndex) {
-                setDeparting({ index: shownIndex, fromX: releasedAt.current });
-            } else {
-                setArriving({ index, moving: false });
-            }
+            setDeparting({
+                index: shownIndex,
+                fromX: releasedAt.current,
+                direction: index > shownIndex ? 1 : -1,
+            });
         }
         releasedAt.current = 0;
     }
@@ -103,26 +108,6 @@ function SwipeCardStack({
         const timeout = setTimeout(() => setDeparting(null), DURATION_MS);
         return () => clearTimeout(timeout);
     }, [departing]);
-
-    React.useEffect(() => {
-        if (!arriving) return;
-        if (arriving.moving) {
-            const timeout = setTimeout(() => setArriving(null), DURATION_MS);
-            return () => clearTimeout(timeout);
-        }
-        // Two frames: the first paints the card off-screen, the second lets
-        // the transition run from there.
-        let second = 0;
-        const first = requestAnimationFrame(() => {
-            second = requestAnimationFrame(() =>
-                setArriving({ index: arriving.index, moving: true }),
-            );
-        });
-        return () => {
-            cancelAnimationFrame(first);
-            cancelAnimationFrame(second);
-        };
-    }, [arriving]);
 
     const width = () => rootRef.current?.clientWidth || 1;
 
@@ -173,24 +158,19 @@ function SwipeCardStack({
             releasedAt.current = moved;
             onIndexChange(index + 1);
         } else if (moved < 0 && index > 0) {
+            releasedAt.current = moved;
             onIndexChange(index - 1);
         }
     }
 
+    // A drag to the left uncovers the previous card instead of the next ones.
+    const goingBack = dx < 0 && index > 0;
     const progress = Math.min(Math.abs(dx) / (width() * SWIPE_SHARE), 1);
     const transition = dragging
         ? "none"
         : `transform ${DURATION_MS}ms ease-out, opacity ${DURATION_MS}ms ease-out`;
 
-    function topStyle(cardIndex: number): React.CSSProperties {
-        if (arriving?.index === cardIndex) {
-            return arriving.moving
-                ? { transform: "none", transition }
-                : {
-                      transform: `translateX(-150%) rotate(${-TILT_DEG}deg)`,
-                      transition: "none",
-                  };
-        }
+    function topStyle(): React.CSSProperties {
         return {
             transform: `translateX(${dx}px) rotate(${(dx / width()) * TILT_DEG}deg)`,
             transition,
@@ -198,31 +178,44 @@ function SwipeCardStack({
     }
 
     function behindStyle(depth: number): React.CSSProperties {
-        // Only a drag to the right uncovers the card behind; a drag to the
-        // left is the way back and leaves it where it is.
-        const lift = depth === 1 && dx > 0 ? progress : 0;
+        // The card right behind grows into place as the top one is dragged
+        // away from it, in whichever direction uncovers it.
+        const lift = depth === 1 ? progress : 0;
         const level = depth - lift;
         return {
+            zIndex: 10 - depth,
             transform: `translateY(${level * 14}px) scale(${1 - level * 0.05})`,
             transition,
         };
     }
 
-    // One list for every mounted card, the departing one included, so a
-    // card keeps its element — and its transition — as its role changes.
-    const mounted: {
-        cardIndex: number;
-        role: "behind" | "top" | "out";
-        depth: number;
-    }[] = [];
-    for (let depth = BEHIND; depth >= 1; depth--) {
-        const cardIndex = index + depth;
-        if (cardIndex < cards.length) {
-            mounted.push({ cardIndex, role: "behind", depth });
+    function departingStyle(departure: Departure): React.CSSProperties {
+        // On from where the finger let go, a card and a half past the edge.
+        const distance = Math.abs(departure.fromX) + width() * 1.5;
+        return {
+            zIndex: 30,
+            transform: `translateX(${departure.direction * distance}px) rotate(${departure.direction * TILT_DEG}deg)`,
+            opacity: 0,
+            transition: `transform ${DURATION_MS}ms ease-in, opacity ${DURATION_MS}ms ease-in`,
+        };
+    }
+
+    // One list for every mounted card, the departing one included, so a card
+    // keeps its element — and its transition — as its role changes.
+    const mounted: Mounted[] = [];
+    if (goingBack) {
+        mounted.push({ cardIndex: index - 1, role: "behind", depth: 1 });
+    } else {
+        for (let depth = AHEAD; depth >= 1; depth--) {
+            const cardIndex = index + depth;
+            if (cardIndex < cards.length) {
+                mounted.push({ cardIndex, role: "behind", depth });
+            }
         }
     }
-    if (index < cards.length)
+    if (index < cards.length) {
         mounted.push({ cardIndex: index, role: "top", depth: 0 });
+    }
     if (
         departing &&
         departing.index !== index &&
@@ -245,7 +238,7 @@ function SwipeCardStack({
                         data-slot="swipe-card"
                         data-top=""
                         className="absolute inset-0 z-20 cursor-grab touch-none select-none active:cursor-grabbing"
-                        style={topStyle(cardIndex)}
+                        style={topStyle()}
                         onPointerDown={onPointerDown}
                         onPointerMove={onPointerMove}
                         onPointerUp={finish}
@@ -261,14 +254,9 @@ function SwipeCardStack({
                         inert
                         className="pointer-events-none absolute inset-0"
                         style={
-                            role === "out"
-                                ? {
-                                      zIndex: 30,
-                                      transform: `translateX(${Math.max(departing?.fromX ?? 0, 0) + width() * 1.5}px) rotate(${TILT_DEG}deg)`,
-                                      opacity: 0,
-                                      transition: `transform ${DURATION_MS}ms ease-in, opacity ${DURATION_MS}ms ease-in`,
-                                  }
-                                : { zIndex: 10 - depth, ...behindStyle(depth) }
+                            role === "out" && departing
+                                ? departingStyle(departing)
+                                : behindStyle(depth)
                         }
                     >
                         {cards[cardIndex]}
