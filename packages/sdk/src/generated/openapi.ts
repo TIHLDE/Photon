@@ -758,7 +758,7 @@ export interface paths {
         };
         /**
          * List the cameras I can take a photo with right now
-         * @description The disposable cameras that are open for the caller at this moment: turned on, inside their window, at an event the caller holds a spot on, and with photos left. Events under way come first, the one that started last on top. This is what the site uses to offer a shortcut to the camera, so it is empty far more often than not.
+         * @description The disposable cameras that are open for the caller at this moment: turned on, inside their window, at an event the caller holds a spot on, listed until the camera closes, also when the caller has used every photo. Events under way come first, the one that started last on top. This is what the site uses to offer a shortcut to the camera, so it is empty far more often than not.
          */
         get: operations["listOpenWrappedCameras"];
         put?: never;
@@ -4126,7 +4126,7 @@ export interface components {
              */
             closesAt: string;
             shotsPerPerson: number;
-            /** @description Photos the caller has left. 0 only when drafts are waiting to be submitted. */
+            /** @description Photos the caller has left. 0 once every photo is taken; the camera stays listed until it closes. */
             shotsLeft: number;
             /** @description The caller's photos not yet submitted */
             draftCount: number;

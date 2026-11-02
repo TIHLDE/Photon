@@ -9,7 +9,7 @@ import {
     LiveCardMeta,
     LiveCardTitle,
 } from "@tihlde/ui/ui/live-card";
-import { ArrowDown, Camera, Send, TriangleAlert } from "lucide-react";
+import { ArrowDown, Camera, Images, Send, TriangleAlert } from "lucide-react";
 
 import { formatOsloDateTime } from "#/lib/date";
 import type { CameraShortcut } from "#/lib/wrapped";
@@ -37,7 +37,7 @@ export function WrappedLiveCard({
     shortcut,
     restId,
 }: WrappedLiveCardProps) {
-    const { action, detail, target, warning } = shortcut;
+    const { action, detail, kind, warning } = shortcut;
     const closesAtTime = formatOsloDateTime(closesAt, {
         hour: "2-digit",
         minute: "2-digit",
@@ -51,14 +51,14 @@ export function WrappedLiveCard({
         <div className="container mx-auto flex min-h-[calc(100dvh_-_3.5rem_-_4rem_-_env(safe-area-inset-bottom))] w-full flex-col gap-2 px-4 pt-4 pb-2 lg:min-h-0 lg:py-8">
             <LiveCard
                 render={
-                    target === "mine" ? (
+                    kind === "shoot" ? (
                         <Link
-                            to="/arrangementer/$slug/kamera/mine"
+                            to="/arrangementer/$slug/kamera"
                             params={{ slug }}
                         />
                     ) : (
                         <Link
-                            to="/arrangementer/$slug/kamera"
+                            to="/arrangementer/$slug/kamera/mine"
                             params={{ slug }}
                         />
                     )
@@ -80,10 +80,12 @@ export function WrappedLiveCard({
                 <LiveCardAction variant={warning ? "warning" : "default"}>
                     {warning ? (
                         <TriangleAlert />
-                    ) : target === "mine" ? (
+                    ) : kind === "shoot" ? (
+                        <Camera />
+                    ) : kind === "submit" ? (
                         <Send />
                     ) : (
-                        <Camera />
+                        <Images />
                     )}
                     {action} · {detail}
                 </LiveCardAction>

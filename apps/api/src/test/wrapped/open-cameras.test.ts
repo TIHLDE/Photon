@@ -63,7 +63,7 @@ describe("the cameras open for a member right now", () => {
     );
 
     integrationTest(
-        "puts the event that started last on top, and drops a camera once the photos are spent",
+        "puts the event that started last on top, and keeps a camera listed until it closes, film full or not",
         async ({ ctx }) => {
             const now = Date.now();
             // A meeting that is over but whose camera is still open, the party
@@ -114,7 +114,16 @@ describe("the cameras open for a member right now", () => {
 
             await submitPhotos(ctx, cookie, party.id);
 
-            expect(await titles()).toEqual(["Hele dagen", "Snart", "Møtet"]);
+            expect(await titles()).toEqual([
+                "Festen",
+                "Hele dagen",
+                "Snart",
+                "Møtet",
+            ]);
+            const festen = (
+                await (await client.api.event.wrapped.open.$get()).json()
+            ).find((camera) => camera.title === "Festen");
+            expect(festen).toMatchObject({ shotsLeft: 0, draftCount: 0 });
         },
         500_000,
     );
