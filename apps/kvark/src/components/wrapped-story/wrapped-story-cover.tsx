@@ -15,6 +15,8 @@ type WrappedStoryCoverProps = {
     start: string;
     imageUrl: string | null;
     photoCount: number;
+    /** Til første bilde, fra «Sveip opp»-knappen. */
+    onNext: () => void;
 };
 
 /**
@@ -26,6 +28,7 @@ export function WrappedStoryCover({
     start,
     imageUrl,
     photoCount,
+    onNext,
 }: WrappedStoryCoverProps) {
     return (
         <StorySlide aria-label={`Wrapped fra ${title}`} data-story-index={0}>
@@ -43,7 +46,9 @@ export function WrappedStoryCover({
                     {photoCount === 1 ? "1 bilde" : `${photoCount} bilder`}
                 </StoryCoverMeta>
             </StoryCoverContent>
-            {photoCount > 0 ? <StorySwipeHint>Sveip opp</StorySwipeHint> : null}
+            {photoCount > 0 ? (
+                <StorySwipeHint onClick={onNext}>Sveip opp</StorySwipeHint>
+            ) : null}
         </StorySlide>
     );
 }

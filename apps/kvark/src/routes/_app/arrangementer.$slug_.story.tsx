@@ -6,7 +6,7 @@ import {
     useRef,
     useState,
 } from "react";
-import type { KeyboardEvent, ReactNode } from "react";
+import type { PointerEvent, ReactNode } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { CameraControlButton } from "@tihlde/ui/ui/camera-viewfinder";
@@ -75,6 +75,26 @@ export const Route = createFileRoute("/_app/arrangementer/$slug_/story")({
 /** Hvor mange bilder før og etter det man ser på som holdes i minnet. */
 const KEEP_BEHIND = 2;
 const KEEP_AHEAD = 3;
+
+/** Så langt musa må dras for å bla, i piksler. */
+const MOUSE_DRAG_PX = 60;
+
+/** Tastene som blar fram og tilbake, som i en vanlig bildeviser. */
+const NEXT_KEYS = ["ArrowDown", "PageDown", "j"];
+const PREVIOUS_KEYS = ["ArrowUp", "PageUp", "k"];
+
+/**
+ * Om tastetrykket hører til noe annet enn storyen: et skrivefelt, eller et
+ * ark eller en dialog som ligger over den.
+ */
+function belongsElsewhere(target: EventTarget | null): boolean {
+    return (
+        target instanceof Element &&
+        target.closest(
+            'input, textarea, select, [contenteditable="true"], [role="dialog"], [role="alertdialog"]',
+        ) !== null
+    );
+}
 
 /** Neste side hentes når så mange bilder er igjen. */
 const LOAD_MORE_WHEN_LEFT = 3;
@@ -145,15 +165,17 @@ function WrappedStoryFeed({
     // Sida man ser på: 0 er forsiden, 1 er første bilde.
     const [active, setActive] = useState(0);
 
+    // Hver side er nøyaktig én skjermhøyde, så side `index` starter på
+    // `index` skjermhøyder ned. Rett på ruta, ikke `scrollIntoView`, som også
+    // ruller foreldrene og kan ende et stykke forbi i en snap-rute.
     const scrollTo = useCallback((index: number, smooth: boolean) => {
-        const slide = feedRef.current?.querySelector(
-            `[data-story-index="${index}"]`,
-        );
+        const feed = feedRef.current;
+        if (!feed) return;
         const reduceMotion = window.matchMedia(
             "(prefers-reduced-motion: reduce)",
         ).matches;
-        slide?.scrollIntoView({
-            block: "start",
+        feed.scrollTo({
+            top: index * feed.clientHeight,
             behavior: smooth && !reduceMotion ? "smooth" : "auto",
         });
     }, []);
@@ -235,20 +257,60 @@ function WrappedStoryFeed({
         releaseDropped: true,
     });
 
-    useEffect(() => {
-        feedRef.current?.focus({ preventScroll: true });
-    }, []);
+    /**
+     * Ett steg fram eller tilbake. Regnet fra der rullingen faktisk står, ikke
+     * fra `active`: observatøren henger litt etter, og et nytt tastetrykk midt
+     * i en animasjon skal gå til neste side, ikke samme side én gang til.
+     */
+    const step = useCallback(
+        (delta: number) => {
+            const feed = feedRef.current;
+            if (!feed || feed.clientHeight === 0) return;
+            const current = Math.round(feed.scrollTop / feed.clientHeight);
+            scrollTo(
+                Math.min(Math.max(current + delta, 0), photos.length),
+                true,
+            );
+        },
+        [photos.length, scrollTo],
+    );
 
-    function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-        const next = ["ArrowDown", "PageDown", "j"].includes(event.key);
-        const previous = ["ArrowUp", "PageUp", "k"].includes(event.key);
-        if (!next && !previous) return;
+    // Piltastene virker uansett hvor fokuset står, så lenge ikke et
+    // skrivefelt eller et ark over storyen trenger dem selv.
+    useEffect(() => {
+        function onKeyDown(event: globalThis.KeyboardEvent) {
+            if (event.defaultPrevented || event.altKey || event.metaKey) return;
+            if (event.ctrlKey || belongsElsewhere(event.target)) return;
+            const next = NEXT_KEYS.includes(event.key);
+            if (!next && !PREVIOUS_KEYS.includes(event.key)) return;
+            event.preventDefault();
+            step(next ? 1 : -1);
+        }
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [step]);
+
+    // En nettleser ruller ikke når man drar med musa, bare med finger, hjul
+    // og styreflate. Musa får derfor sitt eget sveip: dra opp for neste.
+    const dragStart = useRef<number | null>(null);
+    function onPointerDown(event: PointerEvent<HTMLDivElement>) {
+        if (event.pointerType !== "mouse" || event.button !== 0) return;
+        if (
+            event.target instanceof Element &&
+            event.target.closest("button, a") !== null
+        ) {
+            return;
+        }
+        // Ingen tekstmarkering mens man drar.
         event.preventDefault();
-        const index = Math.min(
-            Math.max(active + (next ? 1 : -1), 0),
-            photos.length,
-        );
-        scrollTo(index, true);
+        dragStart.current = event.clientY;
+    }
+    function onPointerUp(event: PointerEvent<HTMLDivElement>) {
+        const start = dragStart.current;
+        dragStart.current = null;
+        if (start === null) return;
+        const moved = start - event.clientY;
+        if (Math.abs(moved) >= MOUSE_DRAG_PX) step(moved > 0 ? 1 : -1);
     }
 
     if (!event) return null;
@@ -265,13 +327,18 @@ function WrappedStoryFeed({
                 ref={feedRef}
                 tabIndex={0}
                 aria-label={`Wrapped fra ${event.title}`}
-                onKeyDown={onKeyDown}
+                onPointerDown={onPointerDown}
+                onPointerUp={onPointerUp}
+                onPointerCancel={() => {
+                    dragStart.current = null;
+                }}
             >
                 <WrappedStoryCover
                     title={event.title}
                     start={event.start}
                     imageUrl={event.imageUrl}
                     photoCount={totalCount}
+                    onNext={() => step(1)}
                 />
                 {photos.map((photo, i) => (
                     <WrappedStoryPhoto
