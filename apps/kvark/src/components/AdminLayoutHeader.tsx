@@ -65,7 +65,7 @@ export function AdminLayoutHeader() {
                                 <BreadcrumbItem>
                                     <BreadcrumbLink
                                         render={<Link {...v.link} />}
-                                        className="text-foreground"
+                                        tone="foreground"
                                     >
                                         {v.label}
                                     </BreadcrumbLink>

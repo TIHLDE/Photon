@@ -64,7 +64,7 @@ export const voteRoute = route().put(
         const { value } = c.req.valid("json");
 
         const existing = await db.query.feedback.findFirst({
-            where: eq(schema.feedback.id, id),
+            where: { id },
         });
 
         if (!existing) {
@@ -117,7 +117,7 @@ export const deleteVoteRoute = route().delete(
         const { id } = c.req.valid("param");
 
         const existing = await db.query.feedback.findFirst({
-            where: eq(schema.feedback.id, id),
+            where: { id },
         });
 
         if (!existing) {

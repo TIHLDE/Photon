@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, eq, gt, isNotNull, isNull, lte } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { AppContext } from "../ctx";
 import { env } from "../env";
 import { sendNotification } from "../notification";
@@ -57,7 +57,7 @@ export async function sendRegistrationOpeningReminder(
 
     const favorites = await ctx.db.query.eventFavorite.findMany({
         columns: { userId: true },
-        where: eq(schema.eventFavorite.eventId, eventId),
+        where: { eventId },
     });
 
     const link = `/arrangementer/${claimed.slug}`;
@@ -114,14 +114,12 @@ export async function sendUpcomingRegistrationReminders(
 
     const upcoming = await ctx.db.query.event.findMany({
         columns: { id: true },
-        where: and(
-            eq(schema.event.requiresSigningUp, true),
-            eq(schema.event.isRegistrationClosed, false),
-            isNull(schema.event.registrationReminderSentAt),
-            isNotNull(schema.event.registrationStart),
-            gt(schema.event.registrationStart, now),
-            lte(schema.event.registrationStart, cutoff),
-        ),
+        where: {
+            requiresSigningUp: true,
+            isRegistrationClosed: false,
+            registrationReminderSentAt: { isNull: true },
+            registrationStart: { isNotNull: true, gt: now, lte: cutoff },
+        },
     });
 
     for (const event of upcoming) {

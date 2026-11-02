@@ -53,7 +53,7 @@ export const deleteUserRoute = route().delete(
         }
 
         const user = await db.query.user.findFirst({
-            where: eq(schema.user.id, userId),
+            where: { id: userId },
             columns: { id: true },
         });
 

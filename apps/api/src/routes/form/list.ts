@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
+import { EmptyFilter } from "drizzle-orm";
 import { userHasSubmitted } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -29,8 +29,8 @@ export const listRoute = route().get(
 
         // Query forms
         const forms = await db.query.form.findMany({
-            where: showAll ? undefined : eq(schema.form.isTemplate, true),
-            orderBy: (forms, { desc }) => [desc(forms.createdAt)],
+            where: showAll ? EmptyFilter : { isTemplate: true },
+            orderBy: { createdAt: "desc" },
         });
 
         // Check if user has answered each form

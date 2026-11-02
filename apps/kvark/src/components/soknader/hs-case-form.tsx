@@ -88,7 +88,7 @@ export function HsCaseForm({
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-2xl">Sak til HS</CardTitle>
+                <CardTitle textSize="2xl">Sak til HS</CardTitle>
                 <CardDescription>
                     Meld inn en sak til Hovedstyret. Saker må sendes inn senest
                     24 timer før HS-møtet for å bli tatt opp.

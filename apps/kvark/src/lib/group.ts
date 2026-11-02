@@ -32,6 +32,10 @@ export type Group = {
     finesActivated?: boolean;
     /** Botsjefen. Null når gruppen ikke har utpekt noen. */
     finesAdminId?: string | null;
+    archivedAt?: string | null;
+    archivable?: boolean;
+    acceptsJoinRequests?: boolean;
+    viewerHasJoinRequest?: boolean;
 };
 
 export const HS_GROUP_SLUG = "hs";
@@ -76,6 +80,7 @@ export type Fine = {
      * vise den samme teksten to ganger.
      */
     hasLaw: boolean;
+    lawId: string | null;
     amount: number;
     status: FineStatus;
     approved: boolean;
@@ -333,6 +338,10 @@ export function mapGroup(group: ApiGroup, leader?: string): Group {
         finesInfo: group.finesInfo,
         finesActivated: group.finesActivated,
         finesAdminId: group.finesAdminId ?? null,
+        archivedAt: group.archivedAt,
+        archivable: group.archivable,
+        acceptsJoinRequests: group.acceptsJoinRequests,
+        viewerHasJoinRequest: group.viewerHasJoinRequest,
     };
 }
 
@@ -370,6 +379,82 @@ export function sortMembersByName<T extends { name: string }>(
     return [...members].sort((a, b) =>
         memberNameCollator.compare(a.name, b.name),
     );
+}
+
+/**
+ * Rekkefølgen typene vises i på profilens medlemskapsfane. Bevisst ulik
+ * {@link GROUP_HIERARCHY_ORDER}: undergruppene er der det skjer mest, så de
+ * står øverst, og Styre havner bakerst. Idrettslag og Styre var ikke med i
+ * ønsket fra brukerne og står etter de tre som var det.
+ */
+const MEMBERSHIP_TYPE_ORDER = [
+    "SUBGROUP",
+    "COMMITTEE",
+    "INTERESTGROUP",
+    "SPORTSTEAM",
+    "BOARD",
+] as const;
+
+export type MembershipSection<T> = { key: string; label: string; groups: T[] };
+
+function compareMembershipType(a: string, b: string): number {
+    const rank = (type: string): number => {
+        const index = (MEMBERSHIP_TYPE_ORDER as readonly string[]).indexOf(
+            type.toUpperCase(),
+        );
+        return index === -1 ? MEMBERSHIP_TYPE_ORDER.length : index;
+    };
+    return (
+        rank(a) - rank(b) ||
+        memberNameCollator.compare(groupTypeLabel(a), groupTypeLabel(b))
+    );
+}
+
+/**
+ * Deler en brukers medlemskap i seksjoner for profilens medlemskapsfane:
+ * gruppene brukeren leder øverst, så én seksjon per type i
+ * {@link MEMBERSHIP_TYPE_ORDER}, og ukjente typer bakerst etter navn.
+ *
+ * Lista brukes for å komme seg til riktig gruppe (f.eks. for å gi en bot), og
+ * API-et har ingen `orderBy`, så uten dette kommer radene i tilfeldig
+ * rekkefølge. En gruppe man leder vises bare under «Leder», ikke igjen under
+ * typen sin — kortet viser uansett typen. Innenfor hver seksjon sorteres det
+ * på navn med norsk kollasjon, av samme grunn som {@link sortMembersByName}.
+ * Tomme seksjoner tas ikke med.
+ */
+export function groupMembershipsForProfile<
+    T extends { name: string; type: string; role: string },
+>(memberships: T[]): MembershipSection<T>[] {
+    const byName = (a: T, b: T): number =>
+        memberNameCollator.compare(a.name, b.name);
+
+    const leading = memberships
+        .filter((group) => group.role === "leader")
+        .sort((a, b) => compareMembershipType(a.type, b.type) || byName(a, b));
+
+    const byType = new Map<string, MembershipSection<T>>();
+    for (const group of memberships) {
+        if (group.role === "leader") continue;
+        const key = group.type.toUpperCase();
+        const section = byType.get(key) ?? {
+            key,
+            label: groupTypeLabel(group.type),
+            groups: [],
+        };
+        section.groups.push(group);
+        byType.set(key, section);
+    }
+
+    const typeSections = [...byType.values()]
+        .sort((a, b) => compareMembershipType(a.key, b.key))
+        .map((section) => ({
+            ...section,
+            groups: section.groups.sort(byName),
+        }));
+
+    return leading.length > 0
+        ? [{ key: "leader", label: "Leder", groups: leading }, ...typeSections]
+        : typeSections;
 }
 
 /**
@@ -436,6 +521,7 @@ export function mapFine(fine: ApiFine): Fine {
         paragraph: fine.law ? formatParagraph(fine.law.paragraph) : "",
         title: fine.law?.title ?? fine.reason,
         hasLaw: fine.law != null,
+        lawId: fine.lawId,
         amount: fine.amount,
         status: (fine.status as FineStatus) ?? "pending",
         approved: fine.status === "approved" || fine.status === "paid",

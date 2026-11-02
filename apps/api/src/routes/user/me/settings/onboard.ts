@@ -34,7 +34,7 @@ export const onboardRoute = route().post(
         // with `isOnboarded` false, and that must not lock the user out of
         // ever answering the real questions.
         const existing = await ctx.db.query.userSettings.findFirst({
-            where: (settings, { eq }) => eq(settings.userId, userId),
+            where: { userId },
             columns: { isOnboarded: true },
         });
 

@@ -3,6 +3,8 @@ import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Check, Trash2 } from "lucide-react";
 
+import { splitInternalHref } from "#/lib/notification";
+
 export type NotificationItemProps = {
     title: string;
     description: string;
@@ -59,9 +61,9 @@ export function NotificationItem({
                     {body}
                 </a>
             ) : href ? (
-                <Link to={href} onClick={onOpen} className="flex-1">
+                <InternalLink href={href} onClick={onOpen}>
                     {body}
-                </Link>
+                </InternalLink>
             ) : (
                 <div className="flex-1">{body}</div>
             )}
@@ -89,5 +91,28 @@ export function NotificationItem({
                 </Button>
             </div>
         </div>
+    );
+}
+
+function InternalLink({
+    href,
+    onClick,
+    children,
+}: {
+    href: string;
+    onClick?: () => void;
+    children: React.ReactNode;
+}) {
+    const { pathname, search, hash } = splitInternalHref(href);
+    return (
+        <Link
+            to={pathname}
+            search={search}
+            hash={hash}
+            onClick={onClick}
+            className="flex-1"
+        >
+            {children}
+        </Link>
     );
 }

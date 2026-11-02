@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
+import { Empty, EmptyDescription, EmptyTitle } from "@tihlde/ui/ui/empty";
 import { Stagger } from "@tihlde/ui/ui/motion";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { PlusIcon } from "lucide-react";
@@ -8,8 +9,9 @@ import { useDeferredValue, useMemo, useState } from "react";
 import z from "zod";
 
 import { getEventsInfiniteQuery } from "#/api/queries/events";
-import { EventCalendar } from "#/components/event-calendar";
 import { EventCard } from "#/components/event-card";
+import { EventMonthCalendar } from "#/components/event-month-calendar";
+import { FilterCheckboxOption } from "#/components/filter-checkbox-option";
 import {
     type Category,
     DEFAULT_EVENT_FILTERS,
@@ -19,6 +21,7 @@ import {
 import { LoadMoreButton } from "#/components/load-more-button";
 import { PageHeader } from "#/components/page-header";
 import { useDebouncedValue } from "#/hooks/use-debounced-value";
+import { useMediaQuery } from "#/hooks/use-media-query";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 import { formatEventDateTime } from "#/lib/event";
 import {
@@ -88,13 +91,11 @@ const VIEWS = [
 
 type EventView = (typeof VIEWS)[number]["value"];
 
+const VIEW_TABS_DONT_FIT = "(width < 30rem), (48rem <= width < 64rem)";
+
 const searchSchema = z.object({
     visning: z.enum(["liste", "kalender"]).default("liste").catch("liste"),
 });
-
-// Kalenderen viser en hel måned om gangen, så den trenger flere arrangementer
-// per side enn listen for ikke å ha hull i rutenettet.
-const CALENDAR_PAGE_SIZE = 100;
 
 export const Route = createFileRoute("/_app/arrangementer/")({
     component: EventsPage,
@@ -158,22 +159,13 @@ function EventsPage() {
         ],
     );
 
-    // useSuspenseQuery has no placeholderData, so a changed key would otherwise
-    // drop the list to a fallback on every search. Deferring keeps the current
-    // results on screen until the next ones resolve.
-    const deferredFilters = useDeferredValue(listFilters);
-    const { data, hasNextPage, fetchNextPage, isFetchingNextPage } =
-        useSuspenseInfiniteQuery(
-            getEventsInfiniteQuery(
-                deferredFilters,
-                visning === "kalender" ? CALENDAR_PAGE_SIZE : undefined,
-            ),
-        );
-    const events = data.pages.flatMap((page) => page.items);
     // Any-scope: scopet er ukjent på en offentlig liste, og et gruppe-scopet
     // events:create er en ekte tilgang. API-et avviser uansett den enkelte
     // forespørselen som ikke treffer.
     const canCreateEvent = useAnyScopePermission(EVENT_CREATE_PERMISSIONS);
+
+    // Uten viewport (SSR) er svaret false, så serveren viser fanene.
+    const viewTabsFit = !useMediaQuery(VIEW_TABS_DONT_FIT);
 
     const changeView = (next: EventView) => {
         navigate({
@@ -187,7 +179,7 @@ function EventsPage() {
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
             <PageHeader
                 title="Arrangementer"
-                description="Finn arrangementer for våren 2026"
+                description="Finn kommende arrangementer"
                 action={
                     canCreateEvent ? (
                         <Button render={<Link to="/admin/arrangementer/ny" />}>
@@ -204,6 +196,21 @@ function EventsPage() {
                         value={filters}
                         categories={categories}
                         onChange={setFilters}
+                        hidePastOption={visning === "kalender"}
+                        extraOptions={
+                            !viewTabsFit && (
+                                <FilterCheckboxOption
+                                    title="Kalender"
+                                    description="Vis som kalender"
+                                    checked={visning === "kalender"}
+                                    onCheckedChange={(checked) =>
+                                        changeView(
+                                            checked ? "kalender" : "liste",
+                                        )
+                                    }
+                                />
+                            )
+                        }
                     />
                 </aside>
 
@@ -223,67 +230,90 @@ function EventsPage() {
                                 ))}
                             </TabsList>
                         </Tabs>
-                        <Tabs
-                            className="ml-auto"
-                            value={visning}
-                            onValueChange={(next) =>
-                                changeView(next as EventView)
-                            }
-                        >
-                            <TabsList>
-                                {VIEWS.map((view) => (
-                                    <TabsTrigger
-                                        key={view.value}
-                                        value={view.value}
-                                    >
-                                        {view.label}
-                                    </TabsTrigger>
-                                ))}
-                            </TabsList>
-                        </Tabs>
+                        {viewTabsFit ? (
+                            <Tabs
+                                className="ml-auto"
+                                value={visning}
+                                onValueChange={(next) =>
+                                    changeView(next as EventView)
+                                }
+                            >
+                                <TabsList>
+                                    {VIEWS.map((view) => (
+                                        <TabsTrigger
+                                            key={view.value}
+                                            value={view.value}
+                                        >
+                                            {view.label}
+                                        </TabsTrigger>
+                                    ))}
+                                </TabsList>
+                            </Tabs>
+                        ) : null}
                     </div>
                     {visning === "kalender" ? (
-                        <EventCalendar
-                            events={events.map((event) => ({
-                                id: event.id,
-                                slug: event.slug,
-                                title: event.title,
-                                startTime: event.startTime,
-                                category: event.category?.label,
-                            }))}
+                        <EventMonthCalendar
+                            filters={{
+                                search: listFilters.search,
+                                category: listFilters.category,
+                                openSignUp: listFilters.openSignUp,
+                            }}
                         />
                     ) : (
-                        <Stagger
-                            render={<ul className="flex flex-col gap-3" />}
-                        >
-                            {events.map((event) => (
-                                <li key={event.id}>
-                                    <EventCard
-                                        slug={event.slug}
-                                        title={event.title}
-                                        startsAt={formatEventDateTime(
-                                            event.startTime,
-                                        )}
-                                        location={event.location ?? ""}
-                                        organizer={event.organizer?.name ?? ""}
-                                        category={event.category?.label}
-                                        imageUrl={event.image || undefined}
-                                        imageAlt={event.imageAlt || undefined}
-                                    />
-                                </li>
-                            ))}
-                        </Stagger>
-                    )}
-                    {hasNextPage && (
-                        <div className="flex justify-center pt-2">
-                            <LoadMoreButton
-                                onClick={() => fetchNextPage()}
-                                isLoading={isFetchingNextPage}
-                            />
-                        </div>
+                        <EventList filters={listFilters} />
                     )}
                 </section>
             </div>
         </div>
+    );
+}
+
+type EventListFilters = ReturnType<typeof toEventListFilters>;
+
+function EventList({ filters }: { filters: EventListFilters }) {
+    // useSuspenseQuery has no placeholderData, so a changed key would otherwise
+    // drop the list to a fallback on every search. Deferring keeps the current
+    // results on screen until the next ones resolve.
+    const deferredFilters = useDeferredValue(filters);
+    const { data, hasNextPage, fetchNextPage, isFetchingNextPage } =
+        useSuspenseInfiniteQuery(getEventsInfiniteQuery(deferredFilters));
+    const events = data.pages.flatMap((page) => page.items);
+
+    return (
+        <>
+            {events.length === 0 ? (
+                <Empty>
+                    <EmptyTitle>Fant ingen arrangementer</EmptyTitle>
+                    <EmptyDescription>
+                        Du finner kanskje arrangementer med en annen filtrering.
+                    </EmptyDescription>
+                </Empty>
+            ) : (
+                <Stagger render={<ul className="flex flex-col" />}>
+                    {events.map((event) => (
+                        <li key={event.id}>
+                            <EventCard
+                                slug={event.slug}
+                                title={event.title}
+                                startsAt={formatEventDateTime(event.startTime)}
+                                location={event.location ?? ""}
+                                organizer={event.organizer?.name ?? ""}
+                                category={event.category?.label}
+                                imageUrl={event.image || undefined}
+                                imageAlt={event.imageAlt || undefined}
+                            />
+                        </li>
+                    ))}
+                </Stagger>
+            )}
+            {hasNextPage && (
+                <div className="flex justify-center pt-2">
+                    <LoadMoreButton
+                        onClick={() => fetchNextPage()}
+                        isLoading={isFetchingNextPage}
+                    />
+                </div>
+            )}
+        </>
     );
 }

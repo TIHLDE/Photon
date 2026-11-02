@@ -1,6 +1,6 @@
 import { schema } from "@photon/db";
 import type { WrappedPhotoSource } from "@photon/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 import { type CameraBlockedReason, readShootState } from "./index";
 
@@ -43,7 +43,7 @@ export async function findPhotoReplay(
     owner: PhotoOwner,
 ): Promise<"mine" | "taken" | null> {
     const existing = await db.query.wrappedPhoto.findFirst({
-        where: eq(schema.wrappedPhoto.id, id),
+        where: { id },
         columns: { eventId: true, uploadedById: true },
     });
     if (!existing) return null;

@@ -39,7 +39,7 @@ export function RadioGroup<TValue extends string = string>({
                     <LabelPrimitive
                         key={option.value}
                         htmlFor={itemId}
-                        className="font-normal"
+                        weight="normal"
                     >
                         <RadioGroupItem id={itemId} value={option.value} />
                         {option.label}

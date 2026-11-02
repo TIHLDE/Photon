@@ -68,7 +68,7 @@ export async function backfillGroupData({ db }: AppContext) {
         await groupMemberGlobalPermissions(),
     )) {
         const existingGroup = await db.query.group.findFirst({
-            where: eq(schema.group.slug, groupSlug),
+            where: { slug: groupSlug },
         });
         if (!existingGroup) continue;
         if ((existingGroup.memberGlobalPermissions ?? []).length > 0) continue;
@@ -128,7 +128,7 @@ export async function backfillInstitutes({ db }: AppContext) {
             .onConflictDoNothing({ target: schema.institute.slug });
 
         const inserted = await db.query.institute.findFirst({
-            where: eq(schema.institute.slug, slug),
+            where: { slug },
         });
         if (!inserted) continue;
 
@@ -156,7 +156,7 @@ export async function backfillInstitutes({ db }: AppContext) {
  */
 export async function syncHsPositions({ db }: AppContext) {
     const hsGroup = await db.query.group.findFirst({
-        where: eq(schema.group.slug, "hs"),
+        where: { slug: "hs" },
     });
     if (!hsGroup) return;
 
@@ -251,8 +251,7 @@ export async function syncHsPositions({ db }: AppContext) {
     // position), so idempotency is an explicit existence check.
     for (const position of hsPositions) {
         const existing = await db.query.groupPosition.findFirst({
-            where: (t, { and }) =>
-                and(eq(t.groupSlug, "hs"), eq(t.name, position.name)),
+            where: { groupSlug: "hs", name: position.name },
         });
         if (existing) {
             // An environment seeded before a permission existed would never
@@ -305,7 +304,7 @@ export default async ({ db }: AppContext) => {
         {
             created_at: "2024-04-30 08:27:52.721960",
             updated_at: "2025-05-04 15:39:15.383325",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/2af88bf7-f86e-4391-9f0f-f54517a102eeBeta%20logo.png",
+            image: null,
             name: "Beta",
             slug: "beta",
             description:
@@ -318,7 +317,7 @@ export default async ({ db }: AppContext) => {
         {
             created_at: "2025-09-02 18:21:18.169782",
             updated_at: "2025-09-15 15:30:49.069568",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/283a4160-253f-4117-81c6-017217fffb00IMG_8255.png",
+            image: null,
             name: "TIHLDE Biljard",
             slug: "biljard",
             description:
@@ -331,7 +330,7 @@ export default async ({ db }: AppContext) => {
         {
             created_at: "2021-04-26 20:06:57.580310",
             updated_at: "2025-04-24 11:46:35.681385",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/a29d981c-5b1e-4b9d-86ee-7e9eabbc6350Beta%20logo%20%281%29.png",
+            image: null,
             name: "Drift",
             slug: "drift",
             description:
@@ -345,7 +344,7 @@ export default async ({ db }: AppContext) => {
         {
             created_at: "2021-04-27 06:26:01.739510",
             updated_at: "2025-04-10 09:10:40.731386",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/4b36e2c5-d5f2-4018-ab52-03d91839113aHS.png",
+            image: null,
             name: "Hovedstyret",
             slug: "hs",
             description:
@@ -359,7 +358,7 @@ export default async ({ db }: AppContext) => {
         {
             created_at: "2020-11-17 13:48:50.630714",
             updated_at: "2024-11-18 16:14:45.216928",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/2a6d6ee8-c928-483b-9c05-000ee6bdbe08Index.png",
+            image: null,
             name: "Index",
             slug: "index",
             description:

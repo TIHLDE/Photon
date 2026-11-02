@@ -4,6 +4,7 @@ import { validator } from "hono-openapi";
 import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImage } from "~/lib/user/avatar";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 import { computeClassStanding } from "~/lib/event/priority";
@@ -211,7 +212,7 @@ export const listUsersRoute = route().get(
                 id: schema.user.id,
                 name: schema.user.name,
                 username: schema.user.username,
-                image: schema.user.image,
+                image: userImage(schema.user),
                 banned: schema.user.banned,
                 createdAt: schema.user.createdAt,
                 studyProgram: studyProgram.name,

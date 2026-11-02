@@ -10,7 +10,7 @@ This document defines the rules for AI agents (and humans) contributing to the K
 - **Tables**: TanStack Table
 - **API Client**: `@tihlde/sdk` (workspace package)
 - **UI Kit**: `@tihlde/ui` (workspace package — ShadCN-based)
-- **Styling**: Tailwind CSS v4 (layout-only in this app)
+- **Styling**: Tailwind CSS v4 (theme tokens only; `@tihlde/ui` components are never restyled)
 - **Auth**: Better Auth
 - **Language**: TypeScript (strict)
 
@@ -34,11 +34,11 @@ function MyButton() {
 }
 ```
 
-### 2. Tailwind is for **layout only**
+### 2. Don't restyle `@tihlde/ui` components
 
-This is the most important rule in this file. Violating it defeats the purpose of the shared UI package.
+This is the most important rule in this file. Violating it defeats the purpose of the shared UI package. It is enforced by `@shadcn/lint` (rules in `apps/kvark/.oxlintrc.json`, run with `bun run lint`).
 
-**Allowed Tailwind utilities:**
+**`className` on a `@tihlde/ui` component may only set layout and spacing:**
 
 - Flex / grid: `flex`, `grid`, `flex-col`, `grid-cols-*`, `items-*`, `justify-*`, `place-*`
 - Spacing: `gap-*`, `space-*`, `p-*`, `m-*`
@@ -47,20 +47,19 @@ This is the most important rule in this file. Violating it defeats the purpose o
 - Responsive prefixes: `sm:`, `md:`, `lg:`, `xl:`
 - Overflow / container: `overflow-*`, `container`, `mx-auto`
 
-**Forbidden in this app (belongs in `@tihlde/ui`):**
+Color, typography, shape and effects on a component belong in a variant. If none fits, add one in `packages/ui`.
 
-- Colors: `bg-*`, `text-*` (color), `border-*` (color), `ring-*`, `shadow-*`
-- Borders / radii as decoration: `border`, `rounded-*`
-- Any visual polish
+**Everywhere in this app:**
 
-If you find yourself writing a color or typography utility, **stop** — the right move is either to use an existing `@tihlde/ui` component or to add/extend one there.
+- Colors are theme tokens (`text-muted-foreground`, `bg-destructive`), never the raw palette (`bg-red-500`).
+- Theme tokens such as `text-sm` or `text-muted-foreground` are fine on plain elements (`div`, `p`, `span`).
+- No arbitrary values (`p-[13px]`), no inline `style`, and no classes Tailwind cannot generate.
 
 ### 3. Reusable local components
 
 If a composition will appear more than once, extract it into `src/components/`.
 
-- Local components may compose `@tihlde/ui` primitives and use layout-only Tailwind.
-- They still may not introduce colors, typography, or decorative styling.
+- Local components compose `@tihlde/ui` primitives and follow rule 2: no restyling of those primitives, theme tokens only.
 - Name files in kebab-case; export components in PascalCase.
 - Keep them **dumb** (see rule 4).
 
@@ -156,7 +155,7 @@ Route files are the containers: they load data, manage Suspense boundaries, wire
 
 ## Checklist Before Committing
 
-1. No color, typography, border, shadow, or animation classes added in this app.
+1. No `@tihlde/ui` component restyled beyond layout and spacing, and no raw palette colors, arbitrary values or inline styles (`bun run lint` reports them).
 2. Any new visual primitive lives in `@tihlde/ui`, not here.
 3. New reusable composition? Extracted into `src/components/`.
 4. Components receive data via props; fetching happens in routes/containers.

@@ -7,10 +7,10 @@
 
 import { and, eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { DbSchema, DbTransaction } from "@photon/db";
+import type { DbRelations, DbTransaction } from "@photon/db";
 import { role } from "@photon/db/schema";
 
-type DbCtx = { db: NodePgDatabase<DbSchema> };
+type DbCtx = { db: NodePgDatabase<DbRelations> };
 import { getUserHighestRolePosition } from "./hierarchy";
 import { getRoleById } from "./queries";
 

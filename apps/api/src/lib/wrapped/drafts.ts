@@ -35,7 +35,7 @@ export function submitDrafts(
         await lockMemberPhotos(tx, owner);
 
         const event = await tx.query.event.findFirst({
-            where: eq(schema.event.id, eventId),
+            where: { id: eventId },
             columns: { start: true, end: true },
         });
         if (!event) return { rejected: "event_not_found" };
@@ -95,15 +95,15 @@ export function deleteDraft(
         );
         const [photo, event, camera] = await Promise.all([
             tx.query.wrappedPhoto.findFirst({
-                where,
+                where: { id: photoId, eventId, uploadedById: userId },
                 columns: { assetKey: true, submittedAt: true },
             }),
             tx.query.event.findFirst({
-                where: eq(schema.event.id, eventId),
+                where: { id: eventId },
                 columns: { start: true, end: true },
             }),
             tx.query.wrappedCamera.findFirst({
-                where: eq(schema.wrappedCamera.eventId, eventId),
+                where: { eventId },
                 columns: { shotsPerPerson: true },
             }),
         ]);

@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { promoteAssetUrls } from "~/lib/asset";
+import { DEFAULT_LEADER_PERMISSIONS } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -61,7 +62,10 @@ export const createRoute = route().post(
 
         const [newGroup] = await db
             .insert(schema.group)
-            .values(body)
+            .values({
+                ...body,
+                leaderPermissions: DEFAULT_LEADER_PERMISSIONS,
+            })
             .returning();
 
         // Etter lagringen: se promoteAssetUrls for hvorfor rekkefølgen teller.

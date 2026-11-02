@@ -1,10 +1,8 @@
-import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { requireEventAccess } from "~/lib/event/access";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { WRAPPED_ARRANGER_PERMISSIONS, submittedOnly } from "~/lib/wrapped";
+import { WRAPPED_ARRANGER_PERMISSIONS } from "~/lib/wrapped";
 import { requireAuth } from "~/middleware/auth";
 import { photoImageResponse } from "./photo-image";
 import { photoImageQuerySchema, photoParamSchema } from "./schema";
@@ -39,11 +37,11 @@ export const getWrappedPhotoImageRoute = route().get(
         // never be used to read another's by guessing an id.
         const photo = await db.query.wrappedPhoto.findFirst({
             // Submitted only: a draft is the member's alone.
-            where: and(
-                eq(schema.wrappedPhoto.id, photoId),
-                eq(schema.wrappedPhoto.eventId, eventId),
-                submittedOnly(),
-            ),
+            where: {
+                id: photoId,
+                eventId,
+                submittedAt: { isNotNull: true },
+            },
             columns: { assetKey: true },
         });
         return photoImageResponse(bucket, c.get("logger"), photo?.assetKey, w, {

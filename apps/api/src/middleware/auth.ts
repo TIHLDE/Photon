@@ -4,8 +4,6 @@ import {
     type VerifiedAccessToken,
     verifyJWTAccessToken,
 } from "@photon/auth/oauth-verify";
-import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { createMiddleware } from "hono/factory";
 import { describeMiddleware, describeMiddlewareRoute } from "~/lib/openapi";
 import type { AppContext } from "../lib/ctx";
@@ -29,24 +27,24 @@ async function sessionFromVerifiedToken(
     if (!verified.sessionId) return null;
 
     const session = await ctx.db.query.session.findFirst({
-        where: eq(schema.session.id, verified.sessionId),
+        where: { id: verified.sessionId },
     });
     if (!session || session.userId !== verified.sub) return null;
     if (session.expiresAt <= new Date()) return null;
 
     const [user, settings, accounts] = await Promise.all([
         ctx.db.query.user.findFirst({
-            where: eq(schema.user.id, verified.sub),
+            where: { id: verified.sub },
             with: {
                 studyProgramMemberships: { columns: { feideCheckedAt: true } },
             },
         }),
         ctx.db.query.userSettings.findFirst({
-            where: eq(schema.userSettings.userId, verified.sub),
+            where: { userId: verified.sub },
             with: { allergies: { columns: { allergySlug: true } } },
         }),
         ctx.db.query.account.findMany({
-            where: eq(schema.account.userId, verified.sub),
+            where: { userId: verified.sub },
             columns: { providerId: true, passwordSource: true },
         }),
     ]);

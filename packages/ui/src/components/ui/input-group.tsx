@@ -104,11 +104,16 @@ function InputGroupButton({
     );
 }
 
-function InputGroupText({ className, ...props }: React.ComponentProps<"span">) {
+function InputGroupText({
+    className,
+    variant = "default",
+    ...props
+}: React.ComponentProps<"span"> & { variant?: "default" | "kbd" }) {
     return (
         <span
             className={cn(
                 "flex items-center gap-2 text-sm text-muted-foreground [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
+                variant === "kbd" && "rounded-sm bg-muted text-xs",
                 className,
             )}
             {...props}

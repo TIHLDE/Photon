@@ -17,11 +17,7 @@ function AuthLayout() {
         // These pages have no header, so on mobile the bottom bar is the only
         // way out of them — hence the padding that keeps it off the form.
         <div className="flex min-h-screen flex-col items-center justify-center gap-8 px-4 py-12 pb-28 md:pb-12">
-            <Link
-                to="/"
-                className="flex items-center"
-                style={{ color: "var(--color-logo, currentColor)" }}
-            >
+            <Link to="/" className="flex items-center text-logo">
                 <TihldeLogo variant="full" className="h-10 w-auto" />
             </Link>
             <div className="w-full max-w-md">

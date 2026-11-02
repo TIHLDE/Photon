@@ -1,5 +1,5 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
-import { type DbSchema, schema } from "@photon/db";
+import { type DbRelations, schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Client, type GetPaymentResponse } from "@vippsmobilepay/sdk";
@@ -8,7 +8,7 @@ import { getRedis } from "./cache";
 import { env } from "./env";
 
 /** Bare det setupWebhooks trenger, så kallere kan sende en transaksjon. */
-type VippsDb = NodePgDatabase<DbSchema>;
+type VippsDb = NodePgDatabase<DbRelations>;
 
 function getVippsClient() {
     if (
@@ -305,7 +305,7 @@ export async function setupWebhooks(
     const url = env.WEBHOOK_URL + WEBHOOK_API_PATH;
 
     const stored = await db.query.vippsWebhook.findFirst({
-        where: eq(schema.vippsWebhook.url, url),
+        where: { url },
     });
 
     if (stored) {
@@ -385,7 +385,7 @@ async function getWebhookSecret(db: VippsDb) {
     const url = env.WEBHOOK_URL + WEBHOOK_API_PATH;
 
     const stored = await db.query.vippsWebhook.findFirst({
-        where: eq(schema.vippsWebhook.url, url),
+        where: { url },
     });
 
     if (stored) {

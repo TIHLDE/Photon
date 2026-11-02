@@ -1,6 +1,6 @@
 import { schema } from "@photon/db";
 import { registrationStatusVariants } from "@photon/db/schema";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { EmptyFilter, and, eq, inArray } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
@@ -8,6 +8,7 @@ import { DEFAULT_STATUSES, canActOnEvent } from "~/lib/event/access";
 import { computeClassStanding } from "~/lib/event/priority";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImageExtra } from "~/lib/user/avatar";
 import {
     type StudyGroupRow,
     deriveStudyFromGroups,
@@ -97,25 +98,28 @@ export const getAllRegistrationsForEventsRoute = route().get(
             }
         }
 
-        const filters = and(
-            eq(schema.eventRegistration.eventId, eventId),
-            inArray(
-                schema.eventRegistration.status,
-                statuses as unknown as (typeof registrationStatusVariants)[number][],
-            ),
-        );
+        const filters = (registration: typeof schema.eventRegistration) =>
+            and(
+                eq(registration.eventId, eventId),
+                inArray(
+                    registration.status,
+                    statuses as unknown as (typeof registrationStatusVariants)[number][],
+                ),
+            );
 
         const registrationCount = await db.$count(
             schema.eventRegistration,
-            filters,
+            filters(schema.eventRegistration),
         );
 
         const registrations = await db.query.eventRegistration.findMany({
             // Eldste først, samme vei som ventelista leses. Nyeste først gjorde
             // at den som sist rykket opp fra ventelista sto øverst og så ut til
             // å ha vært først inne.
-            orderBy: (r) => [asc(r.createdAt)],
-            where: filters,
+            orderBy: { createdAt: "asc" },
+            where: {
+                RAW: (registration) => filters(registration) ?? EmptyFilter,
+            },
             limit: pageSize,
             offset: getPageOffset(page, pageSize),
             with: {
@@ -123,39 +127,12 @@ export const getAllRegistrationsForEventsRoute = route().get(
                     columns: {
                         id: true,
                         name: true,
-                        image: true,
                         email: true,
                     },
+                    extras: userImageExtra,
                 },
             },
         });
-
-        // Members who turned off «offentlige arrangementspåmeldinger» are
-        // listed without name or picture for everyone but themselves and the
-        // event admins — they still occupy their spot, so the counts hold.
-        // Missing settings row means the default, which is to be listed.
-        const anonymousUserIds = new Set<string>();
-
-        if (!isEventAdmin && registrations.length > 0) {
-            const others = registrations
-                .map((r) => r.userId)
-                .filter((id) => id !== user.id);
-
-            if (others.length > 0) {
-                const settings = await db.query.userSettings.findMany({
-                    where: (s, { and, eq, inArray }) =>
-                        and(
-                            inArray(s.userId, others),
-                            eq(s.publicEventRegistrations, false),
-                        ),
-                    columns: { userId: true },
-                });
-
-                for (const s of settings) {
-                    anonymousUserIds.add(s.userId);
-                }
-            }
-        }
 
         // `eventRegistration` and `eventPayment` have no relation — payment
         // references (userId, eventId) independently — so payments for the
@@ -166,8 +143,7 @@ export const getAllRegistrationsForEventsRoute = route().get(
         if (isEventAdmin && registrations.length > 0) {
             const userIds = registrations.map((r) => r.userId);
             const payments = await db.query.eventPayment.findMany({
-                where: (p, { and, eq, inArray }) =>
-                    and(eq(p.eventId, eventId), inArray(p.userId, userIds)),
+                where: { eventId, userId: { in: userIds } },
             });
 
             // A user can hold several payment rows for one event (a new
@@ -201,9 +177,8 @@ export const getAllRegistrationsForEventsRoute = route().get(
 
         const totalPages = getTotalPages(registrationCount, pageSize);
 
-        const returnRegistrations = registrations.map((r, index) => {
+        const returnRegistrations = registrations.map((r) => {
             const payment = paymentByUserId.get(r.userId);
-            const isAnonymous = anonymousUserIds.has(r.userId);
             const studyRows = studyByUser.get(r.userId) ?? [];
             const study = deriveStudyFromGroups(studyRows);
             /**
@@ -215,14 +190,9 @@ export const getAllRegistrationsForEventsRoute = route().get(
              */
             const standing = computeClassStanding(studyRows);
             return {
-                // The user id is left out for anonymised rows: it identifies
-                // the member just as well as the name does.
-                id: isAnonymous
-                    ? `anonymous-${getPageOffset(page, pageSize) + index}`
-                    : r.userId,
-                image: isAnonymous ? null : r.user.image,
-                name: isAnonymous ? "Anonym påmeldt" : r.user.name,
-                isAnonymous,
+                id: r.userId,
+                image: r.user.image,
+                name: r.user.name,
                 ...(isEventAdmin
                     ? {
                           allowPhoto: r.allowPhoto,

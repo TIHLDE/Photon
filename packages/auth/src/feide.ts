@@ -9,7 +9,7 @@ import { genericOAuth } from "better-auth/plugins";
 import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import type { AnyColumn, SQL } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { DbSchema } from "@photon/db";
+import type { DbRelations } from "@photon/db";
 import type { Campus, StudyYearSource } from "@photon/db/schema";
 import {
     account,
@@ -35,7 +35,7 @@ import {
  * Database access required by the Feide sync hook.
  */
 export type AuthCreateContext = {
-    db: NodePgDatabase<DbSchema>;
+    db: NodePgDatabase<DbRelations>;
 };
 
 /**
@@ -195,7 +195,7 @@ interface FeideGroup {
  * flow cannot start. A conditional spread in the plugins array would instead
  * widen the tuple and silently drop inferred fields like `banned`.
  */
-export const feidePlugin = (db: NodePgDatabase<DbSchema>) =>
+export const feidePlugin = (db: NodePgDatabase<DbRelations>) =>
     genericOAuth({
         config:
             env.FEIDE_CLIENT_ID && env.FEIDE_CLIENT_SECRET
@@ -697,6 +697,15 @@ export async function applyFeideStudyPrograms(
             const stored = written ?? before;
             const effectiveStartYear = stored?.startYear ?? null;
 
+            warnOnCohortDisagreement({
+                userId,
+                programSlug,
+                feideStartYear: feideGroup.startYear,
+                cohortYears: existingCohortYears,
+                before,
+                effectiveStartYear,
+            });
+
             /**
              * Never for a master: masters own no cohort group, so the only
              * group slugged with that year belongs to the member's bachelor,
@@ -1046,7 +1055,7 @@ export async function keepExistingMemberships(
 
 /** The transaction handle `db.transaction` hands to its callback. */
 type Transaction = Parameters<
-    Parameters<NodePgDatabase<DbSchema>["transaction"]>[0]
+    Parameters<NodePgDatabase<DbRelations>["transaction"]>[0]
 >[0];
 
 /**
@@ -1147,6 +1156,60 @@ async function deriveStartYear(
     if (membership) return currentAcademicYear(membership.createdAt);
 
     return active ? currentAcademicYear(now) : null;
+}
+
+/**
+ * Say so when Feide's cohort contradicts what we already know about the member.
+ *
+ * A year from Feide freezes on arrival — `feide` does not outrank `feide` — so
+ * a wrong one survives every later login, fails silently (the class level just
+ * computes to the wrong number, or to nothing at all on a three-year bachelor)
+ * and takes a lost event place to discover. The second line also prints what
+ * Feide says *now* about a settled year, which is the only way to see what FS
+ * actually sends for a member we have already corrected by hand.
+ */
+function warnOnCohortDisagreement({
+    userId,
+    programSlug,
+    feideStartYear,
+    cohortYears,
+    before,
+    effectiveStartYear,
+}: {
+    userId: string;
+    programSlug: string;
+    feideStartYear: number | null;
+    cohortYears: readonly number[];
+    before?: {
+        startYear: number | null;
+        startYearSource: StudyYearSource | null;
+    };
+    effectiveStartYear: number | null;
+}): void {
+    // A master's intake never matches the cohort group, which belongs to the
+    // bachelor underneath it. Disagreement there is the normal case.
+    if (feideStartYear === null || isMasterStudySlug(programSlug)) return;
+
+    /**
+     * Read from what now stands, not from what was there before: a `derived`
+     * year *is* replaced by Feide's, and saying it was kept would describe the
+     * opposite of what the upsert just did.
+     */
+    const stoodItsGround =
+        before?.startYear != null && effectiveStartYear === before.startYear;
+
+    if (stoodItsGround && effectiveStartYear !== feideStartYear) {
+        console.warn(
+            `User ${userId} keeps cohort ${effectiveStartYear} (${before?.startYearSource ?? "unset"}) on ${programSlug}; Feide now says ${feideStartYear}. Only a manual correction can change a stored year.`,
+        );
+        return;
+    }
+
+    if (cohortYears.length > 0 && !cohortYears.includes(feideStartYear)) {
+        console.warn(
+            `User ${userId} got cohort ${feideStartYear} from Feide on ${programSlug} but already belongs to cohort group ${cohortYears.join(", ")}. Storing ${effectiveStartYear}, which now decides their class level.`,
+        );
+    }
 }
 
 /**
@@ -1898,11 +1961,11 @@ export function cohortGroupsByProgramme(
  * login, which meant one bad group from Feide could lock a member out entirely.
  */
 export function parseValidStudyPrograms(groups: FeideGroup[]): StudyProgram[] {
+    const startYears = pickStartYears(groups);
     const byCode = new Map<ProgramCode, StudyProgram>();
 
     for (const g of groups) {
         let code: string | undefined;
-        let startYear: number | null = null;
 
         if (g.type === "fc:fs:prg") {
             code = g.id.split(":").at(-1);
@@ -1915,9 +1978,10 @@ export function parseValidStudyPrograms(groups: FeideGroup[]): StudyProgram[] {
                 ? Number.parseInt(raw.substring(0, 4))
                 : Number.NaN;
 
-            if (!Number.isNaN(parsed) && parsed >= 2000 && parsed <= 3000) {
-                startYear = parsed;
-            } else if (raw) {
+            if (
+                raw &&
+                (Number.isNaN(parsed) || parsed < 2000 || parsed > 3000)
+            ) {
                 console.warn(
                     `Ignoring Feide cohort with unexpected start year: ${g.id}`,
                 );
@@ -1930,27 +1994,54 @@ export function parseValidStudyPrograms(groups: FeideGroup[]): StudyProgram[] {
 
         /**
          * The same programme arrives as both a `prg` and a `kull` group, and
-         * with `showAll=true` possibly several cohorts. Keep the concrete year
-         * over an unknown one, and treat the member as active if *any* of the
-         * groups for that programme still is — a lapsed cohort alongside an
-         * active programme means enrolled, not finished.
+         * with `showAll=true` possibly several cohorts. The year is settled by
+         * {@link pickStartYears} across all of them at once, because no single
+         * group can see the others. Activity is still the OR: a lapsed cohort
+         * alongside an active programme means enrolled, not finished.
          */
         const active = g.membership?.active === true;
         const existing = byCode.get(code);
 
-        if (!existing) {
-            byCode.set(code, { code, startYear, active });
-            continue;
-        }
-
         byCode.set(code, {
             code,
-            startYear: existing.startYear ?? startYear,
-            active: existing.active || active,
+            startYear: startYears.get(code) ?? null,
+            active: (existing?.active ?? false) || active,
         });
     }
 
     return [...byCode.values()];
+}
+
+/**
+ * The intake year to use for each programme, when Feide sends more than one.
+ *
+ * `showAll=true` includes lapsed cohort memberships, so a programme commonly
+ * arrives with both the cohort the member has finished with and the one they
+ * are in now. Keeping whichever came first meant the lapsed one usually won —
+ * in production every member who arrived with two cohorts was given the older,
+ * inactive year, which is a class level too low and a frozen one at that.
+ *
+ * Feide's own `active` flag is the answer where it exists. Where it does not —
+ * an alumnus, whose cohorts have all lapsed — the latest year is the closest
+ * thing to a current intake, and it is also what a member transferring between
+ * programmes should be read as.
+ */
+function pickStartYears(groups: FeideGroup[]): Map<ProgramCode, number> {
+    const picked = new Map<ProgramCode, number>();
+
+    for (const [code, cohorts] of cohortGroupsByProgramme(groups)) {
+        const dated = cohorts.filter(
+            (c): c is typeof c & { year: number } => c.year !== null,
+        );
+        const active = dated.filter((c) => c.active);
+        const candidates = active.length > 0 ? active : dated;
+
+        if (candidates.length === 0) continue;
+
+        picked.set(code, Math.max(...candidates.map((c) => c.year)));
+    }
+
+    return picked;
 }
 
 /**
@@ -2030,7 +2121,7 @@ function describeUserIdClaims(profile: Record<string, unknown>): string {
  * happens to equal someone else's NTNU username.
  */
 export async function resolveMigratedEmail(
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     profile: OpenIDProfile,
 ): Promise<string | null> {
     const username = feideUsernameOf(profile);
@@ -2120,7 +2211,7 @@ export async function resolveMigratedEmail(
  * Returns whether anything was revoked, so the caller can tell the member.
  */
 export async function revokeUnprovenCredentials(
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     userId: string,
 ): Promise<boolean> {
     const [owner] = await db
@@ -2388,7 +2479,7 @@ async function backfillUsername(
  * member: see {@link resolveMigratedEmail}.
  */
 const createGetUserInfo =
-    (db: NodePgDatabase<DbSchema>) =>
+    (db: NodePgDatabase<DbRelations>) =>
     async (tokens: OAuth2Tokens): Promise<OAuth2UserInfo> => {
         if (!tokens.accessToken) {
             throw new Error("No access token provided");

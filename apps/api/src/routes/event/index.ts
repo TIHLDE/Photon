@@ -10,11 +10,16 @@ import { getEventFormRoute } from "./form/get";
 import { listEventFormsRoute } from "./form/list";
 import { getRoute } from "./get";
 import { listRoute } from "./list";
+import { listEventMessagesRoute } from "./message/list";
+import { sendEventMessageRoute } from "./message/send";
+import { testEventMessageRoute } from "./message/test";
 import { confirmPaymentRoute } from "./payment/confirm";
 import { createPaymentRoute } from "./payment/create";
 import { listEventPaymentsRoute } from "./payment/list";
 import { refundEventPaymentRoute } from "./payment/refund";
 import { paymentWebhookRoute } from "./payment/webhook";
+import { createEventReactionRoute } from "./reactions/create";
+import { deleteEventReactionRoute } from "./reactions/delete";
 import { adminCreateRegistrationRoute } from "./registration/admin-create";
 import { setAttendanceRoute } from "./registration/attendance";
 import { getMyEventHistoryRoute } from "./registration/history";
@@ -80,6 +85,11 @@ export const eventRoutes = route()
     // Allergier for arrangøren
     .route("/", getEventAllergiesRoute)
 
+    // Meldinger til deltakerne
+    .route("/", listEventMessagesRoute)
+    .route("/", testEventMessageRoute)
+    .route("/", sendEventMessageRoute)
+
     // Payment
     .route("/", createPaymentRoute)
     .route("/", confirmPaymentRoute)
@@ -103,4 +113,7 @@ export const eventRoutes = route()
     .route("/", getMyWrappedPhotosRoute)
     .route("/", getMyWrappedPhotoImageRoute)
     .route("/", submitMyWrappedPhotosRoute)
-    .route("/", deleteMyWrappedPhotoRoute);
+    .route("/", deleteMyWrappedPhotoRoute)
+    // Reactions
+    .route("/", createEventReactionRoute)
+    .route("/", deleteEventReactionRoute);

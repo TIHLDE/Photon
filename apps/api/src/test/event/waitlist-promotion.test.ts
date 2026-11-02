@@ -18,8 +18,7 @@ async function statusFor(
     userId: string,
 ) {
     const row = await ctx.db.query.eventRegistration.findFirst({
-        where: (reg, { and, eq }) =>
-            and(eq(reg.eventId, eventId), eq(reg.userId, userId)),
+        where: { eventId, userId },
     });
     return { status: row?.status, position: row?.waitlistPosition };
 }

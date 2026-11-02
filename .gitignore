@@ -1,6 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 .idea
 settings.local.json
+.zed
 
 # Dependencies
 node_modules
@@ -45,3 +46,6 @@ yarn-error.log*
 .alchemy/
 .wrangler/
 .output
+
+# Local Lepton exports and dumps with member data outlive the deleted package
+packages/lepton-migration/

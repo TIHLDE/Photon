@@ -5,6 +5,7 @@ import { type ClassStanding, computeClassStanding } from "~/lib/event/priority";
 import { assertGroupVisible } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImageExtra } from "~/lib/user/avatar";
 import {
     type UserStudy,
     deriveStudyFromGroups,
@@ -55,15 +56,15 @@ export const listMembersRoute = route().get(
 
         // Get members with their public user info (name/image for display)
         const members = await db.query.groupMembership.findMany({
-            where: eq(schema.groupMembership.groupSlug, groupSlug),
+            where: { groupSlug },
             with: {
                 user: {
                     columns: {
                         id: true,
                         name: true,
                         username: true,
-                        image: true,
                     },
+                    extras: userImageExtra,
                 },
             },
         });

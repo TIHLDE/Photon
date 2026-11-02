@@ -349,8 +349,8 @@ function ContractPreviewDialog({ contract }: { contract: Contract }) {
             <DialogTrigger
                 render={
                     <Button
-                        variant="link"
-                        className="h-auto p-0 text-left font-normal text-foreground"
+                        variant="link-text"
+                        className="h-auto p-0 text-left"
                     >
                         {contract.title}
                     </Button>

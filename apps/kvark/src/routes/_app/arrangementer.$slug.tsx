@@ -58,6 +58,7 @@ import { EventRegistrantsDialog } from "#/components/event-registrants-dialog";
 import { AllergyNudge } from "#/components/allergy-nudge";
 import { FeideRefreshNudge } from "#/components/feide-refresh-nudge";
 import { EventEvaluationNotice } from "#/components/event-evaluation-notice";
+import { EventReactions } from "#/components/event-reactions";
 import { EventRegistrationCard } from "#/components/event-registration-card";
 import { EventRulesConsent } from "#/components/event-rules-consent";
 import { IconActionButton } from "#/components/icon-action-button";
@@ -365,7 +366,6 @@ function EventDetailPage() {
             id: u.id,
             name: u.name,
             image: u.image,
-            isAnonymous: u.isAnonymous,
         })),
     );
     const registrantsTotalCount = registrationPages?.pages[0]?.totalCount;
@@ -515,6 +515,9 @@ function EventDetailPage() {
                                     }
                                 />
                             ) : null}
+                            {event.reactionsAllowed && session?.user ? (
+                                <EventReactions event={event} />
+                            ) : null}
                             <ShareButton label="Del arrangement" />
                             {isAdmin ? (
                                 <IconActionButton
@@ -600,7 +603,7 @@ function EventDetailPage() {
                                                   : "Prioritert"
                                           }
                                           value={
-                                              <span className="flex flex-wrap justify-end gap-1.5">
+                                              <span className="flex flex-wrap justify-start gap-1.5">
                                                   {priorityLabels.map(
                                                       (label) => (
                                                           <Badge
@@ -747,6 +750,18 @@ function EventDetailPage() {
                         // finnes det ingen kjøper, og tilbudet er bare støy.
                         ticketResaleUrl={
                             event.registration?.hasPaid && isFull
+                                ? TICKET_RESALE_GROUP_URL
+                                : undefined
+                        }
+                        // Og motsatt vei: er et betalt arrangement fullt, er en
+                        // billett noen selger den eneste veien inn utenom
+                        // ventelista — også etter at påmeldingen har stengt.
+                        ticketPurchaseUrl={
+                            event.isPaidEvent &&
+                            isFull &&
+                            (registrationState === "full" ||
+                                registrationState === "on-waitlist" ||
+                                registrationState === "closed")
                                 ? TICKET_RESALE_GROUP_URL
                                 : undefined
                         }

@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { canActOnEvent } from "~/lib/event/access";
@@ -44,7 +43,7 @@ export const createEventFormRoute = route().post(
 
         // Check if event exists
         const event = await db.query.event.findFirst({
-            where: eq(schema.event.id, eventId),
+            where: { id: eventId },
         });
 
         if (!event) {
@@ -69,15 +68,11 @@ export const createEventFormRoute = route().post(
         let isOrganizer = false;
         if (event.organizerGroupSlug) {
             const membership = await db.query.groupMembership.findFirst({
-                where: (membership, { and, eq }) =>
-                    and(
-                        eq(
-                            membership.groupSlug,
-                            event.organizerGroupSlug ?? "",
-                        ),
-                        eq(membership.userId, user.id),
-                        eq(membership.role, "leader"),
-                    ),
+                where: {
+                    groupSlug: event.organizerGroupSlug ?? "",
+                    userId: user.id,
+                    role: "leader",
+                },
             });
             isOrganizer = !!membership;
         }
@@ -91,11 +86,7 @@ export const createEventFormRoute = route().post(
 
         // Check if form already exists for this event type
         const existingEventForm = await db.query.formEventForm.findFirst({
-            where: (eventForm, { and, eq }) =>
-                and(
-                    eq(eventForm.eventId, eventId),
-                    eq(eventForm.type, body.type),
-                ),
+            where: { eventId, type: body.type },
         });
 
         if (existingEventForm) {
@@ -134,13 +125,13 @@ export const createEventFormRoute = route().post(
 
         // Fetch complete form
         const createdForm = await db.query.form.findFirst({
-            where: eq(schema.form.id, form.id),
+            where: { id: form.id },
             with: {
                 fields: {
-                    orderBy: (fields, { asc }) => [asc(fields.order)],
+                    orderBy: { order: "asc" },
                     with: {
                         options: {
-                            orderBy: (options, { asc }) => [asc(options.order)],
+                            orderBy: { order: "asc" },
                         },
                     },
                 },

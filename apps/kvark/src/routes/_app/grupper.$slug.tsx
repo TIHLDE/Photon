@@ -3,8 +3,10 @@ import {
     useInfiniteQuery,
     useMutation,
     useQuery,
+    useQueryClient,
     useSuspenseQuery,
 } from "@tanstack/react-query";
+import { Alert, AlertDescription } from "@tihlde/ui/ui/alert";
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Empty,
@@ -39,6 +41,7 @@ import {
     createLawMutation,
     deleteFineMutation,
     deleteLawMutation,
+    GroupQueryKeys,
     getGroupBySlugQuery,
     getGroupFineStatisticsQuery,
     getGroupFineUsersInfiniteQuery,
@@ -48,9 +51,14 @@ import {
     getGroupLawsQuery,
     getGroupMembersQuery,
     removeGroupMemberMutation,
+    requestToJoinGroupMutation,
+    withdrawJoinRequestMutation,
+    leaveGroupMutation,
     updateFineMutation,
     updateGroupMemberRoleMutation,
     updateGroupMutation,
+    archiveGroupMutation,
+    unarchiveGroupMutation,
     updateLawMutation,
 } from "#/api/queries/groups";
 import {
@@ -71,18 +79,25 @@ import {
     GroupGiveFineDialog,
     type GiveFineValues,
 } from "#/components/group-give-fine-dialog";
+import {
+    GroupEditFineDialog,
+    type EditFineValues,
+} from "#/components/group-edit-fine-dialog";
 import { GroupLawsTab } from "#/components/group-laws-tab";
 import {
     NewFormDialog,
     type NewFormValues,
 } from "#/components/new-form-dialog";
+import { GroupJoinRequestsPanel } from "#/components/group-join-requests-panel";
 import { GroupMembersTab } from "#/components/group-members-tab";
 import { GROUP_NAV_ITEMS, type GroupNavKey } from "#/components/group-nav";
 import { GroupOmTab } from "#/components/group-om-tab";
 import { mapFormQuestions, toFormFieldsPayload } from "#/lib/form";
 import {
+    type Fine,
     type Form,
     allowsNonMemberLeader,
+    isPrivateGroupType,
     mapFine,
     mapFineUser,
     mapForm,
@@ -175,9 +190,19 @@ function GroupDetail() {
     const { slug } = Route.useParams();
     const { tab: active, botStatus, botVisning, botBruker } = Route.useSearch();
     const navigate = Route.useNavigate();
+    const queryClient = useQueryClient();
     const [fineDialogOpen, setFineDialogOpen] = useState(false);
     const [fineError, setFineError] = useState<string | null>(null);
+    const [editingFine, setEditingFine] = useState<Fine | null>(null);
+    const [editFineError, setEditFineError] = useState<string | null>(null);
     const [groupError, setGroupError] = useState<string | null>(null);
+    const [headerFailure, setHeaderFailure] = useState<{
+        slug: string;
+        message: string;
+    } | null>(null);
+    // Siden monteres ikke på nytt når man går til en annen gruppe.
+    const headerError =
+        headerFailure?.slug === slug ? headerFailure.message : null;
     const [formDialogOpen, setFormDialogOpen] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
     const [editingForm, setEditingForm] = useState<Form | null>(null);
@@ -197,8 +222,13 @@ function GroupDetail() {
 
     const updateMemberRole = useMutation(updateGroupMemberRoleMutation);
     const removeMember = useMutation(removeGroupMemberMutation);
+    const requestToJoin = useMutation(requestToJoinGroupMutation);
+    const withdrawJoinRequest = useMutation(withdrawJoinRequestMutation);
+    const leaveGroup = useMutation(leaveGroupMutation);
     const addMember = useMutation(addGroupMemberMutation);
     const updateGroup = useMutation(updateGroupMutation);
+    const archiveGroup = useMutation(archiveGroupMutation);
+    const unarchiveGroup = useMutation(unarchiveGroupMutation);
     const createFine = useMutation(createFineMutation);
     const { uploadImage, isUploading } = useImageUploader();
     const updateFine = useMutation(updateFineMutation);
@@ -218,7 +248,8 @@ function GroupDetail() {
         `group:${slug}`,
     );
     const isLeader = useIsGroupLeaderOf(slug);
-    const canManage = canEditGroup || isLeader;
+    const isArchived = Boolean(apiGroup.archivedAt);
+    const canManage = (canEditGroup || isLeader) && !isArchived;
     // Roster changes: `groups:manage` for this group, or being its leader.
     // Det samme gjelder å gi ledervervet videre — men «Legg til medlem»-veien
     // legger fortsatt bare til vanlige medlemmer, slik API-et krever.
@@ -226,7 +257,8 @@ function GroupDetail() {
         "groups:manage",
         `group:${slug}`,
     );
-    const canManageMembers = hasGroupsManage || isLeader;
+    const canArchive = hasGroupsManage || isLeader;
+    const canManageMembers = canArchive && !isArchived;
     // Skjemaene til gruppen er scopet hit, akkurat som resten av siden: et
     // grant for denne gruppen teller, et grant for en annen gruppe gjør ikke.
     // Det var en global sjekk her, og den er strengere enn API-et — «Spørre-
@@ -239,22 +271,25 @@ function GroupDetail() {
     // forms:update. Slått sammen ville et grant på den ene vist knappene for
     // den andre, og de knappene svarer 403.
     const canCreateForms =
-        useScopedPermission(
+        (useScopedPermission(
             ["forms:create", "forms:manage"],
             `group:${slug}`,
-        ) || isLeader;
+        ) ||
+            isLeader) &&
+        !isArchived;
     const canManageForms =
-        useScopedPermission(
+        (useScopedPermission(
             ["forms:update", "forms:manage"],
             `group:${slug}`,
-        ) || isLeader;
+        ) ||
+            isLeader) &&
+        !isArchived;
     // Arrangementer er scopet på samme måte: lederskap alene gir ikke
     // events:create — det avhenger av gruppens leaderPermissions — så vi
     // spør om selve tilgangen for nettopp denne gruppen.
-    const canCreateEvent = useScopedPermission(
-        EVENT_CREATE_PERMISSIONS,
-        `group:${slug}`,
-    );
+    const canCreateEvent =
+        useScopedPermission(EVENT_CREATE_PERMISSIONS, `group:${slug}`) &&
+        !isArchived;
     const isRoot = usePermission("root");
 
     const isFinesAdmin = Boolean(
@@ -343,6 +378,23 @@ function GroupDetail() {
         () => sortMembersByName((apiMembers ?? []).map(mapMember)),
         [apiMembers],
     );
+    const viewerId = session?.user?.id;
+    const viewerMembership = members.find((member) => member.id === viewerId);
+    const isInterestGroup = apiGroup.type.toUpperCase() === "INTERESTGROUP";
+    const membershipAction =
+        !viewerId || !isInterestGroup || isArchived || !apiMembers
+            ? null
+            : viewerMembership
+              ? // En leder kan bare gå når gruppa har en leder til.
+                viewerMembership.role === "leader" &&
+                !members.some((m) => m.role === "leader" && m.id !== viewerId)
+                  ? null
+                  : "leave"
+              : apiGroup.viewerHasJoinRequest
+                ? "pending"
+                : apiGroup.acceptsJoinRequests
+                  ? "request"
+                  : null;
     const leaders = useMemo(
         () => members.filter((m) => m.role === "leader"),
         [members],
@@ -445,13 +497,13 @@ function GroupDetail() {
 
     // Lovverk: the fines admin (botsjef) or the leader — same as
     // `canManageLaws` server-side.
-    const canManageLaws = isLeader || isFinesAdmin || isRoot;
+    const canManageLaws = (isLeader || isFinesAdmin || isRoot) && !isArchived;
     // Å avgjøre en bot — godkjenne, avvise, slette — er botsjefens og lederens
     // jobb. Å gi en er noe alle i gruppen kan.
-    const canManageFines = isFinesAdmin || isLeader || isRoot;
+    const canManageFines = (isFinesAdmin || isLeader || isRoot) && !isArchived;
     // Å gi en bot krever nøyaktig det samme som å lese dem — serveren avviser
     // ellers POST-en med 403 etter at skjemaet er fylt ut.
-    const canGiveFine = canViewFines;
+    const canGiveFine = canViewFines && !isArchived;
 
     const navItems = useMemo(
         () =>
@@ -672,6 +724,81 @@ function GroupDetail() {
         }
     }
 
+    function openEditFine(fine: Fine) {
+        setEditFineError(null);
+        setEditingFine(fine);
+    }
+
+    async function handleEditFine(fine: Fine, values: EditFineValues) {
+        setEditFineError(null);
+        try {
+            await updateFine.mutateAsync({
+                groupSlug: slug,
+                fineId: fine.id,
+                data: values,
+            });
+            setEditingFine(null);
+        } catch (error) {
+            setEditFineError(await extractErrorMessage(error));
+        }
+    }
+
+    async function changeOwnMembership(
+        mutation:
+            | typeof requestToJoin
+            | typeof withdrawJoinRequest
+            | typeof leaveGroup,
+    ) {
+        setHeaderFailure(null);
+        try {
+            await mutation.mutateAsync({ groupSlug: slug });
+        } catch (error) {
+            setHeaderFailure({
+                slug,
+                message: await extractErrorMessage(error),
+            });
+        }
+    }
+
+    async function changeArchived(
+        mutation: typeof archiveGroup | typeof unarchiveGroup,
+    ) {
+        setHeaderFailure(null);
+        try {
+            await mutation.mutateAsync({ slug });
+
+            // Arkivering tar lederen ut av gruppen, og en privat gruppe er
+            // bare for medlemmene. Siden kan være stengt nå, men cachen ville
+            // vist den aktive gruppen videre. Tilgangen før arkiveringen sier
+            // ikke noe sikkert om den etterpå — groups:manage kan ha kommet
+            // fra gruppen selv — så vi går alltid ut. Den som fortsatt har
+            // tilgang, finner gruppen under arkiverte grupper.
+            if (
+                mutation === archiveGroup &&
+                isPrivateGroupType(apiGroup.type)
+            ) {
+                await navigate({ to: "/grupper" });
+                queryClient.removeQueries({
+                    queryKey: getGroupBySlugQuery(slug).queryKey,
+                });
+                for (const queryKey of [
+                    GroupQueryKeys.members,
+                    GroupQueryKeys.formerMembers,
+                    GroupQueryKeys.fines,
+                ]) {
+                    queryClient.removeQueries({
+                        queryKey: [...queryKey, slug],
+                    });
+                }
+            }
+        } catch (error) {
+            setHeaderFailure({
+                slug,
+                message: await extractErrorMessage(error),
+            });
+        }
+    }
+
     return (
         <>
             <DetailLayout
@@ -679,12 +806,30 @@ function GroupDetail() {
                     <GroupDetailHeader
                         group={group}
                         isAdmin={canManage}
+                        canArchive={canArchive}
+                        onArchive={() => changeArchived(archiveGroup)}
+                        onUnarchive={() => changeArchived(unarchiveGroup)}
+                        isArchivePending={
+                            archiveGroup.isPending || unarchiveGroup.isPending
+                        }
                         canGiveFine={canGiveFine}
                         onGiveFine={openGiveFine}
                         members={members}
                         onSaveGroup={handleSaveGroup}
                         isSavingGroup={updateGroup.isPending}
                         saveGroupError={groupError}
+                        membershipAction={membershipAction}
+                        leaderCount={leaders.length}
+                        onRequest={() => changeOwnMembership(requestToJoin)}
+                        onWithdraw={() =>
+                            changeOwnMembership(withdrawJoinRequest)
+                        }
+                        onLeave={() => changeOwnMembership(leaveGroup)}
+                        isMembershipPending={
+                            requestToJoin.isPending ||
+                            withdrawJoinRequest.isPending ||
+                            leaveGroup.isPending
+                        }
                     />
                 }
             >
@@ -695,6 +840,11 @@ function GroupDetail() {
                 />
 
                 <DetailLayoutContent>
+                    {headerError ? (
+                        <Alert variant="destructive">
+                            <AlertDescription>{headerError}</AlertDescription>
+                        </Alert>
+                    ) : null}
                     {activeTab === "om" ? <GroupOmTab group={group} /> : null}
                     {activeTab === "medlemmer" ? (
                         <GroupMembersTab
@@ -703,6 +853,11 @@ function GroupDetail() {
                             formerMembers={formerMembers}
                             isAdmin={canManageMembers}
                             canPromote={canManageMembers}
+                            joinRequests={
+                                canManageMembers && isInterestGroup ? (
+                                    <GroupJoinRequestsPanel groupSlug={slug} />
+                                ) : null
+                            }
                             leaderTransfer={
                                 canManageMembers && canPickLeaderOutsideGroup
                                     ? {
@@ -861,6 +1016,7 @@ function GroupDetail() {
                             }}
                             canManage={canManageFines}
                             ownFinesOnly={canSeeOwnFines}
+                            readOnly={isArchived}
                             currentUserId={session?.user?.id}
                             onApprove={(fine) =>
                                 updateFine.mutate({
@@ -876,6 +1032,7 @@ function GroupDetail() {
                                     data: { status: "paid" },
                                 })
                             }
+                            onEdit={openEditFine}
                             onDelete={(fine) =>
                                 deleteFine.mutate({
                                     groupSlug: slug,
@@ -883,7 +1040,7 @@ function GroupDetail() {
                                 })
                             }
                             onSaveDefense={(fine, defense) =>
-                                updateFine.mutate({
+                                updateFine.mutateAsync({
                                     groupSlug: slug,
                                     fineId: fine.id,
                                     data: { defense },
@@ -946,6 +1103,17 @@ function GroupDetail() {
                 onSubmit={handleGiveFine}
                 isSubmitting={createFine.isPending || isUploading}
                 error={fineError}
+            />
+
+            <GroupEditFineDialog
+                fine={editingFine}
+                onOpenChange={(open) => {
+                    if (!open) setEditingFine(null);
+                }}
+                laws={laws}
+                onSubmit={handleEditFine}
+                isSubmitting={updateFine.isPending}
+                error={editFineError}
             />
 
             <NewFormDialog

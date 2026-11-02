@@ -40,10 +40,7 @@ export const revokeSignatureRoute = route().delete(
         const { db } = ctx;
 
         const membership = await db.query.groupMembership.findFirst({
-            where: and(
-                eq(schema.groupMembership.groupSlug, groupSlug),
-                eq(schema.groupMembership.userId, userId),
-            ),
+            where: { groupSlug, userId },
         });
 
         if (!membership) {
@@ -53,7 +50,7 @@ export const revokeSignatureRoute = route().delete(
         }
 
         const activeContract = await db.query.contract.findFirst({
-            where: eq(schema.contract.isActive, true),
+            where: { isActive: true },
         });
 
         if (!activeContract) {

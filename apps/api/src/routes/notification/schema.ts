@@ -93,6 +93,16 @@ export const markReadResponseSchema = Schema(
     }),
 );
 
+export const markAllReadResponseSchema = Schema(
+    "MarkAllNotificationsReadResponse",
+    z.object({
+        updatedCount: z
+            .number()
+            .int()
+            .meta({ description: "Number of notifications marked as read" }),
+    }),
+);
+
 export const deviceResponseSchema = Schema(
     "NotificationDeviceResponse",
     z.object({

@@ -1,7 +1,11 @@
 import { schema } from "@photon/db";
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import type z from "zod";
+import {
+    selectFeedbackItems,
+    serializeFeedbackItem,
+} from "~/lib/feedback/serialize";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -17,6 +21,8 @@ import {
     listFeedbackQuerySchema,
 } from "./schema";
 
+const RESOLVED_FEEDBACK_STATUSES = ["closed", "rejected"] as const;
+
 export const listRoute = route().get(
     "/",
     describeRoute({
@@ -24,7 +30,7 @@ export const listRoute = route().get(
         summary: "List feedback",
         operationId: "listFeedback",
         description:
-            "Paginated list of ideas and bug reports, newest first. Requires authentication.",
+            "Paginated list of ideas and bug reports. Unresolved items come first, closed and rejected ones last; newest first within each. Requires authentication.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -55,61 +61,21 @@ export const listRoute = route().get(
         const totalCount = await db.$count(schema.feedback, where);
         const totalPages = getTotalPages(totalCount, pageSize);
 
-        /**
-         * The author is selected only to answer "did I file this?" — feedback
-         * is shown anonymously, so no name or picture leaves the database.
-         *
-         * Vote counts are aggregated in the query rather than by loading every
-         * vote row: the page shows a running tally per item and nothing else,
-         * and a popular idea can collect hundreds of votes that would then be
-         * serialized only to be counted and thrown away.
-         */
-        const rows = await db
-            .select({
-                id: schema.feedback.id,
-                type: schema.feedback.type,
-                status: schema.feedback.status,
-                title: schema.feedback.title,
-                description: schema.feedback.description,
-                createdAt: schema.feedback.createdAt,
-                updatedAt: schema.feedback.updatedAt,
-                authorId: schema.feedback.authorId,
-                upvotes:
-                    sql<number>`count(*) filter (where ${schema.feedbackVote.value} = 'up')`.mapWith(
-                        Number,
-                    ),
-                downvotes:
-                    sql<number>`count(*) filter (where ${schema.feedbackVote.value} = 'down')`.mapWith(
-                        Number,
-                    ),
-                myVote: sql<
-                    "up" | "down" | null
-                >`max(${schema.feedbackVote.value}::text) filter (where ${schema.feedbackVote.userId} = ${userId})`,
-            })
-            .from(schema.feedback)
-            .leftJoin(
-                schema.feedbackVote,
-                eq(schema.feedbackVote.feedbackId, schema.feedback.id),
-            )
+        const rows = await selectFeedbackItems(db, userId)
             .where(where)
-            .groupBy(schema.feedback.id)
-            .orderBy(desc(schema.feedback.createdAt))
+            .orderBy(
+                asc(
+                    inArray(schema.feedback.status, RESOLVED_FEEDBACK_STATUSES),
+                ),
+                desc(schema.feedback.createdAt),
+                desc(schema.feedback.id),
+            )
             .limit(pageSize)
             .offset(getPageOffset(page, pageSize));
 
-        const items = rows.map((row) => ({
-            id: row.id,
-            type: row.type,
-            status: row.status,
-            title: row.title,
-            description: row.description,
-            isAuthor: row.authorId === userId,
-            upvotes: row.upvotes,
-            downvotes: row.downvotes,
-            myVote: row.myVote,
-            createdAt: row.createdAt.toISOString(),
-            updatedAt: row.updatedAt.toISOString(),
-        })) satisfies z.infer<typeof feedbackItemSchema>[];
+        const items = rows.map((row) =>
+            serializeFeedbackItem(row, userId),
+        ) satisfies z.infer<typeof feedbackItemSchema>[];
 
         return c.json({
             totalCount,

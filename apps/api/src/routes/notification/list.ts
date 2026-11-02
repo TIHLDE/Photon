@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, desc, eq } from "drizzle-orm";
+import { EmptyFilter, and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import type { z } from "zod";
 import { describeRoute } from "~/lib/openapi";
@@ -38,23 +38,27 @@ export const listNotificationsRoute = route().get(
         const { pageSize, page, isRead } = c.req.valid("query");
         const pageOffset = getPageOffset(page, pageSize);
 
-        const notificationFilter = and(
-            eq(schema.notification.userId, userId),
-            isRead === undefined
-                ? undefined
-                : eq(schema.notification.isRead, isRead),
-        );
+        const notificationFilter = (notification: typeof schema.notification) =>
+            and(
+                eq(notification.userId, userId),
+                isRead === undefined
+                    ? undefined
+                    : eq(notification.isRead, isRead),
+            );
 
         const notificationCount = await db.$count(
             schema.notification,
-            notificationFilter,
+            notificationFilter(schema.notification),
         );
 
         const totalPages = getTotalPages(notificationCount, pageSize);
 
         const notifications = await db.query.notification.findMany({
-            orderBy: desc(schema.notification.createdAt),
-            where: notificationFilter,
+            orderBy: { createdAt: "desc" },
+            where: {
+                RAW: (notification) =>
+                    notificationFilter(notification) ?? EmptyFilter,
+            },
             limit: pageSize,
             offset: pageOffset,
         });

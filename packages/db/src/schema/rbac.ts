@@ -16,8 +16,8 @@ export const role = pgTable("role", {
     name: varchar("name", { length: 64 }).notNull().unique(),
     description: varchar("description", { length: 256 }),
     position: integer("position").notNull().default(1000),
-    permissions: text("permissions").array(),
     ...timestamps,
+    permissions: text("permissions").array(),
 });
 
 export const userRole = pgTable(
@@ -25,13 +25,21 @@ export const userRole = pgTable(
     {
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                onDelete: "cascade",
+            }),
         roleId: integer("role_id")
             .notNull()
-            .references(() => role.id, { onDelete: "cascade" }),
+            .references(() => role.id, {
+                onDelete: "cascade",
+            }),
         ...timestamps,
     },
-    (t) => [primaryKey({ columns: [t.userId, t.roleId] })],
+    (t) => [
+        primaryKey({
+            columns: [t.userId, t.roleId],
+        }),
+    ],
 );
 
 /**
@@ -48,7 +56,9 @@ export const userPermission = pgTable(
     {
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                onDelete: "cascade",
+            }),
         permission: varchar("permission", { length: 64 }).notNull(),
         /**
          * Scope for the permission. "*" means global (no restriction).

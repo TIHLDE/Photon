@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq, or } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 
 /**
@@ -41,7 +40,7 @@ export async function generateUniqueAlbumSlug(
     for (let attempt = 0; ; attempt++) {
         const candidate = attempt === 0 ? base : `${base}-${attempt + 1}`;
         const taken = await db.query.galleryAlbum.findFirst({
-            where: eq(schema.galleryAlbum.slug, candidate),
+            where: { slug: candidate },
             columns: { id: true },
         });
         if (!taken) return candidate;
@@ -65,11 +64,8 @@ export async function findAlbumBySlugOrId(
 
     return db.query.galleryAlbum.findFirst({
         where: isUuid
-            ? or(
-                  eq(schema.galleryAlbum.slug, slugOrId),
-                  eq(schema.galleryAlbum.id, slugOrId),
-              )
-            : eq(schema.galleryAlbum.slug, slugOrId),
+            ? { OR: [{ slug: slugOrId }, { id: slugOrId }] }
+            : { slug: slugOrId },
     });
 }
 
@@ -117,7 +113,7 @@ export async function findAlbumEvent(
     if (!eventId) return null;
 
     const found = await db.query.event.findFirst({
-        where: eq(schema.event.id, eventId),
+        where: { id: eventId },
         columns: { id: true, title: true, slug: true, start: true },
     });
 

@@ -12,6 +12,8 @@ const toggleVariants = cva(
             variant: {
                 default: "bg-transparent",
                 outline: "border border-input bg-transparent hover:bg-muted",
+                // Form choices: the pressed state must stand out by at least 3:1 (WCAG 1.4.11).
+                choice: "border border-foreground/50 bg-transparent hover:bg-muted aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/90 aria-pressed:hover:text-primary-foreground focus-visible:ring-ring",
             },
             size: {
                 default:

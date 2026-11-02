@@ -965,6 +965,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/event/{eventId}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List messages sent to an event's participants
+         * @description Everything the arrangers have sent to the participants, newest first, along with how many a new message would reach. Same access as editing the event.
+         */
+        get: operations["listEventMessages"];
+        put?: never;
+        /**
+         * Send a message to an event's participants
+         * @description Sends a message to everyone holding a spot on the event (registered, attended or no-show — never the waitlist) as a notification in the bell, an email and a push. Replies to the email go to the event's contact person, or the arranging group's contact address. Same access as editing the event.
+         */
+        post: operations["sendEventMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/messages/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a test of an event message to yourself
+         * @description Sends the message as an email and a push to the caller only, with «[Test]» in front of the title. Nothing is saved, and the bell is left alone.
+         */
+        post: operations["testEventMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/event/{eventId}/payment": {
         parameters: {
             query?: never;
@@ -1289,6 +1333,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/event/{eventId}/reactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add reaction to event
+         * @description Add or update emoji reaction to an event. Each user has at most one reaction per event, so reacting again replaces it. Requires authentication.
+         */
+        post: operations["createEventReaction"];
+        /**
+         * Remove reaction from event
+         * @description Remove your emoji reaction from an event.
+         */
+        delete: operations["deleteEventReaction"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/feedback": {
         parameters: {
             query?: never;
@@ -1298,7 +1366,7 @@ export interface paths {
         };
         /**
          * List feedback
-         * @description Paginated list of ideas and bug reports, newest first. Requires authentication.
+         * @description Paginated list of ideas and bug reports. Unresolved items come first, closed and rejected ones last; newest first within each. Requires authentication.
          */
         get: operations["listFeedback"];
         put?: never;
@@ -1320,19 +1388,23 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get feedback
+         * @description A single idea or bug report. Requires authentication.
+         */
+        get: operations["getFeedback"];
         put?: never;
         post?: never;
         /**
          * Delete feedback
-         * @description Delete a piece of feedback. Requires 'feedback:delete' or 'feedback:manage', or being the author.
+         * @description Delete a piece of feedback. Requires 'feedback:delete' or 'feedback:manage', or being the author while it is still open and nobody else has voted or commented.
          */
         delete: operations["deleteFeedback"];
         options?: never;
         head?: never;
         /**
          * Update feedback
-         * @description Edit a piece of feedback, or move it along its status. Requires 'feedback:update' or 'feedback:manage', or being the author. Only the permission may change the status.
+         * @description Edit a piece of feedback, or move it along its status. Requires 'feedback:update' or 'feedback:manage', or being the author. Only the author may edit the title, description and anonymity, and only while it is open and nobody else has voted or commented. Only the permission may change the status or the rejection reason. Rejecting notifies the author.
          */
         patch: operations["updateFeedback"];
         trace?: never;
@@ -1356,6 +1428,50 @@ export interface paths {
          * @description Take back your vote on a piece of feedback.
          */
         delete: operations["deleteFeedbackVote"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/feedback/{id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List feedback comments
+         * @description Replies from Index and the author, oldest first. Visible to every logged-in member.
+         */
+        get: operations["listFeedbackComments"];
+        put?: never;
+        /**
+         * Comment on feedback
+         * @description Reply in a feedback thread. Requires 'feedback:update' or 'feedback:manage', or being the author. A reply from Index notifies the author; a reply from the author notifies the Index members in the thread.
+         */
+        post: operations["createFeedbackComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/feedback/{id}/comments/{commentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete feedback comment
+         * @description Delete a comment. Requires 'feedback:manage', or having written it.
+         */
+        delete: operations["deleteFeedbackComment"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1705,6 +1821,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/notification/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Mark all notifications as read
+         * @description Mark every unread notification of the authenticated user as read. Returns how many notifications were updated.
+         */
+        patch: operations["markAllNotificationsRead"];
+        trace?: never;
+    };
     "/api/notification/{id}/read": {
         parameters: {
             query?: never;
@@ -1734,7 +1870,7 @@ export interface paths {
         };
         /**
          * List groups
-         * @description Retrieve a list of all groups. Supports optional filtering by type and search query.
+         * @description Retrieve the active groups, or with `archived=true` the archived ones — an archived private group only to those who may open it: its members and 'groups:manage' (global or scoped to the group). Supports optional filtering by type and search query.
          */
         get: operations["listGroups"];
         put?: never;
@@ -1769,6 +1905,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/groups/join-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List join requests waiting on me
+         * @description Pending join requests across every group the caller can answer for: groups they lead, and groups where they hold 'groups:manage'. Oldest first.
+         */
+        get: operations["listPendingGroupJoinRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{slug}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive a group
+         * @description Archive a group. It leaves the group list but stays visible to everyone, nothing in it can be changed and it grants no permissions. Every member, the leader included, is removed and moved to the group's member history, and loses any verv held in it. Every fine in the group is deleted, pictures included. Neither comes back on restore. Requires being the group's leader OR holding 'groups:manage'.
+         */
+        post: operations["archiveGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{slug}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore an archived group
+         * @description Bring an archived group back: it returns to the group list and becomes editable again. It comes back empty — archiving moved every member to the member history and deleted the fines — so members and a leader have to be added anew. Requires 'groups:manage', since an archived group has no leader.
+         */
+        post: operations["unarchiveGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/groups/{slug}": {
         parameters: {
             query?: never;
@@ -1785,7 +1981,7 @@ export interface paths {
         post?: never;
         /**
          * Delete a group
-         * @description Delete a group by its slug. Requires being the group's leader OR holding 'groups:delete' for all of TIHLDE, and repeating the slug in `confirm`. This action is irreversible and will remove all associated data, including memberships, fines, laws, forms and verv.
+         * @description Delete a group by its slug. Requires being the group's leader OR holding 'groups:delete' for all of TIHLDE, and repeating the slug in `confirm`. This action is irreversible and will remove all associated data, including memberships, fines (and their pictures), laws, forms and verv.
          */
         delete: operations["deleteGroup"];
         options?: never;
@@ -1952,7 +2148,7 @@ export interface paths {
         head?: never;
         /**
          * Partially update fine
-         * @description Partially update a fine. Only provided fields will be updated. Current members can add a defense to their own fines; someone who has left the group can read their fines but no longer write to them. Fines admins can update status and approve/reject fines.
+         * @description Partially update a fine. Only provided fields will be updated. Current members can add a defense to their own fines; someone who has left the group can read their fines but no longer write to them. Fines admins (botsjef) and group leaders can update status, approve/reject fines, and edit the reason, amount, paragraph and picture.
          */
         patch: operations["updateFine"];
         trace?: never;
@@ -2071,6 +2267,110 @@ export interface paths {
          * @description Update a member's role in a group. Requires 'groups:manage' (globally or scoped to the group), or being the group's leader — a sitting leader may only hand the leadership over to someone else.
          */
         patch: operations["updateGroupMemberRole"];
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask to join group
+         * @description Ask to join an interest group. The group's leaders are notified and approve or decline the request; a group without leaders gets an email at its contact address instead.
+         */
+        post: operations["requestToJoinGroup"];
+        /**
+         * Withdraw join request
+         * @description Withdraw the caller's pending request to join a group.
+         */
+        delete: operations["withdrawGroupJoinRequest"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Leave group
+         * @description Leave an interest group. A leader may only leave while the group has another leader, so it is never left without one by accident.
+         */
+        post: operations["leaveGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/join-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List join requests
+         * @description Pending requests to join the group, oldest first. Requires 'groups:manage' (globally or scoped to the group), or being the group's leader.
+         */
+        get: operations["listGroupJoinRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/join-requests/{userId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve join request
+         * @description Make the requester a member and tell them. Requires 'groups:manage' (globally or scoped to the group), or being the group's leader.
+         */
+        post: operations["approveGroupJoinRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/join-requests/{userId}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decline join request
+         * @description Delete the request and tell the requester; they may ask again later. Requires 'groups:manage' (globally or scoped to the group), or being the group's leader.
+         */
+        post: operations["declineGroupJoinRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/groups/{groupSlug}/positions": {
@@ -3577,6 +3877,31 @@ export interface components {
              * @description Email address to reply to
              */
             contactEmail: string;
+            /** @description Phone number to reach the contact on */
+            phone?: string;
+            /** @description Kind of company, e.g. size or sector */
+            companyType: string;
+            /** @description Whether the company has offices in Trondheim fit for a visit */
+            hasTrondheimOffice?: boolean;
+            /** @description What the company is and works with */
+            about: string;
+            /**
+             * @description Topics the company could talk about
+             * @default []
+             */
+            themes: string[];
+            /**
+             * @description Year groups the company wants to reach
+             * @default []
+             */
+            classLevels: string[];
+            /** @description Expected number of participants */
+            participants?: string;
+            /**
+             * @description Collaborations with other linjeforeninger and other extras
+             * @default []
+             */
+            extras: string[];
             /** @description Event formats the company is interested in */
             eventTypes: string[];
             /** @description Semesters the company is available in */
@@ -4172,10 +4497,14 @@ export interface components {
                     id: string;
                     /** @description User name */
                     name: string;
+                    /** @description Profile picture (nullable) */
+                    image: string | null;
                 };
                 /** @description Reaction emoji */
                 emoji: string;
             }[];
+            /** @description May users react to the event with an emoji? */
+            reactionsAllowed: boolean;
             /** @description Is this a paid event */
             isPaidEvent: boolean;
             /** @description Payment info */
@@ -4285,8 +4614,6 @@ export interface components {
             name: string;
             /** @description User image url (if any) */
             image: string | null;
-            /** @description True when the member has turned off public event registrations, in which case `id`, `name` and `image` carry no identity. Never true for event admins or for the caller's own registration. */
-            isAnonymous: boolean;
             /** @description Photo consent for this event. Only included when the caller has event admin permissions. */
             allowPhoto?: boolean;
             /** @description Registration status (registered/attended/no_show). Only included for event admins. */
@@ -4376,6 +4703,28 @@ export interface components {
             summary: components["schemas"]["EventAllergySummaryEntry"][];
             /** @description Only the participants who registered something, so the list stays readable. */
             participants: components["schemas"]["EventParticipantAllergies"][];
+        };
+        EventMessage: {
+            id: string;
+            title: string;
+            body: string;
+            recipientCount: number;
+            sentBy: {
+                id: string;
+                name: string;
+            } | null;
+            createdAt: string;
+        };
+        EventMessageList: {
+            /** @description How many would get a message sent right now: everyone holding a spot. */
+            recipientCount: number;
+            messages: components["schemas"]["EventMessage"][];
+        };
+        EventMessageContent: {
+            /** @description Short headline. The event title is put in front of it in the email subject, the push and the bell. */
+            title: string;
+            /** @description Plain text. Line breaks are kept in the email. */
+            body: string;
         };
         CreatePaymentResponse: {
             /** Format: uuid */
@@ -4673,6 +5022,31 @@ export interface components {
             shotsUsed: number;
             shotsLeft: number;
         };
+        EventReaction: {
+            /** @description User ID */
+            userId: string;
+            /**
+             * Format: uuid
+             * @description Event ID
+             */
+            eventId: string;
+            /** @description Emoji reaction */
+            emoji: string;
+            /** @description Reaction creation time (ISO 8601) */
+            createdAt: string;
+        };
+        CreateEventReaction: {
+            /** @description Emoji reaction (e.g., 👍, ❤️, 😂) */
+            emoji: string;
+        };
+        DeleteEventReactionResponse: {
+            message: string;
+        };
+        FeedbackAuthor: {
+            id: string;
+            name: string;
+            image: string | null;
+        };
         FeedbackItem: {
             /**
              * Format: uuid
@@ -4685,12 +5059,19 @@ export interface components {
             status: "open" | "in_progress" | "closed" | "rejected";
             title: string;
             description: string;
-            /** @description Whether the requesting user filed this. Feedback is anonymous: the author is never exposed to anyone else. */
+            isAnonymous: boolean;
+            /** @description Whether the requesting user filed this. */
             isAuthor: boolean;
+            /** @description Who filed it, also when the feedback is anonymous. Clients must hide it from members when 'isAnonymous' is true. */
+            author: components["schemas"]["FeedbackAuthor"] | null;
             upvotes: number;
             downvotes: number;
             /** @description The requesting user's own vote, if any */
             myVote: ("up" | "down") | null;
+            rejectionReason: string | null;
+            /** @description Whether the requesting user may edit it: they filed it, it is still open, and nobody else has voted or commented. */
+            isEditable: boolean;
+            commentCount: number;
             /** @description Creation time (ISO 8601) */
             createdAt: string;
             /** @description Last update time (ISO 8601) */
@@ -4716,12 +5097,18 @@ export interface components {
             title: string;
             /** @description What the idea or the bug is */
             description: string;
+            /** @description Hide the author's name from other members in the frontend. The API still returns the author. Defaults to anonymous. */
+            isAnonymous?: boolean;
         };
         UpdateFeedback: {
             title?: string;
             description?: string;
+            /** @description Author only, and only while the feedback is editable */
+            isAnonymous?: boolean;
             /** @enum {string} */
             status?: "open" | "in_progress" | "closed" | "rejected";
+            /** @description Why Index rejected it. Only allowed with status 'rejected'; cleared when the status changes. */
+            rejectionReason?: string | null;
         };
         FeedbackMessageResponse: {
             message: string;
@@ -4737,6 +5124,21 @@ export interface components {
              * @enum {string}
              */
             value: "up" | "down";
+        };
+        FeedbackComment: {
+            /** Format: uuid */
+            id: string;
+            body: string;
+            /** @description Written by the person who filed the feedback */
+            isFeedbackAuthor: boolean;
+            isMine: boolean;
+            /** @description Null when the feedback author replies on anonymous feedback, or the user is deleted. */
+            author: components["schemas"]["FeedbackAuthor"] | null;
+            createdAt: string;
+        };
+        FeedbackCommentList: components["schemas"]["FeedbackComment"][];
+        CreateFeedbackComment: {
+            body: string;
         };
         FormResponse: {
             /** Format: uuid */
@@ -5164,6 +5566,10 @@ export interface components {
             /** @description Whether deletion was successful */
             success: boolean;
         };
+        MarkAllNotificationsReadResponse: {
+            /** @description Number of notifications marked as read */
+            updatedCount: number;
+        };
         MarkReadResponse: {
             /** @description Notification ID */
             id: string;
@@ -5204,6 +5610,8 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
+            /** @description When the group was archived, or null while it is active. An archived group stays visible to everyone, but cannot be changed, and grants no permissions. */
+            archivedAt: string | null;
             /** @description Creation timestamp */
             createdAt: string;
             /** @description Last update timestamp */
@@ -5237,6 +5645,8 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
+            /** @description When the group was archived, or null while it is active. An archived group stays visible to everyone, but cannot be changed, and grants no permissions. */
+            archivedAt: string | null;
             /** @description Creation timestamp */
             createdAt: string;
             /** @description Last update timestamp */
@@ -5249,6 +5659,33 @@ export interface components {
             };
         };
         MyGroupList: components["schemas"]["MyGroup"][];
+        PendingGroupJoinRequestList: {
+            /** @description User ID */
+            userId: string;
+            /** @description Group slug */
+            groupSlug: string;
+            /** @description When the request was sent */
+            createdAt: string;
+            user: {
+                /** @description User ID */
+                id: string;
+                /** @description User display name */
+                name: string;
+                /** @description Username used in profile URLs */
+                username: string | null;
+                /** @description User profile image URL */
+                image: string | null;
+            };
+            group: {
+                /** @description Group slug */
+                slug: string;
+                /** @description Group name */
+                name: string;
+            };
+        }[];
+        UpdateGroupResponse: {
+            message: string;
+        };
         Group: {
             /** @description Group slug */
             slug: string;
@@ -5274,6 +5711,8 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
+            /** @description When the group was archived, or null while it is active. An archived group stays visible to everyone, but cannot be changed, and grants no permissions. */
+            archivedAt: string | null;
             /** @description Creation timestamp */
             createdAt: string;
             /** @description Last update timestamp */
@@ -5317,9 +5756,6 @@ export interface components {
             finesActivated: boolean;
             /** @description User ID of the fines administrator */
             finesAdminId?: string;
-        };
-        UpdateGroupResponse: {
-            message: string;
         };
         UpdateGroup: {
             /**
@@ -5376,12 +5812,20 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
+            /** @description When the group was archived, or null while it is active. An archived group stays visible to everyone, but cannot be changed, and grants no permissions. */
+            archivedAt: string | null;
             /** @description Creation timestamp */
             createdAt: string;
             /** @description Last update timestamp */
             updatedAt: string;
             /** @description What this group calls its leader, e.g. «President» or «Innovasjonsminister». Reconciled with the linked Hovedstyret verv, so both pages name the leader the same. Null means the plain «Leder». */
             leaderTitle: string | null;
+            /** @description Whether this group may be archived at all. False for Hovedstyret and for groups whose roster follows Feide. */
+            archivable: boolean;
+            /** @description Whether a signed-in member can ask to join this group (POST /groups/{slug}/join). True for active interest groups. */
+            acceptsJoinRequests: boolean;
+            /** @description Whether the caller has a pending request to join this group. */
+            viewerHasJoinRequest: boolean;
             /** @description Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student. */
             viewerCanUseFines: boolean;
             /** @description Whether the caller may read the fines they are party to here without taking part in the group's fine system: true for someone who has left the group but was once a member. Never true together with 'viewerCanUseFines'. */
@@ -5539,6 +5983,12 @@ export interface components {
              * @enum {string}
              */
             status?: "pending" | "approved" | "paid" | "rejected";
+            /** @description Reason for the fine. Only the fines admin or the group's leader may change it. */
+            reason?: string;
+            /** @description Number of fines given (may be negative). Only the fines admin or the group's leader may change it. */
+            amount?: number;
+            /** @description Paragraph in the group's lovverk the fine is given under. Null removes the link. Only the fines admin or the group's leader may change it. */
+            lawId?: string | null;
         };
         Law: {
             /** @description Law ID */
@@ -5672,6 +6122,32 @@ export interface components {
              */
             role: "member" | "leader";
         };
+        GroupJoinRequest: {
+            /** @description User ID */
+            userId: string;
+            /** @description Group slug */
+            groupSlug: string;
+            /** @description When the request was sent */
+            createdAt: string;
+        };
+        GroupJoinRequestList: {
+            /** @description User ID */
+            userId: string;
+            /** @description Group slug */
+            groupSlug: string;
+            /** @description When the request was sent */
+            createdAt: string;
+            user: {
+                /** @description User ID */
+                id: string;
+                /** @description User display name */
+                name: string;
+                /** @description Username used in profile URLs */
+                username: string | null;
+                /** @description User profile image URL */
+                image: string | null;
+            };
+        }[];
         GroupPositionHolder: {
             /** @description Holder's user ID */
             userId: string;
@@ -5969,7 +6445,6 @@ export interface components {
             creator: {
                 id: string;
                 name: string;
-                email: string;
             } | null;
             reactions: {
                 userId: string;
@@ -6218,7 +6693,6 @@ export interface components {
             creator: {
                 id: string;
                 name: string;
-                email: string;
             } | null;
             /** @description Whether the job posting has expired */
             expired: boolean;
@@ -6385,8 +6859,6 @@ export interface components {
             githubUrl?: string | "";
             linkedinUrl?: string | "";
             receiveMailCommunication: boolean;
-            /** @default true */
-            publicEventRegistrations: boolean;
             /** @default [] */
             allergies: string[];
             /** @default [] */
@@ -6406,8 +6878,6 @@ export interface components {
             githubUrl?: string | "";
             linkedinUrl?: string | "";
             receiveMailCommunication: boolean;
-            /** @default true */
-            publicEventRegistrations: boolean;
             /** @default [] */
             allergies: string[];
             /** @default [] */
@@ -6423,8 +6893,6 @@ export interface components {
             githubUrl?: string | "";
             linkedinUrl?: string | "";
             receiveMailCommunication: boolean;
-            /** @default true */
-            publicEventRegistrations: boolean;
             /** @default [] */
             allergies: string[];
             /** @default [] */
@@ -6440,8 +6908,6 @@ export interface components {
             githubUrl?: string | "";
             linkedinUrl?: string | "";
             receiveMailCommunication: boolean;
-            /** @default true */
-            publicEventRegistrations: boolean;
             /** @default [] */
             allergies: string[];
             /** @default [] */
@@ -6459,7 +6925,6 @@ export interface components {
             githubUrl?: string | "";
             linkedinUrl?: string | "";
             receiveMailCommunication?: boolean;
-            publicEventRegistrations?: boolean;
             allergies?: string[];
             customAllergies?: string[];
         };
@@ -8192,6 +8657,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description The user was promoted from the waitlist after the event started */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     getMyEventHistory: {
@@ -8493,6 +8965,10 @@ export interface operations {
                 expired?: boolean;
                 /** @description Whether to include only events with open sign-ups */
                 openSignUp?: boolean;
+                /** @description Only return events starting at or after this instant (ISO 8601). Combine with startBefore to fetch a date range, e.g. the weeks a calendar shows. */
+                startFrom?: string;
+                /** @description Only return events starting before this instant (ISO 8601, exclusive). */
+                startBefore?: string;
                 /** @description Only return events organised by this group. Omit to return events from every organizer. */
                 organizerGroupSlug?: string;
                 /** @description How to order the result. 'upcoming' puts ongoing and future events first, soonest first, with past events after them most-recent-first. 'newest' and 'oldest' sort every event by start time, descending and ascending respectively. Omit to keep the legacy default: ascending when expired=false, descending otherwise. */
@@ -8982,6 +9458,167 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
+            };
+        };
+    };
+    listEventMessages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventMessageList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    sendEventMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventMessageContent"];
+            };
+        };
+        responses: {
+            /** @description Message saved and handed to the email and push queues */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventMessage"];
+                };
+            };
+            /** @description Bad Request - Nobody holds a spot on the event */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The same message was sent to this event less than a minute ago */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    testEventMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventMessageContent"];
+            };
+        };
+        responses: {
+            /** @description Test handed to the queues */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -9947,6 +10584,104 @@ export interface operations {
             };
         };
     };
+    createEventReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEventReaction"];
+            };
+        };
+        responses: {
+            /** @description Reaction added successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventReaction"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteEventReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reaction removed successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteEventReactionResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event or reaction not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     listFeedback: {
         parameters: {
             query?: {
@@ -10036,6 +10771,54 @@ export interface operations {
             };
         };
     };
+    getFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Feedback ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackItem"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Feedback not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     deleteFeedback: {
         parameters: {
             query?: never;
@@ -10077,6 +10860,13 @@ export interface operations {
             };
             /** @description Not Found - Feedback not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The author can no longer delete it: it has moved past open, or someone else has voted or commented */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10129,6 +10919,13 @@ export interface operations {
             };
             /** @description Not Found - Feedback not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The author can no longer edit it: it has moved past open, or someone else has voted or commented */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10228,6 +11025,156 @@ export interface operations {
                 };
             };
             /** @description Not Found - Feedback not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listFeedbackComments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Feedback ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackCommentList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Feedback not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createFeedbackComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Feedback ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFeedbackComment"];
+            };
+        };
+        responses: {
+            /** @description Comment created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackComment"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Feedback not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteFeedbackComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Feedback ID */
+                id: string;
+                /** @description Comment ID */
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Comment deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackMessageResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Comment not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -11465,6 +12412,44 @@ export interface operations {
             };
         };
     };
+    markAllNotificationsRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Notifications updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkAllNotificationsReadResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
     markNotificationRead: {
         parameters: {
             query?: never;
@@ -11518,7 +12503,14 @@ export interface operations {
     };
     listGroups: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Match against the group's name or description */
+                search?: string;
+                /** @description Only this group type */
+                type?: string;
+                /** @description 'true' lists the archived groups instead of the active ones. An archived private group is listed only to its members and holders of 'groups:manage', global or scoped to the group. */
+                archived?: "true" | "false";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -11620,6 +12612,145 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
+            };
+        };
+    };
+    listPendingGroupJoinRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Join requests waiting on the caller */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingGroupJoinRequestList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    archiveGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Group archived */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateGroupResponse"];
+                };
+            };
+            /** @description Bad Request - Hovedstyret and groups whose roster follows Feide cannot be archived */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Group with the specified slug does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    unarchiveGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Group restored */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateGroupResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Group with the specified slug does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -12694,6 +13825,298 @@ export interface operations {
                 };
             };
             /** @description Not Found - Group, user, or membership not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    requestToJoinGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request sent */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupJoinRequest"];
+                };
+            };
+            /** @description Bad Request - The group does not take requests */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    withdrawGroupJoinRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request withdrawn */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - No pending request */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    leaveGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Left the group */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request - The group cannot be left this way */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Group or membership not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listGroupJoinRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pending join requests */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupJoinRequestList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    approveGroupJoinRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Requester is now a member */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupMembership"];
+                };
+            };
+            /** @description Bad Request - The group no longer takes requests */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - No pending request */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    declineGroupJoinRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request declined */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - No pending request */
             404: {
                 headers: {
                     [name: string]: unknown;

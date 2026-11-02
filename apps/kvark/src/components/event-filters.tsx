@@ -7,7 +7,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@tihlde/ui/ui/select";
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 
 import { FilterCheckboxOption } from "#/components/filter-checkbox-option";
 import { type FilterPill } from "#/components/filter-pill-row";
@@ -34,12 +34,18 @@ type EventFiltersProps = {
     value: EventFiltersValue;
     categories: Category[];
     onChange: (next: EventFiltersValue) => void;
+    /** Rendered last under "Alternativer". */
+    extraOptions?: ReactNode;
+    /** Kalenderen viser både tidligere og kommende, så valget gjelder ikke der. */
+    hidePastOption?: boolean;
 };
 
 export function EventFilters({
     value,
     categories,
     onChange,
+    extraOptions,
+    hidePastOption = false,
 }: EventFiltersProps) {
     const pills = useMemo<FilterPill[]>(() => {
         const next: FilterPill[] = [];
@@ -58,7 +64,7 @@ export function EventFilters({
                 clear: () => onChange({ ...value, category: "all" }),
             });
         }
-        if (value.showPast) {
+        if (value.showPast && !hidePastOption) {
             next.push({
                 key: "showPast",
                 label: "Tidligere",
@@ -73,7 +79,7 @@ export function EventFilters({
             });
         }
         return next;
-    }, [value, categories, onChange]);
+    }, [value, categories, onChange, hidePastOption]);
 
     return (
         <FilterShell
@@ -111,15 +117,19 @@ export function EventFilters({
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <span className="text-sm">Alternativer</span>
-                        <FilterCheckboxOption
-                            title="Tidligere"
-                            description="Vis kun tidligere arrangementer"
-                            checked={value.showPast}
-                            onCheckedChange={(showPast) =>
-                                onChange({ ...value, showPast })
-                            }
-                        />
+                        <span className="text-sm font-medium">
+                            Alternativer
+                        </span>
+                        {hidePastOption ? null : (
+                            <FilterCheckboxOption
+                                title="Tidligere"
+                                description="Vis kun tidligere arrangementer"
+                                checked={value.showPast}
+                                onCheckedChange={(showPast) =>
+                                    onChange({ ...value, showPast })
+                                }
+                            />
+                        )}
                         <FilterCheckboxOption
                             title="Åpen påmelding"
                             description="Vis kun arrangementer med åpen påmelding"
@@ -128,6 +138,7 @@ export function EventFilters({
                                 onChange({ ...value, openRegistration })
                             }
                         />
+                        {extraOptions}
                     </div>
                 </div>
             }

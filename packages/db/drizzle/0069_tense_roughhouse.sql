@@ -1,1 +1,0 @@
-ALTER TABLE "banner_banner" ADD COLUMN "open_in_new_tab" boolean DEFAULT true NOT NULL;

@@ -1,7 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { env } from "@photon/core/env";
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 
 /** 32 tilfeldige byte i base64url — 43 tegn, umulig å gjette. */
@@ -25,7 +24,7 @@ export async function getOrCreateCalendarToken(
     const { db } = ctx;
 
     const existing = await db.query.userCalendarToken.findFirst({
-        where: eq(schema.userCalendarToken.userId, userId),
+        where: { userId },
         columns: { token: true },
     });
 
@@ -44,7 +43,7 @@ export async function getOrCreateCalendarToken(
     if (row) return row.token;
 
     const stored = await db.query.userCalendarToken.findFirst({
-        where: eq(schema.userCalendarToken.userId, userId),
+        where: { userId },
         columns: { token: true },
     });
 

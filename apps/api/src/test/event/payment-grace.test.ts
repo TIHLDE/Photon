@@ -78,8 +78,7 @@ describe("betalingsfrist på betalte arrangementer", () => {
             await resolveRegistrationsForEvent(eventId, ctx);
 
             const payment = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { and, eq }) =>
-                    and(eq(p.eventId, eventId), eq(p.userId, member.id)),
+                where: { eventId, userId: member.id },
             });
             expect(payment?.expiresAt).toBeTruthy();
 
@@ -139,8 +138,7 @@ describe("betalingsfrist på betalte arrangementer", () => {
             await resolveRegistrationsForEvent(eventId, ctx);
 
             const payment = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { and, eq }) =>
-                    and(eq(p.eventId, eventId), eq(p.userId, member.id)),
+                where: { eventId, userId: member.id },
             });
             expect(payment?.expiresAt).toBeTruthy();
         },

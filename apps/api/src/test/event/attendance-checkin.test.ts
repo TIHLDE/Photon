@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 
@@ -78,10 +77,7 @@ describe("event check-in only accepts users with a spot", () => {
 
             const registration = await ctx.db.query.eventRegistration.findFirst(
                 {
-                    where: and(
-                        eq(schema.eventRegistration.eventId, event.id),
-                        eq(schema.eventRegistration.userId, queued.id),
-                    ),
+                    where: { eventId: event.id, userId: queued.id },
                 },
             );
             expect(registration?.status).toBe("waitlisted");
@@ -116,10 +112,7 @@ describe("event check-in only accepts users with a spot", () => {
 
             const registration = await ctx.db.query.eventRegistration.findFirst(
                 {
-                    where: and(
-                        eq(schema.eventRegistration.eventId, event.id),
-                        eq(schema.eventRegistration.userId, stranger.id),
-                    ),
+                    where: { eventId: event.id, userId: stranger.id },
                 },
             );
             expect(registration).toBeUndefined();

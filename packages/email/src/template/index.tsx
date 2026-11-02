@@ -7,6 +7,7 @@ import ChangeEmailVerificationEmail from "./change-email-verification";
 import CompanyContactEmail from "./company-contact";
 import CustomEmail from "./custom-email";
 import EventEvaluationEmail from "./event-evaluation";
+import EventMessageEmail from "./event-message";
 import FormSubmissionDeletedEmail from "./form-submission-deleted";
 import FormSubmissionEmail from "./form-submission";
 import NotificationMail from "./notification-mail";
@@ -33,6 +34,7 @@ const EMAIL_TEMPLATES = {
     CompanyContactEmail,
     CustomEmail,
     EventEvaluationEmail,
+    EventMessageEmail,
     FormSubmissionDeletedEmail,
     FormSubmissionEmail,
     NotificationMail,
@@ -81,6 +83,7 @@ export {
     ContractSignedEmail,
     CustomEmail,
     EventEvaluationEmail,
+    EventMessageEmail,
     FormSubmissionDeletedEmail,
     FormSubmissionEmail,
     NotificationMail,

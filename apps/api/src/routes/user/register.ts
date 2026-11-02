@@ -5,7 +5,6 @@ import {
     syncDerivedStudyGroups,
 } from "@photon/auth/feide";
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
@@ -109,7 +108,7 @@ export const registerUserRoute = route().post(
          * an error that reads as "nothing happened".
          */
         const studyGroup = await db.query.group.findFirst({
-            where: (g, { eq: equals }) => equals(g.slug, studyProgramSlug),
+            where: { slug: studyProgramSlug },
             columns: { slug: true, type: true },
         });
         if (!studyGroup || studyGroup.type.toLowerCase() !== "study") {
@@ -135,7 +134,7 @@ export const registerUserRoute = route().post(
             chosenUsername ?? usernameFromStudentEmail(email);
         if (derivedUsername) {
             const existing = await db.query.user.findFirst({
-                where: eq(schema.user.username, derivedUsername),
+                where: { username: derivedUsername },
                 columns: { id: true },
             });
             if (existing) {
@@ -205,7 +204,7 @@ export const registerUserRoute = route().post(
              * picking the wrong one.
              */
             const programme = await tx.query.studyProgram.findFirst({
-                where: (p, { eq: equals }) => equals(p.slug, studyProgramSlug),
+                where: { slug: studyProgramSlug },
                 columns: { id: true },
             });
 
@@ -231,7 +230,7 @@ export const registerUserRoute = route().post(
         });
 
         const created = await db.query.user.findFirst({
-            where: eq(schema.user.id, userId),
+            where: { id: userId },
             columns: { username: true, email: true },
         });
 

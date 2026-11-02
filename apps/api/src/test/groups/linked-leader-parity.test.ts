@@ -426,7 +426,7 @@ describe("subgroup leader / linked HS verv parity", () => {
                 expect(write.status).toBe(200);
 
                 const after = await ctx.db.query.groupPosition.findFirst({
-                    where: eq(schema.groupPosition.id, position!.id),
+                    where: { id: position!.id },
                 });
                 expect(after?.name).toBe("Kulturminister");
             },
@@ -481,7 +481,7 @@ describe("subgroup leader / linked HS verv parity", () => {
                 });
 
                 const after = await ctx.db.query.groupPosition.findFirst({
-                    where: eq(schema.groupPosition.id, position!.id),
+                    where: { id: position!.id },
                 });
                 expect(after?.name).toBe("Leder av Tømgruppen");
 

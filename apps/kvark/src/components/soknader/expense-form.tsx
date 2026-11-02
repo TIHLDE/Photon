@@ -82,7 +82,7 @@ export function ExpenseForm({
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-2xl">Utlegg</CardTitle>
+                <CardTitle textSize="2xl">Utlegg</CardTitle>
                 <CardDescription>
                     Har du lagt ut for noe på vegne av TIHLDE? Send inn
                     kvitteringen her, så behandler finansministeren den.

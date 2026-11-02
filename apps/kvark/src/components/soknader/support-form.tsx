@@ -105,7 +105,7 @@ export function SupportForm({
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-2xl">{text.title}</CardTitle>
+                <CardTitle textSize="2xl">{text.title}</CardTitle>
                 <CardDescription>{text.description}</CardDescription>
             </CardHeader>
             <CardContent>

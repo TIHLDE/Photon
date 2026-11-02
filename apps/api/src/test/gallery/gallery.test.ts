@@ -2,7 +2,7 @@ import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 
 const image = (name: string) =>
-    `https://leptonstoragepro.blob.core.windows.net/imagejpeg/${name}.jpg`;
+    `https://images.example.org/gallery/${name}.jpg`;
 
 describe("Gallery System", () => {
     integrationTest(

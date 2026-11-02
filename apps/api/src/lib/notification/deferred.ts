@@ -131,6 +131,7 @@ async function flushInBatch(
                             from: env.MAIL_FROM,
                             to,
                             subject: entry.options.title,
+                            replyTo: entry.options.replyTo,
                         },
                         templateName: template.name,
                         templateProps: template.props,

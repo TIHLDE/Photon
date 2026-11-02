@@ -76,10 +76,10 @@ describe("Feedback", () => {
             expect(found.totalCount).toBe(1);
             expect(found.items[0]?.id).toBe(idea.id);
 
-            // Feedback is anonymous: nothing in the payload names the author,
-            // and the only trace of them is the flag the author sees on their
-            // own row.
-            expect(found.items[0]).not.toHaveProperty("author");
+            // Feedback is anonymous by default. The API still returns the
+            // author; hiding the name from members is the frontend's job.
+            expect(found.items[0]?.isAnonymous).toBe(true);
+            expect(found.items[0]?.author?.id).toBe(author.id);
             expect(found.items[0]?.isAuthor).toBe(false);
 
             const ownList = await (
@@ -178,6 +178,20 @@ describe("Feedback", () => {
             ).json();
             expect(inProgress.totalCount).toBe(1);
 
+            // Resolved items sink below open ones, even when newer.
+            await moderatorClient.api.feedback[":id"].$patch({
+                param: { id: bug.id },
+                json: { status: "closed" },
+            });
+
+            const sorted = await (
+                await otherClient.api.feedback.$get({ query: {} })
+            ).json();
+            expect(sorted.items.map((item) => item.id)).toEqual([
+                idea.id,
+                bug.id,
+            ]);
+
             // === DELETE ===
 
             // Not yours, and no permission.
@@ -188,19 +202,19 @@ describe("Feedback", () => {
             );
             expect(foreignDelete.status).toBe(403);
 
-            // The author may remove their own.
+            // Index has started on it, so it is no longer the author's to remove.
             const ownDelete = await authorClient.api.feedback[":id"].$delete({
                 param: { id: idea.id },
             });
-            expect(ownDelete.status).toBe(200);
+            expect(ownDelete.status).toBe(409);
 
             // A moderator may remove anyone's.
-            const moderatorDelete = await moderatorClient.api.feedback[
-                ":id"
-            ].$delete({
-                param: { id: bug.id },
-            });
-            expect(moderatorDelete.status).toBe(200);
+            for (const id of [idea.id, bug.id]) {
+                const moderatorDelete = await moderatorClient.api.feedback[
+                    ":id"
+                ].$delete({ param: { id } });
+                expect(moderatorDelete.status).toBe(200);
+            }
 
             const empty = await (
                 await moderatorClient.api.feedback.$get({ query: {} })

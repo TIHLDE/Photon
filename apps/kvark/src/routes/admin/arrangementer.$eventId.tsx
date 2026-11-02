@@ -28,7 +28,9 @@ import {
     CopyIcon,
     GraduationCapIcon,
     ListChecksIcon,
+    MailIcon,
     PencilIcon,
+    SendIcon,
     UsersIcon,
     UtensilsCrossedIcon,
     WalletIcon,
@@ -45,6 +47,16 @@ import {
     AccordionTrigger,
 } from "@tihlde/ui/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@tihlde/ui/ui/alert-dialog";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import {
@@ -56,9 +68,11 @@ import {
     CardTitle,
 } from "@tihlde/ui/ui/card";
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
+import { Field, FieldDescription, FieldLabel } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
 import { Label } from "@tihlde/ui/ui/label";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
+import { Textarea } from "@tihlde/ui/ui/textarea";
 import {
     Table,
     TableBody,
@@ -82,10 +96,13 @@ import {
     getEventByIdQuery,
     getEventFormsQuery,
     getEventAllergiesQuery,
+    getEventMessagesQuery,
     getEventPaymentsInfiniteQuery,
     getEventRegistrationsInfiniteQuery,
     refundEventPaymentMutation,
+    sendEventMessageMutation,
     setAttendanceMutation,
+    testEventMessageMutation,
     updateEventMutation,
 } from "#/api/queries/events";
 import { getGroupMembersQuery, getGroupsQuery } from "#/api/queries/groups";
@@ -94,6 +111,7 @@ import { getWrappedCameraQuery } from "#/api/queries/wrapped";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { WrappedTab } from "./-components/wrapped-tab";
 import { AttendanceScannerDialog } from "#/components/attendance-scanner-dialog";
+import { EventMessagePreview } from "#/components/event-message-preview";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { TeknologiministerMessage } from "#/components/teknologiminister-message";
 import { AdminStatCard } from "#/components/admin-stat-card";
@@ -146,6 +164,7 @@ const TABS = [
     "betalinger",
     "allergier",
     "kamera",
+    "meldinger",
 ] as const;
 type TabValue = (typeof TABS)[number];
 
@@ -238,7 +257,10 @@ function EventAdminDetailPage() {
                 ? [{ value: "betalinger" as const, label: "Betalinger" }]
                 : []),
             ...(canManage
-                ? [{ value: "allergier" as const, label: "Allergier" }]
+                ? [
+                      { value: "allergier" as const, label: "Allergier" },
+                      { value: "meldinger" as const, label: "Meldinger" },
+                  ]
                 : []),
             ...(canCurateWrapped
                 ? [{ value: "kamera" as const, label: "Kamera" }]
@@ -315,6 +337,11 @@ function EventAdminDetailPage() {
             {activeTab === "kamera" && canCurateWrapped && (
                 <WrappedTab eventId={eventId} />
             )}
+            {activeTab === "meldinger" && canManage && (
+                <Suspense fallback={<TableSkeleton />}>
+                    <MessagesTab eventId={eventId} />
+                </Suspense>
+            )}
         </Stagger>
     );
 }
@@ -380,6 +407,7 @@ function valuesFromEvent(
         instituteSlug: event.restrictedToInstitute?.slug ?? ALL_INSTITUTES,
         isPaidEvent: event.isPaidEvent,
         canCauseStrikes: event.canCauseStrikes,
+        reactionsAllowed: event.reactionsAllowed,
         // payInfo.price er i øre, mens skjemaet redigerer kroner.
         price: event.payInfo ? String(event.payInfo.price / 100) : "",
         image: null,
@@ -577,7 +605,7 @@ function DetailsTab({ eventId }: { eventId: string }) {
                     ? Number(values.price)
                     : null,
             contactPersonUserId: values.contactPersonUserId || null,
-            reactionsAllowed: false,
+            reactionsAllowed: values.reactionsAllowed,
         };
 
         updateEvent.mutate({ eventId, data });
@@ -835,12 +863,8 @@ function BreakdownCard({
             render={<button type="button" />}
             aria-pressed={active}
             onClick={onClick}
-            className={cn(
-                "cursor-pointer text-left transition-colors",
-                active
-                    ? "bg-primary/10 ring-primary"
-                    : "hover:ring-foreground/20",
-            )}
+            selected={active}
+            className="cursor-pointer text-left"
         >
             <CardContent className="flex items-start justify-between gap-2">
                 <div className="flex min-w-0 flex-col gap-0.5">
@@ -1968,7 +1992,10 @@ function PaymentsTab({
 
             {summary.flaggedCount > 0 ? (
                 <Card className="border-destructive/50">
-                    <CardContent className="flex items-center gap-3 py-4 text-sm">
+                    <CardContent
+                        textSize="sm"
+                        className="flex items-center gap-3 py-4"
+                    >
                         <TriangleAlertIcon className="size-4 shrink-0 text-destructive" />
                         <span>
                             {summary.flaggedCount === 1
@@ -2009,7 +2036,10 @@ function PaymentsTab({
                                     {/* Standardtriggeren toppstiller innholdet;
                                         her er raden to linjer høy, så pila
                                         skal stå midt i den. */}
-                                    <AccordionTrigger className="items-center hover:no-underline">
+                                    <AccordionTrigger
+                                        underlineOnHover={false}
+                                        className="items-center"
+                                    >
                                         <div className="flex flex-1 flex-col gap-2 pr-3 sm:flex-row sm:items-center sm:justify-between">
                                             <div className="flex flex-col">
                                                 <span>{group.user.name}</span>
@@ -2521,6 +2551,239 @@ function AllergiesTab({ eventId }: { eventId: string }) {
                     ? `${data.notAnswered} har ikke svart på allergispørsmålet ennå — det er ikke det samme som at de ikke har allergier.`
                     : "Alle har svart på allergispørsmålet."}
             </p>
+        </div>
+    );
+}
+
+/* ------------------------------- Meldinger ------------------------------ */
+
+const MESSAGE_TITLE_MAX = 80;
+const MESSAGE_BODY_MAX = 1000;
+
+function messageErrorText(status: number | undefined): string | null {
+    if (status === 409) return "Denne meldingen ble nettopp sendt.";
+    if (status === 400) return "Ingen har plass på arrangementet ennå.";
+    return null;
+}
+
+async function describeMessageError(error: unknown): Promise<string> {
+    const status =
+        error && typeof error === "object" && "response" in error
+            ? (error.response as Response | undefined)?.status
+            : undefined;
+    return messageErrorText(status) ?? (await extractErrorMessage(error));
+}
+
+function MessagesTab({ eventId }: { eventId: string }) {
+    const { data: event } = useSuspenseQuery(getEventByIdQuery(eventId));
+    const { data } = useSuspenseQuery(getEventMessagesQuery(eventId));
+    const sendMessage = useMutation(sendEventMessageMutation);
+    const testMessage = useMutation(testEventMessageMutation);
+
+    const [title, setTitle] = useState("");
+    const [body, setBody] = useState("");
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [isTestSent, setIsTestSent] = useState(false);
+
+    const content = { title: title.trim(), body: body.trim() };
+    const isComplete = content.title.length > 0 && content.body.length > 0;
+    const hasRecipients = data.recipientCount > 0;
+    const recipientLabel = `${data.recipientCount} ${data.recipientCount === 1 ? "person" : "personer"}`;
+
+    async function handleTest() {
+        setError(null);
+        setIsTestSent(false);
+        try {
+            await testMessage.mutateAsync({ eventId, data: content });
+            setIsTestSent(true);
+        } catch (err) {
+            setError(await describeMessageError(err));
+        }
+    }
+
+    async function handleSend() {
+        setError(null);
+        try {
+            await sendMessage.mutateAsync({ eventId, data: content });
+            setIsConfirmOpen(false);
+            setTitle("");
+            setBody("");
+            setIsTestSent(false);
+        } catch (err) {
+            setIsConfirmOpen(false);
+            setError(await describeMessageError(err));
+        }
+    }
+
+    return (
+        <div className="flex flex-col gap-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Ny melding</CardTitle>
+                    <CardDescription>
+                        Går ut som varsel, e-post og push til alle som har
+                        plass.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-6 md:grid-cols-2">
+                    <div className="flex flex-col gap-4">
+                        <Field>
+                            <FieldLabel htmlFor="message-title">
+                                Tittel
+                            </FieldLabel>
+                            <Input
+                                id="message-title"
+                                value={title}
+                                maxLength={MESSAGE_TITLE_MAX}
+                                onChange={(e) => {
+                                    setTitle(e.target.value);
+                                    setIsTestSent(false);
+                                }}
+                                placeholder="Bussen går 17:00"
+                            />
+                            <FieldDescription>
+                                {title.length}/{MESSAGE_TITLE_MAX}
+                            </FieldDescription>
+                        </Field>
+                        <Field>
+                            <FieldLabel htmlFor="message-body">
+                                Melding
+                            </FieldLabel>
+                            <Textarea
+                                id="message-body"
+                                value={body}
+                                maxLength={MESSAGE_BODY_MAX}
+                                onChange={(e) => {
+                                    setBody(e.target.value);
+                                    setIsTestSent(false);
+                                }}
+                                rows={8}
+                            />
+                            <FieldDescription>
+                                {body.length}/{MESSAGE_BODY_MAX}
+                            </FieldDescription>
+                        </Field>
+
+                        {error ? (
+                            <Alert variant="destructive">
+                                <TriangleAlertIcon />
+                                <AlertTitle>Ikke sendt</AlertTitle>
+                                <AlertDescription>{error}</AlertDescription>
+                            </Alert>
+                        ) : null}
+                        {isTestSent ? (
+                            <Alert>
+                                <CheckCircle2 />
+                                <AlertTitle>Test sendt</AlertTitle>
+                                <AlertDescription>
+                                    Sjekk e-posten og telefonen din.
+                                </AlertDescription>
+                            </Alert>
+                        ) : null}
+
+                        <p className="text-sm text-muted-foreground">
+                            {hasRecipients
+                                ? `Sendes til ${recipientLabel}.`
+                                : "Ingen har plass ennå."}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            <Button
+                                variant="outline"
+                                disabled={!isComplete || testMessage.isPending}
+                                onClick={handleTest}
+                            >
+                                <MailIcon />
+                                Send test til meg
+                            </Button>
+                            <Button
+                                disabled={!isComplete || !hasRecipients}
+                                onClick={() => {
+                                    setError(null);
+                                    setIsConfirmOpen(true);
+                                }}
+                            >
+                                <SendIcon />
+                                Send
+                            </Button>
+                        </div>
+                    </div>
+
+                    <EventMessagePreview
+                        title={content.title || "Tittel"}
+                        body={content.body || "Meldingen din"}
+                        eventTitle={event.title}
+                        senderName={event.organizer?.name ?? "TIHLDE"}
+                        link={`/arrangementer/${event.slug}`}
+                        logoUrl="/logo512.png"
+                    />
+                </CardContent>
+            </Card>
+
+            <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Send til {recipientLabel}?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            «{content.title}» går ut som varsel, e-post og push.
+                            Dette kan ikke angres.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel variant="outline" size="default">
+                            Avbryt
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            disabled={sendMessage.isPending}
+                            onClick={handleSend}
+                        >
+                            Send
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Sendte meldinger</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {data.messages.length === 0 ? (
+                        <AdminEmptyState
+                            icon={MailIcon}
+                            title="Ingen meldinger ennå"
+                            description="Det du sender, havner her."
+                        />
+                    ) : (
+                        <ul className="flex flex-col gap-6">
+                            {data.messages.map((message) => (
+                                <li
+                                    key={message.id}
+                                    className="flex flex-col gap-1"
+                                >
+                                    <p className="font-medium">
+                                        {message.title}
+                                    </p>
+                                    <p className="whitespace-pre-line text-sm">
+                                        {message.body}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {message.sentBy?.name ??
+                                            "Slettet bruker"}{" "}
+                                        · {formatDateTime(message.createdAt)} ·
+                                        til {message.recipientCount}{" "}
+                                        {message.recipientCount === 1
+                                            ? "person"
+                                            : "personer"}
+                                    </p>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 }

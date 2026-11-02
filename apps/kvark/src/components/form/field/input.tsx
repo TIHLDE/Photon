@@ -15,14 +15,19 @@ import { useField } from "./field";
 type TextInputType = "text" | "email" | "url" | "search" | "tel" | "password";
 
 interface InputProps extends Omit<
-    React.ComponentProps<"input">,
+    React.ComponentProps<typeof InputPrimitive>,
     "value" | "required" | "type"
 > {
     type?: TextInputType;
     children?: React.ReactNode;
 }
 
-export function Input({ children, type = "text", ...props }: InputProps) {
+export function Input({
+    children,
+    type = "text",
+    variant,
+    ...props
+}: InputProps) {
     const field = useFieldContext<string>();
     const ctx = useField();
     const hasAddons = Children.count(children) > 0;
@@ -48,7 +53,7 @@ export function Input({ children, type = "text", ...props }: InputProps) {
             </InputGroup>
         );
     }
-    return <InputPrimitive {...inputProps} />;
+    return <InputPrimitive {...inputProps} variant={variant} />;
 }
 
 type PasswordProps = Omit<InputProps, "type" | "children">;
@@ -80,13 +85,13 @@ export function Password({
 }
 
 interface TextareaProps extends Omit<
-    React.ComponentProps<"textarea">,
+    React.ComponentProps<typeof TextareaPrimitive>,
     "value" | "required"
 > {
     children?: React.ReactNode;
 }
 
-export function Textarea({ children, ...props }: TextareaProps) {
+export function Textarea({ children, variant, ...props }: TextareaProps) {
     const field = useFieldContext<string>();
     const ctx = useField();
     const hasAddons = Children.count(children) > 0;
@@ -111,5 +116,5 @@ export function Textarea({ children, ...props }: TextareaProps) {
             </InputGroup>
         );
     }
-    return <TextareaPrimitive {...inputProps} />;
+    return <TextareaPrimitive {...inputProps} variant={variant} />;
 }

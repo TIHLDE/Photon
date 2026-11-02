@@ -64,27 +64,29 @@ export function FilterShell({
                 <FilterPillRow pills={pills} onClearAll={onClearAll} />
             </div>
 
-            <Card className="hidden md:block">
-                <CardHeader className="min-h-12 pb-4">
-                    <CardTitle>Filter</CardTitle>
-                    {pills.length > 0 && (
-                        <CardAction>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                aria-label="Fjern alle filtre"
-                                onClick={onClearAll}
-                            >
-                                <FilterX />
-                            </Button>
-                        </CardAction>
-                    )}
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                    {searchSlot}
-                    {fieldsSlot}
-                </CardContent>
-            </Card>
+            <div className="hidden flex-col gap-3 md:flex">
+                {searchSlot}
+                <Card>
+                    <CardHeader className="min-h-6">
+                        <CardTitle>Filter</CardTitle>
+                        {pills.length > 0 && (
+                            <CardAction>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label="Fjern alle filtre"
+                                    onClick={onClearAll}
+                                >
+                                    <FilterX />
+                                </Button>
+                            </CardAction>
+                        )}
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-4">
+                        {fieldsSlot}
+                    </CardContent>
+                </Card>
+            </div>
         </>
     );
 }

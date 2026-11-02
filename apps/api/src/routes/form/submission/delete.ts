@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { env } from "~/lib/env";
@@ -57,10 +57,7 @@ export const deleteSubmissionWithReasonRoute = route().delete(
 
         // Get submission with form and user details
         const submission = await db.query.formSubmission.findFirst({
-            where: and(
-                eq(schema.formSubmission.id, submissionId),
-                eq(schema.formSubmission.formId, formId),
-            ),
+            where: { id: submissionId, formId },
             with: {
                 user: true,
                 form: true,

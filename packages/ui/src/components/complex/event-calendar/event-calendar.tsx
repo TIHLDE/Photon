@@ -4,7 +4,6 @@ import {
     format,
     isSameDay,
     isSameMonth,
-    isToday,
     startOfDay,
     startOfMonth,
     startOfWeek,
@@ -14,6 +13,13 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import * as React from "react";
 
 import { Button } from "#/components/ui/button";
+import {
+    Popover,
+    PopoverContent,
+    PopoverHeader,
+    PopoverTitle,
+    PopoverTrigger,
+} from "#/components/ui/popover";
 import { cn } from "#/lib/utils";
 
 /** Days rendered in the grid: always six full weeks, so the height never jumps. */
@@ -35,6 +41,22 @@ type EventCalendarProps = {
     events: readonly EventCalendarEvent[];
     /** Month to show initially. Defaults to the month of the next event. */
     defaultMonth?: Date;
+    /**
+     * The month shown, for callers that load events one month at a time.
+     * Pair with `onMonthChange`; leave both out to let the calendar own it.
+     */
+    month?: Date;
+    onMonthChange?: (month: Date) => void;
+    /**
+     * Events for the shown month are still loading. `events` may then belong
+     * to another month, so the grid is dimmed and "no events" is not claimed.
+     */
+    loading?: boolean;
+    /**
+     * Today's date as local midnight. Defaults to the browser's today; pass
+     * the date in the events' own timezone when that differs.
+     */
+    today?: Date;
     className?: string;
 };
 
@@ -82,16 +104,73 @@ function EventPill({
     });
 }
 
+/**
+ * "+ N flere" on a full day. Opens every event of that day next to the cell,
+ * so the grid keeps its height and the reader keeps their place in the month.
+ */
+function DayOverflow({
+    date,
+    events,
+    overflow,
+}: {
+    date: Date;
+    events: ResolvedEvent[];
+    overflow: number;
+}) {
+    const label = format(date, "EEEE d. MMMM", { locale: nb });
+
+    return (
+        <Popover>
+            <PopoverTrigger
+                aria-label={`Vis alle ${events.length} arrangementer ${label}`}
+                className="cursor-pointer rounded-md px-1.5 text-left text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+            >
+                + {overflow} flere
+            </PopoverTrigger>
+            <PopoverContent
+                align="start"
+                className="max-h-(--available-height) w-64"
+            >
+                <PopoverHeader>
+                    <PopoverTitle className="first-letter:uppercase">
+                        {label}
+                    </PopoverTitle>
+                </PopoverHeader>
+                {/* The heading stays put; only the list scrolls on a packed day. */}
+                <div className="flex min-h-0 flex-col gap-1 overflow-y-auto">
+                    {events.map((event) => (
+                        <EventPill
+                            key={event.id}
+                            event={event}
+                            className="flex shrink-0 items-center gap-2 rounded-md bg-primary/15 px-2 py-1.5 text-sm transition-colors hover:bg-primary/30"
+                        >
+                            <span className="tabular-nums text-muted-foreground">
+                                {format(event.date, "HH:mm")}
+                            </span>
+                            <span className="truncate">{event.title}</span>
+                        </EventPill>
+                    ))}
+                </div>
+            </PopoverContent>
+        </Popover>
+    );
+}
+
 export function EventCalendar({
     events,
     defaultMonth,
+    month: controlledMonth,
+    onMonthChange,
+    loading = false,
+    today: todayProp,
     className,
 }: EventCalendarProps) {
     const resolved = React.useMemo(() => toResolvedEvents(events), [events]);
 
-    const [month, setMonth] = React.useState(
+    const [uncontrolledMonth, setUncontrolledMonth] = React.useState(
         () => defaultMonth ?? initialMonth(resolved),
     );
+    const month = controlledMonth ?? uncontrolledMonth;
     const [selected, setSelected] = React.useState<Date | null>(null);
 
     const cells = React.useMemo(() => {
@@ -121,21 +200,20 @@ export function EventCalendar({
     }, [resolved]);
 
     const goToMonth = (next: Date) => {
-        setMonth(next);
+        setUncontrolledMonth(next);
+        onMonthChange?.(next);
         setSelected(null);
     };
 
-    const selectedEvents = selected
-        ? (byDay.get(dayKey(selected)) ?? [])
-        : (byDay.get(dayKey(startOfDay(new Date()))) ?? []);
+    // Without a pick, the agenda lists today — or, in another month, its first
+    // day, so it never reports on a day outside what the caller loaded.
+    const today = startOfDay(todayProp ?? new Date());
+    const agendaDay =
+        selected ?? (isSameMonth(today, month) ? today : startOfMonth(month));
+    const selectedEvents = byDay.get(dayKey(agendaDay)) ?? [];
 
     return (
-        <div
-            className={cn(
-                "flex w-full flex-col gap-4 overflow-hidden rounded-xl bg-card p-3 ring-1 ring-card-border sm:p-4",
-                className,
-            )}
-        >
+        <div className={cn("flex w-full flex-col gap-4", className)}>
             <div className="flex items-center justify-between gap-2">
                 <h3 className="font-heading text-lg first-letter:uppercase">
                     {format(month, "LLLL yyyy", { locale: nb })}
@@ -144,7 +222,7 @@ export function EventCalendar({
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => goToMonth(startOfMonth(new Date()))}
+                        onClick={() => goToMonth(startOfMonth(today))}
                     >
                         I dag
                     </Button>
@@ -167,7 +245,13 @@ export function EventCalendar({
                 </div>
             </div>
 
-            <div className="flex flex-col overflow-hidden rounded-lg ring-1 ring-border">
+            <div
+                aria-busy={loading}
+                className={cn(
+                    "flex flex-col overflow-hidden rounded-lg ring-1 ring-border transition-opacity",
+                    loading && "opacity-60",
+                )}
+            >
                 <div className="grid grid-cols-7 bg-muted/50">
                     {cells.slice(0, 7).map(({ date }) => (
                         <div
@@ -223,7 +307,7 @@ export function EventCalendar({
                                 <span
                                     className={cn(
                                         "inline-flex size-6 shrink-0 items-center justify-center rounded-full text-xs tabular-nums",
-                                        isToday(date) &&
+                                        isSameDay(date, today) &&
                                             "bg-primary font-medium text-primary-foreground",
                                     )}
                                 >
@@ -256,9 +340,11 @@ export function EventCalendar({
                                         </EventPill>
                                     ))}
                                     {overflow > 0 ? (
-                                        <span className="px-1.5 text-xs text-muted-foreground">
-                                            + {overflow} flere
-                                        </span>
+                                        <DayOverflow
+                                            date={date}
+                                            events={dayEvents}
+                                            overflow={overflow}
+                                        />
                                     ) : null}
                                 </span>
                             </div>
@@ -270,11 +356,11 @@ export function EventCalendar({
             {/* Phones cannot fit pills in the grid, so the picked day is listed out. */}
             <div className="flex flex-col gap-2 sm:hidden">
                 <p className="text-sm font-medium first-letter:uppercase">
-                    {format(selected ?? new Date(), "EEEE d. MMMM", {
+                    {format(agendaDay, "EEEE d. MMMM", {
                         locale: nb,
                     })}
                 </p>
-                {selectedEvents.length === 0 ? (
+                {loading ? null : selectedEvents.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
                         Ingen arrangementer denne dagen.
                     </p>

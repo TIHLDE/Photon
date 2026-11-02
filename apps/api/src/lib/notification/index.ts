@@ -37,6 +37,7 @@ export type SendNotificationOptions = {
         push?: boolean;
     };
     emailTemplate?: EmailTemplateOverride;
+    replyTo?: string;
 };
 
 /**
@@ -68,6 +69,7 @@ export async function sendNotification(
         link,
         sendTo = { website: true, email: true, push: true },
         emailTemplate,
+        replyTo,
     } = options;
 
     // Default all channels to true if not specified
@@ -113,7 +115,7 @@ export async function sendNotification(
     if (shouldSendToEmail) {
         // Get user email
         const user = await ctx.db.query.user.findFirst({
-            where: (user, { eq }) => eq(user.id, userId),
+            where: { id: userId },
         });
 
         if (!user) {
@@ -136,6 +138,7 @@ export async function sendNotification(
                 from: env.MAIL_FROM,
                 to: user.email,
                 subject: title,
+                replyTo,
             },
             template.name,
             template.props,

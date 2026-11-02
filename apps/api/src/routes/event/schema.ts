@@ -568,6 +568,14 @@ export const eventListFilterSchema = PaginationSchema.extend({
         type: "boolean",
         description: "Whether to include only events with open sign-ups",
     }),
+    startFrom: z.iso.datetime({ offset: true }).optional().meta({
+        description:
+            "Only return events starting at or after this instant (ISO 8601). Combine with startBefore to fetch a date range, e.g. the weeks a calendar shows.",
+    }),
+    startBefore: z.iso.datetime({ offset: true }).optional().meta({
+        description:
+            "Only return events starting before this instant (ISO 8601, exclusive).",
+    }),
     organizerGroupSlug: z.string().optional().meta({
         description:
             "Only return events organised by this group. Omit to return events from every organizer.",
@@ -700,10 +708,17 @@ export const eventDetailSchema = Schema(
                 user: z.object({
                     id: z.string().meta({ description: "User ID" }),
                     name: z.string().meta({ description: "User name" }),
+                    image: z
+                        .string()
+                        .nullable()
+                        .meta({ description: "Profile picture (nullable)" }),
                 }),
                 emoji: z.string().meta({ description: "Reaction emoji" }),
             }),
         ),
+        reactionsAllowed: z.boolean().meta({
+            description: "May users react to the event with an emoji?",
+        }),
         isPaidEvent: z.boolean().meta({ description: "Is this a paid event" }),
         payInfo: z
             .object({
@@ -916,6 +931,36 @@ export const deleteEventResponseSchema = Schema(
     }),
 );
 
+export const createEventReactionSchema = Schema(
+    "CreateEventReaction",
+    z.object({
+        emoji: z
+            .string()
+            .min(1)
+            .max(32)
+            .meta({ description: "Emoji reaction (e.g., 👍, ❤️, 😂)" }),
+    }),
+);
+
+export const eventReactionSchema = Schema(
+    "EventReaction",
+    z.object({
+        userId: z.string().meta({ description: "User ID" }),
+        eventId: z.uuid().meta({ description: "Event ID" }),
+        emoji: z.string().meta({ description: "Emoji reaction" }),
+        createdAt: z
+            .string()
+            .meta({ description: "Reaction creation time (ISO 8601)" }),
+    }),
+);
+
+export const deleteEventReactionResponseSchema = Schema(
+    "DeleteEventReactionResponse",
+    z.object({
+        message: z.string(),
+    }),
+);
+
 export const favoriteEventsSchema = Schema(
     "FavoriteEvents",
     z.array(
@@ -1058,10 +1103,6 @@ export const registeredUserSchema = Schema(
             .string()
             .nullable()
             .meta({ description: "User image url (if any)" }),
-        isAnonymous: z.boolean().meta({
-            description:
-                "True when the member has turned off public event registrations, in which case `id`, `name` and `image` carry no identity. Never true for event admins or for the caller's own registration.",
-        }),
         allowPhoto: z.boolean().optional().meta({
             description:
                 "Photo consent for this event. Only included when the caller has event admin permissions.",

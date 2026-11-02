@@ -62,6 +62,32 @@ describe("self-registration and approval", () => {
     );
 
     integrationTest(
+        "a username with a hyphen can sign in again",
+        async ({ ctx }) => {
+            await signUp(ctx, {
+                name: "Ola Nordmann",
+                email: "ola-nordmann@gmail.com",
+                password: "hemmeligpassord",
+            });
+            await ctx.db
+                .update(schema.user)
+                .set({ emailVerified: true })
+                .where(eq(schema.user.email, "ola-nordmann@gmail.com"));
+
+            const res = await ctx.app.request("/api/auth/sign-in/username", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    username: "ola-nordmann",
+                    password: "hemmeligpassord",
+                }),
+            });
+
+            expect(res.status).toBe(200);
+        },
+    );
+
+    integrationTest(
         "a taken username is rejected, and naming one gets past it",
         async ({ ctx }) => {
             await signUp(ctx, {

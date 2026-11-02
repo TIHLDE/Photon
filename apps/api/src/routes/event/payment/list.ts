@@ -1,11 +1,12 @@
 import { schema } from "@photon/db";
-import { and, desc, eq } from "drizzle-orm";
+import { EmptyFilter, and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import z from "zod";
 import { requireEventAccess } from "~/lib/event/access";
 import { isEventOwner } from "~/lib/event/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImageExtra } from "~/lib/user/avatar";
 import { requireAuth } from "~/middleware/auth";
 import {
     PaginationSchema,
@@ -55,18 +56,19 @@ export const listEventPaymentsRoute = route().get(
         const eventId = c.req.param("eventId");
         const { page, pageSize, status } = c.req.valid("query");
 
-        const filters = status
-            ? and(
-                  eq(schema.eventPayment.eventId, eventId),
-                  eq(schema.eventPayment.status, status),
-              )
-            : eq(schema.eventPayment.eventId, eventId);
+        const filters = (payment: typeof schema.eventPayment) =>
+            status
+                ? and(eq(payment.eventId, eventId), eq(payment.status, status))
+                : eq(payment.eventId, eventId);
 
-        const totalCount = await db.$count(schema.eventPayment, filters);
+        const totalCount = await db.$count(
+            schema.eventPayment,
+            filters(schema.eventPayment),
+        );
 
         const payments = await db.query.eventPayment.findMany({
-            where: filters,
-            orderBy: (p) => [desc(p.createdAt)],
+            where: { RAW: (payment) => filters(payment) ?? EmptyFilter },
+            orderBy: { createdAt: "desc" },
             limit: pageSize,
             offset: getPageOffset(page, pageSize),
             with: {
@@ -74,9 +76,9 @@ export const listEventPaymentsRoute = route().get(
                     columns: {
                         id: true,
                         name: true,
-                        image: true,
                         email: true,
                     },
+                    extras: userImageExtra,
                 },
             },
         });

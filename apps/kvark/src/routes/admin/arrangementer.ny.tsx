@@ -98,6 +98,7 @@ const emptyValues: EventFormValues = {
     instituteSlug: ALL_INSTITUTES,
     isPaidEvent: false,
     canCauseStrikes: false,
+    reactionsAllowed: false,
     price: "",
     image: null,
     imageAlt: "",
@@ -292,7 +293,7 @@ function NewEventPage() {
                             ? Number(values.price)
                             : null,
                     contactPersonUserId: values.contactPersonUserId || null,
-                    reactionsAllowed: false,
+                    reactionsAllowed: values.reactionsAllowed,
                 },
             },
             {

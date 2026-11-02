@@ -56,7 +56,7 @@ export const refundEventPaymentRoute = route().post(
         const actor = c.get("user");
 
         const payment = await db.query.eventPayment.findFirst({
-            where: (p, { eq }) => eq(p.id, paymentId),
+            where: { id: paymentId },
         });
 
         // Treat a payment belonging to another event as absent, so the nested
@@ -104,7 +104,7 @@ export const refundEventPaymentRoute = route().post(
         }
 
         const event = await db.query.event.findFirst({
-            where: (e, { eq }) => eq(e.id, eventId),
+            where: { id: eventId },
             columns: { title: true, slug: true },
         });
 

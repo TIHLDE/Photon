@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { env } from "~/lib/env";
@@ -48,7 +47,7 @@ export const createSubmissionRoute = route().post(
 
         // Check if form exists
         const form = await db.query.form.findFirst({
-            where: eq(schema.form.id, formId),
+            where: { id: formId },
         });
 
         if (!form) {
@@ -59,11 +58,11 @@ export const createSubmissionRoute = route().post(
 
         // Check if it's linked to event or group
         const eventForm = await db.query.formEventForm.findFirst({
-            where: eq(schema.formEventForm.formId, formId),
+            where: { formId },
         });
 
         const groupForm = await db.query.formGroupForm.findFirst({
-            where: eq(schema.formGroupForm.formId, formId),
+            where: { formId },
         });
 
         // Validate and create submission
@@ -81,7 +80,7 @@ export const createSubmissionRoute = route().post(
         // Send email notification for group forms
         if (groupForm?.emailReceiverOnSubmit) {
             const submitter = await db.query.user.findFirst({
-                where: eq(schema.user.id, user.id),
+                where: { id: user.id },
             });
 
             if (submitter) {

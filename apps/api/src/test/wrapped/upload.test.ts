@@ -18,13 +18,13 @@ const PNG = { type: "image/png", name: "bilde.png" };
 
 function photosBy(ctx: IntegrationTestContext, userId: string) {
     return ctx.db.query.wrappedPhoto.findMany({
-        where: eq(schema.wrappedPhoto.uploadedById, userId),
+        where: { uploadedById: userId },
     });
 }
 
 function assetsBy(ctx: IntegrationTestContext, userId: string) {
     return ctx.db.query.asset.findMany({
-        where: eq(schema.asset.uploadedById, userId),
+        where: { uploadedById: userId },
     });
 }
 

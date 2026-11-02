@@ -26,11 +26,7 @@ describe("Registration Resolver", () => {
                 // Check registration was resolved to 'registered' status
                 const registration =
                     await ctx.db.query.eventRegistration.findFirst({
-                        where: (reg, { and, eq }) =>
-                            and(
-                                eq(reg.eventId, event.id),
-                                eq(reg.userId, user.id),
-                            ),
+                        where: { eventId: event.id, userId: user.id },
                     });
 
                 expect(registration?.status).toBe("registered");
@@ -72,21 +68,13 @@ describe("Registration Resolver", () => {
 
                 // Check first user got the spot
                 const reg1 = await ctx.db.query.eventRegistration.findFirst({
-                    where: (reg, { and, eq }) =>
-                        and(
-                            eq(reg.eventId, event.id),
-                            eq(reg.userId, user1.id),
-                        ),
+                    where: { eventId: event.id, userId: user1.id },
                 });
                 expect(reg1?.status).toBe("registered");
 
                 // Check second user was waitlisted
                 const reg2 = await ctx.db.query.eventRegistration.findFirst({
-                    where: (reg, { and, eq }) =>
-                        and(
-                            eq(reg.eventId, event.id),
-                            eq(reg.userId, user2.id),
-                        ),
+                    where: { eventId: event.id, userId: user2.id },
                 });
                 expect(reg2?.status).toBe("waitlisted");
                 expect(reg2?.waitlistPosition).toBe(1);
@@ -139,7 +127,7 @@ describe("Registration Resolver", () => {
                 // Check all users are registered
                 const registrations =
                     await ctx.db.query.eventRegistration.findMany({
-                        where: (reg, { eq }) => eq(reg.eventId, event.id),
+                        where: { eventId: event.id },
                     });
 
                 expect(registrations).toHaveLength(10);
@@ -201,11 +189,10 @@ describe("Registration Resolver", () => {
                 // Verify non-prioritized user has the spot
                 const nonPriorityReg1 =
                     await ctx.db.query.eventRegistration.findFirst({
-                        where: (reg, { and, eq }) =>
-                            and(
-                                eq(reg.eventId, event.id),
-                                eq(reg.userId, nonPrioritizedUser.id),
-                            ),
+                        where: {
+                            eventId: event.id,
+                            userId: nonPrioritizedUser.id,
+                        },
                     });
                 expect(nonPriorityReg1?.status).toBe("registered");
 
@@ -224,22 +211,20 @@ describe("Registration Resolver", () => {
                 // Check prioritized user got the spot
                 const priorityReg =
                     await ctx.db.query.eventRegistration.findFirst({
-                        where: (reg, { and, eq }) =>
-                            and(
-                                eq(reg.eventId, event.id),
-                                eq(reg.userId, prioritizedUser.id),
-                            ),
+                        where: {
+                            eventId: event.id,
+                            userId: prioritizedUser.id,
+                        },
                     });
                 expect(priorityReg?.status).toBe("registered");
 
                 // Check non-prioritized user was moved to waitlist
                 const nonPriorityReg2 =
                     await ctx.db.query.eventRegistration.findFirst({
-                        where: (reg, { and, eq }) =>
-                            and(
-                                eq(reg.eventId, event.id),
-                                eq(reg.userId, nonPrioritizedUser.id),
-                            ),
+                        where: {
+                            eventId: event.id,
+                            userId: nonPrioritizedUser.id,
+                        },
                     });
                 expect(nonPriorityReg2?.status).toBe("waitlisted");
             },
@@ -299,11 +284,7 @@ describe("Registration Resolver", () => {
                 // Partial user should be waitlisted (not prioritized)
                 const partialReg =
                     await ctx.db.query.eventRegistration.findFirst({
-                        where: (reg, { and, eq }) =>
-                            and(
-                                eq(reg.eventId, event.id),
-                                eq(reg.userId, partialUser.id),
-                            ),
+                        where: { eventId: event.id, userId: partialUser.id },
                     });
                 expect(partialReg?.status).toBe("waitlisted");
             },
@@ -341,8 +322,7 @@ describe("Registration Resolver", () => {
 
                 // User should be cancelled (blocked due to strike restriction)
                 const reg = await ctx.db.query.eventRegistration.findFirst({
-                    where: (reg, { and, eq }) =>
-                        and(eq(reg.eventId, event.id), eq(reg.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
                 expect(reg?.status).toBe("cancelled");
             },
@@ -375,8 +355,7 @@ describe("Registration Resolver", () => {
 
                 // User should be allowed (4 hours > 3 hours)
                 const reg = await ctx.db.query.eventRegistration.findFirst({
-                    where: (reg, { and, eq }) =>
-                        and(eq(reg.eventId, event.id), eq(reg.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
                 expect(reg?.status).toBe("registered");
             },
@@ -441,11 +420,10 @@ describe("Registration Resolver", () => {
                 // Striked user should NOT swap (despite being in priority pool)
                 const strikedReg =
                     await ctx.db.query.eventRegistration.findFirst({
-                        where: (reg, { and, eq }) =>
-                            and(
-                                eq(reg.eventId, event.id),
-                                eq(reg.userId, strikedUserData.user.id),
-                            ),
+                        where: {
+                            eventId: event.id,
+                            userId: strikedUserData.user.id,
+                        },
                     });
                 expect(strikedReg?.status).toBe("waitlisted");
             },
@@ -543,25 +521,13 @@ describe("Registration Resolver", () => {
 
                 // Check positions: prioritized users should be ahead
                 const reg2 = await ctx.db.query.eventRegistration.findFirst({
-                    where: (reg, { and, eq }) =>
-                        and(
-                            eq(reg.eventId, event.id),
-                            eq(reg.userId, user2Data.user.id),
-                        ),
+                    where: { eventId: event.id, userId: user2Data.user.id },
                 });
                 const reg3 = await ctx.db.query.eventRegistration.findFirst({
-                    where: (reg, { and, eq }) =>
-                        and(
-                            eq(reg.eventId, event.id),
-                            eq(reg.userId, user3Data.user.id),
-                        ),
+                    where: { eventId: event.id, userId: user3Data.user.id },
                 });
                 const reg4 = await ctx.db.query.eventRegistration.findFirst({
-                    where: (reg, { and, eq }) =>
-                        and(
-                            eq(reg.eventId, event.id),
-                            eq(reg.userId, user4Data.user.id),
-                        ),
+                    where: { eventId: event.id, userId: user4Data.user.id },
                 });
 
                 expect(reg3?.waitlistPosition).toBe(1); // Prioritized user first
@@ -586,7 +552,7 @@ describe("Registration Resolver", () => {
                 // Should complete without error
                 const registrations =
                     await ctx.db.query.eventRegistration.findMany({
-                        where: (reg, { eq }) => eq(reg.eventId, event.id),
+                        where: { eventId: event.id },
                     });
                 expect(registrations).toHaveLength(0);
             },

@@ -53,6 +53,18 @@ export const updateFineSchema = Schema(
                 "Evidence image URL. Null removes the picture. Only the fines admin or the group's leader may change it, and the picture it replaces is deleted.",
         }),
         status: fineStatusSchema.optional(),
+        reason: z.string().min(1).optional().meta({
+            description:
+                "Reason for the fine. Only the fines admin or the group's leader may change it.",
+        }),
+        amount: z.number().int().optional().meta({
+            description:
+                "Number of fines given (may be negative). Only the fines admin or the group's leader may change it.",
+        }),
+        lawId: z.uuid().nullable().optional().meta({
+            description:
+                "Paragraph in the group's lovverk the fine is given under. Null removes the link. Only the fines admin or the group's leader may change it.",
+        }),
     }),
 );
 

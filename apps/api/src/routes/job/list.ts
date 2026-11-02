@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, desc, eq, gte, ilike, lte, or } from "drizzle-orm";
+import { EmptyFilter, and, eq, gte, ilike, lte, or } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
@@ -15,6 +15,8 @@ import {
     type jobListItemSchema,
     jobListResponseSchema,
 } from "./schema";
+
+type JobPostTable = typeof schema.jobPost;
 
 export const listRoute = route().get(
     "/",
@@ -39,61 +41,67 @@ export const listRoute = route().get(
 
         const showExpired = expired === true;
 
-        const conditions = and(
-            ...[
-                // Filter out expired unless explicitly requested.
-                //
-                // `isContinuouslyHiring` used to be OR-ed in here without any
-                // time bound, so every ad marked "fortløpende" stayed on the
-                // list forever — including ones posted in 2024. It is now a
-                // label only: every ad carries a deadline and falls off when
-                // it passes. Ads migrated from Lepton without a deadline are
-                // treated as expired.
-                //
-                // An ad is listed through the whole of its deadline day, so
-                // the bound is midnight Oslo today — not the server's midnight,
-                // which is 02:00 Norwegian time and would keep yesterday's ads
-                // up for the first two hours of the day.
-                !showExpired
-                    ? gte(schema.jobPost.deadline, startOfTodayInOslo())
-                    : undefined,
-                // Free text search on title and company
-                search
-                    ? or(
-                          ilike(schema.jobPost.title, `%${search}%`),
-                          ilike(schema.jobPost.company, `%${search}%`),
-                      )
-                    : undefined,
-                // Filter by job type
-                jobType ? eq(schema.jobPost.jobType, jobType) : undefined,
-                years?.length
-                    ? or(
-                          ...years.map((selectedYear) =>
-                              and(
-                                  lte(schema.jobPost.classStart, selectedYear),
-                                  gte(schema.jobPost.classEnd, selectedYear),
-                              ),
-                          ),
-                      )
-                    : undefined,
-                // Filter by year of study: job must target a range that includes the requested class
-                year
-                    ? and(
-                          lte(schema.jobPost.classStart, year),
-                          gte(schema.jobPost.classEnd, year),
-                      )
-                    : undefined,
-            ].filter(Boolean),
-        );
+        const startOfToday = startOfTodayInOslo();
 
-        const jobCount = await db.$count(schema.jobPost, conditions);
+        const conditions = (jobPost: JobPostTable) =>
+            and(
+                ...[
+                    // Filter out expired unless explicitly requested.
+                    //
+                    // `isContinuouslyHiring` used to be OR-ed in here without any
+                    // time bound, so every ad marked "fortløpende" stayed on the
+                    // list forever — including ones posted in 2024. It is now a
+                    // label only: every ad carries a deadline and falls off when
+                    // it passes. Ads migrated from Lepton without a deadline are
+                    // treated as expired.
+                    //
+                    // An ad is listed through the whole of its deadline day, so
+                    // the bound is midnight Oslo today — not the server's midnight,
+                    // which is 02:00 Norwegian time and would keep yesterday's ads
+                    // up for the first two hours of the day.
+                    !showExpired
+                        ? gte(jobPost.deadline, startOfToday)
+                        : undefined,
+                    // Free text search on title and company
+                    search
+                        ? or(
+                              ilike(jobPost.title, `%${search}%`),
+                              ilike(jobPost.company, `%${search}%`),
+                          )
+                        : undefined,
+                    // Filter by job type
+                    jobType ? eq(jobPost.jobType, jobType) : undefined,
+                    years?.length
+                        ? or(
+                              ...years.map((selectedYear) =>
+                                  and(
+                                      lte(jobPost.classStart, selectedYear),
+                                      gte(jobPost.classEnd, selectedYear),
+                                  ),
+                              ),
+                          )
+                        : undefined,
+                    // Filter by year of study: job must target a range that includes the requested class
+                    year
+                        ? and(
+                              lte(jobPost.classStart, year),
+                              gte(jobPost.classEnd, year),
+                          )
+                        : undefined,
+                ].filter(Boolean),
+            );
+
+        const jobCount = await db.$count(
+            schema.jobPost,
+            conditions(schema.jobPost),
+        );
 
         const pageOffset = getPageOffset(page, pageSize);
         const totalPages = getTotalPages(jobCount, pageSize);
 
         const jobs = await db.query.jobPost.findMany({
-            where: conditions,
-            orderBy: [desc(schema.jobPost.createdAt)],
+            where: { RAW: (jobPost) => conditions(jobPost) ?? EmptyFilter },
+            orderBy: { createdAt: "desc" },
             limit: pageSize,
             offset: pageOffset,
         });

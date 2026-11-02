@@ -7,6 +7,7 @@ import { claimPrivateAssetUrls } from "~/lib/asset";
 import { sendNotification } from "~/lib/notification";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImageExtra } from "~/lib/user/avatar";
 import { requireAuth } from "~/middleware/auth";
 import { isFinesEligibleMember } from "./permissions";
 import { createFineSchema, fineSchema } from "./schema";
@@ -169,11 +170,15 @@ export const createFineRoute = route().post(
         // Re-read with the relations the response schema promises — the insert
         // itself returns the bare row, without user, creator or paragraph.
         const newFine = await db.query.fine.findFirst({
-            where: eq(schema.fine.id, created.id),
+            where: { id: created.id },
             with: {
-                user: { columns: { id: true, name: true, image: true } },
+                user: {
+                    columns: { id: true, name: true },
+                    extras: userImageExtra,
+                },
                 createdByUser: {
-                    columns: { id: true, name: true, image: true },
+                    columns: { id: true, name: true },
+                    extras: userImageExtra,
                 },
                 law: { columns: { id: true, paragraph: true, title: true } },
             },

@@ -17,7 +17,9 @@ export const notification = pgTable(
         id: uuid("id").primaryKey().defaultRandom(),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                onDelete: "cascade",
+            }),
         title: text("title").notNull(),
         description: text("description").notNull(),
         link: text("link"),
@@ -70,7 +72,9 @@ export const notificationDevice = pgTable(
         id: uuid("id").primaryKey().defaultRandom(),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                onDelete: "cascade",
+            }),
         /** Expo push token, e.g. "ExponentPushToken[xxxxxxxx]". */
         token: text("token").notNull(),
         platform: text("platform", { enum: ["ios", "android"] }).notNull(),

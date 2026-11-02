@@ -47,7 +47,7 @@ export async function backfillRolePermissions({ db }: AppContext) {
         await managedRolePermissions(),
     )) {
         const existing = await db.query.role.findFirst({
-            where: eq(schema.role.name, roleName),
+            where: { name: roleName },
         });
         if (!existing) continue;
 

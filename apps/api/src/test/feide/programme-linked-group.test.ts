@@ -4,7 +4,7 @@ import {
     partitionByCampus,
     resolveCampus,
 } from "@photon/auth/feide";
-import { type DbSchema, schema } from "@photon/db";
+import { type DbRelations, schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { describe, expect } from "vitest";
@@ -61,7 +61,7 @@ const DURING_REGISTRATION = new Date("2026-08-19T12:00:00Z");
 
 type FeideGroups = Parameters<typeof parseValidStudyPrograms>[0];
 
-const seed = async (db: NodePgDatabase<DbSchema>) => {
+const seed = async (db: NodePgDatabase<DbRelations>) => {
     await db
         .insert(schema.group)
         .values([
@@ -107,7 +107,7 @@ const seed = async (db: NodePgDatabase<DbSchema>) => {
 };
 
 const signIn = async (
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     userId: string,
     groups: FeideGroups,
     now: Date,
@@ -127,7 +127,10 @@ const signIn = async (
     );
 };
 
-const membershipOf = async (db: NodePgDatabase<DbSchema>, userId: string) => {
+const membershipOf = async (
+    db: NodePgDatabase<DbRelations>,
+    userId: string,
+) => {
     const [row] = await db
         .select({ role: schema.groupMembership.role })
         .from(schema.groupMembership)
@@ -141,7 +144,7 @@ const membershipOf = async (db: NodePgDatabase<DbSchema>, userId: string) => {
     return row ?? null;
 };
 
-const finesAdminOf = async (db: NodePgDatabase<DbSchema>) => {
+const finesAdminOf = async (db: NodePgDatabase<DbRelations>) => {
     const [row] = await db
         .select({ finesAdminId: schema.group.finesAdminId })
         .from(schema.group)

@@ -47,7 +47,7 @@ export function GalleryCard({
             <CardHeader>
                 <CardTitle>{title}</CardTitle>
                 {description && (
-                    <CardDescription className="line-clamp-2">
+                    <CardDescription lineClamp={2}>
                         {description}
                     </CardDescription>
                 )}

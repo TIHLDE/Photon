@@ -27,8 +27,7 @@ async function strikeTotal(
     userId: string,
 ) {
     const rows = await ctx.db.query.eventStrike.findMany({
-        where: (s, { and, eq }) =>
-            and(eq(s.userId, userId), eq(s.eventId, eventId)),
+        where: { userId, eventId },
     });
     return sumBy(rows, (r) => r.count);
 }
@@ -39,8 +38,7 @@ async function statusOf(
     userId: string,
 ) {
     const reg = await ctx.db.query.eventRegistration.findFirst({
-        where: (r, { and, eq }) =>
-            and(eq(r.eventId, eventId), eq(r.userId, userId)),
+        where: { eventId, userId },
     });
     return reg?.status;
 }
@@ -80,7 +78,7 @@ describe("No-show strikes", () => {
             expect(await strikeTotal(ctx, event.id, attendee.id)).toBe(0);
 
             const updated = await ctx.db.query.event.findFirst({
-                where: (e, { eq }) => eq(e.id, event.id),
+                where: { id: event.id },
             });
             expect(updated?.noShowProcessedAt).not.toBeNull();
         },
@@ -106,7 +104,7 @@ describe("No-show strikes", () => {
 
             // Left unprocessed so a later run can pick it up after check-in.
             const updated = await ctx.db.query.event.findFirst({
-                where: (e, { eq }) => eq(e.id, event.id),
+                where: { id: event.id },
             });
             expect(updated?.noShowProcessedAt).toBeNull();
         },
@@ -163,6 +161,43 @@ describe("No-show strikes", () => {
 
             expect(await statusOf(ctx, event.id, noShow.id)).toBe("no_show");
             expect(await strikeTotal(ctx, event.id, noShow.id)).toBe(2);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "no strike for a no-show who was promoted from the waitlist after the start",
+        async ({ ctx }) => {
+            await ctx.utils.setupEventCategories();
+            const event = await endedEvent(ctx, true);
+            const attendee = await ctx.utils.createTestUser();
+            const latePromoted = await ctx.utils.createTestUser();
+            const earlyPromoted = await ctx.utils.createTestUser();
+            await register(ctx, event.id, attendee.id, "attended");
+            await ctx.db.insert(schema.eventRegistration).values([
+                {
+                    eventId: event.id,
+                    userId: latePromoted.id,
+                    status: "registered",
+                    promotedFromWaitlistAt: new Date(
+                        event.start.getTime() + HOUR,
+                    ),
+                },
+                {
+                    eventId: event.id,
+                    userId: earlyPromoted.id,
+                    status: "registered",
+                    promotedFromWaitlistAt: new Date(
+                        event.start.getTime() - HOUR,
+                    ),
+                },
+            ]);
+
+            const result = await processEventNoShows(event.id, ctx);
+
+            expect(result.struck).toBe(1);
+            expect(await strikeTotal(ctx, event.id, latePromoted.id)).toBe(0);
+            expect(await strikeTotal(ctx, event.id, earlyPromoted.id)).toBe(2);
         },
         500_000,
     );

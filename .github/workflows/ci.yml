@@ -15,7 +15,7 @@ concurrency:
 jobs:
     changes:
         name: Check backend changes
-        runs-on: ubuntu-latest
+        runs-on: blacksmith-2vcpu-ubuntu-2404
         permissions:
             contents: read
             pull-requests: read
@@ -36,7 +36,7 @@ jobs:
                         - '!scripts/**'
     check:
         name: Check Code Quality
-        runs-on: ubuntu-latest
+        runs-on: blacksmith-4vcpu-ubuntu-2404
         steps:
             - name: Checkout code
               uses: actions/checkout@v3
@@ -51,10 +51,8 @@ jobs:
             - name: Check formatting
               run: bun run format
 
-            # Drizzle applies migrations by journal timestamp, not by index, and
-            # silently skips any that are not newer than the last one applied.
-            - name: Check migration order
-              run: bun run db:check-order
+            - name: Check migrations
+              run: bun run db:check
 
             - name: Check building
               run: bun run build
@@ -65,7 +63,7 @@ jobs:
         name: API Tests (${{ matrix.shard }})
         needs: [check, changes]
         if: needs.changes.outputs.backend == 'true'
-        runs-on: ubuntu-latest
+        runs-on: blacksmith-4vcpu-ubuntu-2404
         strategy:
             fail-fast: false
             matrix:
@@ -79,15 +77,13 @@ jobs:
               uses: tihlde/tihlde-workflows/.github/setup-bun@v1
 
             - name: Run API test shard
-              env:
-                  MAX_TEST_WORKERS: 2
               run: bun run test -- --filter=@photon/api --log-order=stream -- --shard=${{ matrix.shard }}
 
     other-tests:
         name: Other Tests
         needs: [check, changes]
         if: needs.changes.outputs.backend == 'true'
-        runs-on: ubuntu-latest
+        runs-on: blacksmith-2vcpu-ubuntu-2404
         steps:
             - name: Checkout code
               uses: actions/checkout@v3

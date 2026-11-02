@@ -6,7 +6,7 @@ import {
 } from "@photon/core/services/queue";
 import { InMemoryObjectStorageService } from "@photon/core/services/storage";
 import { env } from "@photon/core/env";
-import { type DbSchema, createDb, schema } from "@photon/db";
+import { type DbRelations, createDb, schema } from "@photon/db";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { type ApiKeyService, createApiKeyService } from "./service/api-key";
 import {
@@ -28,7 +28,7 @@ import { RedisCache, InMemoryCache } from "@photon/core/services/cache";
  * This allows for dependency injection and makes testing easier.
  */
 export interface AppContext {
-    db: NodePgDatabase<DbSchema>;
+    db: NodePgDatabase<DbRelations>;
     auth: AuthInstance;
 
     /** Cache service instance */
@@ -83,6 +83,20 @@ export async function createAppContext(): Promise<AppContext> {
             additionalTrusted: [env.ROOT_URL, ...env.WEBSITE_ORIGINS],
             basePath: "/api/auth",
         },
+        // Production only: dev sign-ups never meet the challenge, even with
+        // the key in .env.
+        turnstile:
+            env.NODE_ENV === "production" && env.TURNSTILE_SECRET_KEY
+                ? {
+                      secretKey: env.TURNSTILE_SECRET_KEY,
+                      // The sites the API already trusts — never localhost here.
+                      hostnames: env.WEBSITE_ORIGINS.flatMap((origin) =>
+                          URL.canParse(origin)
+                              ? [new URL(origin).hostname]
+                              : [],
+                      ),
+                  }
+                : undefined,
         DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM: false,
     });
     return {
@@ -96,7 +110,7 @@ export async function createAppContext(): Promise<AppContext> {
     };
 }
 export async function createTestAppContext(options?: {
-    db?: NodePgDatabase<DbSchema>;
+    db?: NodePgDatabase<DbRelations>;
 }): Promise<AppContext> {
     const db = options?.db ?? createDb({ connectionString: env.DATABASE_URL });
     const cache = new InMemoryCache();

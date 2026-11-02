@@ -33,7 +33,7 @@ export const deleteRoute = route().delete(
         const { id } = c.req.param();
 
         const existing = await db.query.banner.findFirst({
-            where: eq(schema.banner.id, id),
+            where: { id },
         });
 
         if (!existing) {

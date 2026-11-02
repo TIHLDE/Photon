@@ -68,7 +68,7 @@ async function main() {
     }
 
     const group = await db.query.group.findFirst({
-        where: (g, { eq: is }) => is(g.slug, slug),
+        where: { slug },
     });
 
     if (!group) {
@@ -86,7 +86,7 @@ async function main() {
      */
     const program = isStudyGroup
         ? await db.query.studyProgram.findFirst({
-              where: (p, { eq: is }) => is(p.slug, slug),
+              where: { slug },
           })
         : null;
 

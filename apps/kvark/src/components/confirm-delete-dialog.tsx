@@ -61,7 +61,7 @@ export function ConfirmDeleteDialog({
                 {confirmationPhrase ? (
                     <div className="flex flex-col gap-2">
                         <p className="text-sm font-medium">
-                            Skriv:
+                            Skriv:{" "}
                             <span className="rounded bg-muted px-1 py-0.5 font-mono">
                                 {confirmationPhrase}
                             </span>
@@ -84,7 +84,12 @@ export function ConfirmDeleteDialog({
                     <AlertDialogAction
                         variant="destructive"
                         disabled={isPending || !isConfirmationValid}
-                        onClick={onConfirm}
+                        onClick={() => {
+                            // Knappen er allerede deaktivert, men sjekken her
+                            // gjør at frasen ikke står og faller på `disabled`.
+                            if (isPending || !isConfirmationValid) return;
+                            onConfirm();
+                        }}
                     >
                         {confirmLabel}
                     </AlertDialogAction>

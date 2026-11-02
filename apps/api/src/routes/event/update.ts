@@ -143,6 +143,11 @@ export const updateRoute = route().put(
                         message: `Group with slug "${body.organizerGroupSlug}" does not exist`,
                     });
                 }
+                if (group[0]?.archivedAt) {
+                    throw new HTTPException(400, {
+                        message: `Gruppen "${body.organizerGroupSlug}" er arkivert og kan ikke arrangere`,
+                    });
+                }
 
                 // Handing the event to another group is arranging an event
                 // for that group, so it takes the permission there too —
@@ -385,7 +390,7 @@ export const updateRoute = route().put(
 
             if (priorityChanged) {
                 const refreshed = await tx.query.event.findFirst({
-                    where: (e, { eq }) => eq(e.id, eventId),
+                    where: { id: eventId },
                     columns: {
                         enforcesPreviousStrikes: true,
                         isPaidEvent: true,
@@ -481,7 +486,7 @@ export const updateRoute = route().put(
          */
         if (capacityGrew) {
             const event = await db.query.event.findFirst({
-                where: (e, { eq }) => eq(e.id, eventId),
+                where: { id: eventId },
                 with: { pools: true, priorityUsers: true },
             });
 

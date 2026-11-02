@@ -76,8 +76,7 @@ export const paymentWebhookRoute = route().post(
 
         // Get payment details from our database using providerPaymentId
         const payment = await db.query.eventPayment.findFirst({
-            where: (payment, { eq }) =>
-                eq(payment.providerPaymentId, reference),
+            where: { providerPaymentId: reference },
         });
 
         if (!payment) {
@@ -170,11 +169,10 @@ export const paymentWebhookRoute = route().post(
                 const registration = await db.query.eventRegistration.findFirst(
                     {
                         columns: { status: true },
-                        where: (r, { and, eq }) =>
-                            and(
-                                eq(r.eventId, payment.eventId),
-                                eq(r.userId, payment.userId),
-                            ),
+                        where: {
+                            eventId: payment.eventId,
+                            userId: payment.userId,
+                        },
                     },
                 );
 

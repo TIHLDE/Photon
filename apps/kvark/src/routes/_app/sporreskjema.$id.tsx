@@ -62,7 +62,7 @@ function FormPage() {
             </Button>
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-2xl">
+                    <CardTitle textSize="2xl">
                         {form.resource_type === "EventForm" &&
                         form.type === "evaluation"
                             ? "Evaluering"

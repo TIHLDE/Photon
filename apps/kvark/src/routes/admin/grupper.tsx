@@ -71,6 +71,7 @@ import {
     createGroupMutation,
     getGroupMembersQuery,
     getGroupsQuery,
+    getPendingJoinRequestsQuery,
     removeGroupMemberMutation,
     updateGroupMutation,
 } from "#/api/queries/groups";
@@ -78,6 +79,7 @@ import {
     getGroupSignaturesQuery,
     revokeSignatureMutation,
 } from "#/api/queries/contracts";
+import { GroupJoinRequestsPanel } from "#/components/group-join-requests-panel";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminImageField } from "#/components/admin-image-field";
 import { richRegistry } from "#/components/markdown/directives/presets";
@@ -481,6 +483,18 @@ function GroupCard({
     // eller å være lederen dens.
     const canManageMembers =
         useScopedPermission("groups:manage", `group:${group.slug}`) || isLeader;
+    // Én felles spørring for alle kortene i stedet for én per gruppe.
+    const canViewJoinRequests =
+        canManageMembers && group.type.toLowerCase() === "interestgroup";
+    const { data: pendingJoinRequests } = useQuery({
+        ...getPendingJoinRequestsQuery(),
+        enabled: canViewJoinRequests,
+    });
+    const joinRequestCount = canViewJoinRequests
+        ? (pendingJoinRequests?.filter(
+              (request) => request.groupSlug === group.slug,
+          ).length ?? 0)
+        : 0;
 
     async function handleSave() {
         setError(null);
@@ -541,6 +555,13 @@ function GroupCard({
                         </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
+                        {joinRequestCount > 0 ? (
+                            <Badge>
+                                {joinRequestCount === 1
+                                    ? "1 forespørsel"
+                                    : `${joinRequestCount} forespørsler`}
+                            </Badge>
+                        ) : null}
                         {group.contractSigningRequired && (
                             <Badge variant="secondary">Kontrakt påkrevd</Badge>
                         )}
@@ -758,6 +779,7 @@ function GroupMembersTable({
 
     return (
         <div className="flex flex-col gap-2">
+            <GroupJoinRequestsPanel groupSlug={groupSlug} enabled={enabled} />
             <h4>Medlemmer</h4>
             {!members || members.length === 0 ? (
                 <p>Ingen medlemmer i denne gruppen.</p>

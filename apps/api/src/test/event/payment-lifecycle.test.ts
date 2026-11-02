@@ -64,14 +64,12 @@ describe("Paid event payment lifecycle", () => {
 
                 const registration =
                     await ctx.db.query.eventRegistration.findFirst({
-                        where: (r, { and, eq }) =>
-                            and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                        where: { eventId: event.id, userId: user.id },
                     });
                 expect(registration?.status).toBe("registered");
 
                 const payment = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { and, eq }) =>
-                        and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
                 expect(payment).toBeDefined();
                 expect(payment?.status).toBe("pending");
@@ -113,7 +111,7 @@ describe("Paid event payment lifecycle", () => {
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 const payments = await ctx.db.query.eventPayment.findMany({
-                    where: (p, { eq }) => eq(p.eventId, event.id),
+                    where: { eventId: event.id },
                 });
                 expect(payments).toHaveLength(0);
 
@@ -155,14 +153,12 @@ describe("Paid event payment lifecycle", () => {
 
                 // user1 registered (with obligation), user2 waitlisted.
                 const payment1 = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { and, eq }) =>
-                        and(eq(p.eventId, event.id), eq(p.userId, user1.id)),
+                    where: { eventId: event.id, userId: user1.id },
                 });
                 expect(payment1?.status).toBe("pending");
 
                 const waitReg = await ctx.db.query.eventRegistration.findFirst({
-                    where: (r, { and, eq }) =>
-                        and(eq(r.eventId, event.id), eq(r.userId, user2.id)),
+                    where: { eventId: event.id, userId: user2.id },
                 });
                 expect(waitReg?.status).toBe("waitlisted");
 
@@ -175,33 +171,30 @@ describe("Paid event payment lifecycle", () => {
 
                 // user1 is cancelled, obligation failed.
                 const reg1 = await ctx.db.query.eventRegistration.findFirst({
-                    where: (r, { and, eq }) =>
-                        and(eq(r.eventId, event.id), eq(r.userId, user1.id)),
+                    where: { eventId: event.id, userId: user1.id },
                 });
                 expect(reg1?.status).toBe("cancelled");
 
                 const failedPayment = await ctx.db.query.eventPayment.findFirst(
                     {
-                        where: (p, { eq }) => eq(p.id, payment1?.id ?? ""),
+                        where: { id: payment1?.id ?? "" },
                     },
                 );
                 expect(failedPayment?.status).toBe("failed");
 
                 // user2 promoted into the freed spot, with their own obligation.
                 const reg2 = await ctx.db.query.eventRegistration.findFirst({
-                    where: (r, { and, eq }) =>
-                        and(eq(r.eventId, event.id), eq(r.userId, user2.id)),
+                    where: { eventId: event.id, userId: user2.id },
                 });
                 expect(reg2?.status).toBe("registered");
                 expect(reg2?.waitlistPosition).toBeNull();
 
                 const payment2 = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { and, eq }) =>
-                        and(
-                            eq(p.eventId, event.id),
-                            eq(p.userId, user2.id),
-                            eq(p.status, "pending"),
-                        ),
+                    where: {
+                        eventId: event.id,
+                        userId: user2.id,
+                        status: "pending",
+                    },
                 });
                 expect(payment2).toBeDefined();
             },
@@ -224,8 +217,7 @@ describe("Paid event payment lifecycle", () => {
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 const payment = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { and, eq }) =>
-                        and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
 
                 // Mark as paid before the timer fires.
@@ -241,8 +233,7 @@ describe("Paid event payment lifecycle", () => {
                 });
 
                 const reg = await ctx.db.query.eventRegistration.findFirst({
-                    where: (r, { and, eq }) =>
-                        and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
                 expect(reg?.status).toBe("registered");
             },
@@ -289,11 +280,7 @@ describe("Paid event payment lifecycle", () => {
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 const paidPayment = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { and, eq }) =>
-                        and(
-                            eq(p.eventId, event.id),
-                            eq(p.userId, nonPrioritized.id),
-                        ),
+                    where: { eventId: event.id, userId: nonPrioritized.id },
                 });
                 await ctx.db
                     .update(schema.eventPayment)
@@ -328,21 +315,16 @@ describe("Paid event payment lifecycle", () => {
 
                 const priorityReg =
                     await ctx.db.query.eventRegistration.findFirst({
-                        where: (r, { and, eq }) =>
-                            and(
-                                eq(r.eventId, event.id),
-                                eq(r.userId, prioritizedData.user.id),
-                            ),
+                        where: {
+                            eventId: event.id,
+                            userId: prioritizedData.user.id,
+                        },
                     });
                 expect(priorityReg?.status).toBe("registered");
 
                 const swappedReg =
                     await ctx.db.query.eventRegistration.findFirst({
-                        where: (r, { and, eq }) =>
-                            and(
-                                eq(r.eventId, event.id),
-                                eq(r.userId, nonPrioritized.id),
-                            ),
+                        where: { eventId: event.id, userId: nonPrioritized.id },
                     });
                 expect(swappedReg?.status).toBe("waitlisted");
 
@@ -350,7 +332,7 @@ describe("Paid event payment lifecycle", () => {
                 expect(refundMock).not.toHaveBeenCalled();
 
                 const untouched = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { eq }) => eq(p.id, paidPayment?.id ?? ""),
+                    where: { id: paidPayment?.id ?? "" },
                 });
                 expect(untouched?.status).toBe("paid");
             },
@@ -383,8 +365,7 @@ describe("Paid event payment lifecycle", () => {
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 const payment = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { and, eq }) =>
-                        and(eq(p.eventId, event.id), eq(p.userId, paidUser.id)),
+                    where: { eventId: event.id, userId: paidUser.id },
                 });
                 await ctx.db
                     .update(schema.eventPayment)
@@ -408,7 +389,7 @@ describe("Paid event payment lifecycle", () => {
                     );
 
                 const eventWithRelations = await ctx.db.query.event.findFirst({
-                    where: (e, { eq }) => eq(e.id, event.id),
+                    where: { id: event.id },
                     with: { pools: true, priorityUsers: true },
                 });
                 if (!eventWithRelations) throw new Error("event vanished");
@@ -418,15 +399,13 @@ describe("Paid event payment lifecycle", () => {
                 await promoteFromWaitlist(ctx, eventWithRelations);
 
                 const reg = await ctx.db.query.eventRegistration.findFirst({
-                    where: (r, { and, eq }) =>
-                        and(eq(r.eventId, event.id), eq(r.userId, paidUser.id)),
+                    where: { eventId: event.id, userId: paidUser.id },
                 });
                 expect(reg?.status).toBe("registered");
 
                 // No second obligation, and no new countdown to lose the spot to.
                 const payments = await ctx.db.query.eventPayment.findMany({
-                    where: (p, { and, eq }) =>
-                        and(eq(p.eventId, event.id), eq(p.userId, paidUser.id)),
+                    where: { eventId: event.id, userId: paidUser.id },
                 });
                 expect(payments).toHaveLength(1);
                 expect(payments[0]?.status).toBe("paid");
@@ -470,7 +449,7 @@ describe("Paid event payment lifecycle", () => {
                     .where(eq(schema.eventPayment.eventId, event.id));
 
                 const eventWithRelations = await ctx.db.query.event.findFirst({
-                    where: (e, { eq }) => eq(e.id, event.id),
+                    where: { id: event.id },
                     with: { pools: true, priorityUsers: true },
                 });
                 if (!eventWithRelations) throw new Error("event vanished");
@@ -479,8 +458,7 @@ describe("Paid event payment lifecycle", () => {
                 await promoteFromWaitlist(ctx, eventWithRelations);
 
                 const payment = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { and, eq }) =>
-                        and(eq(p.eventId, event.id), eq(p.userId, waiting.id)),
+                    where: { eventId: event.id, userId: waiting.id },
                 });
                 expect(payment?.status).toBe("pending");
 
@@ -515,8 +493,7 @@ describe("Paid event payment lifecycle", () => {
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 const payment = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { and, eq }) =>
-                        and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
 
                 expect(payment?.expiresAt?.getTime()).toBe(start.getTime());
@@ -565,8 +542,7 @@ describe("Paid event payment lifecycle", () => {
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 const payment = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { and, eq }) =>
-                        and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
 
                 // They are in the middle of a checkout when the timer fires.
@@ -586,13 +562,12 @@ describe("Paid event payment lifecycle", () => {
 
                 // The spot survives, and the extension is recorded.
                 const reg = await ctx.db.query.eventRegistration.findFirst({
-                    where: (r, { and, eq }) =>
-                        and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
                 expect(reg?.status).toBe("registered");
 
                 const extended = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { eq }) => eq(p.id, payment?.id ?? ""),
+                    where: { id: payment?.id ?? "" },
                 });
                 expect(extended?.status).toBe("pending");
                 expect(extended?.deadlineExtendedAt).not.toBeNull();
@@ -608,8 +583,7 @@ describe("Paid event payment lifecycle", () => {
 
                 const afterSecond =
                     await ctx.db.query.eventRegistration.findFirst({
-                        where: (r, { and, eq }) =>
-                            and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                        where: { eventId: event.id, userId: user.id },
                     });
                 expect(afterSecond?.status).toBe("cancelled");
             },
@@ -644,8 +618,7 @@ describe("Paid event payment lifecycle", () => {
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 const payment = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { and, eq }) =>
-                        and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
                 await ctx.db
                     .update(schema.eventPayment)
@@ -662,13 +635,12 @@ describe("Paid event payment lifecycle", () => {
                 });
 
                 const reg = await ctx.db.query.eventRegistration.findFirst({
-                    where: (r, { and, eq }) =>
-                        and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
                 expect(reg?.status).toBe("registered");
 
                 const reconciled = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { eq }) => eq(p.id, payment?.id ?? ""),
+                    where: { id: payment?.id ?? "" },
                 });
                 expect(reconciled?.status).toBe("paid");
                 expect(reconciled?.receivedPaymentAt).not.toBeNull();
@@ -696,8 +668,7 @@ describe("Paid event payment lifecycle", () => {
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 const payment = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { and, eq }) =>
-                        and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
                 await ctx.db
                     .update(schema.eventPayment)
@@ -716,13 +687,12 @@ describe("Paid event payment lifecycle", () => {
                 // Vipps downtime is not the member's fault: the spot stands,
                 // but an organiser is told the outcome rested on a guess.
                 const reg = await ctx.db.query.eventRegistration.findFirst({
-                    where: (r, { and, eq }) =>
-                        and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
                 expect(reg?.status).toBe("registered");
 
                 const flagged = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { eq }) => eq(p.id, payment?.id ?? ""),
+                    where: { id: payment?.id ?? "" },
                 });
                 expect(flagged?.flag).toBe("provider_unreachable");
                 expect(flagged?.flaggedAt).not.toBeNull();
@@ -765,8 +735,7 @@ describe("Paid event payment lifecycle", () => {
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 const first = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { and, eq }) =>
-                        and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
 
                 // The abort webhook has already landed on the first attempt.
@@ -798,15 +767,13 @@ describe("Paid event payment lifecycle", () => {
                 });
 
                 const reg = await ctx.db.query.eventRegistration.findFirst({
-                    where: (r, { and, eq }) =>
-                        and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
                 expect(reg?.status).toBe("cancelled");
 
                 // Both attempts are closed out, so nothing is left pending.
                 const payments = await ctx.db.query.eventPayment.findMany({
-                    where: (p, { and, eq }) =>
-                        and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
                 expect(payments.every((p) => p.status === "failed")).toBe(true);
             },
@@ -852,8 +819,7 @@ describe("Paid event payment lifecycle", () => {
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 const first = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { and, eq }) =>
-                        and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
                 await ctx.db
                     .update(schema.eventPayment)
@@ -882,8 +848,7 @@ describe("Paid event payment lifecycle", () => {
                 });
 
                 const reg = await ctx.db.query.eventRegistration.findFirst({
-                    where: (r, { and, eq }) =>
-                        and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
                 expect(reg?.status).toBe("registered");
             },
@@ -917,8 +882,7 @@ describe("Paid event payment lifecycle", () => {
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const abandoned = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { and, eq }) =>
-                    and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                where: { eventId: event.id, userId: user.id },
             });
 
             await ctx.db
@@ -965,8 +929,7 @@ describe("Paid event payment lifecycle", () => {
                 });
 
                 const reg = await ctx.db.query.eventRegistration.findFirst({
-                    where: (r, { and, eq }) =>
-                        and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
                 expect(reg?.status).toBe("registered");
             },
@@ -1011,8 +974,7 @@ describe("Paid event payment lifecycle", () => {
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 const abandoned = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { and, eq }) =>
-                        and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
 
                 const off = await client.api.event[
@@ -1036,8 +998,7 @@ describe("Paid event payment lifecycle", () => {
                 });
 
                 const reg = await ctx.db.query.eventRegistration.findFirst({
-                    where: (r, { and, eq }) =>
-                        and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                    where: { eventId: event.id, userId: user.id },
                 });
                 expect(reg?.status).toBe("registered");
             },

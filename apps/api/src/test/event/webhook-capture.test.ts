@@ -86,7 +86,7 @@ describe("Vipps webhook — capture and status mapping", () => {
             });
 
             const row = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { eq }) => eq(p.id, payment.id),
+                where: { id: payment.id },
             });
             expect(row?.status).toBe("paid");
             expect(row?.receivedPaymentAt).not.toBeNull();
@@ -134,7 +134,7 @@ describe("Vipps webhook — capture and status mapping", () => {
 
             expect(res.status).toBe(200);
             const row = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { eq }) => eq(p.id, payment.id),
+                where: { id: payment.id },
             });
             expect(row?.status).toBe("refunded");
         },
@@ -161,7 +161,7 @@ describe("Vipps webhook — capture and status mapping", () => {
             });
 
             const row = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { eq }) => eq(p.id, payment.id),
+                where: { id: payment.id },
             });
             expect(row?.receivedPaymentAt?.toISOString()).toBe(
                 stamped.toISOString(),
@@ -197,7 +197,7 @@ describe("Vipps webhook — capture and status mapping", () => {
             });
 
             const row = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { eq }) => eq(p.id, payment.id),
+                where: { id: payment.id },
             });
             expect(row?.status).toBe("paid");
             expect(row?.flag).toBe("paid_without_spot");
@@ -227,7 +227,7 @@ describe("Vipps webhook — capture and status mapping", () => {
             });
 
             const row = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { eq }) => eq(p.id, payment.id),
+                where: { id: payment.id },
             });
             expect(row?.flag).toBeNull();
         },
@@ -250,7 +250,7 @@ describe("Vipps webhook — capture and status mapping", () => {
             });
 
             const row = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { eq }) => eq(p.id, payment.id),
+                where: { id: payment.id },
             });
             expect(row?.status).toBe("failed");
             expect(vi.mocked(vipps.capturePayment)).not.toHaveBeenCalled();

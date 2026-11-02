@@ -119,7 +119,7 @@ describe("event institute restriction", () => {
             expect(response.status).toBe(403);
 
             const rows = await ctx.db.query.eventRegistration.findMany({
-                where: (reg, { eq }) => eq(reg.eventId, event.id),
+                where: { eventId: event.id },
             });
             expect(rows).toHaveLength(0);
         },

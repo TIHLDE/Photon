@@ -144,7 +144,7 @@ describe("Priority pools and the study a member has left", () => {
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const rows = await ctx.db.query.eventRegistration.findMany({
-                where: (r, { eq }) => eq(r.eventId, event.id),
+                where: { eventId: event.id },
             });
             const statusOf = (userId: string) =>
                 rows.find((r) => r.userId === userId)?.status;
@@ -188,7 +188,7 @@ describe("Priority pools and the study a member has left", () => {
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const rows = await ctx.db.query.eventRegistration.findMany({
-                where: (r, { eq }) => eq(r.eventId, event.id),
+                where: { eventId: event.id },
             });
             const statusOf = (userId: string) =>
                 rows.find((r) => r.userId === userId)?.status;

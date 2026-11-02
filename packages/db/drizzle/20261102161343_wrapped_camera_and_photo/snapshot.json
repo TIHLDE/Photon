@@ -1,0 +1,535 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "5635aa20-cb81-4b00-a92d-a9c95df5484a",
+  "prevIds": [
+    "cb29b8cb-5e97-4431-a9b1-804502719390"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "wrapped_camera"
+      ],
+      "writes": [
+        "s|tbl|public.wrapped_camera",
+        "n|tbl|public.wrapped_camera",
+        "e|tbl|public.wrapped_camera",
+        "n|rel|public.wrapped_camera",
+        "n|type|public.wrapped_camera",
+        "n|rel|public.wrapped_camera_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "wrapped_photo"
+      ],
+      "writes": [
+        "s|tbl|public.wrapped_photo",
+        "n|tbl|public.wrapped_photo",
+        "e|tbl|public.wrapped_photo",
+        "n|rel|public.wrapped_photo",
+        "n|type|public.wrapped_photo",
+        "n|rel|public.wrapped_photo_pkey",
+        "n|rel|public.wrapped_photo_asset_key_key"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "wrapped_photo",
+        "wrapped_photo_event_id_uploaded_by_id_idx"
+      ],
+      "writes": [
+        "s|idx|public.wrapped_photo_event_id_uploaded_by_id_idx",
+        "n|idx|public.wrapped_photo_event_id_uploaded_by_id_idx",
+        "e|idx|public.wrapped_photo_event_id_uploaded_by_id_idx",
+        "n|rel|public.wrapped_photo_event_id_uploaded_by_id_idx"
+      ],
+      "reads": [
+        "n|tbl|public.wrapped_photo",
+        "n|sch|public",
+        "n|col|public.wrapped_photo.event_id",
+        "n|col|public.wrapped_photo.uploaded_by_id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "wrapped_camera"
+      ],
+      "writes": [
+        "s|fk|public.wrapped_camera.wrapped_camera_event_id_event_event_id_fkey",
+        "n|fk|public.wrapped_camera.wrapped_camera_event_id_event_event_id_fkey",
+        "e|fk|public.wrapped_camera.wrapped_camera_event_id_event_event_id_fkey",
+        "n|con|public.wrapped_camera.wrapped_camera_event_id_event_event_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.wrapped_camera",
+        "n|sch|public",
+        "n|tbl|public.event_event",
+        "n|sch|public",
+        "n|col|public.wrapped_camera.event_id",
+        "n|col|public.event_event.id",
+        "e|uniqueness|public.event_event.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "wrapped_photo"
+      ],
+      "writes": [
+        "s|fk|public.wrapped_photo.wrapped_photo_event_id_event_event_id_fkey",
+        "n|fk|public.wrapped_photo.wrapped_photo_event_id_event_event_id_fkey",
+        "e|fk|public.wrapped_photo.wrapped_photo_event_id_event_event_id_fkey",
+        "n|con|public.wrapped_photo.wrapped_photo_event_id_event_event_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.wrapped_photo",
+        "n|sch|public",
+        "n|tbl|public.event_event",
+        "n|sch|public",
+        "n|col|public.wrapped_photo.event_id",
+        "n|col|public.event_event.id",
+        "e|uniqueness|public.event_event.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "wrapped_photo"
+      ],
+      "writes": [
+        "s|fk|public.wrapped_photo.wrapped_photo_uploaded_by_id_auth_user_id_fkey",
+        "n|fk|public.wrapped_photo.wrapped_photo_uploaded_by_id_auth_user_id_fkey",
+        "e|fk|public.wrapped_photo.wrapped_photo_uploaded_by_id_auth_user_id_fkey",
+        "n|con|public.wrapped_photo.wrapped_photo_uploaded_by_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.wrapped_photo",
+        "n|sch|public",
+        "n|tbl|public.auth_user",
+        "n|sch|public",
+        "n|col|public.wrapped_photo.uploaded_by_id",
+        "n|col|public.auth_user.id",
+        "e|uniqueness|public.auth_user.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "wrapped_camera",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "wrapped_photo",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_camera",
+        "name": "event_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_camera",
+        "name": "enabled",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_camera",
+        "name": "shots_per_person",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "5",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_camera",
+        "name": "created_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_camera",
+        "name": "updated_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "gen_random_uuid()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo",
+        "name": "event_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo",
+        "name": "uploaded_by_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo",
+        "name": "asset_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo",
+        "name": "source",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'camera'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo",
+        "name": "submitted_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo",
+        "name": "selected_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo",
+        "name": "created_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo",
+        "name": "updated_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo",
+        "name": "wrapped_photo_event_id_uploaded_by_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "event_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "uploaded_by_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_camera",
+        "name": "wrapped_camera_event_id_event_event_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "event_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "event_event",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo",
+        "name": "wrapped_photo_event_id_event_event_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "event_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "event_event",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo",
+        "name": "wrapped_photo_uploaded_by_id_auth_user_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "uploaded_by_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "auth_user",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_camera",
+        "name": "wrapped_camera_pkey",
+        "columns": [
+          "event_id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo",
+        "name": "wrapped_photo_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo",
+        "name": "wrapped_photo_asset_key_key",
+        "nameExplicit": false,
+        "columns": [
+          "asset_key"
+        ],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_camera",
+        "name": "wrapped_camera_shots_per_person_positive",
+        "value": "\"shots_per_person\" > 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo",
+        "name": "wrapped_photo_source_valid",
+        "value": "\"source\" in ('camera', 'camera_roll')",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

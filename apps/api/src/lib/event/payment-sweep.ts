@@ -1,5 +1,3 @@
-import { schema } from "@photon/db";
-import { and, asc, eq, isNotNull, lte } from "drizzle-orm";
 import type { AppContext } from "../ctx";
 import { handlePaymentExpiration } from "./payment";
 
@@ -38,14 +36,13 @@ export async function enforceExpiredPaymentDeadlines(
 ): Promise<number> {
     const overdue = await ctx.db.query.eventPayment.findMany({
         columns: { id: true, eventId: true, userId: true },
-        where: and(
-            eq(schema.eventPayment.status, "pending"),
-            isNotNull(schema.eventPayment.expiresAt),
-            lte(schema.eventPayment.expiresAt, new Date()),
-        ),
+        where: {
+            status: "pending",
+            expiresAt: { isNotNull: true, lte: new Date() },
+        },
         // Eldste først: de har ventet lengst, og med et tak per runde er det
         // dem som ellers ville blitt stående igjen.
-        orderBy: asc(schema.eventPayment.expiresAt),
+        orderBy: { expiresAt: "asc" },
         limit: SWEEP_BATCH_SIZE,
     });
 

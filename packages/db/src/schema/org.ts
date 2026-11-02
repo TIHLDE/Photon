@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { defineRelationsPart } from "drizzle-orm";
 import {
     boolean,
     index,
@@ -96,10 +96,14 @@ export const studyProgramMembership = pgTable(
     {
         userId: varchar("user_id", { length: 255 })
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                onDelete: "cascade",
+            }),
         studyProgramId: serial("study_program_id")
             .notNull()
-            .references(() => studyProgram.id, { onDelete: "cascade" }),
+            .references(() => studyProgram.id, {
+                onDelete: "cascade",
+            }),
         /**
          * Cohort start year, or null when Feide only gave us the programme.
          *
@@ -111,14 +115,7 @@ export const studyProgramMembership = pgTable(
          * carries campus stickiness and proves enrolment later.
          */
         startYear: integer("start_year"),
-        /**
-         * Where {@link startYear} came from; see {@link studyYearSource}.
-         *
-         * NULL means we have a row but never resolved a year — an alumnus
-         * whose Feide membership is inactive, so guessing an intake for them
-         * would stamp someone who finished years ago as a fresh first-year.
-         */
-        startYearSource: studyYearSource("start_year_source"),
+        ...timestamps,
         /**
          * The campus we have positively confirmed the member studies at, from
          * their Feide course codes. NTNU runs BIDATA and BDIGSEC on several
@@ -134,6 +131,14 @@ export const studyProgramMembership = pgTable(
          * fills in on their next login with campus-marked courses.
          */
         confirmedCampus: campus("confirmed_campus"),
+        /**
+         * Where {@link startYear} came from; see {@link studyYearSource}.
+         *
+         * NULL means we have a row but never resolved a year — an alumnus
+         * whose Feide membership is inactive, so guessing an intake for them
+         * would stamp someone who finished years ago as a fresh first-year.
+         */
+        startYearSource: studyYearSource("start_year_source"),
         /**
          * Whether Feide still reported this programme as active at the
          * member's last login — `membership.active` on the Dataporten group,
@@ -161,25 +166,13 @@ export const studyProgramMembership = pgTable(
          * see how stale the flag is — it only ever updates on login.
          */
         feideCheckedAt: timestamp("feide_checked_at"),
-        ...timestamps,
     },
-    (t) => [primaryKey({ columns: [t.userId, t.studyProgramId] })],
-);
-
-export const studyProgramMembershipRelations = relations(
-    studyProgramMembership,
-    ({ one }) => ({
-        user: one(user, {
-            fields: [studyProgramMembership.userId],
-            references: [user.id],
+    (t) => [
+        primaryKey({
+            columns: [t.userId, t.studyProgramId],
         }),
-        studyProgram: one(studyProgram, {
-            fields: [studyProgramMembership.studyProgramId],
-            references: [studyProgram.id],
-        }),
-    }),
+    ],
 );
-
 /**
  * NB: `group.type` is a `varchar`, not this enum, and holds upper-case values
  * from the Lepton migration — including `SPORTSTEAM`, which is not listed
@@ -205,17 +198,34 @@ export const group = pgTable("group", {
      * the group, not its mark — use {@link group.logoUrl} for avatars.
      */
     imageUrl: varchar("image_url", { length: 600 }),
+    name: varchar("name", { length: 128 }).notNull(),
+    slug: varchar("slug", { length: 128 }).notNull().primaryKey(),
+    description: text("description"),
+    contactEmail: varchar("contact_email", { length: 200 }),
+    type: varchar("type", { length: 50 }).notNull(),
+    finesInfo: text("fine_info").notNull(),
+    finesActivated: boolean("fines_activated").notNull(),
+    finesAdminId: text("fines_admin_id").references(() => user.id),
+    ...timestamps,
+    contractSigningRequired: boolean("contract_signing_required")
+        .notNull()
+        .default(false),
+    /**
+     * The NTNU institute this group belongs to. Only meaningful for study
+     * groups (type "study"), where it decides which institute-restricted
+     * events the members may register for. NULL means "no institute", which
+     * is the case for every non-study group and is never a reason to grant
+     * access — an institute-restricted event admits nobody without a match.
+     */
+    instituteId: integer("institute_id").references(() => institute.id, {
+        onDelete: "set null",
+    }),
     /**
      * Logo: the square mark rendered in avatars, chips and cards (circle or
      * square). This is what the Lepton import filled — the old `image_url`
      * values were logos and were moved here in migration 0039.
      */
     logoUrl: varchar("logo_url", { length: 600 }),
-    name: varchar("name", { length: 128 }).notNull(),
-    slug: varchar("slug", { length: 128 }).notNull().primaryKey(),
-    description: text("description"),
-    contactEmail: varchar("contact_email", { length: 200 }),
-    type: varchar("type", { length: 50 }).notNull(),
     /**
      * Second axis below `type`, and today only meaningful for interest groups:
      * "GRUPPE" or "IDRETTSGRUPPE". The organisation chart renders the two as
@@ -227,29 +237,6 @@ export const group = pgTable("group", {
      * that has not been categorised (Lepton left `trakk` that way).
      */
     subtype: varchar("subtype", { length: 50 }),
-    finesInfo: text("fine_info").notNull(),
-    finesActivated: boolean("fines_activated").notNull(),
-    finesAdminId: text("fines_admin_id").references(() => user.id),
-    /**
-     * The study programme whose active students belong in this group.
-     *
-     * Set on the private group a programme runs for itself — today only
-     * Digital transformasjon has one. While it is set, the Feide sync keeps
-     * the roster in step with enrolment: an active student is enrolled on
-     * login, and someone Feide reports as finished is removed.
-     *
-     * A column rather than a slug in the code, so the next programme that
-     * wants one is a row to write instead of a deploy.
-     *
-     * Null for every other group, which is almost all of them — including the
-     * `STUDY` groups themselves. Those already mirror a programme by sharing
-     * its slug, and pointing them here too would give the sync two ways to
-     * manage the same roster.
-     */
-    studyProgramId: integer("study_program_id").references(
-        () => studyProgram.id,
-        { onDelete: "set null" },
-    ),
     /**
      * Permissions held by whoever is currently the group's leader, granted
      * scoped to this group ("permission@group:<slug>").
@@ -265,34 +252,6 @@ export const group = pgTable("group", {
      * changes.
      */
     leaderPermissions: text("leader_permissions").array().notNull().default([]),
-    /**
-     * Permissions the group's leader holds org-wide, unscoped.
-     *
-     * The counterpart to {@link memberGlobalPermissions}, for the rights that
-     * belong to the person rather than the group: presidenten answering
-     * kontaktskjema for all of TIHLDE, not just for HS. Without it, the only
-     * home for those was a verv duplicating the leader row.
-     *
-     * Bounded by the same rule as everything else: you may only grant what you
-     * hold yourself, at the scope you grant it at — so a group leader, who
-     * holds nothing globally, can never write this list.
-     */
-    leaderGlobalPermissions: text("leader_global_permissions")
-        .array()
-        .notNull()
-        .default([]),
-    /**
-     * What this group calls its leader — "President" in HS, "Leder" everywhere
-     * else. Purely a label: leadership is still the membership role, and the
-     * permissions above still follow whoever holds it.
-     *
-     * Exists because the alternative was a verv named "President" pointing at
-     * the same person as the leader row, which then showed up twice in the
-     * admin table and needed its permissions kept in sync by hand.
-     *
-     * NULL means "no custom title" and reads as "Leder".
-     */
-    leaderTitle: varchar("leader_title", { length: 128 }),
     /**
      * Permissions every member of this group holds, granted scoped to the
      * group ("permission@group:<slug>"). The leader is a member too, so these
@@ -325,33 +284,66 @@ export const group = pgTable("group", {
         .array()
         .notNull()
         .default([]),
-    contractSigningRequired: boolean("contract_signing_required")
-        .notNull()
-        .default(false),
     /**
-     * The NTNU institute this group belongs to. Only meaningful for study
-     * groups (type "study"), where it decides which institute-restricted
-     * events the members may register for. NULL means "no institute", which
-     * is the case for every non-study group and is never a reason to grant
-     * access — an institute-restricted event admits nobody without a match.
+     * What this group calls its leader — "President" in HS, "Leder" everywhere
+     * else. Purely a label: leadership is still the membership role, and the
+     * permissions above still follow whoever holds it.
+     *
+     * Exists because the alternative was a verv named "President" pointing at
+     * the same person as the leader row, which then showed up twice in the
+     * admin table and needed its permissions kept in sync by hand.
+     *
+     * NULL means "no custom title" and reads as "Leder".
      */
-    instituteId: integer("institute_id").references(() => institute.id, {
-        onDelete: "set null",
-    }),
-    ...timestamps,
+    leaderTitle: varchar("leader_title", { length: 128 }),
+    /**
+     * Permissions the group's leader holds org-wide, unscoped.
+     *
+     * The counterpart to {@link memberGlobalPermissions}, for the rights that
+     * belong to the person rather than the group: presidenten answering
+     * kontaktskjema for all of TIHLDE, not just for HS. Without it, the only
+     * home for those was a verv duplicating the leader row.
+     *
+     * Bounded by the same rule as everything else: you may only grant what you
+     * hold yourself, at the scope you grant it at — so a group leader, who
+     * holds nothing globally, can never write this list.
+     */
+    leaderGlobalPermissions: text("leader_global_permissions")
+        .array()
+        .notNull()
+        .default([]),
+    /**
+     * The study programme whose active students belong in this group.
+     *
+     * Set on the private group a programme runs for itself — today only
+     * Digital transformasjon has one. While it is set, the Feide sync keeps
+     * the roster in step with enrolment: an active student is enrolled on
+     * login, and someone Feide reports as finished is removed.
+     *
+     * A column rather than a slug in the code, so the next programme that
+     * wants one is a row to write instead of a deploy.
+     *
+     * Null for every other group, which is almost all of them — including the
+     * `STUDY` groups themselves. Those already mirror a programme by sharing
+     * its slug, and pointing them here too would give the sync two ways to
+     * manage the same roster.
+     */
+    studyProgramId: integer("study_program_id").references(
+        () => studyProgram.id,
+        {
+            onDelete: "set null",
+        },
+    ),
+    /**
+     * Set while the group is archived, null otherwise.
+     *
+     * Archiving is the reversible alternative to deleting: the row, roster,
+     * verv, bøter and laws all stay, but the group leaves the organisation
+     * chart, only its members can open it, nothing in it can be changed, and
+     * it grants no permissions. Clearing the column brings all of that back.
+     */
+    archivedAt: timestamp("archived_at"),
 });
-
-export const groupRelations = relations(group, ({ one }) => ({
-    institute: one(institute, {
-        fields: [group.instituteId],
-        references: [institute.id],
-    }),
-}));
-
-export const instituteRelations = relations(institute, ({ many }) => ({
-    groups: many(group),
-}));
-
 export const groupMembershipRole = pgEnum("org_group_membership_role", [
     "member",
     "leader",
@@ -365,15 +357,21 @@ export const groupMembership = pgTable(
     {
         userId: varchar("user_id", { length: 255 })
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                onDelete: "cascade",
+            }),
         groupSlug: varchar("group_slug", { length: 128 })
             .notNull()
-            .references(() => group.slug, { onDelete: "cascade" }),
+            .references(() => group.slug, {
+                onDelete: "cascade",
+            }),
         role: groupMembershipRole("role").notNull().default("member"),
         ...timestamps,
     },
     (t) => [
-        primaryKey({ columns: [t.userId, t.groupSlug] }),
+        primaryKey({
+            columns: [t.userId, t.groupSlug],
+        }),
         /**
          * The primary key answers "which groups is this user in"; this index
          * answers the other half, "who is in this group" — member lists,
@@ -383,21 +381,32 @@ export const groupMembership = pgTable(
         index("group_membership_group_slug_idx").on(t.groupSlug),
     ],
 );
-
-export const groupMembershipRelations = relations(
-    groupMembership,
-    ({ one }) => ({
-        user: one(user, {
-            fields: [groupMembership.userId],
-            references: [user.id],
+/**
+ * Pending requests to join an interest group. A row lives only until a leader
+ * answers it: approving turns it into a membership, declining deletes it.
+ */
+export const groupJoinRequest = pgTable(
+    "group_join_request",
+    {
+        userId: varchar("user_id", { length: 255 })
+            .notNull()
+            .references(() => user.id, {
+                onDelete: "cascade",
+            }),
+        groupSlug: varchar("group_slug", { length: 128 })
+            .notNull()
+            .references(() => group.slug, {
+                onDelete: "cascade",
+            }),
+        ...timestamps,
+    },
+    (t) => [
+        primaryKey({
+            columns: [t.userId, t.groupSlug],
         }),
-        group: one(group, {
-            fields: [groupMembership.groupSlug],
-            references: [group.slug],
-        }),
-    }),
+        index("group_join_request_group_slug_idx").on(t.groupSlug),
+    ],
 );
-
 /**
  * Ended group memberships — the "tidligere medlemmer" list on a group page.
  *
@@ -420,10 +429,14 @@ export const groupMembershipHistory = pgTable(
         id: uuid("id").primaryKey().defaultRandom(),
         userId: varchar("user_id", { length: 255 })
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                onDelete: "cascade",
+            }),
         groupSlug: varchar("group_slug", { length: 128 })
             .notNull()
-            .references(() => group.slug, { onDelete: "cascade" }),
+            .references(() => group.slug, {
+                onDelete: "cascade",
+            }),
         role: varchar("role", { length: 50 }).notNull().default("member"),
         startedAt: timestamp("started_at").notNull(),
         /**
@@ -455,21 +468,6 @@ export const groupMembershipHistory = pgTable(
         ),
     ],
 );
-
-export const groupMembershipHistoryRelations = relations(
-    groupMembershipHistory,
-    ({ one }) => ({
-        user: one(user, {
-            fields: [groupMembershipHistory.userId],
-            references: [user.id],
-        }),
-        group: one(group, {
-            fields: [groupMembershipHistory.groupSlug],
-            references: [group.slug],
-        }),
-    }),
-);
-
 /**
  * Scope for permissions granted by a group position (verv/tittel).
  *
@@ -500,18 +498,14 @@ export const groupPosition = pgTable("group_position", {
     id: uuid("id").primaryKey().defaultRandom(),
     groupSlug: varchar("group_slug", { length: 128 })
         .notNull()
-        .references(() => group.slug, { onDelete: "cascade" }),
+        .references(() => group.slug, {
+            onDelete: "cascade",
+        }),
     name: varchar("name", { length: 128 }).notNull(),
     description: text("description"),
     permissions: text("permissions").array().notNull().default([]),
     scope: groupPositionScope("scope").notNull().default("group"),
-    /**
-     * Held across all of TIHLDE by a verv that otherwise belongs to its group,
-     * like NoKs Annonsør: the group assigns it, but job postings have no group
-     * to narrow to. Always empty on a `global` verv, whose `permissions`
-     * already apply everywhere.
-     */
-    globalPermissions: text("global_permissions").array().notNull().default([]),
+    ...timestamps,
     /**
      * Marks this position as THE leader-verv for another group (a subgroup).
      * When that group's leadership changes, the new leader is auto-added to
@@ -521,9 +515,17 @@ export const groupPosition = pgTable("group_position", {
      */
     linkedGroupSlug: varchar("linked_group_slug", { length: 128 }).references(
         () => group.slug,
-        { onDelete: "cascade" },
+        {
+            onDelete: "cascade",
+        },
     ),
-    ...timestamps,
+    /**
+     * Held across all of TIHLDE by a verv that otherwise belongs to its group,
+     * like NoKs Annonsør: the group assigns it, but job postings have no group
+     * to narrow to. Always empty on a `global` verv, whose `permissions`
+     * already apply everywhere.
+     */
+    globalPermissions: text("global_permissions").array().notNull().default([]),
 });
 
 /**
@@ -539,14 +541,20 @@ export const groupPositionHolder = pgTable(
     {
         positionId: uuid("position_id")
             .notNull()
-            .references(() => groupPosition.id, { onDelete: "cascade" }),
+            .references(() => groupPosition.id, {
+                onDelete: "cascade",
+            }),
         userId: varchar("user_id", { length: 255 })
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                onDelete: "cascade",
+            }),
         /** User who assigned the position (audit trail) */
         grantedBy: varchar("granted_by", { length: 255 }).references(
             () => user.id,
-            { onDelete: "set null" },
+            {
+                onDelete: "set null",
+            },
         ),
         ...timestamps,
     },
@@ -556,32 +564,6 @@ export const groupPositionHolder = pgTable(
         }),
     ],
 );
-
-export const groupPositionRelations = relations(
-    groupPosition,
-    ({ one, many }) => ({
-        group: one(group, {
-            fields: [groupPosition.groupSlug],
-            references: [group.slug],
-        }),
-        holders: many(groupPositionHolder),
-    }),
-);
-
-export const groupPositionHolderRelations = relations(
-    groupPositionHolder,
-    ({ one }) => ({
-        position: one(groupPosition, {
-            fields: [groupPositionHolder.positionId],
-            references: [groupPosition.id],
-        }),
-        user: one(user, {
-            fields: [groupPositionHolder.userId],
-            references: [user.id],
-        }),
-    }),
-);
-
 export const fineStatus = pgEnum("org_fine_status", [
     "pending",
     "approved",
@@ -597,12 +579,34 @@ export const fine = pgTable(
         id: uuid("id").primaryKey().defaultRandom(),
         userId: varchar("user_id", { length: 255 })
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                onDelete: "cascade",
+            }),
         groupSlug: varchar("group_slug", { length: 128 })
             .notNull()
-            .references(() => group.slug, { onDelete: "cascade" }),
+            .references(() => group.slug, {
+                onDelete: "cascade",
+            }),
         reason: text("reason").notNull(),
-        amount: integer("amount").notNull(), // Amount in NOK (or minor units)
+        amount: integer("amount").notNull(),
+        defense: text("defense"),
+        status: fineStatus("status").notNull().default("pending"),
+        createdByUserId: varchar("created_by_user_id", {
+            length: 255,
+        }).references(() => user.id, {
+            onDelete: "set null",
+        }),
+        approvedByUserId: varchar("approved_by_user_id", {
+            length: 255,
+        }).references(() => user.id, {
+            onDelete: "set null",
+        }),
+        approvedAt: timestamp("approved_at"),
+        paidAt: timestamp("paid_at"),
+        ...timestamps,
+        /** Optional evidence image URL (migrated from Lepton's OptionalImage). */
+        image: varchar("image", { length: 600 }),
+        // Amount in NOK (or minor units)
         /**
          * The paragraph in the group's lovverk the fine was given under.
          *
@@ -614,19 +618,6 @@ export const fine = pgTable(
         lawId: uuid("law_id").references((): AnyPgColumn => groupLaw.id, {
             onDelete: "set null",
         }),
-        defense: text("defense"),
-        /** Optional evidence image URL (migrated from Lepton's OptionalImage). */
-        image: varchar("image", { length: 600 }),
-        status: fineStatus("status").notNull().default("pending"),
-        createdByUserId: varchar("created_by_user_id", {
-            length: 255,
-        }).references(() => user.id, { onDelete: "set null" }),
-        approvedByUserId: varchar("approved_by_user_id", {
-            length: 255,
-        }).references(() => user.id, { onDelete: "set null" }),
-        approvedAt: timestamp("approved_at"),
-        paidAt: timestamp("paid_at"),
-        ...timestamps,
     },
     (t) => [
         /**
@@ -637,24 +628,6 @@ export const fine = pgTable(
         index("fine_group_slug_user_id_idx").on(t.groupSlug, t.userId),
     ],
 );
-
-export const fineRelations = relations(fine, ({ one }) => ({
-    user: one(user, {
-        fields: [fine.userId],
-        references: [user.id],
-        relationName: "fineUser",
-    }),
-    createdByUser: one(user, {
-        fields: [fine.createdByUserId],
-        references: [user.id],
-        relationName: "fineCreatedByUser",
-    }),
-    law: one(groupLaw, {
-        fields: [fine.lawId],
-        references: [groupLaw.id],
-    }),
-}));
-
 /**
  * A group's fine law ("lovverk"): the numbered paragraphs members can be
  * fined under. Ported from Lepton's `group_law` table. `amount` is the
@@ -664,7 +637,9 @@ export const groupLaw = pgTable("group_law", {
     id: uuid("id").primaryKey().defaultRandom(),
     groupSlug: varchar("group_slug", { length: 128 })
         .notNull()
-        .references(() => group.slug, { onDelete: "cascade" }),
+        .references(() => group.slug, {
+            onDelete: "cascade",
+        }),
     /** Paragraph number, e.g. 1.00 or 3.12 — mirrors Lepton's decimal(4,2). */
     paragraph: numeric("paragraph", { precision: 4, scale: 2 }).notNull(),
     title: varchar("title", { length: 100 }).notNull(),
@@ -672,14 +647,6 @@ export const groupLaw = pgTable("group_law", {
     amount: integer("amount").notNull().default(1),
     ...timestamps,
 });
-
-export const groupLawRelations = relations(groupLaw, ({ one }) => ({
-    group: one(group, {
-        fields: [groupLaw.groupSlug],
-        references: [group.slug],
-    }),
-}));
-
 /**
  * Where a signature is drawn on the contract PDF.
  *
@@ -701,17 +668,19 @@ export const contract = pgTable("contract", {
     fileKey: varchar("file_key", { length: 600 }).notNull(),
     version: varchar("version", { length: 64 }).notNull(),
     isActive: boolean("is_active").notNull().default(false),
+    createdByUserId: varchar("created_by_user_id", { length: 255 }).references(
+        () => user.id,
+        {
+            onDelete: "set null",
+        },
+    ),
+    ...timestamps,
     /** Where the member's signature image is stamped. Null until placed. */
     signaturePlacement: jsonb(
         "signature_placement",
     ).$type<SignaturePlacement>(),
     /** Optional "sted og dato" line, placed next to the signature. */
     namePlacement: jsonb("name_placement").$type<SignaturePlacement>(),
-    createdByUserId: varchar("created_by_user_id", { length: 255 }).references(
-        () => user.id,
-        { onDelete: "set null" },
-    ),
-    ...timestamps,
 });
 
 export const contractSignature = pgTable(
@@ -720,11 +689,16 @@ export const contractSignature = pgTable(
         id: uuid("id").primaryKey().defaultRandom(),
         contractId: uuid("contract_id")
             .notNull()
-            .references(() => contract.id, { onDelete: "cascade" }),
+            .references(() => contract.id, {
+                onDelete: "cascade",
+            }),
         userId: varchar("user_id", { length: 255 })
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                onDelete: "cascade",
+            }),
         signedAt: timestamp("signed_at").defaultNow().notNull(),
+        ...timestamps,
         /** Name the signer typed, kept verbatim even if they later rename. */
         signedName: varchar("signed_name", { length: 256 }).notNull(),
         /**
@@ -741,9 +715,134 @@ export const contractSignature = pgTable(
         }).notNull(),
         signerIp: varchar("signer_ip", { length: 45 }),
         signerUa: text("signer_ua"),
-        ...timestamps,
     },
     (t) => [
         uniqueIndex("contract_signature_unique_idx").on(t.contractId, t.userId),
     ],
+);
+
+export const orgRelations = defineRelationsPart(
+    {
+        studyProgramMembership,
+        group,
+        institute,
+        groupMembership,
+        groupJoinRequest,
+        groupMembershipHistory,
+        groupPosition,
+        groupPositionHolder,
+        fine,
+        groupLaw,
+        user,
+        studyProgram,
+    },
+    (r) => ({
+        studyProgramMembership: {
+            user: r.one.user({
+                from: r.studyProgramMembership.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+            studyProgram: r.one.studyProgram({
+                from: r.studyProgramMembership.studyProgramId,
+                to: r.studyProgram.id,
+                optional: false,
+            }),
+        },
+        group: {
+            institute: r.one.institute({
+                from: r.group.instituteId,
+                to: r.institute.id,
+            }),
+        },
+        institute: {
+            groups: r.many.group({
+                from: r.institute.id,
+                to: r.group.instituteId,
+            }),
+        },
+        groupMembership: {
+            user: r.one.user({
+                from: r.groupMembership.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+            group: r.one.group({
+                from: r.groupMembership.groupSlug,
+                to: r.group.slug,
+                optional: false,
+            }),
+        },
+        groupJoinRequest: {
+            user: r.one.user({
+                from: r.groupJoinRequest.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+            group: r.one.group({
+                from: r.groupJoinRequest.groupSlug,
+                to: r.group.slug,
+                optional: false,
+            }),
+        },
+        groupMembershipHistory: {
+            user: r.one.user({
+                from: r.groupMembershipHistory.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+            group: r.one.group({
+                from: r.groupMembershipHistory.groupSlug,
+                to: r.group.slug,
+                optional: false,
+            }),
+        },
+        groupPosition: {
+            group: r.one.group({
+                from: r.groupPosition.groupSlug,
+                to: r.group.slug,
+                optional: false,
+            }),
+            holders: r.many.groupPositionHolder({
+                from: r.groupPosition.id,
+                to: r.groupPositionHolder.positionId,
+            }),
+        },
+        groupPositionHolder: {
+            position: r.one.groupPosition({
+                from: r.groupPositionHolder.positionId,
+                to: r.groupPosition.id,
+                optional: false,
+            }),
+            user: r.one.user({
+                from: r.groupPositionHolder.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+        },
+        fine: {
+            user: r.one.user({
+                from: r.fine.userId,
+                to: r.user.id,
+                alias: "fineUser",
+                optional: false,
+            }),
+            createdByUser: r.one.user({
+                from: r.fine.createdByUserId,
+                to: r.user.id,
+                alias: "fineCreatedByUser",
+            }),
+            law: r.one.groupLaw({
+                from: r.fine.lawId,
+                to: r.groupLaw.id,
+            }),
+        },
+        groupLaw: {
+            group: r.one.group({
+                from: r.groupLaw.groupSlug,
+                to: r.group.slug,
+                optional: false,
+            }),
+        },
+    }),
 );

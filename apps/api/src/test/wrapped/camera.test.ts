@@ -245,7 +245,7 @@ describe("wrapped camera settings", () => {
             expect(response.status).toBe(403);
             expect(
                 await ctx.db.query.wrappedCamera.findFirst({
-                    where: (camera, { eq }) => eq(camera.eventId, event.id),
+                    where: { eventId: event.id },
                 }),
             ).toBeUndefined();
         },

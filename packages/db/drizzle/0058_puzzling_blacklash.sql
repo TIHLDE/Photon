@@ -1,1 +1,0 @@
-ALTER TABLE "application_expense" ALTER COLUMN "amount_nok" SET DATA TYPE numeric(12, 2);

@@ -104,7 +104,7 @@ describe("Confirming a payment on the way back from Vipps", () => {
             });
 
             const rows = await ctx.db.query.eventPayment.findMany({
-                where: (p, { eq }) => eq(p.eventId, event.id),
+                where: { eventId: event.id },
             });
             expect(rows[0]?.status).toBe("paid");
             expect(rows[0]?.receivedPaymentAt).not.toBeNull();
@@ -136,7 +136,7 @@ describe("Confirming a payment on the way back from Vipps", () => {
             expect(await res.json()).toEqual({ status: "pending" });
 
             const rows = await ctx.db.query.eventPayment.findMany({
-                where: (p, { eq }) => eq(p.eventId, event.id),
+                where: { eventId: event.id },
             });
             expect(rows[0]?.status).toBe("pending");
         },

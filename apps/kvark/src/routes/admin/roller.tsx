@@ -514,7 +514,12 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                                     </span>
                                 )}
                             </TableCell>
-                            <TableCell className="max-w-72 truncate text-sm text-muted-foreground">
+                            <TableCell
+                                truncate
+                                textSize="sm"
+                                muted
+                                className="max-w-72"
+                            >
                                 {/* `?? []`: kvark deploys on merge, the API on
                                     release, so an older API may omit the field. */}
                                 {canManage
@@ -685,7 +690,7 @@ function MemberPermissionsRow({
                         : `${memberCount} medlemmer`}
                 </span>
             </TableCell>
-            <TableCell className="max-w-72 truncate text-sm text-muted-foreground">
+            <TableCell truncate textSize="sm" muted className="max-w-72">
                 {canManage
                     ? summarizePermissions([
                           ...permissions,
@@ -917,7 +922,7 @@ function LeaderRow({
                     <HolderAvatars holders={leaders} />
                 )}
             </TableCell>
-            <TableCell className="max-w-72 truncate text-sm text-muted-foreground">
+            <TableCell truncate textSize="sm" muted className="max-w-72">
                 {canManage
                     ? // Nothing subtracted for what the group also gives every
                       // member: the leader's set stands on its own now, and

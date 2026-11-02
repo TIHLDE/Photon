@@ -1,1 +1,0 @@
-ALTER TABLE "user_settings" ADD COLUMN "public_event_registrations" boolean DEFAULT true NOT NULL;

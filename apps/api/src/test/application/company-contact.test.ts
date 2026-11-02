@@ -1,6 +1,4 @@
-import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
-import { describe, expect } from "vitest";
+import { describe, expect, vi } from "vitest";
 import type { IntegrationTestContext } from "~/test/config/integration";
 import { integrationTest } from "~/test/config/integration";
 
@@ -11,6 +9,14 @@ const SUBMISSION = {
     eventTypes: ["Bedriftspresentasjon", "Kurs/workshop"],
     semesters: ["Høst 2026"],
     comment: "Vi ønsker kontakt om høstsemesteret.",
+    phone: "+47 123 45 678",
+    companyType: "Start-up",
+    hasTrondheimOffice: true,
+    about: "Vi lager programvare for kommuner.",
+    themes: ["Cybersikkerhet"],
+    classLevels: ["2. klasse", "3. klasse"],
+    participants: "20-30",
+    extras: ["Samarbeid med Online linjeforening"],
 };
 
 /**
@@ -34,7 +40,7 @@ describe("Henvendelser fra bedrift", () => {
             expect(response.status).toBe(200);
 
             const stored = await ctx.db.query.application.findFirst({
-                where: eq(schema.application.type, "company_contact"),
+                where: { type: "company_contact" },
                 with: { companyContact: true },
             });
 
@@ -55,6 +61,52 @@ describe("Henvendelser fra bedrift", () => {
             expect(stored?.companyContact?.comment).toBe(SUBMISSION.comment);
         },
     );
+
+    integrationTest(
+        "the details are sent in the company contact email",
+        async ({ ctx }) => {
+            const sendEmailTemplate = vi.spyOn(ctx.email, "sendEmailTemplate");
+
+            const response = await publicClient(
+                ctx,
+                "203.0.113.14",
+            ).api.company.contact.$post({ json: SUBMISSION });
+            expect(response.status).toBe(200);
+
+            const call = sendEmailTemplate.mock.calls.find(
+                ([, template]) => template === "CompanyContactEmail",
+            );
+            expect(call?.[2]).toMatchObject({
+                phone: SUBMISSION.phone,
+                companyType: SUBMISSION.companyType,
+                hasTrondheimOffice: true,
+                about: SUBMISSION.about,
+                themes: SUBMISSION.themes,
+                classLevels: SUBMISSION.classLevels,
+                participants: SUBMISSION.participants,
+                extras: SUBMISSION.extras,
+            });
+        },
+    );
+
+    integrationTest("the optional fields can be left out", async ({ ctx }) => {
+        const response = await publicClient(
+            ctx,
+            "203.0.113.15",
+        ).api.company.contact.$post({
+            json: {
+                company: SUBMISSION.company,
+                contactName: SUBMISSION.contactName,
+                contactEmail: SUBMISSION.contactEmail,
+                companyType: SUBMISSION.companyType,
+                about: SUBMISSION.about,
+                eventTypes: SUBMISSION.eventTypes,
+                semesters: SUBMISSION.semesters,
+            },
+        });
+
+        expect(response.status).toBe(200);
+    });
 
     integrationTest(
         "only company-contact handlers see it in the admin inbox",
@@ -123,7 +175,7 @@ describe("Henvendelser fra bedrift", () => {
             });
 
             const stored = await ctx.db.query.application.findFirst({
-                where: eq(schema.application.type, "company_contact"),
+                where: { type: "company_contact" },
             });
 
             const handler = await ctx.utils.createTestUser();
@@ -161,7 +213,7 @@ describe("Henvendelser fra bedrift", () => {
             });
 
             const stored = await ctx.db.query.application.findFirst({
-                where: eq(schema.application.type, "company_contact"),
+                where: { type: "company_contact" },
             });
 
             const handler = await ctx.utils.createTestUser();

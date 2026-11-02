@@ -22,7 +22,7 @@ export const deleteRoute = route().delete(
         summary: "Delete a group",
         operationId: "deleteGroup",
         description:
-            "Delete a group by its slug. Requires being the group's leader OR holding 'groups:delete' for all of TIHLDE, and repeating the slug in `confirm`. This action is irreversible and will remove all associated data, including memberships, fines, laws, forms and verv.",
+            "Delete a group by its slug. Requires being the group's leader OR holding 'groups:delete' for all of TIHLDE, and repeating the slug in `confirm`. This action is irreversible and will remove all associated data, including memberships, fines (and their pictures), laws, forms and verv.",
     })
         .response({
             statusCode: 204,
@@ -87,14 +87,30 @@ export const deleteRoute = route().delete(
                   .map((m) => m.userId)
             : [];
 
-        // Delete the group and all associated data (cascading handled by DB)
-        await db.delete(schema.group).where(eq(schema.group.slug, slug));
+        // Delete the group and all associated data (cascading handled by DB).
+        // The fines go first and by hand: a cascade would take their
+        // pictures' URLs with it, and nothing else frees those files.
+        const deletedFines = await db.transaction(async (tx) => {
+            const fines = await tx
+                .delete(schema.fine)
+                .where(eq(schema.fine.groupSlug, slug))
+                .returning({ image: schema.fine.image });
+            await tx.delete(schema.group).where(eq(schema.group.slug, slug));
+            return fines;
+        });
 
         for (const leaderId of leaderIds) {
             await pruneHsMembershipIfUnwarranted(ctx, leaderId);
         }
 
         await releaseAssetUrls(ctx, [group.imageUrl, group.logoUrl]);
+        // Not awaited: a group can hold any number of fine pictures, each
+        // eight storage calls, and the deletion is already committed. The
+        // helper never throws.
+        void releaseAssetUrls(
+            ctx,
+            deletedFines.map((fine) => fine.image),
+        );
 
         return c.body(null, 204);
     },

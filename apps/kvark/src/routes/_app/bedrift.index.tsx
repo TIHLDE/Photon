@@ -20,7 +20,6 @@ import { JobCard } from "#/components/job-card";
 import { SectionError } from "#/components/section-error";
 import { StudyProgrammeCard } from "#/components/study-programme-card";
 import {
-    COMPANY_EVENT_TYPES,
     COMPANY_OFFERS,
     STUDY_PROGRAMMES_SHORT,
     upcomingSemesters,
@@ -28,11 +27,6 @@ import {
 import { formatClassRange, formatJobDeadline, formatJobType } from "#/lib/job";
 
 const JOB_PREVIEW_COUNT = 4;
-
-const EVENT_TYPE_OPTIONS = COMPANY_EVENT_TYPES.map((type) => ({
-    value: type,
-    label: type,
-}));
 
 export const Route = createFileRoute("/_app/bedrift/")({
     component: CompanyLandingPage,
@@ -63,7 +57,8 @@ function CompanyLandingPage() {
                     <Button
                         size="lg"
                         className="mt-4"
-                        render={<Link to="/bedrift" hash="kontakt" />}
+                        // A plain anchor, since the router won't scroll when the hash is already #kontakt
+                        render={<a href="#kontakt" />}
                     >
                         Meld interesse
                         <Megaphone />
@@ -189,7 +184,6 @@ function CompanyContactSection() {
             )}
 
             <CompanyContactForm
-                eventTypeOptions={EVENT_TYPE_OPTIONS}
                 semesterOptions={semesterOptions}
                 onSubmit={async (values, { reset }) => {
                     try {
@@ -217,7 +211,7 @@ function JobPreview() {
 
     return (
         <>
-            <ul className="flex flex-col gap-4 sm:gap-1">
+            <ul className="flex flex-col">
                 {data.items.map((job) => (
                     <li key={job.id}>
                         <JobCard

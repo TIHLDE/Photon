@@ -1,5 +1,6 @@
-import { relations } from "drizzle-orm";
+import { defineRelationsPart } from "drizzle-orm";
 import {
+    boolean,
     index,
     pgEnum,
     pgTable,
@@ -56,14 +57,21 @@ export const feedback = pgTable(
          * Nullable on purpose: a member leaving TIHLDE must not delete the
          * bug reports they filed. Lepton did the same (`SET NULL`).
          *
-         * Kept private: the API only ever answers whether the caller is the
-         * author, so they can edit or delete their own. Feedback is shown
-         * anonymously — no name reaches other members or moderators.
+         * Only exposed when `isAnonymous` is false. Otherwise the API answers
+         * just whether the caller is the author, so they can edit or delete
+         * their own — no name reaches other members or moderators.
          */
         authorId: text("author_id").references(() => user.id, {
             onDelete: "set null",
         }),
         ...timestamps,
+        /**
+         * Defaults to true because every row filed before the choice existed
+         * was submitted under a promise of anonymity.
+         */
+        isAnonymous: boolean("is_anonymous").notNull().default(true),
+        /** Only set while the status is `rejected`; cleared when it moves on. */
+        rejectionReason: text("rejection_reason"),
     },
     (t) => [index("feedback_item_created_at_idx").on(t.createdAt)],
 );
@@ -89,34 +97,89 @@ export const feedbackVote = pgTable(
     {
         feedbackId: uuid("feedback_id")
             .notNull()
-            .references(() => feedback.id, { onDelete: "cascade" }),
+            .references(() => feedback.id, {
+                onDelete: "cascade",
+            }),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                onDelete: "cascade",
+            }),
         value: feedbackVoteValue("value").notNull(),
         createdAt: timestamp("created_at").defaultNow().notNull(),
     },
-    (t) => [primaryKey({ columns: [t.feedbackId, t.userId] })],
+    (t) => [
+        primaryKey({
+            columns: [t.feedbackId, t.userId],
+        }),
+    ],
 );
 
-export const feedbackRelations = relations(feedback, ({ one, many }) => ({
-    author: one(user, {
-        fields: [feedback.authorId],
-        references: [user.id],
-    }),
-    votes: many(feedbackVote),
-}));
-
-export const feedbackVoteRelations = relations(feedbackVote, ({ one }) => ({
-    feedback: one(feedback, {
-        fields: [feedbackVote.feedbackId],
-        references: [feedback.id],
-    }),
-    user: one(user, {
-        fields: [feedbackVote.userId],
-        references: [user.id],
-    }),
-}));
-
+export const feedbackComment = pgTable(
+    "feedback_comment",
+    {
+        id: uuid("id").primaryKey().defaultRandom(),
+        feedbackId: uuid("feedback_id")
+            .notNull()
+            .references(() => feedback.id, {
+                onDelete: "cascade",
+            }),
+        authorId: text("author_id").references(() => user.id, {
+            onDelete: "set null",
+        }),
+        body: text("body").notNull(),
+        ...timestamps,
+    },
+    (t) => [
+        index("feedback_comment_feedback_id_created_at_idx").on(
+            t.feedbackId,
+            t.createdAt,
+        ),
+    ],
+);
 export type Feedback = typeof feedback.$inferSelect;
 export type FeedbackVote = typeof feedbackVote.$inferSelect;
+export type FeedbackComment = typeof feedbackComment.$inferSelect;
+
+export const feedbackRelations = defineRelationsPart(
+    { feedback, feedbackComment, feedbackVote, user },
+    (r) => ({
+        feedback: {
+            author: r.one.user({
+                from: r.feedback.authorId,
+                to: r.user.id,
+            }),
+            votes: r.many.feedbackVote({
+                from: r.feedback.id,
+                to: r.feedbackVote.feedbackId,
+            }),
+            comments: r.many.feedbackComment({
+                from: r.feedback.id,
+                to: r.feedbackComment.feedbackId,
+            }),
+        },
+        feedbackComment: {
+            feedback: r.one.feedback({
+                from: r.feedbackComment.feedbackId,
+                to: r.feedback.id,
+                optional: false,
+            }),
+            author: r.one.user({
+                from: r.feedbackComment.authorId,
+                to: r.user.id,
+            }),
+        },
+        feedbackVote: {
+            feedback: r.one.feedback({
+                from: r.feedbackVote.feedbackId,
+                to: r.feedback.id,
+                optional: false,
+            }),
+            user: r.one.user({
+                from: r.feedbackVote.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+        },
+    }),
+);

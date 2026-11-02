@@ -14,7 +14,7 @@ import type { IntegrationTestContext } from "~/test/config/integration";
  */
 async function priceOf(ctx: IntegrationTestContext, eventId: string) {
     const row = await ctx.db.query.event.findFirst({
-        where: (e, { eq }) => eq(e.id, eventId),
+        where: { id: eventId },
         columns: { priceMinor: true, isPaidEvent: true },
     });
     return row;

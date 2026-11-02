@@ -96,6 +96,7 @@ describe("News System", () => {
             expect(fetchedNews.title).toBe("Breaking News");
             expect(fetchedNews.creator).toBeDefined();
             expect(fetchedNews.creator?.id).toBe(creator.id);
+            expect(fetchedNews.creator).not.toHaveProperty("email");
 
             // 6. 404 for non-existent news
             const notFoundResponse = await userClient.api.news[":id"].$get({

@@ -83,7 +83,6 @@
             "cache": false,
             "interactive": true
         },
-        "db:check-order": {},
         "db:generate": { "cache": false },
         "db:migrate": {
             "dependsOn": ["@photon/docker#dev:up"],
@@ -93,7 +92,6 @@
             "dependsOn": ["@photon/docker#dev:up"],
             "persistent": true
         },
-        "db:drop": { "cache": false },
         "db:check": { "cache": false },
         "email": { "persistent": true },
         "prod:up": { "cache": false },

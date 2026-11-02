@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { defineRelationsPart, sql } from "drizzle-orm";
 import {
     boolean,
     check,
@@ -49,13 +49,6 @@ export const wrappedCamera = pgTable(
         ),
     ],
 );
-
-export const wrappedCameraRelations = relations(wrappedCamera, ({ one }) => ({
-    event: one(event, {
-        fields: [wrappedCamera.eventId],
-        references: [event.id],
-    }),
-}));
 
 /**
  * One photo taken with an arrangement's camera.
@@ -115,16 +108,30 @@ export const wrappedPhoto = pgTable(
     ],
 );
 
-export const wrappedPhotoRelations = relations(wrappedPhoto, ({ one }) => ({
-    event: one(event, {
-        fields: [wrappedPhoto.eventId],
-        references: [event.id],
+export const wrappedRelations = defineRelationsPart(
+    { wrappedCamera, wrappedPhoto, event, user },
+    (r) => ({
+        wrappedCamera: {
+            event: r.one.event({
+                from: r.wrappedCamera.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+        },
+        wrappedPhoto: {
+            event: r.one.event({
+                from: r.wrappedPhoto.eventId,
+                to: r.event.id,
+                optional: false,
+            }),
+            uploadedBy: r.one.user({
+                from: r.wrappedPhoto.uploadedById,
+                to: r.user.id,
+                optional: false,
+            }),
+        },
     }),
-    uploadedBy: one(user, {
-        fields: [wrappedPhoto.uploadedById],
-        references: [user.id],
-    }),
-}));
+);
 
 export type WrappedCamera = typeof wrappedCamera.$inferSelect;
 export type NewWrappedCamera = typeof wrappedCamera.$inferInsert;

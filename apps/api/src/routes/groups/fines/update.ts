@@ -18,7 +18,7 @@ export const updateFineRoute = route().patch(
         summary: "Partially update fine",
         operationId: "updateFine",
         description:
-            "Partially update a fine. Only provided fields will be updated. Current members can add a defense to their own fines; someone who has left the group can read their fines but no longer write to them. Fines admins can update status and approve/reject fines.",
+            "Partially update a fine. Only provided fields will be updated. Current members can add a defense to their own fines; someone who has left the group can read their fines but no longer write to them. Fines admins (botsjef) and group leaders can update status, approve/reject fines, and edit the reason, amount, paragraph and picture.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -90,6 +90,39 @@ export const updateFineRoute = route().patch(
             }
         }
 
+        /**
+         * The fine itself — what it was for, under which paragraph and how
+         * many — is the botsjef's to correct. The one who gave it and the one
+         * who got it both have a stake in it, so neither gets to rewrite it.
+         */
+        const editsFine =
+            body.reason !== undefined ||
+            body.amount !== undefined ||
+            body.lawId !== undefined;
+
+        if (editsFine && !(await canUpdateFines(ctx, user.id, group))) {
+            throw new HTTPException(403, {
+                message:
+                    "Only the fines admin or the group's leader can edit a fine",
+            });
+        }
+
+        // Same rule as on create: a fine may only cite its own group's lovverk.
+        if (body.lawId) {
+            const law = await db
+                .select({ groupSlug: schema.groupLaw.groupSlug })
+                .from(schema.groupLaw)
+                .where(eq(schema.groupLaw.id, body.lawId))
+                .limit(1)
+                .then((res) => res[0]);
+
+            if (!law || law.groupSlug !== groupSlug) {
+                throw new HTTPException(404, {
+                    message: `Law with ID "${body.lawId}" not found in group "${groupSlug}"`,
+                });
+            }
+        }
+
         // `!== undefined`, not truthiness: clearing a defense by sending "" is
         // still writing to someone's fine, and must not skip the owner check.
         if (body.defense !== undefined) {
@@ -124,6 +157,9 @@ export const updateFineRoute = route().patch(
         const updateData: {
             updatedAt: Date;
             defense?: string;
+            reason?: string;
+            amount?: number;
+            lawId?: string | null;
             image?: string | null;
             status?: "pending" | "approved" | "paid" | "rejected";
             approvedAt?: Date;
@@ -135,6 +171,18 @@ export const updateFineRoute = route().patch(
 
         if (body.defense !== undefined) {
             updateData.defense = body.defense;
+        }
+
+        if (body.reason !== undefined) {
+            updateData.reason = body.reason;
+        }
+
+        if (body.amount !== undefined) {
+            updateData.amount = body.amount;
+        }
+
+        if (body.lawId !== undefined) {
+            updateData.lawId = body.lawId;
         }
 
         if (body.image !== undefined) {

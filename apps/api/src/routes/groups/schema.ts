@@ -166,6 +166,10 @@ export const groupSchema = Schema(
         contractSigningRequired: z.boolean().meta({
             description: "Whether contract signing is required",
         }),
+        archivedAt: z.string().nullable().meta({
+            description:
+                "When the group was archived, or null while it is active. An archived group stays visible to everyone, but cannot be changed, and grants no permissions.",
+        }),
         createdAt: z.string().meta({ description: "Creation timestamp" }),
         updatedAt: z.string().meta({ description: "Last update timestamp" }),
     }),
@@ -188,6 +192,18 @@ export const groupDetailSchema = Schema(
             description:
                 "What this group calls its leader, e.g. «President» or «Innovasjonsminister». Reconciled with the linked Hovedstyret verv, so both pages name the leader the same. Null means the plain «Leder».",
         }),
+        archivable: z.boolean().meta({
+            description:
+                "Whether this group may be archived at all. False for Hovedstyret and for groups whose roster follows Feide.",
+        }),
+        acceptsJoinRequests: z.boolean().meta({
+            description:
+                "Whether a signed-in member can ask to join this group (POST /groups/{slug}/join). True for active interest groups.",
+        }),
+        viewerHasJoinRequest: z.boolean().meta({
+            description:
+                "Whether the caller has a pending request to join this group.",
+        }),
         viewerCanUseFines: z.boolean().meta({
             description:
                 "Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student.",
@@ -207,6 +223,17 @@ export const groupWithMemberCountSchema = Schema(
             .meta({ description: "Number of members in the group" }),
     }),
 );
+
+export const listGroupsQuerySchema = z.object({
+    search: z.string().optional().meta({
+        description: "Match against the group's name or description",
+    }),
+    type: z.string().optional().meta({ description: "Only this group type" }),
+    archived: z.enum(["true", "false"]).default("false").meta({
+        description:
+            "'true' lists the archived groups instead of the active ones. An archived private group is listed only to its members and holders of 'groups:manage', global or scoped to the group.",
+    }),
+});
 
 export const groupListSchema = Schema(
     "GroupList",
@@ -402,4 +429,45 @@ export const createGroupFormResponseSchema = Schema(
         updated_at: z.string().optional(),
         fields: z.array(groupFormFieldSchema).optional(),
     }),
+);
+
+export const joinRequestSchema = Schema(
+    "GroupJoinRequest",
+    z.object({
+        userId: z.string().meta({ description: "User ID" }),
+        groupSlug: z.string().meta({ description: "Group slug" }),
+        createdAt: z
+            .string()
+            .meta({ description: "When the request was sent" }),
+    }),
+);
+
+const joinRequestUserSchema = z.object({
+    id: z.string().meta({ description: "User ID" }),
+    name: z.string().meta({ description: "User display name" }),
+    username: z.string().nullable().meta({
+        description: "Username used in profile URLs",
+    }),
+    image: z
+        .string()
+        .nullable()
+        .meta({ description: "User profile image URL" }),
+});
+
+export const joinRequestListSchema = Schema(
+    "GroupJoinRequestList",
+    z.array(joinRequestSchema.extend({ user: joinRequestUserSchema })),
+);
+
+export const pendingJoinRequestListSchema = Schema(
+    "PendingGroupJoinRequestList",
+    z.array(
+        joinRequestSchema.extend({
+            user: joinRequestUserSchema,
+            group: z.object({
+                slug: z.string().meta({ description: "Group slug" }),
+                name: z.string().meta({ description: "Group name" }),
+            }),
+        }),
+    ),
 );

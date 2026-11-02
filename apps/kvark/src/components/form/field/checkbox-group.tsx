@@ -42,7 +42,7 @@ export function CheckboxGroup<TValue extends string | number>({
                     <LabelPrimitive
                         key={String(option.value)}
                         htmlFor={itemId}
-                        className="font-normal"
+                        weight="normal"
                     >
                         <CheckboxPrimitive
                             id={itemId}

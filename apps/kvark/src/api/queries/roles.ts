@@ -2,7 +2,7 @@ import { mutationOptions, queryOptions } from "@tanstack/react-query";
 import type { CreateGroupPosition, UpdateGroupPosition } from "@tihlde/sdk";
 import { apiClient } from "#/api/api-client";
 
-const RoleQueryKeys = {
+export const RoleQueryKeys = {
     positions: ["groups", "positions"] as const,
     leaderPermissions: ["groups", "leader-permissions"] as const,
     memberPermissions: ["groups", "member-permissions"] as const,

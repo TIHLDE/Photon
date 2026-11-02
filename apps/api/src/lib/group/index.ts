@@ -56,8 +56,16 @@ export function isPrivateGroupType(type: string): boolean {
     return PRIVATE_GROUP_TYPES.has(type.toLowerCase());
 }
 
+type VisibilityGroup = {
+    slug: string;
+    type: string;
+};
+
 /**
- * Whether `userId` may read a private group's page, roster and verv.
+ * Whether `userId` may read a group's page, roster and verv.
+ *
+ * Every group is open except a private one. Archiving does not hide a group:
+ * it stays readable as a record of who was in it, it just cannot be changed.
  *
  * Members always may. `groups:manage` — globally or scoped to this group — is
  * the only way in from the outside, and it exists so the admin panel keeps
@@ -65,7 +73,7 @@ export function isPrivateGroupType(type: string): boolean {
  */
 export async function canViewGroup(
     ctx: AppContext,
-    group: { slug: string; type: string },
+    group: VisibilityGroup,
     userId: string | null | undefined,
 ): Promise<boolean> {
     if (!isPrivateGroupType(group.type)) return true;
@@ -83,7 +91,7 @@ export async function canViewGroup(
 /** {@link canViewGroup}, as a guard: throws 403 instead of returning false. */
 export async function assertGroupVisible(
     ctx: AppContext,
-    group: { slug: string; type: string },
+    group: VisibilityGroup,
     userId: string | null | undefined,
 ): Promise<void> {
     if (await canViewGroup(ctx, group, userId)) return;
@@ -194,15 +202,21 @@ export async function addUserToGroup(
     const membership =
         inserted ??
         (await db.query.groupMembership.findFirst({
-            where: and(
-                eq(schema.groupMembership.userId, userId),
-                eq(schema.groupMembership.groupSlug, groupSlug),
-            ),
+            where: { userId, groupSlug },
         }));
 
     if (!membership) {
         throw new Error(`Failed to add user ${userId} to group ${groupSlug}`);
     }
+
+    await db
+        .delete(schema.groupJoinRequest)
+        .where(
+            and(
+                eq(schema.groupJoinRequest.userId, userId),
+                eq(schema.groupJoinRequest.groupSlug, groupSlug),
+            ),
+        );
 
     // No role juggling here any more: what members of this group may do lives
     // in group.memberPermissions / memberGlobalPermissions and is read live
@@ -260,11 +274,9 @@ export async function demoteOtherLeaders(
     const group = await getGroup(ctx, groupSlug);
     if (!group) return;
 
-    // Avgåtte undergruppeledere mister HS-plassen på samme måte som når de
-    // settes ned manuelt eller meldes ut.
     if (isSubgroupType(group.type)) {
         for (const { userId } of outgoing) {
-            await syncSubgroupLeaderOutOfHs(ctx, userId, groupSlug);
+            await releaseLinkedLeaderVerv(ctx, userId, groupSlug);
         }
         return;
     }
@@ -339,10 +351,8 @@ export async function removeUserFromGroup(
     // just deleted.
     await removeUserPositionsInGroup(ctx, userId, groupSlug);
 
-    // A departing subgroup leader forfeits the HS seat too (unless something
-    // else warrants it — see pruneHsMembershipIfUnwarranted)
     if (wasSubgroupLeader) {
-        await syncSubgroupLeaderOutOfHs(ctx, userId, groupSlug);
+        await releaseLinkedLeaderVerv(ctx, userId, groupSlug);
     }
 }
 
@@ -410,7 +420,7 @@ export async function updateGroupMemberRole(
         if (newRole === "leader") {
             await syncSubgroupLeaderIntoHs(ctx, userId, group);
         } else {
-            await syncSubgroupLeaderOutOfHs(ctx, userId, groupSlug);
+            await releaseLinkedLeaderVerv(ctx, userId, groupSlug);
         }
     }
 
@@ -430,11 +440,22 @@ export async function updateGroupMemberRole(
 // fly as "Leder av <gruppe>" if none is linked yet — minister titles like
 // Teknologiminister are linked via groupPosition.linkedGroupSlug and are
 // then reused instead). When they lose the leadership, the verv is taken
-// back and the hs membership is removed unless something else warrants it
-// (another subgroup leadership or another hs verv, e.g. an AU title).
+// back but the hs membership stays: an outgoing leader sits in HS for four
+// more weeks alongside the successor, and is removed from hs by hand after.
 // =============================================================================
 
 export const HS_GROUP_SLUG = "hs";
+
+// Without these a new group's leader cannot arrange its events until someone ticks them off by hand.
+export const DEFAULT_LEADER_PERMISSIONS = [
+    "events:create",
+    "events:update",
+    "events:delete",
+    "events:manage",
+    "events:registrations:view",
+    "events:registrations:create",
+    "events:payments:view",
+];
 
 /** True for groups whose leader belongs in HS. Column is freeform varchar
  *  (Lepton rows are upper case), so compare case-insensitively. */
@@ -459,6 +480,37 @@ export function isSubgroupType(type: string): boolean {
  */
 export function allowsMultipleLeaders(type: string): boolean {
     return type.toLowerCase() === "interestgroup";
+}
+
+/** Interessegrupper er åpne for alle, så hvem som helst kan be om å bli med. */
+export function acceptsJoinRequests(group: {
+    type: string;
+    archivedAt: Date | null;
+}): boolean {
+    return (
+        group.type.toLowerCase() === "interestgroup" &&
+        group.archivedAt === null
+    );
+}
+
+/**
+ * Whether a group may be archived at all.
+ *
+ * Hovedstyret may not: its members run TIHLDE through what the group grants,
+ * and an archived group grants nothing. Nor may a group whose roster Feide
+ * maintains — the study and cohort groups, and a programme's own group — since
+ * the sync would keep enrolling people into a group nobody is meant to see.
+ */
+export function isArchivableGroup(group: {
+    slug: string;
+    type: string;
+    studyProgramId: number | null;
+}): boolean {
+    return (
+        group.slug !== HS_GROUP_SLUG &&
+        !isDerivedGroupType(group.type) &&
+        group.studyProgramId === null
+    );
 }
 
 /**
@@ -524,10 +576,10 @@ export async function syncSubgroupLeaderIntoHs(
 
 /**
  * Called when `userId` STOPS being leader of subgroup `groupSlug`. Takes the
- * linked leader-verv back (if they hold it) and prunes the hs membership if
- * nothing else warrants it.
+ * linked leader-verv back (if they hold it). The hs membership is left alone
+ * on purpose — see the overlap rule above.
  */
-async function syncSubgroupLeaderOutOfHs(
+async function releaseLinkedLeaderVerv(
     ctx: AppContext,
     userId: string,
     groupSlug: string,
@@ -543,7 +595,6 @@ async function syncSubgroupLeaderOutOfHs(
                 ),
             );
     }
-    await pruneHsMembershipIfUnwarranted(ctx, userId);
 }
 
 /**

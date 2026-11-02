@@ -52,7 +52,7 @@ export const updateWrappedPhotoRoute = route().patch(
         );
 
         const existing = await db.query.wrappedPhoto.findFirst({
-            where,
+            where: { id: photoId, eventId, submittedAt: { isNotNull: true } },
             with: { uploadedBy: { columns: { id: true, name: true } } },
         });
         if (!existing) {

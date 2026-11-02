@@ -46,14 +46,12 @@ async function unwrap<T>(
 
 const fetchOAuthClient = createIsomorphicFn()
     .client(async (clientId: string) =>
-        clientAuthInstance.$fetch("/oauth2/public-client", {
-            method: "GET",
+        clientAuthInstance.oauth2.publicClient({
             query: { client_id: clientId },
         }),
     )
     .server(async (clientId: string) =>
-        clientAuthInstance.$fetch("/oauth2/public-client", {
-            method: "GET",
+        clientAuthInstance.oauth2.publicClient({
             query: { client_id: clientId },
             fetchOptions: { headers: getRequestHeaders() },
         }),

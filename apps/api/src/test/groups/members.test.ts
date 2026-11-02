@@ -333,11 +333,10 @@ describe("group members", () => {
                 // Verify member was removed
                 const membership = await ctx.db.query.groupMembership.findFirst(
                     {
-                        where: (m, { and, eq }) =>
-                            and(
-                                eq(m.userId, memberUser.user.id),
-                                eq(m.groupSlug, group.slug),
-                            ),
+                        where: {
+                            userId: memberUser.user.id,
+                            groupSlug: group.slug,
+                        },
                     },
                 );
 
@@ -747,7 +746,7 @@ describe("group members", () => {
                 // ikke en usynlig ekstra leder som gruppesiden hopper over.
                 const memberships = await ctx.db.query.groupMembership.findMany(
                     {
-                        where: eq(schema.groupMembership.groupSlug, group.slug),
+                        where: { groupSlug: group.slug },
                     },
                 );
                 const roleByUser = new Map(
@@ -801,7 +800,7 @@ describe("group members", () => {
 
                 const memberships = await ctx.db.query.groupMembership.findMany(
                     {
-                        where: eq(schema.groupMembership.groupSlug, group.slug),
+                        where: { groupSlug: group.slug },
                     },
                 );
                 const roleByUser = new Map(
@@ -969,7 +968,7 @@ describe("group members", () => {
 
                 const memberships = await ctx.db.query.groupMembership.findMany(
                     {
-                        where: eq(schema.groupMembership.groupSlug, group.slug),
+                        where: { groupSlug: group.slug },
                     },
                 );
                 const roleByUser = new Map(
@@ -1092,7 +1091,7 @@ describe("group members", () => {
 
                 const memberships = await ctx.db.query.groupMembership.findMany(
                     {
-                        where: eq(schema.groupMembership.groupSlug, hs.slug),
+                        where: { groupSlug: hs.slug },
                     },
                 );
                 const roleByUser = new Map(
@@ -1154,7 +1153,7 @@ describe("group members", () => {
 
                 const memberships = await ctx.db.query.groupMembership.findMany(
                     {
-                        where: eq(schema.groupMembership.groupSlug, hs.slug),
+                        where: { groupSlug: hs.slug },
                     },
                 );
                 const roleByUser = new Map(
@@ -1323,7 +1322,7 @@ describe("group members", () => {
                 // Both periods are still stored — only the display folds them.
                 const stored =
                     await ctx.db.query.groupMembershipHistory.findMany({
-                        where: (h, { eq }) => eq(h.userId, member.user.id),
+                        where: { userId: member.user.id },
                     });
                 expect(stored).toHaveLength(2);
             },

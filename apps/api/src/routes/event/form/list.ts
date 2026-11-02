@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { userHasSubmitted } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
@@ -30,7 +29,7 @@ export const listEventFormsRoute = route().get(
 
         // Check if event exists
         const event = await db.query.event.findFirst({
-            where: eq(schema.event.id, eventId),
+            where: { id: eventId },
         });
 
         if (!event) {
@@ -41,7 +40,7 @@ export const listEventFormsRoute = route().get(
 
         // Get all event forms
         const eventForms = await db.query.formEventForm.findMany({
-            where: eq(schema.formEventForm.eventId, eventId),
+            where: { eventId },
             with: {
                 form: true,
             },

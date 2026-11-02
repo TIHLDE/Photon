@@ -39,12 +39,10 @@ describe("individually prioritized users", () => {
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const namedReg = await ctx.db.query.eventRegistration.findFirst({
-                where: (reg, { and, eq }) =>
-                    and(eq(reg.eventId, event.id), eq(reg.userId, named.id)),
+                where: { eventId: event.id, userId: named.id },
             });
             const ordinaryReg = await ctx.db.query.eventRegistration.findFirst({
-                where: (reg, { and, eq }) =>
-                    and(eq(reg.eventId, event.id), eq(reg.userId, ordinary.id)),
+                where: { eventId: event.id, userId: ordinary.id },
             });
 
             expect(namedReg?.status).toBe("registered");
@@ -85,12 +83,10 @@ describe("individually prioritized users", () => {
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const namedReg = await ctx.db.query.eventRegistration.findFirst({
-                where: (reg, { and, eq }) =>
-                    and(eq(reg.eventId, event.id), eq(reg.userId, named.id)),
+                where: { eventId: event.id, userId: named.id },
             });
             const ordinaryReg = await ctx.db.query.eventRegistration.findFirst({
-                where: (reg, { and, eq }) =>
-                    and(eq(reg.eventId, event.id), eq(reg.userId, ordinary.id)),
+                where: { eventId: event.id, userId: ordinary.id },
             });
 
             // Prikkene slår inn før prioriteringen: den navngitte tar ikke
@@ -256,8 +252,7 @@ describe("individually prioritized users", () => {
             // Plassen sto ledig, så han får den — nedprioritert er ikke det
             // samme som sist i køen når køen er tom.
             const afterFirst = await ctx.db.query.eventRegistration.findFirst({
-                where: (r, { and, eq }) =>
-                    and(eq(r.eventId, event.id), eq(r.userId, striken.id)),
+                where: { eventId: event.id, userId: striken.id },
             });
             expect(afterFirst?.status).toBe("registered");
 
@@ -265,12 +260,10 @@ describe("individually prioritized users", () => {
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const strikenEnd = await ctx.db.query.eventRegistration.findFirst({
-                where: (r, { and, eq }) =>
-                    and(eq(r.eventId, event.id), eq(r.userId, striken.id)),
+                where: { eventId: event.id, userId: striken.id },
             });
             const cleanEnd = await ctx.db.query.eventRegistration.findFirst({
-                where: (r, { and, eq }) =>
-                    and(eq(r.eventId, event.id), eq(r.userId, clean.id)),
+                where: { eventId: event.id, userId: clean.id },
             });
 
             expect(cleanEnd?.status).toBe("waitlisted");
@@ -550,7 +543,7 @@ describe("individually prioritized users", () => {
 
             // Ingenting av arrangementet skal ha overlevd forsøket.
             const events = await ctx.db.query.event.findMany({
-                where: (e, { eq }) => eq(e.title, "Ukjent prioritert"),
+                where: { title: "Ukjent prioritert" },
             });
             expect(events).toEqual([]);
         },
@@ -627,8 +620,7 @@ describe("individually prioritized users", () => {
             }
 
             const before = await ctx.db.query.eventRegistration.findFirst({
-                where: (reg, { and, eq }) =>
-                    and(eq(reg.eventId, event.id), eq(reg.userId, promised.id)),
+                where: { eventId: event.id, userId: promised.id },
             });
             expect(before?.status).toBe("waitlisted");
             expect(before?.waitlistPosition).toBe(2);
@@ -644,11 +636,7 @@ describe("individually prioritized users", () => {
             expect(response.status).toBe(200);
 
             const after = await ctx.db.query.eventRegistration.findMany({
-                where: (reg, { and, eq }) =>
-                    and(
-                        eq(reg.eventId, event.id),
-                        eq(reg.status, "waitlisted"),
-                    ),
+                where: { eventId: event.id, status: "waitlisted" },
             });
 
             expect(

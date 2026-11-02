@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, asc, eq, isNotNull } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import type z from "zod";
 import { requireEventAccess } from "~/lib/event/access";
@@ -65,11 +65,8 @@ export const listWrappedPhotosRoute = route().get(
          * reshuffling the grid under their thumb.
          */
         const photos = await db.query.wrappedPhoto.findMany({
-            where,
-            orderBy: [
-                asc(schema.wrappedPhoto.createdAt),
-                asc(schema.wrappedPhoto.id),
-            ],
+            where: { eventId, submittedAt: { isNotNull: true } },
+            orderBy: { createdAt: "asc", id: "asc" },
             limit: pageSize,
             offset: getPageOffset(page, pageSize),
             with: { uploadedBy: { columns: { id: true, name: true } } },

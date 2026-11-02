@@ -39,8 +39,7 @@ describe("betalingsfrist-sweep når køen har mistet jobben", () => {
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const obligation = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { and, eq }) =>
-                    and(eq(p.eventId, event.id), eq(p.userId, unpaid.id)),
+                where: { eventId: event.id, userId: unpaid.id },
             });
             expect(obligation?.status).toBe("pending");
 
@@ -55,20 +54,18 @@ describe("betalingsfrist-sweep når køen har mistet jobben", () => {
             expect(handled).toBe(1);
 
             const reclaimed = await ctx.db.query.eventRegistration.findFirst({
-                where: (r, { and, eq }) =>
-                    and(eq(r.eventId, event.id), eq(r.userId, unpaid.id)),
+                where: { eventId: event.id, userId: unpaid.id },
             });
             expect(reclaimed?.status).toBe("cancelled");
 
             const closed = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { eq }) => eq(p.id, obligation?.id ?? ""),
+                where: { id: obligation?.id ?? "" },
             });
             expect(closed?.status).toBe("failed");
 
             // Poenget med å inndra plassen: den neste skal få den.
             const promoted = await ctx.db.query.eventRegistration.findFirst({
-                where: (r, { and, eq }) =>
-                    and(eq(r.eventId, event.id), eq(r.userId, waiting.id)),
+                where: { eventId: event.id, userId: waiting.id },
             });
             expect(promoted?.status).toBe("registered");
             expect(promoted?.waitlistPosition).toBeNull();
@@ -92,8 +89,7 @@ describe("betalingsfrist-sweep når køen har mistet jobben", () => {
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const obligation = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { and, eq }) =>
-                    and(eq(p.eventId, event.id), eq(p.userId, member.id)),
+                where: { eventId: event.id, userId: member.id },
             });
             expect(obligation?.status).toBe("pending");
 
@@ -101,8 +97,7 @@ describe("betalingsfrist-sweep når køen har mistet jobben", () => {
             expect(handled).toBe(0);
 
             const untouched = await ctx.db.query.eventRegistration.findFirst({
-                where: (r, { and, eq }) =>
-                    and(eq(r.eventId, event.id), eq(r.userId, member.id)),
+                where: { eventId: event.id, userId: member.id },
             });
             expect(untouched?.status).toBe("registered");
         },
@@ -125,8 +120,7 @@ describe("betalingsfrist-sweep når køen har mistet jobben", () => {
             await resolveRegistrationsForEvent(event.id, ctx);
 
             const obligation = await ctx.db.query.eventPayment.findFirst({
-                where: (p, { and, eq }) =>
-                    and(eq(p.eventId, event.id), eq(p.userId, member.id)),
+                where: { eventId: event.id, userId: member.id },
             });
 
             // Betalt, men fristen står igjen i fortida — nøyaktig raden en
@@ -143,8 +137,7 @@ describe("betalingsfrist-sweep når køen har mistet jobben", () => {
             expect(handled).toBe(0);
 
             const kept = await ctx.db.query.eventRegistration.findFirst({
-                where: (r, { and, eq }) =>
-                    and(eq(r.eventId, event.id), eq(r.userId, member.id)),
+                where: { eventId: event.id, userId: member.id },
             });
             expect(kept?.status).toBe("registered");
         },

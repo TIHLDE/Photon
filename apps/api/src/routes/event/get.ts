@@ -5,6 +5,7 @@ import { hasPermission, hasScopedPermission } from "@photon/auth/rbac";
 import { isMemberAudience } from "~/lib/auth";
 import { DEFAULT_PAYMENT_GRACE_MINUTES } from "~/lib/event/payment";
 import { describeRoute } from "~/lib/openapi";
+import { userImageExtra } from "~/lib/user/avatar";
 import { route } from "../../lib/route";
 import { captureAuth } from "../../middleware/auth";
 import { eventDetailSchema } from "./schema";
@@ -37,8 +38,7 @@ export const getRoute = route().get(
                 identifier,
             );
         const event = await db.query.event.findFirst({
-            where: (event, { eq }) =>
-                isUuid ? eq(event.id, identifier) : eq(event.slug, identifier),
+            where: isUuid ? { id: identifier } : { slug: identifier },
             with: {
                 category: true,
                 organizer: true,
@@ -47,7 +47,12 @@ export const getRoute = route().get(
                 },
                 reactions: {
                     columns: { userId: true, emoji: true },
-                    with: { user: { columns: { name: true } } },
+                    with: {
+                        user: {
+                            columns: { name: true },
+                            extras: userImageExtra,
+                        },
+                    },
                 },
                 restrictedToInstitute: {
                     columns: { slug: true, shortName: true, name: true },
@@ -60,8 +65,8 @@ export const getRoute = route().get(
                                 id: true,
                                 name: true,
                                 username: true,
-                                image: true,
                             },
+                            extras: userImageExtra,
                         },
                     },
                 },
@@ -73,6 +78,7 @@ export const getRoute = route().get(
                                 name: true,
                                 slug: true,
                                 logoUrl: true,
+                                archivedAt: true,
                             },
                         },
                     },
@@ -125,11 +131,7 @@ export const getRoute = route().get(
 
         if (user) {
             const dbRegistration = await db.query.eventRegistration.findFirst({
-                where: (registration, { eq, and }) =>
-                    and(
-                        eq(registration.userId, user.id),
-                        eq(registration.eventId, event.id),
-                    ),
+                where: { userId: user.id, eventId: event.id },
             });
 
             if (dbRegistration) {
@@ -149,11 +151,7 @@ export const getRoute = route().get(
                               status: true,
                               expiresAt: true,
                           },
-                          where: (payment, { eq, and }) =>
-                              and(
-                                  eq(payment.eventId, event.id),
-                                  eq(payment.userId, user.id),
-                              ),
+                          where: { eventId: event.id, userId: user.id },
                       })
                     : [];
 
@@ -211,6 +209,7 @@ export const getRoute = route().get(
             user: {
                 id: r.userId,
                 name: r.user.name,
+                image: r.user.image,
             },
         }));
 
@@ -265,16 +264,19 @@ export const getRoute = route().get(
               }))
             : [];
 
-        const priorityPools = event.pools.map((pool) => ({
-            classYear: pool.classYear,
-            group: pool.group
-                ? {
-                      name: pool.group.name,
-                      slug: pool.group.slug,
-                      logoUrl: pool.group.logoUrl,
-                  }
-                : null,
-        }));
+        // En pulje for en arkivert gruppe treffer ingen, så den vises ikke.
+        const priorityPools = event.pools
+            .filter((pool) => !pool.group?.archivedAt)
+            .map((pool) => ({
+                classYear: pool.classYear,
+                group: pool.group
+                    ? {
+                          name: pool.group.name,
+                          slug: pool.group.slug,
+                          logoUrl: pool.group.logoUrl,
+                      }
+                    : null,
+            }));
 
         const returnEvent: z.infer<typeof eventDetailSchema> = {
             id: event.id,
@@ -306,6 +308,7 @@ export const getRoute = route().get(
             createdAt: event.createdAt.toISOString(),
             updatedAt: event.updatedAt.toISOString(),
             reactions,
+            reactionsAllowed: event.reactionsAllowed,
             isPaidEvent: event.isPaidEvent,
             payInfo,
             enforcesPreviousStrikes: event.enforcesPreviousStrikes,

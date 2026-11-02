@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 
@@ -79,10 +79,7 @@ describe("derived group membership", () => {
 
             // The membership must survive the refused call.
             const stored = await ctx.db.query.groupMembership.findFirst({
-                where: and(
-                    eq(schema.groupMembership.userId, user.id),
-                    eq(schema.groupMembership.groupSlug, group.slug),
-                ),
+                where: { userId: user.id, groupSlug: group.slug },
             });
             expect(stored).toBeDefined();
         },

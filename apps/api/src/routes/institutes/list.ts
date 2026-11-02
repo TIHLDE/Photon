@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { asc } from "drizzle-orm";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { instituteListResponseSchema } from "./schema";
@@ -24,7 +23,7 @@ export const listRoute = route().get(
 
         const institutes = await db.query.institute.findMany({
             columns: { slug: true, shortName: true, name: true },
-            orderBy: [asc(schema.institute.shortName)],
+            orderBy: { shortName: "asc" },
         });
 
         return c.json(institutes, 200);

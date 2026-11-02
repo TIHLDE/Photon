@@ -8,7 +8,7 @@ import {
     useMatchRoute,
     useNavigate,
 } from "@tanstack/react-router";
-import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
 import { ScrollFade } from "@tihlde/ui/ui/scroll-fade";
 import { Separator } from "@tihlde/ui/ui/separator";
@@ -17,28 +17,21 @@ import {
     HelpCircle,
     LayoutGrid,
     LogOut,
-    Pencil,
     Settings,
     ShieldCheck,
     Ticket,
     UserCircle2,
     type LucideIcon,
 } from "lucide-react";
-import { Fragment, useState } from "react";
+import { Fragment } from "react";
 import {
     authClientWithRedirect,
     authQueryOptions,
-    invalidateAuth,
     logoutUser,
     OWN_PROFILE_ALIAS,
 } from "#/api/auth";
-import {
-    getUserProfileQuery,
-    updateUserSettingsMutation,
-} from "#/api/queries/user";
-import { useImageUploader } from "#/api/queries/assets";
+import { getUserProfileQuery } from "#/api/queries/user";
 import { useIsAdmin } from "#/hooks/use-permission";
-import { EditProfileDialog } from "#/components/edit-profile-dialog";
 import { MembershipQrDialog } from "#/components/membership-qr-dialog";
 import {
     ProfileHeader,
@@ -127,11 +120,6 @@ function RouteComponent() {
     // på godkjenning. De skjules, slik at profilsiden — og «Logg ut» — funker.
     const isPendingApproval = session?.user?.isPendingApproval === true;
     const isAdmin = useIsAdmin();
-    const updateSettings = useMutation(updateUserSettingsMutation);
-    const { uploadImage } = useImageUploader();
-    const [editOpen, setEditOpen] = useState(false);
-
-    const settings = session?.user.settings;
     // Fra API-et, ikke utledet her: hvilket studie som er det gjeldende, og
     // hvilket klassetrinn det gir, er regler serveren allerede eier.
     const studyLabel = formatStudyLabel({
@@ -245,77 +233,13 @@ function RouteComponent() {
                 user={user}
                 actions={
                     isOwnProfile ? (
-                        <>
-                            <MembershipQrDialog
-                                name={user.name}
-                                userId={session?.user.id}
-                            />
-                            <Button onClick={() => setEditOpen(true)}>
-                                <Pencil />
-                                Rediger profil
-                            </Button>
-                        </>
+                        <MembershipQrDialog
+                            name={user.name}
+                            userId={session?.user.id}
+                        />
                     ) : null
                 }
             />
-            {/* Dialogen styres herfra slik at «Rediger profil» i headeren kan
-                åpne den. */}
-            {isOwnProfile ? (
-                <EditProfileDialog
-                    open={editOpen}
-                    onOpenChange={setEditOpen}
-                    name={profile.name}
-                    imageUrl={profile.image ?? null}
-                    // Bare et eget opplastet bilde kan fjernes: uten ett faller
-                    // profilen tilbake på bildet Feide leverer.
-                    hasCustomImage={Boolean(settings?.imageUrl)}
-                    defaultValues={{
-                        bio: settings?.bioDescription ?? "",
-                        github: settings?.githubUrl ?? "",
-                        linkedin: settings?.linkedinUrl ?? "",
-                    }}
-                    onSubmit={async (values) => {
-                        // Bildet lastes opp først: feiler det, er ingenting
-                        // lagret, og medlemmet kan prøve på nytt uten at halve
-                        // endringen allerede ligger der.
-                        let imageUrl: string | undefined;
-                        if (values.imageFile) {
-                            imageUrl = await uploadImage(values.imageFile);
-                        } else if (values.removeImage) {
-                            // Tom streng er «fjern bildet»; `undefined` ville
-                            // bare betydd «ikke endre».
-                            imageUrl = "";
-                        }
-
-                        try {
-                            await updateSettings.mutateAsync({
-                                data: {
-                                    // Tomme strenger må sendes med —
-                                    // `undefined` betyr «ikke endre», så
-                                    // feltene kunne aldri tømmes igjen.
-                                    // API-et lagrer tomt som NULL.
-                                    bioDescription: values.bio,
-                                    githubUrl: values.github,
-                                    linkedinUrl: values.linkedin,
-                                    allergies: settings?.allergies ?? [],
-                                    ...(imageUrl === undefined
-                                        ? {}
-                                        : { imageUrl }),
-                                },
-                            });
-                        } catch (error) {
-                            // Dialogen viser denne teksten. HTTP-feilen fra
-                            // klienten sier «Request failed with status code
-                            // 400», som ikke hjelper et medlem.
-                            throw new Error(
-                                "Fikk ikke lagret profilen. Prøv igjen.",
-                                { cause: error },
-                            );
-                        }
-                        await invalidateAuth();
-                    }}
-                />
-            ) : null}
             <div className="grid gap-6 md:grid-cols-[16rem_minmax(0,1fr)]">
                 <ProfileNav
                     navGroups={navGroups}

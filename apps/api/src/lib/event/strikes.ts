@@ -1,5 +1,5 @@
 import { sumBy } from "es-toolkit";
-import type { DbSchema } from "@photon/db";
+import type { DbRelations } from "@photon/db";
 import { schema } from "@photon/db";
 import { and, eq, gte, inArray, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -82,7 +82,7 @@ export function getStrikeActiveCutoff(now: Date = new Date()): Date {
  */
 export async function getUserStrikeCount(
     userId: string,
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
 ): Promise<number> {
     const rows = await db
         .select({ count: schema.eventStrike.count })
@@ -109,7 +109,7 @@ export async function getUserStrikeCount(
  */
 export async function getStrikeCountsForUsers(
     userIds: string[],
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
 ): Promise<Map<string, number>> {
     if (userIds.length === 0) return new Map();
 
@@ -130,6 +130,15 @@ export async function getStrikeCountsForUsers(
     return new Map(rows.map((row) => [row.userId, row.count]));
 }
 
+export function wasPromotedAfterStart(
+    promotedFromWaitlistAt: Date | null,
+    eventStart: Date,
+): boolean {
+    return (
+        promotedFromWaitlistAt != null && promotedFromWaitlistAt >= eventStart
+    );
+}
+
 /**
  * Issue a strike to a user for an event, idempotently. If the user already has
  * any strike tied to this event, nothing is inserted — this prevents duplicate
@@ -137,7 +146,7 @@ export async function getStrikeCountsForUsers(
  * when a strike was created, false when one already existed.
  */
 export async function issueStrike(
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     input: {
         eventId: string;
         userId: string;

@@ -1,6 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
 import { schema } from "@photon/db";
-import { and, eq, inArray } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { stampContractPdf } from "~/lib/contract/pdf";
@@ -62,7 +61,7 @@ require contract signing.`,
         const logger = c.get("logger");
 
         const activeContract = await db.query.contract.findFirst({
-            where: eq(schema.contract.isActive, true),
+            where: { isActive: true },
         });
 
         if (!activeContract) {
@@ -83,10 +82,7 @@ require contract signing.`,
         }
 
         const existing = await db.query.contractSignature.findFirst({
-            where: and(
-                eq(schema.contractSignature.contractId, activeContract.id),
-                eq(schema.contractSignature.userId, user.id),
-            ),
+            where: { contractId: activeContract.id, userId: user.id },
         });
 
         if (existing) {
@@ -176,7 +172,7 @@ require contract signing.`,
 
         // Notify group leaders for all groups the user belongs to that require contract signing
         const memberships = await db.query.groupMembership.findMany({
-            where: eq(schema.groupMembership.userId, user.id),
+            where: { userId: user.id },
             with: { group: true },
         });
 
@@ -191,13 +187,10 @@ require contract signing.`,
         const leaderEmailByGroup = new Map<string, string>();
         if (groupsNeedingLeaderLookup.length > 0) {
             const leaders = await db.query.groupMembership.findMany({
-                where: and(
-                    inArray(
-                        schema.groupMembership.groupSlug,
-                        groupsNeedingLeaderLookup,
-                    ),
-                    eq(schema.groupMembership.role, "leader"),
-                ),
+                where: {
+                    groupSlug: { in: groupsNeedingLeaderLookup },
+                    role: "leader",
+                },
                 with: { user: true },
             });
             for (const leader of leaders) {

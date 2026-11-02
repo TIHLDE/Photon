@@ -13,10 +13,13 @@ import type {
     CreateEventForm,
     CreateStrike,
     UpdateFavoriteEvent,
+    CreateEventReaction,
+    EventMessageContent,
 } from "@tihlde/sdk";
 
 export const EventQueryKeys = {
     allergies: ["events", "allergies"] as const,
+    messages: ["events", "messages"] as const,
     listInfinite: ["events", "list-infinite"] as const,
     list: ["events", "list-paged"] as const,
     detail: ["events", "detail"] as const,
@@ -54,6 +57,40 @@ export const getEventsQuery = (
                     ...filters,
                 },
             }),
+    });
+
+/**
+ * Alle arrangementer som starter i `[startFrom, startBefore)`, uansett om de er
+ * over. Kalenderen viser et fast tidsrom og må ha alt i det, så sidene hentes
+ * til de er tomme i stedet for at brukeren må be om flere.
+ */
+export const getEventsInRangeQuery = (
+    filters: Omit<EventListFilters, "expired"> & {
+        startFrom: string;
+        startBefore: string;
+    },
+) =>
+    queryOptions({
+        queryKey: [...EventQueryKeys.list, "range", filters],
+        queryFn: async () => {
+            const firstPage = await apiClient.get("/api/event", {
+                searchParams: { page: 0, pageSize: MAX_PAGE_SIZE, ...filters },
+            });
+            const items = [...firstPage.items];
+            let nextPage = firstPage.nextPage;
+            while (nextPage != null) {
+                const page = await apiClient.get("/api/event", {
+                    searchParams: {
+                        page: nextPage,
+                        pageSize: MAX_PAGE_SIZE,
+                        ...filters,
+                    },
+                });
+                items.push(...page.items);
+                nextPage = page.nextPage;
+            }
+            return items;
+        },
     });
 
 export const getEventsInfiniteQuery = (
@@ -249,6 +286,35 @@ export const updateFavoriteEventMutation = mutationOptions({
             queryKey: [...EventQueryKeys.favorites],
             exact: false,
         });
+    },
+});
+
+// -- Reactions --
+
+export const createEventReactionMutation = mutationOptions({
+    mutationFn: ({
+        eventId,
+        data,
+    }: {
+        eventId: string;
+        data: CreateEventReaction;
+    }) =>
+        apiClient.post("/api/event/{eventId}/reactions", {
+            params: { eventId },
+            json: data,
+        }),
+    onSuccess(_, __, ___, ctx) {
+        invalidateEventDetails(ctx.client);
+    },
+});
+
+export const deleteEventReactionMutation = mutationOptions({
+    mutationFn: ({ eventId }: { eventId: string }) =>
+        apiClient.delete("/api/event/{eventId}/reactions", {
+            params: { eventId },
+        }),
+    onSuccess(_, __, ___, ctx) {
+        invalidateEventDetails(ctx.client);
     },
 });
 
@@ -604,3 +670,49 @@ export const getEventAllergiesQuery = (eventId: string) =>
                 params: { eventId },
             }),
     });
+
+// -- Meldinger til deltakerne --
+
+export const getEventMessagesQuery = (eventId: string) =>
+    queryOptions({
+        queryKey: [...EventQueryKeys.messages, eventId],
+        queryFn: () =>
+            apiClient.get("/api/event/{eventId}/messages", {
+                params: { eventId },
+            }),
+        // Antallet står i bekreftelsen før sending, så det må være ferskt.
+        staleTime: 0,
+    });
+
+export const sendEventMessageMutation = mutationOptions({
+    mutationFn: ({
+        eventId,
+        data,
+    }: {
+        eventId: string;
+        data: EventMessageContent;
+    }) =>
+        apiClient.post("/api/event/{eventId}/messages", {
+            params: { eventId },
+            json: data,
+        }),
+    onSuccess(_, vars, __, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: [...EventQueryKeys.messages, vars.eventId],
+        });
+    },
+});
+
+export const testEventMessageMutation = mutationOptions({
+    mutationFn: ({
+        eventId,
+        data,
+    }: {
+        eventId: string;
+        data: EventMessageContent;
+    }) =>
+        apiClient.post("/api/event/{eventId}/messages/test", {
+            params: { eventId },
+            json: data,
+        }),
+});

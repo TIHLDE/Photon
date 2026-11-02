@@ -71,7 +71,7 @@ export const approveUserRoute = route().post(
         const role = c.req.valid("json").role ?? "member";
 
         const user = await db.query.user.findFirst({
-            where: eq(schema.user.id, userId),
+            where: { id: userId },
             columns: {
                 id: true,
                 name: true,

@@ -111,7 +111,7 @@ describe("Restarting an abandoned Vipps checkout", () => {
             // The obligation row is reused, so the payment deadline the member
             // sees keeps counting down instead of restarting.
             const rows = await ctx.db.query.eventPayment.findMany({
-                where: (p, { eq }) => eq(p.eventId, event.id),
+                where: { eventId: event.id },
             });
             expect(rows).toHaveLength(1);
             expect(rows[0]?.id).toBe(payment.id);

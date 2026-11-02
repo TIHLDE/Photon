@@ -35,12 +35,16 @@ import {
  */
 async function requireGroup(ctx: AppContext, slug: string) {
     const group = await ctx.db.query.group.findFirst({
-        where: eq(schema.group.slug, slug),
-        columns: { slug: true, name: true, type: true },
+        where: { slug },
+        columns: { slug: true, name: true, type: true, archivedAt: true },
     });
 
     if (!group || !isSelectableGroupType(group.type)) {
         throw HTTPAppException.BadRequest(`Ukjent gruppe: ${slug}`);
+    }
+
+    if (group.archivedAt) {
+        throw HTTPAppException.BadRequest(`Gruppen er arkivert: ${slug}`);
     }
 
     return group;
@@ -168,12 +172,11 @@ export const createExpenseRoute = route().post(
         // conventional økonomiansvarlig address is accepted.
         if (body.ccEmail) {
             const ccGroup = await ctx.db.query.group.findFirst({
-                where: eq(
-                    schema.group.slug,
-                    body.ccEmail
+                where: {
+                    slug: body.ccEmail
                         .replace(/^okonomiansvarlig\./, "")
                         .replace(/@tihlde\.org$/, ""),
-                ),
+                },
                 columns: { slug: true, type: true },
             });
 

@@ -50,7 +50,7 @@ export const updateRoute = route().patch(
 
         // Fetch the news article to verify it exists
         const newsArticle = await db.query.news.findFirst({
-            where: eq(schema.news.id, id),
+            where: { id },
         });
 
         if (!newsArticle) {

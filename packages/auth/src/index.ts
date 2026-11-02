@@ -7,6 +7,7 @@ import {
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import {
     admin,
+    captcha,
     customSession,
     jwt,
     openAPI,
@@ -19,7 +20,7 @@ import {
 } from "@better-auth/oauth-provider";
 import { and, eq, isNull } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { DbSchema } from "@photon/db";
+import type { DbRelations } from "@photon/db";
 import { account, user } from "@photon/db/schema";
 import type { EmailService, CacheService } from "@photon/core/services";
 import { uniq } from "es-toolkit";
@@ -303,7 +304,7 @@ export interface CreateAuthOptions {
          * settings, permissions and groups. `database` above is Better Auth's
          * own adapter and cannot answer these queries.
          */
-        db: NodePgDatabase<DbSchema>;
+        db: NodePgDatabase<DbRelations>;
         email: EmailService;
         cache: CacheService;
     };
@@ -313,6 +314,19 @@ export interface CreateAuthOptions {
             login: string;
             consent: string;
         };
+    };
+
+    /**
+     * Cloudflare Turnstile. When set, `/sign-up/email` over HTTP demands a
+     * solved challenge; when unset the check is off entirely.
+     */
+    turnstile?: {
+        secretKey: string;
+        /**
+         * Frontend hostnames a token may have been solved on. One widget can
+         * cover dev and production, so production must not list localhost.
+         */
+        hostnames: string[];
     };
 
     /// Used only for tests to make them not use expensive hashing algorithms
@@ -370,6 +384,36 @@ function preferredUsernameClaim(
     return typeof username === "string" && username.length > 0
         ? { preferred_username: username }
         : {};
+}
+
+/**
+ * The `action` the sign-up widget is rendered with. The server demands it, so
+ * a token solved on some other widget sharing our site key is no good here.
+ * Kvark's register page sends the same string.
+ */
+const TURNSTILE_SIGN_UP_ACTION = "signup";
+
+/**
+ * Better Auth's captcha plugin with Cloudflare Turnstile on `/sign-up/email`,
+ * doing nothing when `turnstile` is unset (dev and the test suite).
+ *
+ * Always present rather than spread in conditionally, so the plugins tuple
+ * stays stable for `$Infer` — a conditional entry widens it to an array and
+ * the session type loses every plugin field.
+ */
+function turnstilePlugin(turnstile: CreateAuthOptions["turnstile"]) {
+    const plugin = captcha({
+        provider: "cloudflare-turnstile",
+        secretKey: turnstile?.secretKey ?? "",
+        endpoints: ["/sign-up/email"],
+        expectedAction: TURNSTILE_SIGN_UP_ACTION,
+        allowedHostnames: turnstile?.hostnames,
+    });
+    return {
+        ...plugin,
+        onRequest: async (...args: Parameters<typeof plugin.onRequest>) =>
+            turnstile ? plugin.onRequest(...args) : undefined,
+    };
 }
 
 export function createAuth(options: CreateAuthOptions) {
@@ -729,7 +773,7 @@ export function createAuth(options: CreateAuthOptions) {
                  * differs from the one their Feide account carries used to get.
                  */
                 const takenBy = await options.services.db.query.user.findFirst({
-                    where: eq(user.username, derivedUsername),
+                    where: { username: derivedUsername },
                     columns: { id: true },
                 });
                 if (takenBy) {
@@ -856,7 +900,10 @@ export function createAuth(options: CreateAuthOptions) {
             // the Feide provider itself is gated inside feidePlugin() on the
             // credentials being set.
             feidePlugin(options.services.db),
-            username(),
+            username({
+                // Better Auth's default rejects "-", which self-registration hands out.
+                usernameValidator: (value) => /^[a-zA-Z0-9_.-]+$/.test(value),
+            }),
             jwt({
                 // Recommended by better-auth docs when using with OAuth Provider plugin
                 disableSettingJwtHeader: true,
@@ -955,6 +1002,18 @@ export function createAuth(options: CreateAuthOptions) {
                 },
             }),
 
+            /**
+             * Bots were creating accounts through the public sign-up form.
+             * Only `/sign-up/email`: sign-in and password reset have not been
+             * abused, and a challenge there is friction for every member.
+             *
+             * The plugin hooks `onRequest`, which only sees requests arriving
+             * over HTTP — so a trusted server-side `signUpEmail` (Fadderuka,
+             * see `runTrustedSignUp`) never meets the challenge, as it should
+             * not: there is no browser on the other end to solve it.
+             */
+            turnstilePlugin(options.turnstile),
+
             // Must stay last: it wraps the session shape produced by the
             // plugins above, and `ExtendedSession` is inferred from the result.
             customSession(async ({ user, session }) => {
@@ -977,7 +1036,7 @@ export function createAuth(options: CreateAuthOptions) {
                  */
                 const [row, permissions, groups, accounts] = await Promise.all([
                     db.query.user.findFirst({
-                        where: (u, { eq }) => eq(u.id, user.id),
+                        where: { id: user.id },
                         columns: { approvalStatus: true },
                         with: {
                             settings: {
@@ -994,7 +1053,7 @@ export function createAuth(options: CreateAuthOptions) {
                     }),
                     getUserPermissions({ db }, user.id),
                     db.query.groupMembership.findMany({
-                        where: (gm, { eq }) => eq(gm.userId, user.id),
+                        where: { userId: user.id },
                         with: { group: true },
                     }),
                     /**
@@ -1005,7 +1064,7 @@ export function createAuth(options: CreateAuthOptions) {
                      * from the user table alone.
                      */
                     db.query.account.findMany({
-                        where: (a, { eq }) => eq(a.userId, user.id),
+                        where: { userId: user.id },
                         columns: { providerId: true, passwordSource: true },
                     }),
                 ]);

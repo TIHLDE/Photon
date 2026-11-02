@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { computeClassStanding } from "~/lib/event/priority";
 import { describeRoute } from "~/lib/openapi";
@@ -42,7 +41,7 @@ export const listOwnSubmissionsRoute = route().get(
         const formId = c.req.param("formId");
 
         const form = await db.query.form.findFirst({
-            where: eq(schema.form.id, formId),
+            where: { id: formId },
             columns: { id: true },
         });
 
@@ -51,10 +50,7 @@ export const listOwnSubmissionsRoute = route().get(
         }
 
         const submissions = await db.query.formSubmission.findMany({
-            where: and(
-                eq(schema.formSubmission.formId, formId),
-                eq(schema.formSubmission.userId, user.id),
-            ),
+            where: { formId, userId: user.id },
             with: {
                 user: true,
                 answers: {
@@ -65,7 +61,7 @@ export const listOwnSubmissionsRoute = route().get(
                     },
                 },
             },
-            orderBy: (submissions, { desc }) => [desc(submissions.createdAt)],
+            orderBy: { createdAt: "desc" },
         });
 
         const studyRows =

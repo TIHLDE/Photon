@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { desc } from "drizzle-orm";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { toddelListResponseSchema } from "./schema";
@@ -23,7 +22,7 @@ export const listRoute = route().get(
         const { db } = c.get("ctx");
 
         const issues = await db.query.toddel.findMany({
-            orderBy: [desc(schema.toddel.publishedAt)],
+            orderBy: { publishedAt: "desc" },
         });
 
         return c.json(

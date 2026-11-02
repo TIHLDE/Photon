@@ -1,5 +1,3 @@
-import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import {
     type IntegrationTestContext,
@@ -101,7 +99,7 @@ describe("wrapped photo selection", () => {
 
             expect(await unpicked.json()).toMatchObject({ selected: false });
             const stored = await ctx.db.query.wrappedPhoto.findFirst({
-                where: eq(schema.wrappedPhoto.id, photo!.id),
+                where: { id: photo!.id },
             });
             expect(stored?.selectedAt).toBeNull();
         },

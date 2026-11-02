@@ -78,10 +78,7 @@ export const setAttendanceRoute = route().patch(
         const { attended } = c.req.valid("json");
 
         const registration = await db.query.eventRegistration.findFirst({
-            where: and(
-                eq(schema.eventRegistration.userId, userId),
-                eq(schema.eventRegistration.eventId, eventId),
-            ),
+            where: { userId, eventId },
             with: { user: { columns: { name: true } } },
         });
 

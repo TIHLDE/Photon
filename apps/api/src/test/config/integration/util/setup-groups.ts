@@ -148,7 +148,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2024-04-30 08:27:52.721960",
             updated_at: "2025-05-04 15:39:15.383325",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/2af88bf7-f86e-4391-9f0f-f54517a102eeBeta%20logo.png",
+            image: null,
             image_alt: "Beta",
             name: "Beta",
             slug: "beta",
@@ -163,7 +163,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2025-09-02 18:21:18.169782",
             updated_at: "2025-09-15 15:30:49.069568",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/283a4160-253f-4117-81c6-017217fffb00IMG_8255.png",
+            image: null,
             image_alt: null,
             name: "TIHLDE Biljard",
             slug: "biljard",
@@ -248,7 +248,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2021-04-26 20:06:57.580310",
             updated_at: "2025-04-24 11:46:35.681385",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/a29d981c-5b1e-4b9d-86ee-7e9eabbc6350Beta%20logo%20%281%29.png",
+            image: null,
             image_alt: null,
             name: "Drift",
             slug: "drift",
@@ -278,7 +278,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2020-11-17 13:52:25.134382",
             updated_at: "2025-03-05 15:18:04.562326",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/1c527227-728e-4f3a-b373-ee215214562a3.png",
+            image: null,
             image_alt: null,
             name: "FadderKom",
             slug: "fadderkom",
@@ -308,7 +308,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2022-03-24 19:05:22.167618",
             updated_at: "2025-03-19 12:46:38.554781",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/f50ea58e-4782-4fcb-a7df-b0bcea18e0a2Fondet.png",
+            image: null,
             image_alt: null,
             name: "Forvaltningsgruppen",
             slug: "forvaltningsgruppen",
@@ -324,7 +324,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2024-10-22 13:37:51.725748",
             updated_at: "2025-04-03 15:07:35.563874",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagejpeg/6034b813-5360-49e2-89bc-067f397a0d7dpythons%20logo.jpeg",
+            image: null,
             image_alt: null,
             name: "Pythons Håndball",
             slug: "handball",
@@ -340,7 +340,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2021-04-27 06:26:01.739510",
             updated_at: "2025-04-10 09:10:40.731386",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/4b36e2c5-d5f2-4018-ab52-03d91839113aHS.png",
+            image: null,
             image_alt: null,
             name: "Hovedstyret",
             slug: "hs",
@@ -356,7 +356,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2024-10-31 14:58:43.796356",
             updated_at: "2025-06-01 09:25:52.779703",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagejpeg/e57641a5-7188-48f2-a4a2-220aa3d8898e1-kopi.jpg",
+            image: null,
             image_alt: null,
             name: "IdKom",
             slug: "idkom",
@@ -372,7 +372,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2020-11-17 13:48:50.630714",
             updated_at: "2024-11-18 16:14:45.216928",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/2a6d6ee8-c928-483b-9c05-000ee6bdbe08Index.png",
+            image: null,
             image_alt: null,
             name: "Index",
             slug: "index",
@@ -401,7 +401,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2020-11-17 13:51:55.198466",
             updated_at: "2025-02-19 13:01:59.899477",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/109e8adb-d8cd-436c-a7b1-1c9d48eafdd99.png",
+            image: null,
             image_alt: null,
             name: "JenteKom",
             slug: "jentekom",
@@ -416,7 +416,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2022-04-01 12:43:06.196280",
             updated_at: "2024-11-05 16:11:18.551751",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/7151e5ee-4148-469a-a0d0-2e3e1ca0b8f4Beta%20logo%20%281%29.png",
+            image: null,
             image_alt: null,
             name: "JubKom",
             slug: "jubkom",
@@ -430,7 +430,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2022-04-25 07:22:05.159931",
             updated_at: "2025-08-29 08:30:43.137803",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/d7b66fd7-094a-41ae-acfb-29bd6000b550klatring%20%28godkjent%29.png",
+            image: null,
             image_alt: null,
             name: "TIHLDE Klatring",
             slug: "klatring",
@@ -445,7 +445,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2023-12-28 11:20:42.503511",
             updated_at: "2025-09-05 17:28:44.522411",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/5e42b802-f22b-4679-816b-c21e1a657ffcKoK.png",
+            image: null,
             image_alt: null,
             name: "Kiosk og Kontor",
             slug: "kontkom",
@@ -461,7 +461,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2024-11-20 09:19:17.642752",
             updated_at: "2025-08-12 09:27:35.070219",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/2f5c33a3-276c-4950-9b09-f6838f40ed8fBeta%20logo%20%282%29.png",
+            image: null,
             image_alt: null,
             name: "Native",
             slug: "native",
@@ -475,7 +475,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2020-11-17 13:49:34.902903",
             updated_at: "2025-08-28 19:15:58.394175",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/98245368-6414-4028-b774-82cde7750d06NoK.png",
+            image: null,
             image_alt: null,
             name: "Næringsliv og Kurs",
             slug: "nok",
@@ -491,7 +491,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2025-03-19 10:52:05.469363",
             updated_at: "2025-04-02 11:12:38.551997",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/1cdbc219-867d-4a7e-88e9-b6d75151ead1%C3%B8kom.png",
+            image: null,
             image_alt: null,
             name: "Økom",
             slug: "okom",
@@ -505,7 +505,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2022-03-31 21:53:56.950492",
             updated_at: "2025-04-28 09:40:54.944541",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/9bfedc4e-776c-49f6-915b-531a3822cac8plask%20%28godkjent%29.png",
+            image: null,
             image_alt: null,
             name: "TIHLDE Plask",
             slug: "plask",
@@ -520,7 +520,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2024-11-12 18:37:58.165336",
             updated_at: "2025-09-03 14:03:36.449781",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/e5588104-a14c-4c0b-be73-182dc2fb5d6dTIHLDE_poker-2.png",
+            image: null,
             image_alt: null,
             name: "TIHLDE Poker",
             slug: "poker",
@@ -535,7 +535,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2020-11-17 13:49:43.696320",
             updated_at: "2024-08-11 21:53:58.864078",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/0fffd891-eeb2-4763-aa9d-10a22332a961Promo.png",
+            image: null,
             image_alt: null,
             name: "Promo",
             slug: "promo",
@@ -551,7 +551,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2021-11-22 14:09:54.218192",
             updated_at: "2025-08-30 14:26:52.400294",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagejpeg/281276d0-1003-460e-b2c0-adea9d1a87b4487833712_683784937367513_3823614695904354968_n.jpg",
+            image: null,
             image_alt: null,
             name: "Pythons Fotball Herrer",
             slug: "pythons-gutter-a",
@@ -567,7 +567,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2021-11-22 14:13:58.669366",
             updated_at: "2025-08-25 15:56:45.930560",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagejpeg/854fea60-cbd1-402b-866d-e8e98c64aaa28ff50f39774dc43bde26244005323f59.jpeg",
+            image: null,
             image_alt: null,
             name: "Pythons Fotball Damer",
             slug: "pythons-jenter",
@@ -583,7 +583,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2020-11-17 13:52:08.483713",
             updated_at: "2025-04-24 12:53:45.515031",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/62d0b6f0-8eac-4a9a-ab87-66ba11dfe241TODDEL%20logo.png",
+            image: null,
             image_alt: null,
             name: "Redaksjonen",
             slug: "redaksjonen",
@@ -598,7 +598,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2025-02-20 08:02:39.672524",
             updated_at: "2025-09-10 08:46:34.492930",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagejpeg/6f22e561-bbb0-4935-82fe-24293e68c780rett%26vrang%20logo.jpg",
+            image: null,
             image_alt: null,
             name: "TIHLDE Rett&Vrang",
             slug: "rettogvrang",
@@ -613,7 +613,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2021-05-03 12:04:44.531510",
             updated_at: "2025-01-09 10:25:02.873252",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/0907ea7a-b39a-4ee9-87f8-8a7e9cfeeb92Beta%20logo%20%281%29.png",
+            image: null,
             image_alt: null,
             name: "Semikolon",
             slug: "semikolon",
@@ -643,7 +643,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2020-11-17 13:49:14.777248",
             updated_at: "2024-11-02 16:37:27.231482",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/fc468372-3fe9-4ff6-8190-d7592dfe8e24Sosialen.png",
+            image: null,
             image_alt: null,
             name: "Sosialen",
             slug: "sosialen",
@@ -658,7 +658,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2024-03-21 15:58:31.742883",
             updated_at: "2025-09-15 09:56:17.465088",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/eab5051c-cbd4-463f-bdb3-a0c763feb0edspring.png",
+            image: null,
             image_alt: null,
             name: "TIHLDE Spring",
             slug: "spring",
@@ -673,7 +673,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2022-10-23 12:09:45.102207",
             updated_at: "2025-03-12 11:46:06.691934",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/f92b5a02-9485-4e7f-9249-9f5ea1c639bfpodden%20%28godkjent%29.png",
+            image: null,
             image_alt: null,
             name: "TIHLDEpodden",
             slug: "thilde-podden",
@@ -702,7 +702,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2023-01-26 15:00:11.508763",
             updated_at: "2025-04-02 11:10:32.385716",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/93364fe0-b321-48df-bc8c-2656b13adaf5klask%20%28godkjent%29.png",
+            image: null,
             image_alt: null,
             name: "TIHLDE Klask",
             slug: "tihlde_klask",
@@ -718,7 +718,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2022-10-23 19:15:41.781171",
             updated_at: "2025-04-02 11:09:41.612192",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/c7748fff-a2a4-4ef2-b58d-c724217b6de5Fotball%20og%20f1%20%28godkjent%29.png",
+            image: null,
             image_alt: null,
             name: "TIHLDE Fotball og F1",
             slug: "tihlde-ff",
@@ -733,7 +733,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2023-07-26 08:26:53.561215",
             updated_at: "2025-08-15 13:22:14.318977",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/ac2d4368-de6a-463c-b7f6-96c4e6b2ab82golf%20%28godkjent%29.png",
+            image: null,
             image_alt: null,
             name: "TIHLDE Golf",
             slug: "tihlde-golf",
@@ -748,7 +748,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2025-05-07 11:17:59.268429",
             updated_at: "2025-08-31 19:40:54.555992",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/95a4d115-c775-4b01-944b-8a609973cca0v3.png",
+            image: null,
             image_alt: null,
             name: "TIHLDE Startup",
             slug: "tihlde-startup",
@@ -763,7 +763,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2022-09-23 08:03:29.599269",
             updated_at: "2025-03-12 11:45:45.800808",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/79533adb-5044-489c-b455-f0410cb72aa2bh%20%28godkjent%29.png",
+            image: null,
             image_alt: null,
             name: "TIHLDE BH",
             slug: "tihldebh",
@@ -779,7 +779,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2022-03-09 19:51:49.910985",
             updated_at: "2025-05-08 10:52:16.798925",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/f7c4d24b-8f0e-44e5-88a6-1427275fe0d3ski%20%28-%29.png",
+            image: null,
             image_alt: null,
             name: "TIHLDE Ski",
             slug: "tihldeski",
@@ -794,7 +794,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2023-10-11 12:42:41.764942",
             updated_at: "2025-05-07 07:46:03.838117",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/d44e95ef-1893-48fb-96f7-61a30b05cc6dutveksling%20%28godkjent%29.png",
+            image: null,
             image_alt: null,
             name: "TIHLDE Utveksling",
             slug: "tihldeutveksling",
@@ -809,7 +809,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2021-04-27 14:12:45.708753",
             updated_at: "2025-03-12 11:44:47.176983",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagepng/d1e7e9db-6088-4151-8cee-ea77afdd915cturtorial%20%28godkjent%29.png",
+            image: null,
             image_alt: null,
             name: "Turtorial",
             slug: "turtorial",
@@ -824,7 +824,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
         {
             created_at: "2021-11-22 14:14:26.395864",
             updated_at: "2025-09-10 19:33:33.417716",
-            image: "https://leptonstoragepro.blob.core.windows.net/imagejpeg/aff3863a-4aaf-4937-ba41-3f0e5010bdfepythons_logo.jpg",
+            image: null,
             image_alt: null,
             name: "Pythons Volley",
             slug: "volley",

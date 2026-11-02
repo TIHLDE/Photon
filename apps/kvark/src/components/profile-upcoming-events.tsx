@@ -78,7 +78,7 @@ export function ProfileUpcomingEvents({
     }
 
     return (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col">
             {events.map((event) => (
                 <li key={event.eventId}>
                     <EventCard

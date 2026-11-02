@@ -462,7 +462,10 @@ function FormTestPage() {
                                                 <SearchIcon />
                                             </InputGroupAddon>
                                             <InputGroupAddon align="inline-end">
-                                                <InputGroupText className="rounded-sm bg-muted px-1 text-xs">
+                                                <InputGroupText
+                                                    variant="kbd"
+                                                    className="px-1"
+                                                >
                                                     <CommandIcon className="size-3" />
                                                     K
                                                 </InputGroupText>

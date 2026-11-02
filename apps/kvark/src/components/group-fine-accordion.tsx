@@ -17,9 +17,10 @@ import {
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
+import { FieldError } from "@tihlde/ui/ui/field";
 import { Label } from "@tihlde/ui/ui/label";
 import { Textarea } from "@tihlde/ui/ui/textarea";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
 
@@ -28,6 +29,7 @@ import { HandCoins, ShieldCheck } from "lucide-react";
 import { minimalRegistry } from "#/components/markdown/directives/presets";
 import { GroupFineRow } from "#/components/group-fine-row";
 import { GalleryLightbox } from "#/components/gallery-lightbox";
+import { extractErrorMessage } from "#/lib/api-error";
 import type { Fine } from "#/lib/group";
 
 import { fetchFineImageUrl } from "#/api/queries/groups";
@@ -80,8 +82,9 @@ type GroupFineDetailsProps = {
     onDefenseDraftChange: (draft: string | null) => void;
     onApprove: (fine: Fine) => void;
     onMarkPaid: (fine: Fine) => void;
+    onEdit: (fine: Fine) => void;
     onDelete: (fine: Fine) => void;
-    onSaveDefense: (fine: Fine, defense: string) => void;
+    onSaveDefense: (fine: Fine, defense: string) => Promise<unknown>;
 };
 
 function GroupFineDetails({
@@ -94,6 +97,7 @@ function GroupFineDetails({
     onDefenseDraftChange,
     onApprove,
     onMarkPaid,
+    onEdit,
     onDelete,
     onSaveDefense,
 }: GroupFineDetailsProps) {
@@ -105,10 +109,32 @@ function GroupFineDetails({
 
     const isOwnFine = Boolean(currentUserId && fine.userId === currentUserId);
     const canWriteDefense = isOwnFine && !readOnly;
+    const hasDefense = fine.defense.trim().length > 0;
+    // Utkastet er modusbryteren: finnes det, redigerer eieren. Uten forsvar
+    // står feltet åpent, fordi det ikke er noe å vise.
+    const isEditingDefense =
+        canWriteDefense && (defenseDraft !== null || !hasDefense);
     const defenseValue = defenseDraft ?? fine.defense;
     const defenseChanged =
         defenseDraft !== null && defenseDraft !== fine.defense;
+    const [savingDefense, setSavingDefense] = useState(false);
+    const [defenseError, setDefenseError] = useState<string | null>(null);
     const [lightboxOpen, setLightboxOpen] = useState(false);
+
+    // Utkastet slippes først når serveren har sagt ja, så en feilet lagring
+    // lar eieren stå igjen i redigering med teksten sin.
+    async function saveDefense() {
+        setDefenseError(null);
+        setSavingDefense(true);
+        try {
+            await onSaveDefense(fine, defenseValue);
+            onDefenseDraftChange(null);
+        } catch (err) {
+            setDefenseError(await extractErrorMessage(err));
+        } finally {
+            setSavingDefense(false);
+        }
+    }
 
     const text = (
         <div className="flex min-w-0 flex-1 flex-col gap-3">
@@ -118,7 +144,7 @@ function GroupFineDetails({
                 </span>
                 <MarkdownView registry={minimalRegistry} source={fine.reason} />
             </div>
-            {canWriteDefense ? (
+            {isEditingDefense ? (
                 <div className="flex flex-col gap-2">
                     <Label htmlFor={`fine-defense-${fine.id}`}>
                         Ditt forsvar
@@ -126,25 +152,61 @@ function GroupFineDetails({
                     <Textarea
                         id={`fine-defense-${fine.id}`}
                         rows={3}
-                        placeholder="Forklar din side av saken"
+                        placeholder="Forklar din side av saken. Du kan bruke markdown."
+                        // Bare når eieren selv trykket «Rediger forsvar»;
+                        // ellers ville hvert åpnet bøtepanel stjålet fokus.
+                        autoFocus={hasDefense}
                         value={defenseValue}
                         onChange={(event) =>
                             onDefenseDraftChange(event.target.value)
                         }
                     />
+                    {defenseError ? (
+                        <FieldError>{defenseError}</FieldError>
+                    ) : null}
+                    <div className="flex gap-2">
+                        <Button
+                            size="sm"
+                            disabled={!defenseChanged || savingDefense}
+                            onClick={() => void saveDefense()}
+                        >
+                            {savingDefense ? "Lagrer …" : "Lagre forsvar"}
+                        </Button>
+                        {hasDefense ? (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={savingDefense}
+                                onClick={() => {
+                                    setDefenseError(null);
+                                    onDefenseDraftChange(null);
+                                }}
+                            >
+                                Avbryt
+                            </Button>
+                        ) : null}
+                    </div>
+                </div>
+            ) : canWriteDefense ? (
+                <div className="flex flex-col gap-2">
+                    <span className="text-xs text-muted-foreground">
+                        Ditt forsvar
+                    </span>
+                    <MarkdownView
+                        registry={minimalRegistry}
+                        source={fine.defense}
+                    />
                     <Button
                         size="sm"
+                        variant="outline"
                         className="self-start"
-                        disabled={!defenseChanged}
-                        onClick={() => {
-                            onSaveDefense(fine, defenseValue);
-                            onDefenseDraftChange(null);
-                        }}
+                        onClick={() => onDefenseDraftChange(fine.defense)}
                     >
-                        Lagre forsvar
+                        <Pencil />
+                        Rediger forsvar
                     </Button>
                 </div>
-            ) : fine.defense ? (
+            ) : hasDefense ? (
                 <div className="flex flex-col gap-1">
                     <span className="text-xs text-muted-foreground">
                         Forsvar
@@ -241,8 +303,16 @@ function GroupFineDetails({
                     </Button>
                     <Button
                         size="sm"
-                        variant="destructive"
+                        variant="outline"
                         className="ml-auto"
+                        onClick={() => onEdit(fine)}
+                    >
+                        <Pencil />
+                        Rediger
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="destructive"
                         onClick={() => onDelete(fine)}
                     >
                         <Trash2 />
@@ -264,8 +334,9 @@ type GroupFineAccordionProps = {
     currentUserId?: string;
     onApprove: (fine: Fine) => void;
     onMarkPaid: (fine: Fine) => void;
+    onEdit: (fine: Fine) => void;
     onDelete: (fine: Fine) => void;
-    onSaveDefense: (fine: Fine, defense: string) => void;
+    onSaveDefense: (fine: Fine, defense: string) => Promise<unknown>;
 };
 
 export function GroupFineAccordion({
@@ -276,6 +347,7 @@ export function GroupFineAccordion({
     currentUserId,
     onApprove,
     onMarkPaid,
+    onEdit,
     onDelete,
     onSaveDefense,
 }: GroupFineAccordionProps) {
@@ -293,6 +365,7 @@ export function GroupFineAccordion({
                             currentUserId={currentUserId}
                             onApprove={onApprove}
                             onMarkPaid={onMarkPaid}
+                            onEdit={onEdit}
                             onDelete={onDelete}
                             onSaveDefense={onSaveDefense}
                         />
@@ -311,6 +384,7 @@ function GroupFineAccordionItem({
     currentUserId,
     onApprove,
     onMarkPaid,
+    onEdit,
     onDelete,
     onSaveDefense,
 }: Omit<GroupFineAccordionProps, "fines"> & { fine: Fine }) {
@@ -319,7 +393,10 @@ function GroupFineAccordionItem({
 
     return (
         <AccordionItem value={fine.id} className="px-3">
-            <AccordionTrigger className="items-center py-2 hover:no-underline">
+            <AccordionTrigger
+                underlineOnHover={false}
+                className="items-center py-2"
+            >
                 <GroupFineRow fine={fine} />
             </AccordionTrigger>
             <AccordionContent>
@@ -333,7 +410,8 @@ function GroupFineAccordionItem({
                     onDefenseDraftChange={setDefenseDraft}
                     onApprove={onApprove}
                     onMarkPaid={onMarkPaid}
-                    onDelete={onDelete}
+                    onEdit={onEdit}
+                    onDelete={() => setConfirmDelete(true)}
                     onSaveDefense={onSaveDefense}
                 />
             </AccordionContent>

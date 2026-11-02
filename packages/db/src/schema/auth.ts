@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
     text,
     timestamp,
@@ -7,9 +6,6 @@ import {
     index,
     pgTableCreator,
 } from "drizzle-orm/pg-core";
-
-import { studyProgramMembership } from "./org";
-import { userSettings } from "./user";
 
 const pgTable = pgTableCreator((name) => `auth_${name}`);
 
@@ -76,7 +72,9 @@ export const session = pgTable(
         userAgent: text("user_agent"),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                onDelete: "cascade",
+            }),
         impersonatedBy: text("impersonated_by"),
     },
     (table) => [index("session_userId_idx").on(table.userId)],
@@ -90,7 +88,9 @@ export const account = pgTable(
         providerId: text("provider_id").notNull(),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                onDelete: "cascade",
+            }),
         accessToken: text("access_token"),
         refreshToken: text("refresh_token"),
         idToken: text("id_token"),
@@ -98,13 +98,16 @@ export const account = pgTable(
         refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
         scope: text("scope"),
         password: text("password"),
+        createdAt: timestamp("created_at").notNull(),
+        updatedAt: timestamp("updated_at")
+            .$onUpdate(() => new Date())
+            .notNull(),
         /**
          * Where `password` came from — only ever set on `credential` rows.
          *
          * `migrated` marks the 1634 accounts the Lepton migration created with
-         * a `crypto.randomUUID()` password it never stored anywhere
-         * (`packages/lepton-migration/import-users.ts`). Those rows grant
-         * nobody access: the member cannot know the value, so "this account
+         * a `crypto.randomUUID()` password it never stored anywhere. Those rows
+         * grant nobody access: the member cannot know the value, so "this account
          * has a password" is true in the schema and false in practice.
          *
          * Without this the two states are indistinguishable, and the prompt to
@@ -116,10 +119,6 @@ export const account = pgTable(
          * the past, and every row written from here on is a real password.
          */
         passwordSource: text("password_source").$type<PasswordSource>(),
-        createdAt: timestamp("created_at").notNull(),
-        updatedAt: timestamp("updated_at")
-            .$onUpdate(() => new Date())
-            .notNull(),
     },
     (table) => [index("account_userId_idx").on(table.userId)],
 );
@@ -193,13 +192,17 @@ export const oauthRefreshToken = pgTable(
         token: text("token").notNull().unique(),
         clientId: text("client_id")
             .notNull()
-            .references(() => oauthClient.clientId, { onDelete: "cascade" }),
+            .references(() => oauthClient.clientId, {
+                onDelete: "cascade",
+            }),
         sessionId: text("session_id").references(() => session.id, {
             onDelete: "set null",
         }),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => user.id, {
+                onDelete: "cascade",
+            }),
         referenceId: text("reference_id"),
         expiresAt: timestamp("expires_at").notNull(),
         createdAt: timestamp("created_at").notNull(),
@@ -221,7 +224,9 @@ export const oauthAccessToken = pgTable(
         token: text("token").notNull().unique(),
         clientId: text("client_id")
             .notNull()
-            .references(() => oauthClient.clientId, { onDelete: "cascade" }),
+            .references(() => oauthClient.clientId, {
+                onDelete: "cascade",
+            }),
         sessionId: text("session_id").references(() => session.id, {
             onDelete: "set null",
         }),
@@ -250,7 +255,9 @@ export const oauthConsent = pgTable(
         id: text("id").primaryKey(),
         clientId: text("client_id")
             .notNull()
-            .references(() => oauthClient.clientId, { onDelete: "cascade" }),
+            .references(() => oauthClient.clientId, {
+                onDelete: "cascade",
+            }),
         userId: text("user_id").references(() => user.id, {
             onDelete: "cascade",
         }),
@@ -264,107 +271,3 @@ export const oauthConsent = pgTable(
         index("oauthConsent_userId_idx").on(table.userId),
     ],
 );
-
-export const userRelations = relations(user, ({ one, many }) => ({
-    sessions: many(session),
-    accounts: many(account),
-    oauthClients: many(oauthClient),
-    oauthRefreshTokens: many(oauthRefreshToken),
-    oauthAccessTokens: many(oauthAccessToken),
-    oauthConsents: many(oauthConsent),
-    /**
-     * Declared from this side, not from `userSettings`, so a user with no
-     * settings row still answers: three accounts in production have none, and
-     * `approvalStatus` — read alongside the settings on every `get-session` —
-     * would silently read as "approved" for them if the query started at the
-     * settings table.
-     *
-     * `userSettings` is imported lazily through the relations callback, which
-     * is what keeps this from being a module cycle: `user.ts` imports `user`
-     * from here at load, and this only touches `userSettings` when the
-     * relational schema is built.
-     */
-    settings: one(userSettings, {
-        fields: [user.id],
-        references: [userSettings.userId],
-    }),
-    studyProgramMemberships: many(studyProgramMembership),
-}));
-
-export const sessionRelations = relations(session, ({ one, many }) => ({
-    user: one(user, {
-        fields: [session.userId],
-        references: [user.id],
-    }),
-    oauthRefreshTokens: many(oauthRefreshToken),
-    oauthAccessTokens: many(oauthAccessToken),
-}));
-
-export const accountRelations = relations(account, ({ one }) => ({
-    user: one(user, {
-        fields: [account.userId],
-        references: [user.id],
-    }),
-}));
-
-export const oauthClientRelations = relations(oauthClient, ({ one, many }) => ({
-    user: one(user, {
-        fields: [oauthClient.userId],
-        references: [user.id],
-    }),
-    oauthRefreshTokens: many(oauthRefreshToken),
-    oauthAccessTokens: many(oauthAccessToken),
-    oauthConsents: many(oauthConsent),
-}));
-
-export const oauthRefreshTokenRelations = relations(
-    oauthRefreshToken,
-    ({ one, many }) => ({
-        oauthClient: one(oauthClient, {
-            fields: [oauthRefreshToken.clientId],
-            references: [oauthClient.clientId],
-        }),
-        session: one(session, {
-            fields: [oauthRefreshToken.sessionId],
-            references: [session.id],
-        }),
-        user: one(user, {
-            fields: [oauthRefreshToken.userId],
-            references: [user.id],
-        }),
-        oauthAccessTokens: many(oauthAccessToken),
-    }),
-);
-
-export const oauthAccessTokenRelations = relations(
-    oauthAccessToken,
-    ({ one }) => ({
-        oauthClient: one(oauthClient, {
-            fields: [oauthAccessToken.clientId],
-            references: [oauthClient.clientId],
-        }),
-        session: one(session, {
-            fields: [oauthAccessToken.sessionId],
-            references: [session.id],
-        }),
-        user: one(user, {
-            fields: [oauthAccessToken.userId],
-            references: [user.id],
-        }),
-        oauthRefreshToken: one(oauthRefreshToken, {
-            fields: [oauthAccessToken.refreshId],
-            references: [oauthRefreshToken.id],
-        }),
-    }),
-);
-
-export const oauthConsentRelations = relations(oauthConsent, ({ one }) => ({
-    oauthClient: one(oauthClient, {
-        fields: [oauthConsent.clientId],
-        references: [oauthClient.clientId],
-    }),
-    user: one(user, {
-        fields: [oauthConsent.userId],
-        references: [user.id],
-    }),
-}));

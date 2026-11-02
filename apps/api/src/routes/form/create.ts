@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { createFieldsAndOptions } from "~/lib/form/service";
@@ -54,13 +53,13 @@ export const createRoute = route().post(
 
         // Fetch complete form with fields
         const createdForm = await db.query.form.findFirst({
-            where: eq(schema.form.id, form.id),
+            where: { id: form.id },
             with: {
                 fields: {
-                    orderBy: (fields, { asc }) => [asc(fields.order)],
+                    orderBy: { order: "asc" },
                     with: {
                         options: {
-                            orderBy: (options, { asc }) => [asc(options.order)],
+                            orderBy: { order: "asc" },
                         },
                     },
                 },

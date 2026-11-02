@@ -1,1 +1,0 @@
-ALTER TABLE "org_study_program_membership" ALTER COLUMN "start_year" DROP NOT NULL;

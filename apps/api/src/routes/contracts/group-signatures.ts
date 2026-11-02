@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { and, eq, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
@@ -37,7 +36,7 @@ export const groupSignaturesRoute = route().get(
         const { db } = c.get("ctx");
 
         const grp = await db.query.group.findFirst({
-            where: eq(schema.group.slug, groupSlug),
+            where: { slug: groupSlug },
         });
 
         if (!grp) {
@@ -45,11 +44,11 @@ export const groupSignaturesRoute = route().get(
         }
 
         const activeContract = await db.query.contract.findFirst({
-            where: eq(schema.contract.isActive, true),
+            where: { isActive: true },
         });
 
         const memberships = await db.query.groupMembership.findMany({
-            where: eq(schema.groupMembership.groupSlug, groupSlug),
+            where: { groupSlug },
             with: { user: true },
         });
 
@@ -58,13 +57,10 @@ export const groupSignaturesRoute = route().get(
         const signatures =
             activeContract && memberIds.length > 0
                 ? await db.query.contractSignature.findMany({
-                      where: and(
-                          eq(
-                              schema.contractSignature.contractId,
-                              activeContract.id,
-                          ),
-                          inArray(schema.contractSignature.userId, memberIds),
-                      ),
+                      where: {
+                          contractId: activeContract.id,
+                          userId: { in: memberIds },
+                      },
                   })
                 : [];
 

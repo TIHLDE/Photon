@@ -4,6 +4,8 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
+import { authQueryOptions } from "#/api/auth";
+import { RoleQueryKeys } from "#/api/queries/roles";
 import { fetchPrivateObjectUrl } from "#/lib/assets";
 import type { QueryParamsHelper } from "@tihlde/sdk/types";
 import type {
@@ -24,10 +26,12 @@ import type {
 export const GroupQueryKeys = {
     listInfinite: ["groups", "list-infinite"] as const,
     list: ["groups", "list-paged"] as const,
+    archived: ["groups", "archived"] as const,
     mine: ["groups", "mine"] as const,
     detail: ["groups", "detail"] as const,
     members: ["groups", "members"] as const,
     formerMembers: ["groups", "former-members"] as const,
+    joinRequests: ["groups", "join-requests"] as const,
     fines: ["groups", "fines"] as const,
     laws: ["groups", "laws"] as const,
     forms: ["groups", "forms"] as const,
@@ -63,6 +67,23 @@ export const getGroupsInfiniteQuery = (
         queryFn: () => apiClient.get("/api/groups"),
         initialPageParam: 0,
         getNextPageParam: () => undefined,
+    });
+
+/**
+ * `userId` er `null` for en utlogget besøkende og `undefined` mens sesjonen
+ * ennå ikke er kjent.
+ */
+export const getArchivedGroupsQuery = (userId: string | null | undefined) =>
+    queryOptions({
+        // Arkiverte private grupper vises bare for medlemmene, og utlogging
+        // tømmer ikke cachen. Venter på sesjonen, så et innlogget svar aldri
+        // havner under den utloggede nøkkelen.
+        queryKey: [...GroupQueryKeys.archived, userId ?? null],
+        enabled: userId !== undefined,
+        queryFn: () =>
+            apiClient.get("/api/groups", {
+                searchParams: { archived: "true" },
+            }),
     });
 
 export const getMyGroupsQuery = () =>
@@ -143,6 +164,57 @@ export const deleteGroupMutation = mutationOptions({
     },
 });
 
+function invalidateAfterArchiveChange(
+    slug: string,
+    client: { invalidateQueries: (filters: object) => unknown },
+) {
+    client.invalidateQueries(getGroupBySlugQuery(slug));
+    // Tilgangene gruppen deler ut følger arkiveringen, og de ligger i sesjonen.
+    client.invalidateQueries({ queryKey: authQueryOptions.queryKey });
+    for (const queryKey of [
+        GroupQueryKeys.list,
+        GroupQueryKeys.listInfinite,
+        GroupQueryKeys.archived,
+        GroupQueryKeys.mine,
+    ]) {
+        client.invalidateQueries({ queryKey: [...queryKey], exact: false });
+    }
+    // Arkivering sletter gruppens bøter og flytter medlemmene til
+    // «tidligere medlemmer», så vervene står uten innehavere.
+    for (const queryKey of [
+        GroupQueryKeys.fines,
+        GroupQueryKeys.members,
+        GroupQueryKeys.formerMembers,
+    ]) {
+        client.invalidateQueries({
+            queryKey: [...queryKey, slug],
+            exact: false,
+        });
+    }
+    // Alle grupper, ikke bare denne: en undergruppeleder mister også det
+    // koblede ledervervet i HS.
+    client.invalidateQueries({
+        queryKey: [...RoleQueryKeys.positions],
+        exact: false,
+    });
+}
+
+export const archiveGroupMutation = mutationOptions({
+    mutationFn: ({ slug }: { slug: string }) =>
+        apiClient.post("/api/groups/{slug}/archive", { params: { slug } }),
+    onSuccess(_, vars, __, ctx) {
+        invalidateAfterArchiveChange(vars.slug, ctx.client);
+    },
+});
+
+export const unarchiveGroupMutation = mutationOptions({
+    mutationFn: ({ slug }: { slug: string }) =>
+        apiClient.post("/api/groups/{slug}/unarchive", { params: { slug } }),
+    onSuccess(_, vars, __, ctx) {
+        invalidateAfterArchiveChange(vars.slug, ctx.client);
+    },
+});
+
 // -- Members --
 
 type MemberListFilters = Omit<
@@ -200,6 +272,11 @@ export const addGroupMemberMutation = mutationOptions({
             queryKey: [...GroupQueryKeys.members, vars.groupSlug],
             exact: false,
         });
+        // Å legge til noen besvarer også forespørselen deres.
+        ctx.client.invalidateQueries({
+            queryKey: [...GroupQueryKeys.joinRequests],
+            exact: false,
+        });
     },
 });
 
@@ -246,6 +323,134 @@ export const removeGroupMemberMutation = mutationOptions({
             queryKey: [...GroupQueryKeys.formerMembers, vars.groupSlug],
             exact: false,
         });
+    },
+});
+
+function invalidateAfterOwnMembershipChange(
+    slug: string,
+    client: { invalidateQueries: (filters: object) => unknown },
+) {
+    client.invalidateQueries({ queryKey: authQueryOptions.queryKey });
+    // Detaljen har felter som avhenger av hvem som spør (bøter-tilgang).
+    client.invalidateQueries(getGroupBySlugQuery(slug));
+    // En leder som går, skal ikke lenger se gruppas forespørsler.
+    client.invalidateQueries({
+        queryKey: [...GroupQueryKeys.joinRequests],
+        exact: false,
+    });
+    // Bøtelista viser alles bøter bare til medlemmer.
+    for (const queryKey of [
+        GroupQueryKeys.members,
+        GroupQueryKeys.formerMembers,
+        GroupQueryKeys.fines,
+    ]) {
+        client.invalidateQueries({
+            queryKey: [...queryKey, slug],
+            exact: false,
+        });
+    }
+    for (const queryKey of [
+        GroupQueryKeys.list,
+        GroupQueryKeys.listInfinite,
+        GroupQueryKeys.mine,
+    ]) {
+        client.invalidateQueries({ queryKey: [...queryKey], exact: false });
+    }
+}
+
+export const requestToJoinGroupMutation = mutationOptions({
+    mutationFn: ({ groupSlug }: { groupSlug: string }) =>
+        apiClient.post("/api/groups/{groupSlug}/join", {
+            params: { groupSlug },
+        }),
+    onSuccess(_, vars, __, ctx) {
+        ctx.client.invalidateQueries(getGroupBySlugQuery(vars.groupSlug));
+    },
+});
+
+export const withdrawJoinRequestMutation = mutationOptions({
+    mutationFn: ({ groupSlug }: { groupSlug: string }) =>
+        apiClient.delete("/api/groups/{groupSlug}/join", {
+            params: { groupSlug },
+        }),
+    onSuccess(_, vars, __, ctx) {
+        ctx.client.invalidateQueries(getGroupBySlugQuery(vars.groupSlug));
+    },
+});
+
+export const getGroupJoinRequestsQuery = (groupSlug: string) =>
+    queryOptions({
+        queryKey: [...GroupQueryKeys.joinRequests, groupSlug],
+        queryFn: () =>
+            apiClient.get("/api/groups/{groupSlug}/join-requests", {
+                params: { groupSlug },
+            }),
+    });
+
+export const getPendingJoinRequestsQuery = () =>
+    queryOptions({
+        queryKey: [...GroupQueryKeys.joinRequests, { waitingOnMe: true }],
+        queryFn: () => apiClient.get("/api/groups/join-requests"),
+    });
+
+function invalidateAfterJoinRequestAnswered(
+    slug: string,
+    client: { invalidateQueries: (filters: object) => unknown },
+) {
+    client.invalidateQueries({
+        queryKey: [...GroupQueryKeys.joinRequests],
+        exact: false,
+    });
+    client.invalidateQueries({
+        queryKey: [...GroupQueryKeys.members, slug],
+        exact: false,
+    });
+    for (const queryKey of [GroupQueryKeys.list, GroupQueryKeys.listInfinite]) {
+        client.invalidateQueries({ queryKey: [...queryKey], exact: false });
+    }
+}
+
+export const approveJoinRequestMutation = mutationOptions({
+    mutationFn: ({
+        groupSlug,
+        userId,
+    }: {
+        groupSlug: string;
+        userId: string;
+    }) =>
+        apiClient.post(
+            "/api/groups/{groupSlug}/join-requests/{userId}/approve",
+            { params: { groupSlug, userId } },
+        ),
+    onSuccess(_, vars, __, ctx) {
+        invalidateAfterJoinRequestAnswered(vars.groupSlug, ctx.client);
+    },
+});
+
+export const declineJoinRequestMutation = mutationOptions({
+    mutationFn: ({
+        groupSlug,
+        userId,
+    }: {
+        groupSlug: string;
+        userId: string;
+    }) =>
+        apiClient.post(
+            "/api/groups/{groupSlug}/join-requests/{userId}/decline",
+            { params: { groupSlug, userId } },
+        ),
+    onSuccess(_, vars, __, ctx) {
+        invalidateAfterJoinRequestAnswered(vars.groupSlug, ctx.client);
+    },
+});
+
+export const leaveGroupMutation = mutationOptions({
+    mutationFn: ({ groupSlug }: { groupSlug: string }) =>
+        apiClient.post("/api/groups/{groupSlug}/leave", {
+            params: { groupSlug },
+        }),
+    onSuccess(_, vars, __, ctx) {
+        invalidateAfterOwnMembershipChange(vars.groupSlug, ctx.client);
     },
 });
 
@@ -399,14 +604,18 @@ export const updateFineMutation = mutationOptions({
             params: { groupSlug, fineId },
             json: data,
         }),
+    // Returnert, så `mutateAsync` først løses når listene er hentet på nytt:
+    // forsvarsfeltet bytter til visning og skal da vise den nye teksten.
     onSuccess(_, vars, __, ctx) {
-        ctx.client.invalidateQueries(
-            getGroupFineByIdQuery(vars.groupSlug, vars.fineId),
-        );
-        ctx.client.invalidateQueries({
-            queryKey: [...GroupQueryKeys.fines, vars.groupSlug],
-            exact: false,
-        });
+        return Promise.all([
+            ctx.client.invalidateQueries(
+                getGroupFineByIdQuery(vars.groupSlug, vars.fineId),
+            ),
+            ctx.client.invalidateQueries({
+                queryKey: [...GroupQueryKeys.fines, vars.groupSlug],
+                exact: false,
+            }),
+        ]);
     },
 });
 

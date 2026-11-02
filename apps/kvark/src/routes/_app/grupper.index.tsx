@@ -1,12 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { ReactFlow, type Node } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useCallback, useMemo } from "react";
 import z from "zod";
 
-import { getGroupsQuery } from "#/api/queries/groups";
+import { authQueryOptions } from "#/api/auth";
+import { getArchivedGroupsQuery, getGroupsQuery } from "#/api/queries/groups";
+import { ArchivedGroups } from "#/components/archived-groups";
 import { GroupListView } from "#/components/group-list-view";
 import {
     GroupTreeJunctionNode,
@@ -169,6 +171,12 @@ function GroupsPage() {
     const { visning } = Route.useSearch();
 
     const { data: groups } = useSuspenseQuery(getGroupsQuery(0));
+    const { data: session } = useQuery(authQueryOptions);
+    const { data: archivedGroups } = useQuery(
+        getArchivedGroupsQuery(
+            session === undefined ? undefined : (session?.user?.id ?? null),
+        ),
+    );
 
     const tree = useMemo(() => buildTreeInput(groups as ApiGroup[]), [groups]);
     const { nodes, edges, width, height } = useMemo(
@@ -264,6 +272,14 @@ function GroupsPage() {
                     </div>
                 </>
             ) : null}
+
+            {/* Et API fra før arkivering kjenner ikke `archived=true` og
+                svarer med alle gruppene. */}
+            <ArchivedGroups
+                groups={itemsFrom(
+                    (archivedGroups ?? []).filter((group) => group.archivedAt),
+                )}
+            />
         </div>
     );
 }

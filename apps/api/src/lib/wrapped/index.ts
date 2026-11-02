@@ -121,8 +121,8 @@ export function submittedOnly(): SQL {
 export function visibleToOwner(
     closesAt: Date,
     now: Date = new Date(),
-): SQL | undefined {
-    return now > closesAt ? submittedOnly() : undefined;
+): { submittedAt?: { isNotNull: true } } {
+    return now > closesAt ? { submittedAt: { isNotNull: true } } : {};
 }
 
 /**
@@ -162,7 +162,7 @@ export async function readShootState(
     now: Date = new Date(),
 ): Promise<Omit<CameraStatus, "canManage"> | null> {
     const event = await db.query.event.findFirst({
-        where: eq(schema.event.id, eventId),
+        where: { id: eventId },
         columns: { start: true, end: true },
     });
     if (!event) return null;
@@ -171,13 +171,10 @@ export async function readShootState(
 
     const [camera, registration, shotsUsed, draftCount] = await Promise.all([
         db.query.wrappedCamera.findFirst({
-            where: eq(schema.wrappedCamera.eventId, eventId),
+            where: { eventId },
         }),
         db.query.eventRegistration.findFirst({
-            where: and(
-                eq(schema.eventRegistration.eventId, eventId),
-                eq(schema.eventRegistration.userId, userId),
-            ),
+            where: { eventId, userId },
             columns: { status: true },
         }),
         countPhotosBy(db, eventId, userId),

@@ -1,6 +1,7 @@
 import { type NodePgDatabase, drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
+import { relations } from "./relations";
 import * as schema from "./schema";
 
 /**
@@ -237,11 +238,8 @@ export function createDb(config: {
      * `pool` is supplied — configure that pool yourself.
      */
     timeouts?: DbTimeouts;
-}): NodePgDatabase<typeof schema> {
-    const defaultConfig = {
-        casing: "snake_case",
-        schema,
-    } as const;
+}): NodePgDatabase<typeof relations> {
+    const defaultConfig = { relations } as const;
 
     const { connectionString, pool, timeouts = {} } = config;
 
@@ -281,7 +279,7 @@ export function createDb(config: {
     );
 }
 
-export { schema };
+export { relations, schema };
 
 /**
  * Database schema type
@@ -289,8 +287,13 @@ export { schema };
 export type DbSchema = typeof schema;
 
 /**
+ * Type of the relations the database client is built with
+ */
+export type DbRelations = typeof relations;
+
+/**
  * Type of a transaction
  */
 export type DbTransaction = Parameters<
-    Parameters<NodePgDatabase<typeof schema>["transaction"]>[0]
+    Parameters<NodePgDatabase<typeof relations>["transaction"]>[0]
 >[0];

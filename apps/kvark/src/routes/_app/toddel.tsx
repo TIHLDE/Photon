@@ -1,15 +1,20 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PlusIcon } from "lucide-react";
 import { Suspense } from "react";
 import { Button } from "@tihlde/ui/ui/button";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 
+import { authQueryOptions } from "#/api/auth";
 import { getToddelIssuesQuery } from "#/api/queries/toddel";
 import { IssueCard } from "#/components/issue-card";
 import { PageHeader } from "#/components/page-header";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 import { formatOsloDate } from "#/lib/date";
+
+/** TÖDDEL sitt eget skjema for Overhört-innsendinger. */
+const OVERHORT_FORM_URL =
+    "https://docs.google.com/forms/d/e/1FAIpQLSc46lX5eW9g_FI7hqlUfDYhn1SDxm5yGiSGfO8E7JpAdjy6OQ/viewform";
 
 /** Module-level so the permission lookup keeps a stable identity. */
 const TODDEL_CREATE_PERMISSIONS = ["toddel:create", "toddel:manage"] as const;
@@ -41,7 +46,7 @@ function IssueGridSkeleton() {
         <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 8 }, (_, index) => (
                 <li key={index} className="flex flex-col gap-2">
-                    <Skeleton className="aspect-[3/4] w-full" />
+                    <Skeleton className="aspect-3/4 w-full" />
                     <Skeleton className="h-4 w-2/3" />
                     <Skeleton className="h-4 w-1/3" />
                 </li>
@@ -82,6 +87,10 @@ function ToddelPage() {
     // et gruppe-scopet toddel:create er en ekte tilgang, og API-et avviser
     // uansett den enkelte forespørselen som ikke treffer.
     const canCreateIssue = useAnyScopePermission(TODDEL_CREATE_PERMISSIONS);
+    // Bare for innloggede og godkjente medlemmer.
+    const { data: session } = useQuery(authQueryOptions);
+    const canSubmitOverhort =
+        session?.user != null && session.user.isPendingApproval !== true;
 
     return (
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
@@ -89,18 +98,38 @@ function ToddelPage() {
                 title="TÖDDEL"
                 description="Les tidligere utgaver av TIHLDE sitt studentblad"
                 action={
-                    canCreateIssue ? (
-                        <Button
-                            render={
-                                <Link
-                                    to="/admin/toddel"
-                                    search={{ ny: true }}
-                                />
-                            }
-                        >
-                            <PlusIcon className="size-4" />
-                            Ny utgave
-                        </Button>
+                    // PageHeader viser handlingsfeltet så lenge `action` er
+                    // satt, så null når ingen av knappene gjelder.
+                    canSubmitOverhort || canCreateIssue ? (
+                        <>
+                            {canSubmitOverhort ? (
+                                <Button
+                                    className="ph-no-capture"
+                                    render={
+                                        <a
+                                            href={OVERHORT_FORM_URL}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        />
+                                    }
+                                >
+                                    Send inn til Overhört
+                                </Button>
+                            ) : null}
+                            {canCreateIssue ? (
+                                <Button
+                                    render={
+                                        <Link
+                                            to="/admin/toddel"
+                                            search={{ ny: true }}
+                                        />
+                                    }
+                                >
+                                    <PlusIcon className="size-4" />
+                                    Ny utgave
+                                </Button>
+                            ) : null}
+                        </>
                     ) : null
                 }
             />

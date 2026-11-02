@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { promoteFromWaitlist } from "~/lib/event/payment";
 import { cancelPayment, getPaymentDetails } from "~/lib/vipps";
-import { issueStrike } from "~/lib/event/strikes";
+import { issueStrike, wasPromotedAfterStart } from "~/lib/event/strikes";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "../../../lib/route";
 import { requireAuth } from "../../../middleware/auth";
@@ -38,6 +38,7 @@ export const deleteEventRegistrationRoute = route().delete(
                 capacity: true,
                 canCauseStrikes: true,
                 cancellationDeadline: true,
+                start: true,
                 isPaidEvent: true,
                 priceMinor: true,
                 enforcesPreviousStrikes: true,
@@ -46,7 +47,7 @@ export const deleteEventRegistrationRoute = route().delete(
                 pools: true,
                 priorityUsers: true,
             },
-            where: eq(schema.event.id, eventId),
+            where: { id: eventId },
         });
 
         // En betalt plass kan ikke gis fra seg av brukeren selv: pengene er
@@ -55,12 +56,7 @@ export const deleteEventRegistrationRoute = route().delete(
         if (event?.isPaidEvent) {
             const paidPayment = await db.query.eventPayment.findFirst({
                 columns: { id: true },
-                where: (payment, { eq, and }) =>
-                    and(
-                        eq(payment.userId, userId),
-                        eq(payment.eventId, eventId),
-                        eq(payment.status, "paid"),
-                    ),
+                where: { userId, eventId, status: "paid" },
             });
 
             if (paidPayment) {
@@ -84,13 +80,12 @@ export const deleteEventRegistrationRoute = route().delete(
              */
             const startedPayment = await db.query.eventPayment.findFirst({
                 columns: { id: true, providerPaymentId: true },
-                where: (payment, { eq, and, isNotNull }) =>
-                    and(
-                        eq(payment.userId, userId),
-                        eq(payment.eventId, eventId),
-                        eq(payment.status, "pending"),
-                        isNotNull(payment.providerPaymentId),
-                    ),
+                where: {
+                    userId,
+                    eventId,
+                    status: "pending",
+                    providerPaymentId: { isNotNull: true },
+                },
             });
 
             if (startedPayment?.providerPaymentId) {
@@ -181,7 +176,8 @@ export const deleteEventRegistrationRoute = route().delete(
             !event.isPaidEvent &&
             event.cancellationDeadline != null &&
             deleted.status === "registered" &&
-            new Date() > event.cancellationDeadline;
+            new Date() > event.cancellationDeadline &&
+            !wasPromotedAfterStart(deleted.promotedFromWaitlistAt, event.start);
 
         if (isLateCancellation) {
             await issueStrike(db, {

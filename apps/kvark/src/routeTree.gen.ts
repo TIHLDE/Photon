@@ -15,6 +15,7 @@ import { Route as DevRouteImport } from './routes/_dev'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppSplatRouteImport } from './routes/_app/$'
+import { Route as AppInteressegrupperRouteImport } from './routes/_app/interessegrupper'
 import { Route as AppKokebokRouteImport } from './routes/_app/kokebok'
 import { Route as AppNyStudentRouteImport } from './routes/_app/ny-student'
 import { Route as AppOpptakRouteImport } from './routes/_app/opptak'
@@ -54,7 +55,6 @@ import { Route as AppGalleriIndexRouteImport } from './routes/_app/galleri.index
 import { Route as AppGalleriSlugRouteImport } from './routes/_app/galleri.$slug'
 import { Route as AppGrupperIndexRouteImport } from './routes/_app/grupper.index'
 import { Route as AppGrupperSlugRouteImport } from './routes/_app/grupper.$slug'
-import { Route as AppKokebokStudyIdRouteImport } from './routes/_app/kokebok.$studyId'
 import { Route as AppKontraktIndexRouteImport } from './routes/_app/kontrakt/index'
 import { Route as AppNyheterIndexRouteImport } from './routes/_app/nyheter.index'
 import { Route as AppNyheterSlugRouteImport } from './routes/_app/nyheter.$slug'
@@ -73,7 +73,6 @@ import { Route as AppArrangementerSlugTitleRouteImport } from './routes/_app/arr
 import { Route as AppArrangementerSlugKameraRouteImport } from './routes/_app/arrangementer.$slug_.kamera'
 import { Route as AppGalleriSlugTitleRouteImport } from './routes/_app/galleri.$slug.$title'
 import { Route as AppGrupperSlugSectionRouteImport } from './routes/_app/grupper.$slug.$section'
-import { Route as AppKokebokStudyIdSplatRouteImport } from './routes/_app/kokebok.$studyId.$'
 import { Route as AppNyheterSlugTitleRouteImport } from './routes/_app/nyheter.$slug.$title'
 import { Route as AppProfilIdIndexRouteImport } from './routes/_app/profil/$id/index'
 import { Route as AppProfilIdArrangementerRouteImport } from './routes/_app/profil/$id/arrangementer'
@@ -110,6 +109,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppSplatRoute = AppSplatRouteImport.update({
   id: '/$',
   path: '/$',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppInteressegrupperRoute = AppInteressegrupperRouteImport.update({
+  id: '/interessegrupper',
+  path: '/interessegrupper',
   getParentRoute: () => AppRoute,
 } as any)
 const AppKokebokRoute = AppKokebokRouteImport.update({
@@ -306,11 +310,6 @@ const AppGrupperSlugRoute = AppGrupperSlugRouteImport.update({
   path: '/grupper/$slug',
   getParentRoute: () => AppRoute,
 } as any)
-const AppKokebokStudyIdRoute = AppKokebokStudyIdRouteImport.update({
-  id: '/$studyId',
-  path: '/$studyId',
-  getParentRoute: () => AppKokebokRoute,
-} as any)
 const AppKontraktIndexRoute = AppKontraktIndexRouteImport.update({
   id: '/kontrakt/',
   path: '/kontrakt/',
@@ -405,11 +404,6 @@ const AppGrupperSlugSectionRoute = AppGrupperSlugSectionRouteImport.update({
   path: '/$section',
   getParentRoute: () => AppGrupperSlugRoute,
 } as any)
-const AppKokebokStudyIdSplatRoute = AppKokebokStudyIdSplatRouteImport.update({
-  id: '/$',
-  path: '/$',
-  getParentRoute: () => AppKokebokStudyIdRoute,
-} as any)
 const AppNyheterSlugTitleRoute = AppNyheterSlugTitleRouteImport.update({
   id: '/$title',
   path: '/$title',
@@ -470,7 +464,8 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/$': typeof AppSplatRoute
-  '/kokebok': typeof AppKokebokRouteWithChildren
+  '/interessegrupper': typeof AppInteressegrupperRoute
+  '/kokebok': typeof AppKokebokRoute
   '/ny-student': typeof AppNyStudentRoute
   '/opptak': typeof AppOpptakRoute
   '/personvern': typeof AppPersonvernRoute
@@ -503,7 +498,6 @@ export interface FileRoutesByFullPath {
   '/bedrift/studiene': typeof AppBedriftStudieneRoute
   '/galleri/$slug': typeof AppGalleriSlugRouteWithChildren
   '/grupper/$slug': typeof AppGrupperSlugRouteWithChildren
-  '/kokebok/$studyId': typeof AppKokebokStudyIdRouteWithChildren
   '/nyheter/$slug': typeof AppNyheterSlugRouteWithChildren
   '/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/profil/$id': typeof AppProfilIdRouteWithChildren
@@ -527,7 +521,6 @@ export interface FileRoutesByFullPath {
   '/arrangementer/$slug/kamera': typeof AppArrangementerSlugKameraRoute
   '/galleri/$slug/$title': typeof AppGalleriSlugTitleRoute
   '/grupper/$slug/$section': typeof AppGrupperSlugSectionRoute
-  '/kokebok/$studyId/$': typeof AppKokebokStudyIdSplatRoute
   '/nyheter/$slug/$title': typeof AppNyheterSlugTitleRoute
   '/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
   '/profil/$id/innstillinger': typeof AppProfilIdInnstillingerRoute
@@ -542,7 +535,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/$': typeof AppSplatRoute
-  '/kokebok': typeof AppKokebokRouteWithChildren
+  '/interessegrupper': typeof AppInteressegrupperRoute
+  '/kokebok': typeof AppKokebokRoute
   '/ny-student': typeof AppNyStudentRoute
   '/opptak': typeof AppOpptakRoute
   '/personvern': typeof AppPersonvernRoute
@@ -575,7 +569,6 @@ export interface FileRoutesByTo {
   '/bedrift/studiene': typeof AppBedriftStudieneRoute
   '/galleri/$slug': typeof AppGalleriSlugRouteWithChildren
   '/grupper/$slug': typeof AppGrupperSlugRouteWithChildren
-  '/kokebok/$studyId': typeof AppKokebokStudyIdRouteWithChildren
   '/nyheter/$slug': typeof AppNyheterSlugRouteWithChildren
   '/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/sporreskjema/$id': typeof AppSporreskjemaIdRoute
@@ -598,7 +591,6 @@ export interface FileRoutesByTo {
   '/arrangementer/$slug/kamera': typeof AppArrangementerSlugKameraRoute
   '/galleri/$slug/$title': typeof AppGalleriSlugTitleRoute
   '/grupper/$slug/$section': typeof AppGrupperSlugSectionRoute
-  '/kokebok/$studyId/$': typeof AppKokebokStudyIdSplatRoute
   '/nyheter/$slug/$title': typeof AppNyheterSlugTitleRoute
   '/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
   '/profil/$id/innstillinger': typeof AppProfilIdInnstillingerRoute
@@ -617,7 +609,8 @@ export interface FileRoutesById {
   '/_dev': typeof DevRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
   '/_app/$': typeof AppSplatRoute
-  '/_app/kokebok': typeof AppKokebokRouteWithChildren
+  '/_app/interessegrupper': typeof AppInteressegrupperRoute
+  '/_app/kokebok': typeof AppKokebokRoute
   '/_app/ny-student': typeof AppNyStudentRoute
   '/_app/opptak': typeof AppOpptakRoute
   '/_app/personvern': typeof AppPersonvernRoute
@@ -652,7 +645,6 @@ export interface FileRoutesById {
   '/_app/bedrift/studiene': typeof AppBedriftStudieneRoute
   '/_app/galleri/$slug': typeof AppGalleriSlugRouteWithChildren
   '/_app/grupper/$slug': typeof AppGrupperSlugRouteWithChildren
-  '/_app/kokebok/$studyId': typeof AppKokebokStudyIdRouteWithChildren
   '/_app/nyheter/$slug': typeof AppNyheterSlugRouteWithChildren
   '/_app/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/_app/profil/$id': typeof AppProfilIdRouteWithChildren
@@ -676,7 +668,6 @@ export interface FileRoutesById {
   '/_app/arrangementer/$slug_/kamera': typeof AppArrangementerSlugKameraRoute
   '/_app/galleri/$slug/$title': typeof AppGalleriSlugTitleRoute
   '/_app/grupper/$slug/$section': typeof AppGrupperSlugSectionRoute
-  '/_app/kokebok/$studyId/$': typeof AppKokebokStudyIdSplatRoute
   '/_app/nyheter/$slug/$title': typeof AppNyheterSlugTitleRoute
   '/_app/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
   '/_app/profil/$id/innstillinger': typeof AppProfilIdInnstillingerRoute
@@ -694,6 +685,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/$'
+    | '/interessegrupper'
     | '/kokebok'
     | '/ny-student'
     | '/opptak'
@@ -727,7 +719,6 @@ export interface FileRouteTypes {
     | '/bedrift/studiene'
     | '/galleri/$slug'
     | '/grupper/$slug'
-    | '/kokebok/$studyId'
     | '/nyheter/$slug'
     | '/playground/markdown'
     | '/profil/$id'
@@ -751,7 +742,6 @@ export interface FileRouteTypes {
     | '/arrangementer/$slug/kamera'
     | '/galleri/$slug/$title'
     | '/grupper/$slug/$section'
-    | '/kokebok/$studyId/$'
     | '/nyheter/$slug/$title'
     | '/profil/$id/arrangementer'
     | '/profil/$id/innstillinger'
@@ -766,6 +756,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$'
+    | '/interessegrupper'
     | '/kokebok'
     | '/ny-student'
     | '/opptak'
@@ -799,7 +790,6 @@ export interface FileRouteTypes {
     | '/bedrift/studiene'
     | '/galleri/$slug'
     | '/grupper/$slug'
-    | '/kokebok/$studyId'
     | '/nyheter/$slug'
     | '/playground/markdown'
     | '/sporreskjema/$id'
@@ -822,7 +812,6 @@ export interface FileRouteTypes {
     | '/arrangementer/$slug/kamera'
     | '/galleri/$slug/$title'
     | '/grupper/$slug/$section'
-    | '/kokebok/$studyId/$'
     | '/nyheter/$slug/$title'
     | '/profil/$id/arrangementer'
     | '/profil/$id/innstillinger'
@@ -840,6 +829,7 @@ export interface FileRouteTypes {
     | '/_dev'
     | '/admin'
     | '/_app/$'
+    | '/_app/interessegrupper'
     | '/_app/kokebok'
     | '/_app/ny-student'
     | '/_app/opptak'
@@ -875,7 +865,6 @@ export interface FileRouteTypes {
     | '/_app/bedrift/studiene'
     | '/_app/galleri/$slug'
     | '/_app/grupper/$slug'
-    | '/_app/kokebok/$studyId'
     | '/_app/nyheter/$slug'
     | '/_app/playground/markdown'
     | '/_app/profil/$id'
@@ -899,7 +888,6 @@ export interface FileRouteTypes {
     | '/_app/arrangementer/$slug_/kamera'
     | '/_app/galleri/$slug/$title'
     | '/_app/grupper/$slug/$section'
-    | '/_app/kokebok/$studyId/$'
     | '/_app/nyheter/$slug/$title'
     | '/_app/profil/$id/arrangementer'
     | '/_app/profil/$id/innstillinger'
@@ -961,6 +949,13 @@ declare module '@tanstack/react-router' {
       path: '/$'
       fullPath: '/$'
       preLoaderRoute: typeof AppSplatRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/interessegrupper': {
+      id: '/_app/interessegrupper'
+      path: '/interessegrupper'
+      fullPath: '/interessegrupper'
+      preLoaderRoute: typeof AppInteressegrupperRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/kokebok': {
@@ -1236,13 +1231,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGrupperSlugRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/kokebok/$studyId': {
-      id: '/_app/kokebok/$studyId'
-      path: '/$studyId'
-      fullPath: '/kokebok/$studyId'
-      preLoaderRoute: typeof AppKokebokStudyIdRouteImport
-      parentRoute: typeof AppKokebokRoute
-    }
     '/_app/kontrakt/': {
       id: '/_app/kontrakt/'
       path: '/kontrakt'
@@ -1369,13 +1357,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGrupperSlugSectionRouteImport
       parentRoute: typeof AppGrupperSlugRoute
     }
-    '/_app/kokebok/$studyId/$': {
-      id: '/_app/kokebok/$studyId/$'
-      path: '/$'
-      fullPath: '/kokebok/$studyId/$'
-      preLoaderRoute: typeof AppKokebokStudyIdSplatRouteImport
-      parentRoute: typeof AppKokebokStudyIdRoute
-    }
     '/_app/nyheter/$slug/$title': {
       id: '/_app/nyheter/$slug/$title'
       path: '/$title'
@@ -1449,29 +1430,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AppKokebokStudyIdRouteChildren {
-  AppKokebokStudyIdSplatRoute: typeof AppKokebokStudyIdSplatRoute
-}
-
-const AppKokebokStudyIdRouteChildren: AppKokebokStudyIdRouteChildren = {
-  AppKokebokStudyIdSplatRoute: AppKokebokStudyIdSplatRoute,
-}
-
-const AppKokebokStudyIdRouteWithChildren =
-  AppKokebokStudyIdRoute._addFileChildren(AppKokebokStudyIdRouteChildren)
-
-interface AppKokebokRouteChildren {
-  AppKokebokStudyIdRoute: typeof AppKokebokStudyIdRouteWithChildren
-}
-
-const AppKokebokRouteChildren: AppKokebokRouteChildren = {
-  AppKokebokStudyIdRoute: AppKokebokStudyIdRouteWithChildren,
-}
-
-const AppKokebokRouteWithChildren = AppKokebokRoute._addFileChildren(
-  AppKokebokRouteChildren,
-)
-
 interface AppArrangementerSlugRouteChildren {
   AppArrangementerSlugTitleRoute: typeof AppArrangementerSlugTitleRoute
 }
@@ -1543,7 +1501,8 @@ const AppProfilIdRouteWithChildren = AppProfilIdRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppSplatRoute: typeof AppSplatRoute
-  AppKokebokRoute: typeof AppKokebokRouteWithChildren
+  AppInteressegrupperRoute: typeof AppInteressegrupperRoute
+  AppKokebokRoute: typeof AppKokebokRoute
   AppNyStudentRoute: typeof AppNyStudentRoute
   AppOpptakRoute: typeof AppOpptakRoute
   AppPersonvernRoute: typeof AppPersonvernRoute
@@ -1576,7 +1535,8 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppSplatRoute: AppSplatRoute,
-  AppKokebokRoute: AppKokebokRouteWithChildren,
+  AppInteressegrupperRoute: AppInteressegrupperRoute,
+  AppKokebokRoute: AppKokebokRoute,
   AppNyStudentRoute: AppNyStudentRoute,
   AppOpptakRoute: AppOpptakRoute,
   AppPersonvernRoute: AppPersonvernRoute,

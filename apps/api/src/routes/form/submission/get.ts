@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { canManageForm } from "~/lib/form/service";
 import { computeClassStanding } from "~/lib/event/priority";
@@ -42,10 +41,7 @@ export const getSubmissionRoute = route().get(
 
         // Get submission
         const submission = await db.query.formSubmission.findFirst({
-            where: and(
-                eq(schema.formSubmission.id, submissionId),
-                eq(schema.formSubmission.formId, formId),
-            ),
+            where: { id: submissionId, formId },
             with: {
                 user: true,
                 answers: {

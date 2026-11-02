@@ -131,7 +131,13 @@ export const createApp = async (variables?: Variables) => {
                     }
                     return undefined;
                 },
-                allowHeaders: ["Content-Type", "Authorization"],
+                // `x-captcha-response` carries the Turnstile token on sign-up;
+                // without it the browser's preflight blocks the request.
+                allowHeaders: [
+                    "Content-Type",
+                    "Authorization",
+                    "x-captcha-response",
+                ],
                 allowMethods: [
                     "GET",
                     "POST",

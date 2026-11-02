@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { canSeeArchivedNews } from "~/lib/news/middleware";
 import { describeRoute } from "~/lib/openapi";
@@ -44,13 +43,12 @@ export const getRoute = route().get(
         const { id } = params.data;
 
         const newsArticle = await db.query.news.findFirst({
-            where: eq(schema.news.id, id),
+            where: { id },
             with: {
                 creator: {
                     columns: {
                         id: true,
                         name: true,
-                        email: true,
                     },
                 },
                 reactions: {

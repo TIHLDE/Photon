@@ -8,7 +8,9 @@ import { Schema } from "~/lib/openapi";
  */
 export const COMPANY_CONTACT_EVENT_TYPES = [
     "Bedriftspresentasjon",
+    "Lunsjpresentasjon",
     "Kurs/Workshop",
+    "Frokostforedrag",
     "Bedriftsbesøk",
     "Annonse",
     "Insta-takeover",
@@ -35,6 +37,44 @@ export const companyContactSchema = Schema(
             .email()
             .max(320)
             .meta({ description: "Email address to reply to" }),
+        phone: z
+            .string()
+            .max(30)
+            .optional()
+            .meta({ description: "Phone number to reach the contact on" }),
+        companyType: z
+            .string()
+            .min(1)
+            .max(100)
+            .meta({ description: "Kind of company, e.g. size or sector" }),
+        hasTrondheimOffice: z.boolean().optional().meta({
+            description:
+                "Whether the company has offices in Trondheim fit for a visit",
+        }),
+        about: z
+            .string()
+            .min(1)
+            .max(5000)
+            .meta({ description: "What the company is and works with" }),
+        themes: z
+            .array(z.string().min(1).max(100))
+            .max(20)
+            .default([])
+            .meta({ description: "Topics the company could talk about" }),
+        classLevels: z
+            .array(z.string().min(1).max(100))
+            .max(10)
+            .default([])
+            .meta({ description: "Year groups the company wants to reach" }),
+        participants: z
+            .string()
+            .max(100)
+            .optional()
+            .meta({ description: "Expected number of participants" }),
+        extras: z.array(z.string().min(1).max(100)).max(20).default([]).meta({
+            description:
+                "Collaborations with other linjeforeninger and other extras",
+        }),
         eventTypes: z.array(z.string().min(1).max(100)).min(1).max(20).meta({
             description: "Event formats the company is interested in",
         }),

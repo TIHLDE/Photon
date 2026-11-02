@@ -50,7 +50,7 @@ export const createPaymentRoute = route().post(
 
         // Get event details
         const event = await db.query.event.findFirst({
-            where: (event, { eq }) => eq(event.id, eventId),
+            where: { id: eventId },
         });
 
         if (!event) {
@@ -65,8 +65,7 @@ export const createPaymentRoute = route().post(
 
         // Check that user has a registration with "registered" status
         const registration = await db.query.eventRegistration.findFirst({
-            where: (reg, { eq, and }) =>
-                and(eq(reg.eventId, eventId), eq(reg.userId, userId)),
+            where: { eventId, userId },
         });
 
         if (!registration) {
@@ -83,8 +82,7 @@ export const createPaymentRoute = route().post(
 
         // Check for existing payments
         const existingPayments = await db.query.eventPayment.findMany({
-            where: (payment, { eq, and }) =>
-                and(eq(payment.eventId, eventId), eq(payment.userId, userId)),
+            where: { eventId, userId },
         });
 
         // An unstarted obligation (created automatically on registration) is a

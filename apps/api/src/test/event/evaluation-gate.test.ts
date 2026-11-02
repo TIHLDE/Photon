@@ -91,7 +91,7 @@ describe("unanswered evaluations block registration", () => {
             expect(json.message).toContain("Bedpres med Bekk");
 
             const rows = await ctx.db.query.eventRegistration.findMany({
-                where: (reg, { eq }) => eq(reg.eventId, next.id),
+                where: { eventId: next.id },
             });
             expect(rows).toHaveLength(0);
         },

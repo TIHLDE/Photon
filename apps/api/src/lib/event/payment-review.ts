@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, eq, gt, isNull, lte } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { AppContext } from "../ctx";
 import { env } from "../env";
 import { sendNotification } from "../notification";
@@ -66,15 +66,14 @@ export async function notifyOrganizersOfPaymentsWithoutSpot(
 
     const payments = await ctx.db.query.eventPayment.findMany({
         columns: { userId: true },
-        where: (p, { and, eq }) =>
-            and(eq(p.eventId, eventId), eq(p.status, "paid")),
+        where: { eventId, status: "paid" },
     });
 
     if (payments.length === 0) return 0;
 
     const registrations = await ctx.db.query.eventRegistration.findMany({
         columns: { userId: true, status: true },
-        where: eq(schema.eventRegistration.eventId, eventId),
+        where: { eventId },
         with: { user: { columns: { name: true } } },
     });
 
@@ -156,10 +155,7 @@ async function findOrganizerRecipients(
     if (event.organizerGroupSlug) {
         const leaders = await ctx.db.query.groupMembership.findMany({
             columns: { userId: true },
-            where: and(
-                eq(schema.groupMembership.groupSlug, event.organizerGroupSlug),
-                eq(schema.groupMembership.role, "leader"),
-            ),
+            where: { groupSlug: event.organizerGroupSlug, role: "leader" },
         });
 
         if (leaders.length > 0) {
@@ -184,12 +180,11 @@ export async function reviewPaymentsForStartedEvents(
 
     const started = await ctx.db.query.event.findMany({
         columns: { id: true },
-        where: and(
-            eq(schema.event.isPaidEvent, true),
-            isNull(schema.event.paymentReviewNotifiedAt),
-            lte(schema.event.start, now),
-            gt(schema.event.start, lookback),
-        ),
+        where: {
+            isPaidEvent: true,
+            paymentReviewNotifiedAt: { isNull: true },
+            start: { lte: now, gt: lookback },
+        },
     });
 
     for (const event of started) {

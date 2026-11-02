@@ -35,14 +35,14 @@ export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
             // blåser opp raden headeren strekker seg etter, så avataren ble
             // merkbart større idet et bilde ble lagt til.
             avatar={
-                <Avatar className="size-16 shrink-0 md:row-span-3 md:size-24">
+                <Avatar className="size-16 shrink-0 md:size-24">
                     {user.avatarUrl ? (
                         <AvatarImage
                             src={avatarImageUrl(user.avatarUrl)}
                             alt={user.name}
                         />
                     ) : null}
-                    <AvatarFallback className="text-2xl">
+                    <AvatarFallback textSize="2xl">
                         {initials(user.name)}
                     </AvatarFallback>
                 </Avatar>

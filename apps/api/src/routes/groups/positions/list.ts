@@ -5,6 +5,7 @@ import { assertGroupVisible } from "~/lib/group";
 import { readLinkedPositionPermissionsBatch } from "~/lib/group/linked-leader";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { userImageExtra } from "~/lib/user/avatar";
 import { requireAuth } from "~/middleware/auth";
 import { positionListSchema } from "./schema";
 
@@ -34,7 +35,10 @@ export const listPositionsRoute = route().get(
         const groupSlug = c.req.param("groupSlug");
 
         const [group] = await db
-            .select({ slug: schema.group.slug, type: schema.group.type })
+            .select({
+                slug: schema.group.slug,
+                type: schema.group.type,
+            })
             .from(schema.group)
             .where(eq(schema.group.slug, groupSlug))
             .limit(1);
@@ -48,18 +52,19 @@ export const listPositionsRoute = route().get(
         await assertGroupVisible(ctx, group, c.get("user").id);
 
         const positions = await db.query.groupPosition.findMany({
-            where: eq(schema.groupPosition.groupSlug, groupSlug),
+            where: { groupSlug },
             with: {
                 holders: {
                     with: {
                         user: {
-                            columns: { id: true, name: true, image: true },
+                            columns: { id: true, name: true },
+                            extras: userImageExtra,
                         },
                     },
-                    orderBy: (holder, { asc }) => [asc(holder.createdAt)],
+                    orderBy: { createdAt: "asc" },
                 },
             },
-            orderBy: (position, { asc }) => [asc(position.name)],
+            orderBy: { name: "asc" },
         });
 
         // A verv linked to a subgroup shares its grant with that subgroup's

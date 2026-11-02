@@ -97,7 +97,7 @@ async function closeCamera(ctx: IntegrationTestContext, eventId: string) {
 
 function photoRow(ctx: IntegrationTestContext, id: string) {
     return ctx.db.query.wrappedPhoto.findFirst({
-        where: eq(schema.wrappedPhoto.id, id),
+        where: { id },
     });
 }
 
@@ -254,7 +254,7 @@ describe("wrapped drafts", () => {
             expect(await ctx.bucket.getAsset(row!.assetKey)).toBeNull();
             expect(
                 await ctx.db.query.asset.findMany({
-                    where: eq(schema.asset.uploadedById, member.id),
+                    where: { uploadedById: member.id },
                 }),
             ).toEqual([]);
         },

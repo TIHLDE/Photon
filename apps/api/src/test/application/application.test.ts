@@ -70,7 +70,7 @@ describe("Søknader", () => {
             expect(asset?.status).toBe("ready");
 
             const stored = await ctx.db.query.application.findFirst({
-                where: eq(schema.application.id, created.id),
+                where: { id: created.id },
             });
             expect(stored?.status).toBe("new");
             expect(stored?.pdfAssetKey).toBeTruthy();
@@ -88,6 +88,42 @@ describe("Søknader", () => {
             expect(myApplications[0]?.type).toBe("expense");
             expect(myApplications[0]?.hasPdf).toBe(true);
         },
+    );
+
+    integrationTest(
+        "expense: an archived group takes no new applications",
+        async ({ ctx }) => {
+            const group = await setupGroup(ctx);
+            const member = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(member);
+
+            const submit = async () =>
+                client.api.applications.expense.$post({
+                    json: {
+                        contactName: "Test Testesen",
+                        contactEmail: "test@tihlde.org",
+                        amountNok: 100,
+                        expenseDate: "2026-07-20",
+                        groupSlug: group.slug,
+                        budgetType: "group_budget",
+                        description: "Kaffe",
+                        accountNumber: "1234.56.78901",
+                        attachmentKeys: [await stageAttachment(ctx, member.id)],
+                    },
+                });
+            const setArchived = (archivedAt: Date | null) =>
+                ctx.db
+                    .update(schema.group)
+                    .set({ archivedAt })
+                    .where(eq(schema.group.slug, group.slug));
+
+            await setArchived(new Date());
+            expect((await submit()).status).toBe(400);
+
+            await setArchived(null);
+            expect((await submit()).status).toBe(201);
+        },
+        500_000,
     );
 
     integrationTest(
@@ -120,7 +156,7 @@ describe("Søknader", () => {
             expect(created.pdfGenerated).toBe(true);
 
             const stored = await ctx.db.query.applicationExpense.findFirst({
-                where: eq(schema.applicationExpense.applicationId, created.id),
+                where: { applicationId: created.id },
             });
             expect(stored?.amountNok).toBe(249.9);
 

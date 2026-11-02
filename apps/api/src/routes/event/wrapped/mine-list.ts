@@ -1,5 +1,3 @@
-import { schema } from "@photon/db";
-import { and, asc, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
@@ -33,7 +31,7 @@ export const getMyWrappedPhotosRoute = route().get(
         const { eventId } = c.req.valid("param");
 
         const event = await db.query.event.findFirst({
-            where: eq(schema.event.id, eventId),
+            where: { id: eventId },
             columns: { start: true, end: true },
         });
         if (!event) {
@@ -41,15 +39,12 @@ export const getMyWrappedPhotosRoute = route().get(
         }
 
         const photos = await db.query.wrappedPhoto.findMany({
-            where: and(
-                eq(schema.wrappedPhoto.eventId, eventId),
-                eq(schema.wrappedPhoto.uploadedById, c.get("user").id),
-                visibleToOwner(cameraWindow(event).closesAt),
-            ),
-            orderBy: [
-                asc(schema.wrappedPhoto.createdAt),
-                asc(schema.wrappedPhoto.id),
-            ],
+            where: {
+                eventId,
+                uploadedById: c.get("user").id,
+                ...visibleToOwner(cameraWindow(event).closesAt),
+            },
+            orderBy: { createdAt: "asc", id: "asc" },
             columns: {
                 id: true,
                 source: true,

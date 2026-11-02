@@ -93,7 +93,7 @@ export function GroupEventsTab({
                         : "Gruppen har ingen tidligere arrangementer."}
                 </p>
             ) : (
-                <ul className="flex flex-col gap-3">
+                <ul className="flex flex-col">
                     {events.map((event) => (
                         <li key={event.id}>
                             <EventCard

@@ -6,10 +6,10 @@ import {
     isMasterStudySlug,
     programmeLength,
 } from "@photon/auth/academic-year";
-import type { DbSchema } from "@photon/db";
+import type { DbRelations } from "@photon/db";
 import { schema } from "@photon/db";
 import { uniq } from "es-toolkit";
-import { and, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { HTTPException } from "hono/http-exception";
 import { getStrikeActiveCutoff } from "./strikes";
@@ -28,7 +28,7 @@ import { getStrikeActiveCutoff } from "./strikes";
  */
 export async function resolvePriorityUserIds(
     userIds: string[],
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
 ): Promise<string[]> {
     const ids = uniq(userIds);
 
@@ -301,6 +301,12 @@ function toMembershipRow(row: {
 }
 
 /**
+ * Membership of an archived group earns no priority: a pool an event still
+ * carries for it matches nobody until the group is restored.
+ */
+const activeGroupsOnly = isNull(schema.group.archivedAt);
+
+/**
  * Load everything prioritization needs to know about one member.
  *
  * Prefer {@link loadPrioritization} for more than one member — this issues its
@@ -308,7 +314,7 @@ function toMembershipRow(row: {
  */
 export async function getUserPriorityFacts(
     userId: string,
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     now = new Date(),
 ): Promise<UserPriorityFacts> {
     const rows = await db
@@ -343,7 +349,9 @@ export async function getUserPriorityFacts(
                 ),
             ),
         )
-        .where(eq(schema.groupMembership.userId, userId));
+        .where(
+            and(eq(schema.groupMembership.userId, userId), activeGroupsOnly),
+        );
 
     const membershipRows = rows.map(toMembershipRow);
 
@@ -473,7 +481,7 @@ export async function loadPrioritization(
     userIds: string[],
     event: EventPriorityRules,
     enforcesPreviousStrikes: boolean,
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     now = new Date(),
 ): Promise<PrioritizationLookup> {
     const ids = uniq(userIds);
@@ -519,7 +527,12 @@ export async function loadPrioritization(
                     ),
                 ),
             )
-            .where(inArray(schema.groupMembership.userId, ids)),
+            .where(
+                and(
+                    inArray(schema.groupMembership.userId, ids),
+                    activeGroupsOnly,
+                ),
+            ),
         db
             .select({
                 userId: schema.eventStrike.userId,
@@ -593,7 +606,7 @@ export async function findSwapTarget(
     registeredUsers: Registration[],
     event: EventPriorityRules,
     enforcesPreviousStrikes: boolean,
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     now = new Date(),
 ): Promise<Registration | null> {
     // Filter to only registered users and sort by createdAt DESC (most recent first)
@@ -634,13 +647,12 @@ export async function calculateWaitlistPositions(
     eventId: string,
     event: EventPriorityRules,
     enforcesPreviousStrikes: boolean,
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     now = new Date(),
 ): Promise<Map<string, number>> {
     const waitlisted = await db.query.eventRegistration.findMany({
-        where: (reg, { and, eq }) =>
-            and(eq(reg.eventId, eventId), eq(reg.status, "waitlisted")),
-        orderBy: (reg, { asc }) => asc(reg.createdAt),
+        where: { eventId, status: "waitlisted" },
+        orderBy: { createdAt: "asc" },
     });
 
     const isPrioritized = await loadPrioritization(
@@ -681,7 +693,7 @@ export async function calculateWaitlistPosition(
     eventId: string,
     event: EventPriorityRules,
     enforcesPreviousStrikes: boolean,
-    db: NodePgDatabase<DbSchema>,
+    db: NodePgDatabase<DbRelations>,
     now = new Date(),
 ): Promise<number> {
     const positions = await calculateWaitlistPositions(
