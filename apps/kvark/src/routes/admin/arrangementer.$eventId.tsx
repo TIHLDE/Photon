@@ -335,7 +335,7 @@ function EventAdminDetailPage() {
                 </Suspense>
             )}
             {activeTab === "kamera" && canCurateWrapped && (
-                <WrappedTab eventId={eventId} />
+                <WrappedTab eventId={eventId} slug={event.slug} />
             )}
             {activeTab === "meldinger" && canManage && (
                 <Suspense fallback={<TableSkeleton />}>

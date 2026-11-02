@@ -1,11 +1,13 @@
 import {
     type InfiniteData,
+    type QueryClient,
     infiniteQueryOptions,
     mutationOptions,
 } from "@tanstack/react-query";
 import type { components } from "@tihlde/sdk";
 import { apiClient } from "#/api/api-client";
 import { getWrappedCameraQuery } from "#/api/queries/wrapped";
+import { WrappedStoryQueryKeys } from "#/api/queries/wrapped-story";
 import { fetchPrivateObjectUrl } from "#/lib/assets";
 
 /** Organisatorens side av engangskameraet: innstillinger og utvalg. */
@@ -131,3 +133,38 @@ export function fetchWrappedPhotoTile(imageUrl: string): Promise<string> {
 export function fetchWrappedPhotoLarge(imageUrl: string): Promise<string> {
     return fetchPrivateObjectUrl(`${imageUrl}?w=1920`);
 }
+
+/** Det publiseringen endrer: kamerastatusen og selve storyen. */
+function invalidateStory(client: QueryClient, eventId: string) {
+    return Promise.all([
+        client.invalidateQueries(getWrappedCameraQuery(eventId)),
+        client.invalidateQueries({
+            queryKey: [...WrappedStoryQueryKeys.story, eventId],
+        }),
+    ]);
+}
+
+/**
+ * Legger storyen ut for alle medlemmer. Første gang får alle som var
+ * påmeldt et varsel; senere publiseringer varsler ingen.
+ */
+export const publishWrappedStoryMutation = mutationOptions({
+    mutationFn: ({ eventId }: { eventId: string }) =>
+        apiClient.post("/api/event/{eventId}/wrapped/publish", {
+            params: { eventId },
+        }),
+    onSuccess(_, { eventId }, __, ctx) {
+        return invalidateStory(ctx.client, eventId);
+    },
+});
+
+/** Tar storyen ned. Ingenting slettes. */
+export const unpublishWrappedStoryMutation = mutationOptions({
+    mutationFn: ({ eventId }: { eventId: string }) =>
+        apiClient.post("/api/event/{eventId}/wrapped/unpublish", {
+            params: { eventId },
+        }),
+    onSuccess(_, { eventId }, __, ctx) {
+        return invalidateStory(ctx.client, eventId);
+    },
+});

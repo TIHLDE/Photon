@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@tihlde/ui/ui/alert";
 import { Button } from "@tihlde/ui/ui/button";
+import { Link } from "@tanstack/react-router";
 import { Camera, CameraOff, Check, X } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 
@@ -16,7 +17,9 @@ import {
     fetchWrappedPhotoLarge,
     fetchWrappedPhotoTile,
     listWrappedPhotosQuery,
+    publishWrappedStoryMutation,
     setWrappedCameraMutation,
+    unpublishWrappedStoryMutation,
     updateWrappedPhotoMutation,
 } from "#/api/queries/wrapped-admin";
 import { AdminEmptyState } from "#/components/admin-empty-state";
@@ -29,6 +32,7 @@ import {
     WrappedPhotoGridSkeleton,
 } from "#/components/wrapped-admin-skeleton";
 import { WrappedCameraSettings } from "#/components/wrapped-camera-settings";
+import { WrappedStoryPublish } from "#/components/wrapped-story/wrapped-story-publish";
 import {
     WrappedPhotoGrid,
     type WrappedPhotoTileData,
@@ -41,11 +45,20 @@ import { formatInOslo } from "#/lib/date";
  * «Kamera»-fanen i arrangementsadminen: innstillingene for engangskameraet og
  * utvalget av bildene deltakerne har tatt (tihlde-wrapped, #869).
  */
-export function WrappedTab({ eventId }: { eventId: string }) {
+export function WrappedTab({
+    eventId,
+    slug,
+}: {
+    eventId: string;
+    slug: string;
+}) {
     return (
         <div className="flex flex-col gap-6">
             <Suspense fallback={<WrappedCameraSettingsSkeleton />}>
                 <CameraSettingsSection eventId={eventId} />
+            </Suspense>
+            <Suspense fallback={<WrappedCameraSettingsSkeleton />}>
+                <StoryPublishSection eventId={eventId} slug={slug} />
             </Suspense>
             <Suspense fallback={<WrappedPhotoGridSkeleton />}>
                 <PhotosSection eventId={eventId} />
@@ -84,6 +97,58 @@ function CameraSettingsSection({ eventId }: { eventId: string }) {
                         },
                     },
                 );
+            }}
+        />
+    );
+}
+
+function StoryPublishSection({
+    eventId,
+    slug,
+}: {
+    eventId: string;
+    slug: string;
+}) {
+    const { data: camera } = useSuspenseQuery(getWrappedCameraQuery(eventId));
+    // Samme liste som rutenettet under, så tallet følger hvert valg.
+    const { data: photos } = useSuspenseInfiniteQuery(
+        listWrappedPhotosQuery(eventId),
+    );
+    const [error, setError] = useState<string | null>(null);
+    const onError = async (err: Error) => {
+        console.error("Publisering av storyen feilet", err);
+        setError(await extractErrorMessage(err));
+    };
+    const publish = useMutation({ ...publishWrappedStoryMutation, onError });
+    const unpublish = useMutation({
+        ...unpublishWrappedStoryMutation,
+        onError,
+    });
+
+    // I en ny fane: storyen lukkes til arrangementssida, ikke til adminen.
+    const storyLink = (
+        <Link
+            to="/arrangementer/$slug/story"
+            params={{ slug }}
+            target="_blank"
+        />
+    );
+
+    return (
+        <WrappedStoryPublish
+            selectedCount={photos.pages[0]?.selectedCount ?? 0}
+            publishedAt={camera.publishedAt}
+            firstPublishedAt={camera.firstPublishedAt}
+            isPending={publish.isPending || unpublish.isPending}
+            error={error}
+            storyLink={storyLink}
+            onPublish={() => {
+                setError(null);
+                publish.mutate({ eventId });
+            }}
+            onUnpublish={() => {
+                setError(null);
+                unpublish.mutate({ eventId });
             }}
         />
     );
