@@ -65,6 +65,7 @@ import {
     getUsersInfiniteQuery,
     updateUserAllergiesMutation,
     updateUserBaselineRoleMutation,
+    updateUserEmailMutation,
     updateUserStatusMutation,
     updateUserStudyMutation,
     updateUserStudyYearMutation,
@@ -328,6 +329,11 @@ function AllUsersTable({
         name: string;
         email: string | null;
     } | null>(null);
+    const [editingEmail, setEditingEmail] = useState<{
+        id: string;
+        name: string;
+        email: string | null;
+    } | null>(null);
 
     /**
      * Kullet er en avledet gruppe, så medlemslista nekter å redigere det (400).
@@ -341,7 +347,12 @@ function AllUsersTable({
      * skal holde til arkivering uten å gi den muligheten på kjøpet.
      */
     const canDelete = usePermission("users:delete");
-    const hasActions = canEditCohort || canDelete;
+    /**
+     * E-postadressen er innloggingen og dit tilbakestillingslenker går — den
+     * som kan bytte den, kan ta over kontoen. Derfor bare root.
+     */
+    const canEditEmail = usePermission("root");
+    const hasActions = canEditCohort || canDelete || canEditEmail;
 
     const debouncedSearch = useDebounced(search);
 
@@ -711,6 +722,23 @@ function AllUsersTable({
                                                                 </Button>
                                                             </>
                                                         )}
+                                                        {canEditEmail && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() =>
+                                                                    setEditingEmail(
+                                                                        {
+                                                                            id: user.id,
+                                                                            name: user.name,
+                                                                            email: user.email,
+                                                                        },
+                                                                    )
+                                                                }
+                                                            >
+                                                                Endre e-post
+                                                            </Button>
+                                                        )}
                                                         {canDelete && (
                                                             <Button
                                                                 variant="ghost"
@@ -804,6 +832,14 @@ function AllUsersTable({
                 open={approving !== null}
                 onOpenChange={(open) => {
                     if (!open) setApproving(null);
+                }}
+            />
+
+            <EditEmailDialog
+                user={editingEmail}
+                open={editingEmail !== null}
+                onOpenChange={(open) => {
+                    if (!open) setEditingEmail(null);
                 }}
             />
 
@@ -1282,6 +1318,101 @@ function ChangeStatusDialog({
                             disabled={update.isPending}
                         >
                             {deactivating ? "Arkiver" : "Gjenopprett"}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+/**
+ * Bytt e-postadressen til et medlem. Bare for root.
+ *
+ * Den nye adressen regnes som bekreftet, så medlemmet kan logge inn med den
+ * med en gang — vanligvis er grunnen at den gamle innboksen er borte.
+ */
+function EditEmailDialog({
+    user,
+    open,
+    onOpenChange,
+}: {
+    user: { id: string; name: string; email: string | null } | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const [email, setEmail] = useState("");
+    const [error, setError] = useState<string | null>(null);
+    const update = useMutation(updateUserEmailMutation);
+
+    const [lastUserId, setLastUserId] = useState<string | null>(null);
+    if (user && user.id !== lastUserId) {
+        setLastUserId(user.id);
+        setEmail(user.email ?? "");
+        setError(null);
+    }
+
+    const unchanged =
+        email.trim().toLowerCase() === (user?.email ?? "").toLowerCase();
+
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        if (!user) return;
+
+        setError(null);
+        try {
+            await update.mutateAsync({ userId: user.id, email: email.trim() });
+            onOpenChange(false);
+        } catch (err) {
+            setError(await extractErrorMessage(err));
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <DialogHeader>
+                        <DialogTitle>Endre e-post</DialogTitle>
+                        <DialogDescription>{user?.name}</DialogDescription>
+                    </DialogHeader>
+                    <FieldGroup>
+                        <Field>
+                            <FieldLabel htmlFor="edit-email">E-post</FieldLabel>
+                            <Input
+                                id="edit-email"
+                                type="email"
+                                required
+                                value={email}
+                                onChange={(event) =>
+                                    setEmail(event.target.value)
+                                }
+                            />
+                            <FieldDescription>
+                                Medlemmet logger inn og får e-post på den nye
+                                adressen. Den regnes som bekreftet, så sjekk at
+                                den er skrevet riktig.
+                            </FieldDescription>
+                        </Field>
+                    </FieldGroup>
+                    {error && (
+                        <p className="text-sm text-destructive" role="alert">
+                            {error}
+                        </p>
+                    )}
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            Avbryt
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={update.isPending || unchanged}
+                        >
+                            Lagre
                         </Button>
                     </DialogFooter>
                 </form>

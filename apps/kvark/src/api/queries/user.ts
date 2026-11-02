@@ -201,6 +201,24 @@ export const updateUserStatusMutation = mutationOptions({
 });
 
 /**
+ * Bytt e-postadressen til et medlem. Bare root: adressen er innloggingen og
+ * dit tilbakestillingslenker går, så den som kan bytte den, kan ta over kontoen.
+ */
+export const updateUserEmailMutation = mutationOptions({
+    mutationFn: ({ userId, email }: { userId: string; email: string }) =>
+        apiClient.patch("/api/user/{id}/email", {
+            params: { id: userId },
+            json: { email },
+        }),
+    onSuccess(_, __, ___, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: [...UserQueryKeys.listInfinite],
+            exact: false,
+        });
+    },
+});
+
+/**
  * Flytt et medlem mellom `member` og `alumni`.
  *
  * Forskjellen er én ting: alumni kan ikke melde seg på arrangementer. Alt
