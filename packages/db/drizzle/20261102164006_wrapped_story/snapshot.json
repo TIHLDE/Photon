@@ -1,0 +1,542 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "43a1071e-d92f-4d28-b53e-ee422a555638",
+  "prevIds": [
+    "5635aa20-cb81-4b00-a92d-a9c95df5484a"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "wrapped_photo_comment"
+      ],
+      "writes": [
+        "s|tbl|public.wrapped_photo_comment",
+        "n|tbl|public.wrapped_photo_comment",
+        "e|tbl|public.wrapped_photo_comment",
+        "n|rel|public.wrapped_photo_comment",
+        "n|type|public.wrapped_photo_comment",
+        "n|rel|public.wrapped_photo_comment_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "wrapped_photo_like"
+      ],
+      "writes": [
+        "s|tbl|public.wrapped_photo_like",
+        "n|tbl|public.wrapped_photo_like",
+        "e|tbl|public.wrapped_photo_like",
+        "n|rel|public.wrapped_photo_like",
+        "n|type|public.wrapped_photo_like",
+        "n|rel|public.wrapped_photo_like_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "wrapped_camera",
+        "published_at"
+      ],
+      "writes": [
+        "s|col|public.wrapped_camera.published_at",
+        "n|col|public.wrapped_camera.published_at",
+        "e|col|public.wrapped_camera.published_at"
+      ],
+      "reads": [
+        "n|tbl|public.wrapped_camera",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "wrapped_camera",
+        "first_published_at"
+      ],
+      "writes": [
+        "s|col|public.wrapped_camera.first_published_at",
+        "n|col|public.wrapped_camera.first_published_at",
+        "e|col|public.wrapped_camera.first_published_at"
+      ],
+      "reads": [
+        "n|tbl|public.wrapped_camera",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "wrapped_photo_comment",
+        "wrapped_photo_comment_photo_id_created_at_idx"
+      ],
+      "writes": [
+        "s|idx|public.wrapped_photo_comment_photo_id_created_at_idx",
+        "n|idx|public.wrapped_photo_comment_photo_id_created_at_idx",
+        "e|idx|public.wrapped_photo_comment_photo_id_created_at_idx",
+        "n|rel|public.wrapped_photo_comment_photo_id_created_at_idx"
+      ],
+      "reads": [
+        "n|tbl|public.wrapped_photo_comment",
+        "n|sch|public",
+        "n|col|public.wrapped_photo_comment.photo_id",
+        "n|col|public.wrapped_photo_comment.created_at"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "wrapped_photo_comment"
+      ],
+      "writes": [
+        "s|fk|public.wrapped_photo_comment.wrapped_photo_comment_photo_id_wrapped_photo_id_fkey",
+        "n|fk|public.wrapped_photo_comment.wrapped_photo_comment_photo_id_wrapped_photo_id_fkey",
+        "e|fk|public.wrapped_photo_comment.wrapped_photo_comment_photo_id_wrapped_photo_id_fkey",
+        "n|con|public.wrapped_photo_comment.wrapped_photo_comment_photo_id_wrapped_photo_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.wrapped_photo_comment",
+        "n|sch|public",
+        "n|tbl|public.wrapped_photo",
+        "n|sch|public",
+        "n|col|public.wrapped_photo_comment.photo_id",
+        "n|col|public.wrapped_photo.id",
+        "e|uniqueness|public.wrapped_photo.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "wrapped_photo_comment"
+      ],
+      "writes": [
+        "s|fk|public.wrapped_photo_comment.wrapped_photo_comment_user_id_auth_user_id_fkey",
+        "n|fk|public.wrapped_photo_comment.wrapped_photo_comment_user_id_auth_user_id_fkey",
+        "e|fk|public.wrapped_photo_comment.wrapped_photo_comment_user_id_auth_user_id_fkey",
+        "n|con|public.wrapped_photo_comment.wrapped_photo_comment_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.wrapped_photo_comment",
+        "n|sch|public",
+        "n|tbl|public.auth_user",
+        "n|sch|public",
+        "n|col|public.wrapped_photo_comment.user_id",
+        "n|col|public.auth_user.id",
+        "e|uniqueness|public.auth_user.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "wrapped_photo_like"
+      ],
+      "writes": [
+        "s|fk|public.wrapped_photo_like.wrapped_photo_like_photo_id_wrapped_photo_id_fkey",
+        "n|fk|public.wrapped_photo_like.wrapped_photo_like_photo_id_wrapped_photo_id_fkey",
+        "e|fk|public.wrapped_photo_like.wrapped_photo_like_photo_id_wrapped_photo_id_fkey",
+        "n|con|public.wrapped_photo_like.wrapped_photo_like_photo_id_wrapped_photo_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.wrapped_photo_like",
+        "n|sch|public",
+        "n|tbl|public.wrapped_photo",
+        "n|sch|public",
+        "n|col|public.wrapped_photo_like.photo_id",
+        "n|col|public.wrapped_photo.id",
+        "e|uniqueness|public.wrapped_photo.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "wrapped_photo_like"
+      ],
+      "writes": [
+        "s|fk|public.wrapped_photo_like.wrapped_photo_like_user_id_auth_user_id_fkey",
+        "n|fk|public.wrapped_photo_like.wrapped_photo_like_user_id_auth_user_id_fkey",
+        "e|fk|public.wrapped_photo_like.wrapped_photo_like_user_id_auth_user_id_fkey",
+        "n|con|public.wrapped_photo_like.wrapped_photo_like_user_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.wrapped_photo_like",
+        "n|sch|public",
+        "n|tbl|public.auth_user",
+        "n|sch|public",
+        "n|col|public.wrapped_photo_like.user_id",
+        "n|col|public.auth_user.id",
+        "e|uniqueness|public.auth_user.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "wrapped_photo_comment",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "wrapped_photo_like",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_camera",
+        "name": "published_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_camera",
+        "name": "first_published_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo_comment",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "gen_random_uuid()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo_comment",
+        "name": "photo_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo_comment",
+        "name": "user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo_comment",
+        "name": "body",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo_comment",
+        "name": "created_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo_comment",
+        "name": "updated_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo_like",
+        "name": "photo_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo_like",
+        "name": "user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo_like",
+        "name": "created_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo_comment",
+        "name": "wrapped_photo_comment_photo_id_created_at_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "photo_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "created_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo_comment",
+        "name": "wrapped_photo_comment_photo_id_wrapped_photo_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "photo_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "wrapped_photo",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo_comment",
+        "name": "wrapped_photo_comment_user_id_auth_user_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "user_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "auth_user",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo_like",
+        "name": "wrapped_photo_like_photo_id_wrapped_photo_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "photo_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "wrapped_photo",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo_like",
+        "name": "wrapped_photo_like_user_id_auth_user_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "user_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "auth_user",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo_like",
+        "name": "wrapped_photo_like_pkey",
+        "columns": [
+          "photo_id",
+          "user_id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo_comment",
+        "name": "wrapped_photo_comment_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "wrapped_photo_comment",
+        "name": "wrapped_photo_comment_body_length",
+        "value": "char_length(\"body\") between 1 and 500",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

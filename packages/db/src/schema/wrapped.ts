@@ -5,6 +5,7 @@ import {
     index,
     integer,
     pgTableCreator,
+    primaryKey,
     text,
     timestamp,
     uuid,
@@ -40,6 +41,20 @@ export const wrappedCamera = pgTable(
             .references(() => event.id, { onDelete: "cascade" }),
         enabled: boolean("enabled").notNull().default(false),
         shotsPerPerson: integer("shots_per_person").notNull().default(5),
+
+        /**
+         * Set while the story is live for members. Cleared on unpublish, so
+         * the organizer can take the story down without losing anything.
+         */
+        publishedAt: timestamp("published_at"),
+
+        /**
+         * Set by the first publish and never cleared. Attendees are notified
+         * once, when this goes from null to set — unpublishing and publishing
+         * again must not ping everyone a second time.
+         */
+        firstPublishedAt: timestamp("first_published_at"),
+
         ...timestamps,
     },
     (t) => [
@@ -108,8 +123,65 @@ export const wrappedPhoto = pgTable(
     ],
 );
 
+/**
+ * A member's like on one photo in a published story. The composite key is the
+ * "at most once" rule: liking twice is the same row.
+ */
+export const wrappedPhotoLike = pgTable(
+    "photo_like",
+    {
+        photoId: uuid("photo_id")
+            .notNull()
+            .references(() => wrappedPhoto.id, { onDelete: "cascade" }),
+        userId: text("user_id")
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        createdAt: timestamp("created_at").defaultNow().notNull(),
+    },
+    (t) => [primaryKey({ columns: [t.photoId, t.userId] })],
+);
+
+export const WRAPPED_COMMENT_MAX_LENGTH = 500;
+
+/**
+ * A comment on one photo in a published story. Plain text; the length limit is
+ * checked here as well as in the route, so no other writer can get past it.
+ */
+export const wrappedPhotoComment = pgTable(
+    "photo_comment",
+    {
+        id: uuid("id").primaryKey().defaultRandom(),
+        photoId: uuid("photo_id")
+            .notNull()
+            .references(() => wrappedPhoto.id, { onDelete: "cascade" }),
+        userId: text("user_id")
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        body: text("body").notNull(),
+        ...timestamps,
+    },
+    (t) => [
+        check(
+            "wrapped_photo_comment_body_length",
+            sql`char_length(${t.body}) between 1 and ${sql.raw(String(WRAPPED_COMMENT_MAX_LENGTH))}`,
+        ),
+        /** The comment sheet reads one photo's comments, oldest first. */
+        index("wrapped_photo_comment_photo_id_created_at_idx").on(
+            t.photoId,
+            t.createdAt,
+        ),
+    ],
+);
+
 export const wrappedRelations = defineRelationsPart(
-    { wrappedCamera, wrappedPhoto, event, user },
+    {
+        wrappedCamera,
+        wrappedPhoto,
+        wrappedPhotoLike,
+        wrappedPhotoComment,
+        event,
+        user,
+    },
     (r) => ({
         wrappedCamera: {
             event: r.one.event({
@@ -129,6 +201,32 @@ export const wrappedRelations = defineRelationsPart(
                 to: r.user.id,
                 optional: false,
             }),
+            likes: r.many.wrappedPhotoLike(),
+            comments: r.many.wrappedPhotoComment(),
+        },
+        wrappedPhotoLike: {
+            photo: r.one.wrappedPhoto({
+                from: r.wrappedPhotoLike.photoId,
+                to: r.wrappedPhoto.id,
+                optional: false,
+            }),
+            user: r.one.user({
+                from: r.wrappedPhotoLike.userId,
+                to: r.user.id,
+                optional: false,
+            }),
+        },
+        wrappedPhotoComment: {
+            photo: r.one.wrappedPhoto({
+                from: r.wrappedPhotoComment.photoId,
+                to: r.wrappedPhoto.id,
+                optional: false,
+            }),
+            author: r.one.user({
+                from: r.wrappedPhotoComment.userId,
+                to: r.user.id,
+                optional: false,
+            }),
         },
     }),
 );
@@ -137,3 +235,5 @@ export type WrappedCamera = typeof wrappedCamera.$inferSelect;
 export type NewWrappedCamera = typeof wrappedCamera.$inferInsert;
 export type WrappedPhoto = typeof wrappedPhoto.$inferSelect;
 export type NewWrappedPhoto = typeof wrappedPhoto.$inferInsert;
+export type WrappedPhotoLike = typeof wrappedPhotoLike.$inferSelect;
+export type WrappedPhotoComment = typeof wrappedPhotoComment.$inferSelect;
