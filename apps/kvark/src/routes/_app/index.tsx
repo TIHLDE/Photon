@@ -75,13 +75,22 @@ const NEWS_PREVIEW_COUNT = 3;
 const latestNewsQuery = () => getNewsQuery(0, {}, NEWS_PREVIEW_COUNT);
 
 /**
- * `?kort=b` legger knappen på kamerakortet under bildet i stedet for oppå
- * det, så teamet kan sammenligne de to på testsida. Alt annet gir A.
- * ponytail: slettes sammen med varianten som taper.
+ * `?kort=` velger hvordan kamerakortet viser handlingen, så teamet kan
+ * sammenligne dem på testsida: a = utløser på bildekanten, b = knapp under
+ * bildet, c = pille i hjørnet, d = ingen knapp, bare et merke øverst (hele
+ * kortet er lenka). Alt annet gir a.
+ * ponytail: slettes sammen med variantene som taper.
  */
 const searchSchema = z.object({
-    kort: z.enum(["a", "b"]).optional().catch(undefined),
+    kort: z.enum(["a", "b", "c", "d"]).optional().catch(undefined),
 });
+
+const CARD_VARIANTS = {
+    a: "shutter",
+    b: "below",
+    c: "chip",
+    d: "tap",
+} as const;
 
 export const Route = createFileRoute("/_app/")({
     component: Home,
@@ -136,7 +145,8 @@ function Home() {
                         imageUrl={liveCamera.imageUrl}
                         imageAlt={liveCamera.imageAlt}
                         shortcut={cameraShortcut(liveCamera, now)}
-                        actionPlacement={kort === "b" ? "below" : "overlay"}
+                        shotsLeft={liveCamera.shotsLeft}
+                        variant={CARD_VARIANTS[kort ?? "a"]}
                         restId={REST_OF_HOME_ID}
                     />
                     {banners}

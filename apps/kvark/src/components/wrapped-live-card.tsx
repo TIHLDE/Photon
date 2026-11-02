@@ -3,11 +3,13 @@ import { Button } from "@tihlde/ui/ui/button";
 import {
     LiveCard,
     LiveCardAction,
+    LiveCardChip,
     LiveCardHeader,
     LiveCardImage,
     LiveCardIndicator,
     LiveCardMedia,
     LiveCardMeta,
+    LiveCardShutter,
     LiveCardTitle,
 } from "@tihlde/ui/ui/live-card";
 import { ArrowDown, Camera, Send, TriangleAlert } from "lucide-react";
@@ -25,12 +27,17 @@ type WrappedLiveCardProps = {
     imageUrl: string | null;
     imageAlt: string | null;
     shortcut: CameraShortcut;
+    /** Shots left, for the compact forms of the camera state. */
+    shotsLeft: number;
     /**
-     * Where the action sits: over the banner's foot, or below it. Both are
-     * built so the team can compare them on the test site.
-     * ponytail: drop the losing branch and this prop once one is picked.
+     * How the camera action looks: a shutter disc on the banner's edge, the
+     * full pill below it, a chip in its corner, or nothing but the card being
+     * the link. Only the plain camera state gets the compact forms; every
+     * other state needs words, so it gets the pill below. All four are built
+     * so the team can compare them on the test site.
+     * ponytail: delete the losers and this prop once one is picked.
      */
-    actionPlacement: "overlay" | "below";
+    variant: "shutter" | "below" | "chip" | "tap";
     /** Id of the section below, for «Se resten av forsiden». */
     restId: string;
 };
@@ -48,7 +55,8 @@ export function WrappedLiveCard({
     imageUrl,
     imageAlt,
     shortcut,
-    actionPlacement,
+    shotsLeft,
+    variant,
     restId,
 }: WrappedLiveCardProps) {
     const { action, detail, target, warning } = shortcut;
@@ -56,7 +64,7 @@ export function WrappedLiveCard({
         hour: "2-digit",
         minute: "2-digit",
     });
-    const overlay = actionPlacement === "overlay";
+    const compact = target === "camera" && !warning;
     const actionPill = (
         <LiveCardAction variant={warning ? "warning" : "default"}>
             {warning ? (
@@ -93,7 +101,32 @@ export function WrappedLiveCard({
                     <LiveCardMeta>Åpent til {closesAtTime}</LiveCardMeta>
                 </LiveCardHeader>
                 <LiveCardTitle>{title}</LiveCardTitle>
-                <LiveCardMedia overlay={overlay ? actionPill : undefined}>
+                <LiveCardMedia
+                    edge={
+                        compact && variant === "shutter" ? (
+                            <LiveCardShutter>
+                                <Camera />
+                                {shotsLeft}
+                            </LiveCardShutter>
+                        ) : undefined
+                    }
+                    overlay={
+                        compact && variant === "chip" ? (
+                            <LiveCardChip>
+                                <Camera />
+                                Ta bilde · {shotsLeft}
+                            </LiveCardChip>
+                        ) : compact && variant === "tap" ? (
+                            <LiveCardChip variant="card">
+                                <Camera />
+                                {shotsLeft} igjen
+                            </LiveCardChip>
+                        ) : undefined
+                    }
+                    overlayPosition={
+                        variant === "tap" ? "top-end" : "bottom-end"
+                    }
+                >
                     {/* Above the fold and the reason the card exists,
                      * so loaded eagerly at high priority like DetailHero. */}
                     <LiveCardImage
@@ -106,7 +139,7 @@ export function WrappedLiveCard({
                         decoding="async"
                     />
                 </LiveCardMedia>
-                {overlay ? null : actionPill}
+                {compact && variant !== "below" ? null : actionPill}
             </LiveCard>
             <div className="flex justify-center">
                 <Button
