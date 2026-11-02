@@ -33,18 +33,23 @@ import { listStrikesByUserRoute } from "./strike/list-by-user";
 import { listStrikesRoute } from "./strike/list";
 import { updateRoute } from "./update";
 import {
+    createWrappedStoryPhotoCommentRoute,
     deleteMyWrappedPhotoRoute,
+    deleteWrappedStoryPhotoCommentRoute,
     getMyWrappedPhotoImageRoute,
     getMyWrappedPhotosRoute,
     getWrappedCameraRoute,
     getWrappedPhotoImageRoute,
     getWrappedStoryPhotoImageRoute,
     getWrappedStoryRoute,
+    likeWrappedStoryPhotoRoute,
     listOpenWrappedCamerasRoute,
     listWrappedPhotosRoute,
+    listWrappedStoryPhotoCommentsRoute,
     publishWrappedStoryRoute,
     setWrappedCameraRoute,
     submitMyWrappedPhotosRoute,
+    unlikeWrappedStoryPhotoRoute,
     unpublishWrappedStoryRoute,
     updateWrappedPhotoRoute,
     uploadWrappedPhotoRoute,
@@ -123,6 +128,11 @@ export const eventRoutes = route()
     .route("/", unpublishWrappedStoryRoute)
     .route("/", getWrappedStoryRoute)
     .route("/", getWrappedStoryPhotoImageRoute)
+    .route("/", likeWrappedStoryPhotoRoute)
+    .route("/", unlikeWrappedStoryPhotoRoute)
+    .route("/", listWrappedStoryPhotoCommentsRoute)
+    .route("/", createWrappedStoryPhotoCommentRoute)
+    .route("/", deleteWrappedStoryPhotoCommentRoute)
     // Reactions
     .route("/", createEventReactionRoute)
     .route("/", deleteEventReactionRoute);

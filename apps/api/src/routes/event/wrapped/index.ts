@@ -13,3 +13,12 @@ export { publishWrappedStoryRoute } from "./publish";
 export { unpublishWrappedStoryRoute } from "./unpublish";
 export { getWrappedStoryRoute } from "./story";
 export { getWrappedStoryPhotoImageRoute } from "./story-image";
+export {
+    createWrappedStoryPhotoCommentRoute,
+    deleteWrappedStoryPhotoCommentRoute,
+    listWrappedStoryPhotoCommentsRoute,
+} from "./story-comment";
+export {
+    likeWrappedStoryPhotoRoute,
+    unlikeWrappedStoryPhotoRoute,
+} from "./story-like";
