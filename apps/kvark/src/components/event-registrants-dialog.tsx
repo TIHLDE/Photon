@@ -135,12 +135,6 @@ function RegistrantRow({
         </>
     );
 
-    // Anonymiserte rader har ingen id å lenke til — der bærer verken navnet
-    // eller bildet en identitet.
-    if (registrant.isAnonymous) {
-        return <div className="flex items-center gap-3 p-2">{content}</div>;
-    }
-
     return (
         <Button
             variant="ghost"

@@ -42,14 +42,6 @@ export const userSettings = pgTable("settings", {
     isOnboarded: boolean("is_onboarded").default(false).notNull(),
     ...timestamps,
     /**
-     * Whether the member is listed by name in deltakerlister. Off means they
-     * still register as normal, but other members see them as anonymous.
-     * Defaults to true to match how påmeldinger have always been shown.
-     */
-    publicEventRegistrations: boolean("public_event_registrations")
-        .default(true)
-        .notNull(),
-    /**
      * Allergier medlemmet har skrevet inn selv, i tillegg til avhukingene i
      * `user_allergy`. De ligger her og ikke i katalogen fordi Lepton-importen
      * la hvert eneste fritekstsvar inn som sin egen katalograd — det ga oss

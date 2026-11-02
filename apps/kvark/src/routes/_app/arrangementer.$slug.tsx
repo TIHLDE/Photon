@@ -366,7 +366,6 @@ function EventDetailPage() {
             id: u.id,
             name: u.name,
             image: u.image,
-            isAnonymous: u.isAnonymous,
         })),
     );
     const registrantsTotalCount = registrationPages?.pages[0]?.totalCount;

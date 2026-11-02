@@ -32,9 +32,6 @@ export const UserSettingsSchema = z.object({
     githubUrl: clearableUrl,
     linkedinUrl: clearableUrl,
     receiveMailCommunication: z.boolean(),
-    // Defaulted rather than required: onboarding clients predate the setting,
-    // and «vis meg i deltakerlister» is how påmeldinger have always worked.
-    publicEventRegistrations: z.boolean().default(true),
     allergies: z.array(z.string()).default([]),
     customAllergies: z
         .array(z.string().trim().min(1).max(64))
@@ -83,7 +80,6 @@ export const UpdateUserSettingsSchema = UserSettingsSchema.partial().extend({
         .array(z.string().trim().min(1).max(64))
         .max(15)
         .optional(),
-    publicEventRegistrations: z.boolean().optional(),
 });
 
 export type UserAllergy = z.infer<typeof UserAllergySchema>;
@@ -119,7 +115,6 @@ const IMPLICIT_SETTINGS_DEFAULTS = {
     allowsPhotosByDefault: true,
     acceptsEventRules: false,
     receiveMailCommunication: true,
-    publicEventRegistrations: true,
     isOnboarded: false,
 } as const;
 
@@ -172,8 +167,6 @@ export async function getUserSettings(
         linkedinUrl: settingsWithAllergies.linkedinUrl ?? undefined,
         receiveMailCommunication:
             settingsWithAllergies.receiveMailCommunication,
-        publicEventRegistrations:
-            settingsWithAllergies.publicEventRegistrations,
         allergies: settingsWithAllergies.allergies.map((ua) => ua.allergySlug),
         customAllergies: settingsWithAllergies.customAllergies,
         allergiesConfirmedAt:
@@ -208,7 +201,6 @@ export async function createUserSettings(
             githubUrl: emptyToNull(settings.githubUrl) ?? null,
             linkedinUrl: emptyToNull(settings.linkedinUrl) ?? null,
             receiveMailCommunication: settings.receiveMailCommunication,
-            publicEventRegistrations: settings.publicEventRegistrations,
             customAllergies,
             allergiesConfirmedAt: confirmedAt,
             isOnboarded: true, // Mark as onboarded when creating
@@ -343,7 +335,6 @@ export async function updateUserSettings(
             imageUrl: updated.imageUrl ?? undefined,
             linkedinUrl: updated.linkedinUrl ?? undefined,
             receiveMailCommunication: updated.receiveMailCommunication,
-            publicEventRegistrations: updated.publicEventRegistrations,
             allergies: updated.allergies.map((ua) => ua.allergySlug),
             customAllergies: updated.customAllergies,
             allergiesConfirmedAt:

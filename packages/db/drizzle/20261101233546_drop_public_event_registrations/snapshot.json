@@ -1,0 +1,35 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "cb29b8cb-5e97-4431-a9b1-804502719390",
+  "prevIds": [
+    "b7a1042e-a80b-4129-a181-646967f3cf80"
+  ],
+  "footprints": [
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "user_settings",
+        "public_event_registrations"
+      ],
+      "writes": [
+        "s|col|public.user_settings.public_event_registrations",
+        "n|col|public.user_settings.public_event_registrations",
+        "e|col|public.user_settings.public_event_registrations"
+      ],
+      "reads": [
+        "n|tbl|public.user_settings",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"user_settings\",\"public_event_registrations\"]"
+    }
+  ]
+}
