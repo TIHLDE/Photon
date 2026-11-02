@@ -757,7 +757,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List the cameras I can take a photo with right now
+         * List my open cameras
          * @description The disposable cameras that are open for the caller at this moment: turned on, inside their window, at an event the caller holds a spot on, listed until the camera closes, also when the caller has used every photo. Events under way come first, the one that started last on top. This is what the site uses to offer a shortcut to the camera, so it is empty far more often than not.
          */
         get: operations["listOpenWrappedCameras"];
