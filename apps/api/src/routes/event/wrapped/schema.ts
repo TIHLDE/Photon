@@ -64,6 +64,14 @@ export const wrappedCameraSchema = Schema(
             description:
                 "The caller's photos not yet submitted. Always 0 once the camera has closed: unsubmitted drafts are discarded then.",
         }),
+        publishedAt: z.iso.datetime().nullable().meta({
+            description:
+                "When the story went live for members, or null while it is not published",
+        }),
+        firstPublishedAt: z.iso.datetime().nullable().meta({
+            description:
+                "When the story was first published. Stays set after unpublishing; attendees are only notified on the first publish.",
+        }),
         canManage: z.boolean().meta({
             description: "Whether the caller arranges the event",
         }),

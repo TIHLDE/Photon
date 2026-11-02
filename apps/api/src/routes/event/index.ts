@@ -40,8 +40,10 @@ import {
     getWrappedPhotoImageRoute,
     listOpenWrappedCamerasRoute,
     listWrappedPhotosRoute,
+    publishWrappedStoryRoute,
     setWrappedCameraRoute,
     submitMyWrappedPhotosRoute,
+    unpublishWrappedStoryRoute,
     updateWrappedPhotoRoute,
     uploadWrappedPhotoRoute,
 } from "./wrapped";
@@ -114,6 +116,9 @@ export const eventRoutes = route()
     .route("/", getMyWrappedPhotoImageRoute)
     .route("/", submitMyWrappedPhotosRoute)
     .route("/", deleteMyWrappedPhotoRoute)
+    // Wrapped: storyen etter utvelgelsen
+    .route("/", publishWrappedStoryRoute)
+    .route("/", unpublishWrappedStoryRoute)
     // Reactions
     .route("/", createEventReactionRoute)
     .route("/", deleteEventReactionRoute);

@@ -1333,6 +1333,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/event/{eventId}/wrapped/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish the event's Wrapped story
+         * @description Put the picked photos live as the event's story for every logged-in member. The first publish notifies everyone who held a spot on the event (registered, attended or no-show) in the bell and by push; publishing again after an unpublish notifies nobody. Requires 'events:update' or 'events:manage', globally or for the arranging group.
+         */
+        post: operations["publishWrappedStory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/wrapped/unpublish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unpublish the event's Wrapped story
+         * @description Take the story down for members. Nothing is deleted: likes and comments come back if the story is published again, and that publish notifies nobody. Requires 'events:update' or 'events:manage', globally or for the arranging group.
+         */
+        post: operations["unpublishWrappedStory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/event/{eventId}/reactions": {
         parameters: {
             query?: never;
@@ -4933,6 +4973,10 @@ export interface components {
             reason: ("disabled" | "not_open_yet" | "closed" | "not_registered" | "no_shots_left") | null;
             /** @description The caller's photos not yet submitted. Always 0 once the camera has closed: unsubmitted drafts are discarded then. */
             draftCount: number;
+            /** @description When the story went live for members, or null while it is not published */
+            publishedAt: string | null;
+            /** @description When the story was first published. Stays set after unpublishing; attendees are only notified on the first publish. */
+            firstPublishedAt: string | null;
             /** @description Whether the caller arranges the event */
             canManage: boolean;
         };
@@ -10581,6 +10625,109 @@ export interface operations {
             };
             /** @description Conflict - the photo is already submitted, or the camera has closed */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    publishWrappedStory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrappedCamera"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No photos are picked yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    unpublishWrappedStory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrappedCamera"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

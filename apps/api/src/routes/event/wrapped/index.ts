@@ -9,3 +9,5 @@ export { setWrappedCameraRoute } from "./set";
 export { getWrappedCameraRoute } from "./status";
 export { updateWrappedPhotoRoute } from "./update";
 export { uploadWrappedPhotoRoute } from "./upload";
+export { publishWrappedStoryRoute } from "./publish";
+export { unpublishWrappedStoryRoute } from "./unpublish";
