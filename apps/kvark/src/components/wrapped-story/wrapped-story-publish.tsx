@@ -18,12 +18,33 @@ import {
     CardHeader,
     CardTitle,
 } from "@tihlde/ui/ui/card";
-import { Eye, EyeOff, Send } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@tihlde/ui/ui/toggle-group";
+import {
+    Eye,
+    EyeOff,
+    GalleryHorizontal,
+    GalleryVertical,
+    Send,
+} from "lucide-react";
 import { type ReactElement, useState } from "react";
 
 import { formatInOslo } from "#/lib/date";
 
+export type WrappedStoryLayout = "feed" | "cards";
+
+const LAYOUTS: {
+    value: WrappedStoryLayout;
+    label: string;
+    icon: typeof Eye;
+}[] = [
+    { value: "feed", label: "Rull opp og ned", icon: GalleryVertical },
+    { value: "cards", label: "Sveip kort til siden", icon: GalleryHorizontal },
+];
+
 type WrappedStoryPublishProps = {
+    layout: WrappedStoryLayout;
+    isSavingLayout: boolean;
+    onLayoutChange: (layout: WrappedStoryLayout) => void;
     selectedCount: number;
     publishedAt: string | null;
     firstPublishedAt: string | null;
@@ -51,6 +72,9 @@ export function WrappedStoryPublish({
     storyLink,
     onPublish,
     onUnpublish,
+    layout,
+    isSavingLayout,
+    onLayoutChange,
 }: WrappedStoryPublishProps) {
     const [confirm, setConfirm] = useState<Confirm>(null);
     const isPublished = publishedAt !== null;
@@ -66,13 +90,48 @@ export function WrappedStoryPublish({
                         : "Bildene du velger blir storyen. Alle med TIHLDE-konto kan se den når den er publisert."}
                 </CardDescription>
             </CardHeader>
-            {error ? (
-                <CardContent>
+            <CardContent className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                    <p
+                        id="wrapped-story-layout"
+                        className="text-sm font-medium"
+                    >
+                        Visning
+                    </p>
+                    <ToggleGroup
+                        variant="choice"
+                        size="lg"
+                        spacing={2}
+                        value={[layout]}
+                        disabled={isSavingLayout}
+                        onValueChange={(next) => {
+                            const picked = next[0];
+                            if (picked === "feed" || picked === "cards") {
+                                onLayoutChange(picked);
+                            }
+                        }}
+                        aria-labelledby="wrapped-story-layout"
+                        className="flex-wrap"
+                    >
+                        {LAYOUTS.map(({ value, label, icon: Icon }) => (
+                            <ToggleGroupItem key={value} value={value}>
+                                <Icon />
+                                {label}
+                            </ToggleGroupItem>
+                        ))}
+                    </ToggleGroup>
+                    <p className="text-sm text-muted-foreground">
+                        {layout === "cards"
+                            ? "Bildene ligger i en bunke. Sveip til høyre for neste, til venstre for forrige."
+                            : "Bildene fyller skjermen. Sveip opp for neste, ned for forrige."}
+                    </p>
+                </div>
+                {error ? (
                     <Alert variant="destructive">
                         <AlertDescription>{error}</AlertDescription>
                     </Alert>
-                </CardContent>
-            ) : null}
+                ) : null}
+            </CardContent>
             <CardFooter className="flex flex-wrap gap-2">
                 {isPublished ? (
                     <>

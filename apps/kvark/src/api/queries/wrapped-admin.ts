@@ -63,10 +63,9 @@ export const setWrappedCameraMutation = mutationOptions({
             params: { eventId },
             json: data,
         }),
+    // Også storyen: visningen den skal vises med, er en av innstillingene.
     onSuccess(_, vars, __, ctx) {
-        return ctx.client.invalidateQueries(
-            getWrappedCameraQuery(vars.eventId),
-        );
+        return invalidateStory(ctx.client, vars.eventId);
     },
 });
 
