@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronUp, Heart } from "lucide-react";
+import { ChevronRight, ChevronUp, Heart } from "lucide-react";
 
 import { cn } from "#/lib/utils";
 
@@ -59,6 +59,42 @@ function StorySlide({ className, ...props }: React.ComponentProps<"section">) {
             data-slot="story-slide"
             className={cn(
                 "relative flex h-dvh w-full touch-manipulation snap-start snap-always items-center justify-center overflow-hidden",
+                className,
+            )}
+            {...props}
+        />
+    );
+}
+
+/**
+ * One card of the card layout: the same content as a {@link StorySlide},
+ * on a rounded card that sits in a {@link SwipeCardStack} instead of filling
+ * the screen. `touch-manipulation` for the same reason as on a slide.
+ */
+function StoryCard({ className, ...props }: React.ComponentProps<"section">) {
+    return (
+        <section
+            data-slot="story-card"
+            className={cn(
+                "relative flex size-full touch-manipulation items-center justify-center overflow-hidden rounded-3xl bg-neutral-900 shadow-2xl ring-1 ring-white/10",
+                className,
+            )}
+            {...props}
+        />
+    );
+}
+
+/**
+ * Where the card stack sits: below the top bar, clear of the notch and the
+ * home indicator, and no wider than a phone so a card keeps its shape on a
+ * laptop.
+ */
+function StoryCardArea({ className, ...props }: React.ComponentProps<"div">) {
+    return (
+        <div
+            data-slot="story-card-area"
+            className={cn(
+                "mx-auto flex h-dvh w-full max-w-md flex-col px-3 pt-[calc(max(env(safe-area-inset-top),0.75rem)+4.25rem)] pb-[max(env(safe-area-inset-bottom),0.75rem)]",
                 className,
             )}
             {...props}
@@ -188,8 +224,13 @@ function StoryCoverMeta({ className, ...props }: React.ComponentProps<"p">) {
 function StorySwipeHint({
     className,
     children,
+    direction = "up",
     ...props
-}: React.ComponentProps<"button">) {
+}: React.ComponentProps<"button"> & {
+    /** Which way the swipe goes: up in the feed, right in the card stack. */
+    direction?: "up" | "right";
+}) {
+    const Arrow = direction === "right" ? ChevronRight : ChevronUp;
     return (
         <button
             type="button"
@@ -200,7 +241,7 @@ function StorySwipeHint({
             )}
             {...props}
         >
-            <ChevronUp className="size-5" aria-hidden />
+            <Arrow className="size-5" aria-hidden />
             {children}
         </button>
     );
@@ -282,6 +323,8 @@ function StoryHeartBurst({ className, ...props }: React.ComponentProps<"svg">) {
 }
 
 export {
+    StoryCard,
+    StoryCardArea,
     StoryActionButton,
     StoryActions,
     StoryCaption,
