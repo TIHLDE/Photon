@@ -16,7 +16,7 @@ export const unpublishWrappedStoryRoute = route().post(
         summary: "Unpublish the event's Wrapped story",
         operationId: "unpublishWrappedStory",
         description:
-            "Take the story down for members. Nothing is deleted: likes and comments come back if the story is published again, and that publish notifies nobody. Requires 'events:update' or 'events:manage', globally or for the arranging group.",
+            "Take the story down for members, and delete the notifications that point to it. Likes and comments stay and come back if the story is published again, and that publish notifies the attendees again. Requires 'events:update' or 'events:manage', globally or for the arranging group.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -37,9 +37,12 @@ export const unpublishWrappedStoryRoute = route().post(
         const ctx = c.get("ctx");
         const { eventId } = c.req.valid("param");
 
-        await unpublishStory(ctx, eventId);
+        const { removedNotifications } = await unpublishStory(ctx, eventId);
 
-        c.get("logger").info({ eventId }, "Wrapped story unpublished");
+        c.get("logger").info(
+            { eventId, removedNotifications },
+            "Wrapped story unpublished",
+        );
 
         const status = await getCameraStatus(ctx, eventId, c.get("user").id);
         if (!status) {

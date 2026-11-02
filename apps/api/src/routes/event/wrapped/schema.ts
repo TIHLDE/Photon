@@ -70,7 +70,7 @@ export const wrappedCameraSchema = Schema(
         }),
         firstPublishedAt: z.iso.datetime().nullable().meta({
             description:
-                "When the story was first published. Stays set after unpublishing; attendees are only notified on the first publish.",
+                "When the story was first published. Stays set after unpublishing.",
         }),
         canManage: z.boolean().meta({
             description: "Whether the caller arranges the event",

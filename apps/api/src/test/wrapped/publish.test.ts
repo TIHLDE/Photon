@@ -5,7 +5,7 @@ import { eventWithPickedPhotos } from "./helpers";
 
 describe("wrapped story publishing", () => {
     integrationTest(
-        "the first publish notifies everyone with a spot, once",
+        "publishing notifies everyone with a spot; unpublishing takes the notifications back",
         async ({ ctx }) => {
             const { event, photographer, organizer } =
                 await eventWithPickedPhotos(ctx, 2);
@@ -49,16 +49,48 @@ describe("wrapped story publishing", () => {
                 `/arrangementer/${event.slug}/story`,
             );
 
+            // Publishing a story that is already live notifies nobody.
+            await wrapped.publish.$post({ param });
+            expect(await notified()).toHaveLength(2);
+
             const unpublished = await wrapped.unpublish.$post({ param });
             expect(unpublished.status).toBe(200);
             expect((await unpublished.json()).publishedAt).toBeNull();
+            expect(await notified()).toHaveLength(0);
 
+            // Back live: notified again, one notification each.
             const again = await wrapped.publish.$post({ param });
             expect(again.status).toBe(200);
             const againStatus = await again.json();
             expect(againStatus.publishedAt).not.toBeNull();
             expect(againStatus.firstPublishedAt).toBe(status.firstPublishedAt);
-            expect(await notified()).toHaveLength(2);
+            expect((await notified()).sort()).toEqual(
+                [photographer.id, attended.id].sort(),
+            );
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "unpublishing leaves other notifications alone",
+        async ({ ctx }) => {
+            const { event, photographer, organizer } =
+                await eventWithPickedPhotos(ctx, 1);
+            await ctx.db.insert(schema.notification).values({
+                userId: photographer.id,
+                title: "Noe annet",
+                description: "Et varsel som ikke gjelder storyen",
+                link: `/arrangementer/${event.slug}`,
+            });
+            const client = await ctx.utils.clientForUser(organizer);
+            const wrapped = client.api.event[":eventId"].wrapped;
+            const param = { eventId: event.id };
+
+            await wrapped.publish.$post({ param });
+            await wrapped.unpublish.$post({ param });
+
+            const left = await ctx.db.query.notification.findMany();
+            expect(left.map((n) => n.title)).toEqual(["Noe annet"]);
         },
         500_000,
     );

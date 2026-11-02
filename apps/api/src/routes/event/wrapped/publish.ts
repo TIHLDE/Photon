@@ -16,7 +16,7 @@ export const publishWrappedStoryRoute = route().post(
         summary: "Publish the event's Wrapped story",
         operationId: "publishWrappedStory",
         description:
-            "Put the picked photos live as the event's story for every logged-in member. The first publish notifies everyone who held a spot on the event (registered, attended or no-show) in the bell and by push; publishing again after an unpublish notifies nobody. Requires 'events:update' or 'events:manage', globally or for the arranging group.",
+            "Put the picked photos live as the event's story for every logged-in member. Every publish that takes the story live notifies everyone who held a spot on the event (registered, attended or no-show) in the bell and by push. Unpublishing deletes those notifications, so publishing again notifies again; publishing a story that is already live notifies nobody. Requires 'events:update' or 'events:manage', globally or for the arranging group.",
     })
         .schemaResponse({
             statusCode: 200,
