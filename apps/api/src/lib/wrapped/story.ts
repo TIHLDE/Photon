@@ -1,5 +1,6 @@
 import { schema } from "@photon/db";
 import { and, count, eq, inArray, isNotNull } from "drizzle-orm";
+import type { WrappedStoryLayout } from "@photon/db/schema";
 import type { AppContext } from "~/lib/ctx";
 import { HTTPAppException } from "~/lib/errors";
 import { canActOnEvent } from "~/lib/event/access";
@@ -165,6 +166,7 @@ export type StoryEvent = {
     end: Date;
     imageUrl: string | null;
     publishedAt: Date | null;
+    layout: WrappedStoryLayout;
 };
 
 /**
@@ -197,10 +199,14 @@ export async function requireReadableStory(
 
     const camera = await ctx.db.query.wrappedCamera.findFirst({
         where: { eventId },
-        columns: { publishedAt: true },
+        columns: { publishedAt: true, storyLayout: true },
     });
     if (camera?.publishedAt) {
-        return { ...event, publishedAt: camera.publishedAt };
+        return {
+            ...event,
+            publishedAt: camera.publishedAt,
+            layout: camera.storyLayout,
+        };
     }
     if (
         camera &&
@@ -211,7 +217,7 @@ export async function requireReadableStory(
             WRAPPED_ARRANGER_PERMISSIONS,
         ))
     ) {
-        return { ...event, publishedAt: null };
+        return { ...event, publishedAt: null, layout: camera.storyLayout };
     }
     throw HTTPAppException.NotFound("Story");
 }
