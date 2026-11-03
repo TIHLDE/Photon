@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { schema } from "@photon/db";
 import type { ApplicationType } from "@photon/db/schema";
 import { EmptyFilter, and, eq, inArray, or } from "drizzle-orm";
+import { isAssetUploader } from "~/lib/asset";
 import type { AppContext } from "~/lib/ctx";
 import { getUserStudy } from "~/lib/user/study";
 import { renderApplicationPdf } from "./pdf";
@@ -201,6 +202,9 @@ export async function generateApplicationPdf(
  * promoting it. Without this check a member could attach someone else's
  * staged upload to their own søknad and then read it back through the
  * authorized attachment route.
+ *
+ * Forces each one private: the row decides, not what the client remembered to
+ * ask for at upload, and an open attachment would bypass that route entirely.
  */
 export async function claimAttachments(
     ctx: AppContext,
@@ -209,7 +213,7 @@ export async function claimAttachments(
 ): Promise<{ ok: true } | { ok: false; invalidKey: string }> {
     for (const key of assetKeys) {
         const asset = await ctx.bucket.getAsset(key);
-        if (!asset || asset.uploadedById !== userId) {
+        if (!asset || !isAssetUploader(asset, userId)) {
             return { ok: false, invalidKey: key };
         }
         if (asset.status !== "staged") {
@@ -219,6 +223,7 @@ export async function claimAttachments(
 
     for (const key of assetKeys) {
         await ctx.bucket.promoteAsset(key);
+        await ctx.bucket.setAssetVisibility(key, "private");
     }
 
     return { ok: true };

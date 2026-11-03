@@ -1,3 +1,4 @@
+import { isAssetUploader } from "~/lib/asset";
 import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -65,7 +66,7 @@ Only the account that uploaded the asset may promote it. Promoting an already-pr
         const apiKey = c.get("apiKey");
         const callerId = user?.id ?? apiKey?.createdById;
 
-        if (!callerId || asset.uploadedById !== callerId) {
+        if (!isAssetUploader(asset, callerId)) {
             throw HTTPAppException.Forbidden(
                 "Du kan bare promotere filer du selv har lastet opp.",
             );

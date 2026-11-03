@@ -2,7 +2,7 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { promoteAssetUrls } from "~/lib/asset";
+import { assertMayUseAssetUrls, promoteAssetUrls } from "~/lib/asset";
 import { DEFAULT_LEADER_PERMISSIONS } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -31,6 +31,11 @@ export const createRoute = route().post(
     async (c) => {
         const body = c.req.valid("json");
         const { db, bucket } = c.get("ctx");
+
+        await assertMayUseAssetUrls(c.get("ctx"), c.get("user").id, [
+            body.imageUrl,
+            body.logoUrl,
+        ]);
 
         // Check if slug already exists
         const existingGroup = await db
