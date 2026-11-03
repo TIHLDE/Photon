@@ -175,7 +175,7 @@ export const openWrappedCamerasSchema = Schema(
             shotsPerPerson: z.number().int(),
             shotsLeft: z.number().int().meta({
                 description:
-                    "Photos the caller has left. 0 only when drafts are waiting to be submitted.",
+                    "Photos the caller has left. 0 once every photo is taken; the camera stays listed until it closes.",
             }),
             draftCount: z.number().int().meta({
                 description: "The caller's photos not yet submitted",

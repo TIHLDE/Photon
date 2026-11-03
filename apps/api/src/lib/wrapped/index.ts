@@ -251,10 +251,13 @@ export type OpenCamera = {
 };
 
 /**
- * The cameras `userId` can use right now: turned on, inside their window, at
- * an event they hold a spot on, with photos left or drafts to submit.
+ * The open cameras at events `userId` holds a spot on: turned on and inside
+ * their window. A camera stays listed until it closes, also once every photo
+ * is taken and sent: it is the member's way back to the event's photos.
  *
- * Ordered by how much it is "the event you are at": events under way come
+ * Cameras with a shot or a draft left come before spent ones: the clients show
+ * the first camera, so a spent one must never hide one the member can still
+ * use. Within each group, ordered by how much it is "the event you are at": events under way come
  * first, the one that started last on top — at 22:30 the party that began at
  * 22:00 beats the meeting that ended at 20:00 and still has its camera open.
  * Cameras that have opened ahead of their event follow, soonest first, and
@@ -330,30 +333,29 @@ export async function listOpenCameras(
     const rank = (camera: { start: Date; end: Date }) =>
         now < camera.start ? 1 : now > camera.end ? 2 : 0;
 
-    return (
-        cameras
-            .map((camera) => {
-                const used = usedByEvent.get(camera.eventId);
-                return {
-                    ...camera,
-                    closesAt: cameraWindow(camera).closesAt,
-                    shotsLeft: Math.max(
-                        0,
-                        camera.shotsPerPerson - (used?.photos ?? 0),
-                    ),
-                    draftCount: (used?.photos ?? 0) - (used?.submitted ?? 0),
-                };
-            })
-            // A camera with no shots left still matters while drafts wait to be
-            // submitted: that is the only way back to them.
-            .filter((camera) => camera.shotsLeft > 0 || camera.draftCount > 0)
-            .sort((a, b) => {
-                if (rank(a) !== rank(b)) return rank(a) - rank(b);
-                // Under way: the one that started last. Ahead: the one that starts
-                // first. Over: the one that ended last.
-                if (rank(a) === 0) return b.start.getTime() - a.start.getTime();
-                if (rank(a) === 1) return a.start.getTime() - b.start.getTime();
-                return b.end.getTime() - a.end.getTime();
-            })
-    );
+    const usable = (camera: { shotsLeft: number; draftCount: number }) =>
+        camera.shotsLeft > 0 || camera.draftCount > 0;
+
+    return cameras
+        .map((camera) => {
+            const used = usedByEvent.get(camera.eventId);
+            return {
+                ...camera,
+                closesAt: cameraWindow(camera).closesAt,
+                shotsLeft: Math.max(
+                    0,
+                    camera.shotsPerPerson - (used?.photos ?? 0),
+                ),
+                draftCount: (used?.photos ?? 0) - (used?.submitted ?? 0),
+            };
+        })
+        .sort((a, b) => {
+            if (usable(a) !== usable(b)) return usable(a) ? -1 : 1;
+            if (rank(a) !== rank(b)) return rank(a) - rank(b);
+            // Under way: the one that started last. Ahead: the one that starts
+            // first. Over: the one that ended last.
+            if (rank(a) === 0) return b.start.getTime() - a.start.getTime();
+            if (rank(a) === 1) return a.start.getTime() - b.start.getTime();
+            return b.end.getTime() - a.end.getTime();
+        });
 }

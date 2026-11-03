@@ -67,8 +67,8 @@ function AppLayout() {
             (evaluations?.length ?? 0) > 0);
     const navItems = useSiteNavItems(isAuthenticated, !isPendingApproval);
     // Den som står på et arrangement med åpent kamera skal ikke måtte lete
-    // etter det: snarveien ligger oppå bunnlinja så lenge kameraet er åpent
-    // og de har bilder igjen. Det mest aktuelle arrangementet kommer først
+    // etter det: snarveien ligger oppå bunnlinja til kameraet stenger,
+    // også når filmen er full. Det mest aktuelle arrangementet kommer først
     // fra API-et. På selve kamerasida er man allerede framme.
     const { data: openCameras } = useQuery({
         ...listOpenWrappedCamerasQuery(session?.user?.id ?? ""),
