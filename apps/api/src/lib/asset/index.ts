@@ -88,6 +88,10 @@ export function isAssetUploader(
  * `heldByRow` is what lets a re-save through, and an editor keep a picture
  * another editor uploaded. Call before the row is written. A missing asset
  * answers the same as someone else's, so this does not confirm which keys exist.
+ *
+ * Only the plain form is accepted: the read and delete checks match on the
+ * stored value ending in the asset path, so `…/<key>?v=1` would pass here and
+ * then count as no reference at all, and the file would be deleted under it.
  */
 export async function assertMayUseAssetUrls(
     { db }: { db: NodePgDatabase<DbRelations> },
@@ -95,6 +99,23 @@ export async function assertMayUseAssetUrls(
     urls: (string | null | undefined)[],
     heldByRow: (string | null | undefined)[] = [],
 ): Promise<void> {
+    const forbidden = () =>
+        HTTPAppException.Forbidden(
+            "Du kan bare bruke filer du selv har lastet opp.",
+        );
+
+    for (const url of urls) {
+        const key = assetKeyOf(url);
+        if (
+            url &&
+            key &&
+            !url.endsWith(`/api/assets/${key}`) &&
+            !heldByRow.includes(url)
+        ) {
+            throw forbidden();
+        }
+    }
+
     const held = new Set(heldByRow.map((url) => assetKeyOf(url)));
     const keys = [
         ...new Set(
@@ -115,11 +136,7 @@ export async function assertMayUseAssetUrls(
             .map((asset) => asset.key),
     );
 
-    if (keys.some((key) => !usable.has(key))) {
-        throw HTTPAppException.Forbidden(
-            "Du kan bare bruke filer du selv har lastet opp.",
-        );
-    }
+    if (keys.some((key) => !usable.has(key))) throw forbidden();
 }
 
 function assetKeyOf(url: string | null | undefined): string | null {

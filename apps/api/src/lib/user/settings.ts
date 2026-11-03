@@ -2,7 +2,11 @@ import { genderVariants, userAllergy, userSettings } from "@photon/db/schema";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
-import { assertMayUseAssetUrls, claimPrivateAssetUrls } from "../asset";
+import {
+    assertMayUseAssetUrls,
+    assetKeyFromUrl,
+    claimPrivateAssetUrls,
+} from "../asset";
 import { releaseReplacedAssetUrls } from "../asset/release";
 import type { AppContext } from "../ctx";
 
@@ -362,10 +366,28 @@ export async function updateUserSettings(
     });
 
     await releaseReplacedAssetUrls(ctx, [
-        [previous?.imageUrl ?? null, updates.imageUrl],
+        [await ownAvatarUrl(ctx, userId, previous?.imageUrl), updates.imageUrl],
     ]);
 
     return result;
+}
+
+/**
+ * Rader fra før opplaster ble sjekket kan peke på andres filer, og de skal ikke
+ * slettes av at medlemmet bytter bilde. Uten opplaster er importerte avatarer.
+ */
+async function ownAvatarUrl(
+    ctx: AppContext,
+    userId: string,
+    url: string | null | undefined,
+): Promise<string | null> {
+    const key = url ? assetKeyFromUrl(url) : null;
+    if (!url || !key) return null;
+
+    const asset = await ctx.bucket.getAsset(key);
+    const isOwn =
+        asset?.uploadedById === null || asset?.uploadedById === userId;
+    return isOwn ? url : null;
 }
 
 /**

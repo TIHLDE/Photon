@@ -19,9 +19,10 @@ async function storeAsset(
     options: {
         uploadedById?: string;
         visibility?: "public" | "private";
+        prefix?: string;
     } = {},
 ): Promise<{ key: string; url: string }> {
-    const key = `uploads/2026/11/ownership-${counter++}.webp`;
+    const key = `${options.prefix ?? "uploads"}/2026/11/ownership-${counter++}.webp`;
     await ctx.bucket.upload(key, BYTES, {
         originalFilename: "bilde.webp",
         contentType: "image/webp",
@@ -246,21 +247,22 @@ describe("a stored value that only looks like an asset grants nothing", () => {
     }
 
     integrationTest(
-        "an avatar nesting one asset path inside another does not open a private asset",
+        "a row nesting one asset path inside another does not open a private asset",
         async ({ ctx }) => {
             const owner = await ctx.utils.createTestUser();
             const attacker = await ctx.utils.createTestUser();
-            const client = await ctx.utils.clientForUser(attacker);
 
             const attachment = await storeAsset(ctx, {
                 uploadedById: owner.id,
                 visibility: "private",
             });
 
-            await client.api.user.me.settings.$patch({
-                json: {
-                    imageUrl: `https://example.com/api/assets/x/api/assets/${attachment.key}`,
-                },
+            await ctx.db.insert(schema.userSettings).values({
+                userId: attacker.id,
+                imageUrl: `https://example.com/api/assets/x/api/assets/${attachment.key}`,
+                gender: "other",
+                acceptsEventRules: true,
+                receiveMailCommunication: true,
             });
 
             expect(await readAs(ctx, attacker, attachment.key)).toBe(404);
@@ -369,13 +371,124 @@ describe("an avatar row only opens the member's own picture", () => {
             const member = await ctx.utils.createTestUser();
             const reader = await ctx.utils.createTestUser();
 
-            const imported = await storeAsset(ctx, { visibility: "private" });
+            const imported = await storeAsset(ctx, {
+                visibility: "private",
+                prefix: "profile-images",
+            });
             await ctx.db
                 .update(schema.user)
                 .set({ image: imported.url })
                 .where(eq(schema.user.id, member.id));
 
             expect(await readAs(ctx, reader, imported.key)).toBe(200);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "auth_user.image does not open the file of a deleted member",
+        async ({ ctx }) => {
+            const attacker = await ctx.utils.createTestUser();
+
+            const orphaned = await storeAsset(ctx, { visibility: "private" });
+            await ctx.db
+                .update(schema.user)
+                .set({ image: orphaned.url })
+                .where(eq(schema.user.id, attacker.id));
+
+            expect(await readAs(ctx, attacker, orphaned.key)).toBe(404);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "a settings avatar whose uploader is gone, as after merging accounts, stays readable",
+        async ({ ctx }) => {
+            const member = await ctx.utils.createTestUser();
+            const reader = await ctx.utils.createTestUser();
+
+            const avatar = await storeAsset(ctx, { visibility: "private" });
+            await ctx.db.insert(schema.userSettings).values({
+                userId: member.id,
+                imageUrl: avatar.url,
+                gender: "other",
+                acceptsEventRules: true,
+                receiveMailCommunication: true,
+            });
+
+            expect(await readAs(ctx, reader, avatar.key)).toBe(200);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "clearing an avatar saved before uploads were checked leaves the other member's file",
+        async ({ ctx }) => {
+            const owner = await ctx.utils.createTestUser();
+            const attacker = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(attacker);
+
+            const external = await storeAsset(ctx, { uploadedById: owner.id });
+            await ctx.db.insert(schema.userSettings).values({
+                userId: attacker.id,
+                imageUrl: external.url,
+                gender: "other",
+                acceptsEventRules: true,
+                receiveMailCommunication: true,
+            });
+
+            const response = await client.api.user.me.settings.$patch({
+                json: { imageUrl: "" },
+            });
+            expect(response.status).toBe(200);
+            expect(await ctx.bucket.exists(external.key)).toBe(true);
+        },
+        500_000,
+    );
+});
+
+describe("an asset URL must be in its plain form", () => {
+    integrationTest(
+        "adding a query to a saved picture is refused, so the file is not deleted under the row",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+
+            const image = await storeAsset(ctx, { uploadedById: user.id });
+            await client.api.user.me.settings.$patch({
+                json: { imageUrl: image.url },
+            });
+
+            const response = await client.api.user.me.settings.$patch({
+                json: { imageUrl: `${image.url}?v=1` },
+            });
+            expect(response.status).toBe(403);
+            expect(await ctx.bucket.exists(image.key)).toBe(true);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "a row already holding that form can still be saved unchanged",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+
+            const image = await storeAsset(ctx, { uploadedById: user.id });
+            const stored = `${image.url}?v=1`;
+            await ctx.db.insert(schema.userSettings).values({
+                userId: user.id,
+                imageUrl: stored,
+                gender: "other",
+                acceptsEventRules: true,
+                receiveMailCommunication: true,
+            });
+
+            const response = await client.api.user.me.settings.$patch({
+                json: { imageUrl: stored },
+            });
+            expect(response.status).toBe(200);
+            expect(await ctx.bucket.exists(image.key)).toBe(true);
         },
         500_000,
     );

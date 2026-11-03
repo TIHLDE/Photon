@@ -9,6 +9,7 @@ import { assetKeyFromUrl } from "./index";
 // inn i migrasjonen.
 const ANSWER_TTL_MS = 60_000;
 const MAX_CACHED_ANSWERS = 10_000;
+const IMPORTED_AVATAR_PREFIX = "profile-images/";
 const readableUntil = new Map<string, number>();
 
 // Suffiks-sammenligning framfor LIKE, fordi nøklene inneholder `_`.
@@ -59,10 +60,14 @@ async function isGalleryAsset(ctx: AppContext, key: string): Promise<boolean> {
 }
 
 /**
- * Bare medlemmets eget bilde teller. `auth_user.image` kan settes av medlemmet
- * selv gjennom Better Auth, og `user_settings` har rader fra før opplaster ble
- * sjekket ved lagring. Uten opplaster er importerte bilder: gjenopprettingen
- * etter juli 2026 registrerte ingen.
+ * Bare medlemmets eget bilde teller: `user_settings` har rader fra før
+ * opplaster ble sjekket ved lagring, og `auth_user.image` kan medlemmet sette
+ * selv gjennom Better Auth, uten noen sjekk.
+ *
+ * Uten opplaster er enten importert (gjenopprettingen i juli 2026 registrerte
+ * ingen) eller lastet opp av en konto som senere ble slettet eller slått
+ * sammen. Derfor godtas det i `auth_user.image` bare under importens eget
+ * prefiks, så kolonnen ikke åpner vedleggene til et slettet medlem.
  */
 async function isAvatarAsset(ctx: AppContext, key: string): Promise<boolean> {
     // Opplastet avatar ligger i user_settings, mens auth_user.image er den fra
@@ -79,17 +84,21 @@ async function isAvatarAsset(ctx: AppContext, key: string): Promise<boolean> {
         .from(schema.user)
         .where(endsWithAssetPath(schema.user.image, key));
 
-    const candidates = [...settings, ...users].filter(({ url }) =>
-        pointsAt(url, key),
-    );
-    if (candidates.length === 0) return false;
+    const settingsRows = settings.filter(({ url }) => pointsAt(url, key));
+    const userRows = users.filter(({ url }) => pointsAt(url, key));
+    if (settingsRows.length === 0 && userRows.length === 0) return false;
 
-    const asset = await ctx.bucket.getAsset(key);
-    if (!asset) return false;
+    const uploader = (await ctx.bucket.getAsset(key))?.uploadedById;
+    if (uploader === undefined) return false;
 
-    return candidates.some(
-        ({ userId }) =>
-            asset.uploadedById === null || asset.uploadedById === userId,
+    if (uploader === null) {
+        return (
+            settingsRows.length > 0 || key.startsWith(IMPORTED_AVATAR_PREFIX)
+        );
+    }
+
+    return [...settingsRows, ...userRows].some(
+        ({ userId }) => userId === uploader,
     );
 }
 
