@@ -109,7 +109,7 @@ export const feedbackItemSchema = Schema(
         }),
         author: feedbackAuthorSchema.nullable().meta({
             description:
-                "Who filed it, also when the feedback is anonymous. Clients must hide it from members when 'isAnonymous' is true.",
+                "Who filed it. Null on anonymous feedback, except for its author and for moderators.",
         }),
         upvotes: z.number(),
         downvotes: z.number(),

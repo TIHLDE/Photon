@@ -76,10 +76,8 @@ describe("Feedback", () => {
             expect(found.totalCount).toBe(1);
             expect(found.items[0]?.id).toBe(idea.id);
 
-            // Feedback is anonymous by default. The API still returns the
-            // author; hiding the name from members is the frontend's job.
             expect(found.items[0]?.isAnonymous).toBe(true);
-            expect(found.items[0]?.author?.id).toBe(author.id);
+            expect(found.items[0]?.author).toBeNull();
             expect(found.items[0]?.isAuthor).toBe(false);
 
             const ownList = await (

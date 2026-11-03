@@ -5,7 +5,10 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import type z from "zod";
 import { isFeedbackAuthor } from "~/lib/feedback/middleware";
-import { getFeedbackItem } from "~/lib/feedback/serialize";
+import {
+    canSeeAnonymousAuthors,
+    getFeedbackItem,
+} from "~/lib/feedback/serialize";
 import { sendNotification } from "~/lib/notification";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -169,7 +172,12 @@ export const updateRoute = route().patch(
             }
         }
 
-        const item = await getFeedbackItem(db, id, userId);
+        const item = await getFeedbackItem(
+            db,
+            id,
+            userId,
+            await canSeeAnonymousAuthors(c.get("ctx"), userId),
+        );
 
         if (!item) {
             throw new HTTPException(404, { message: "Feedback not found" });

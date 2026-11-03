@@ -1788,7 +1788,7 @@ export interface paths {
         head?: never;
         /**
          * Partially update group
-         * @description Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' permission (globally or scoped to this group).
+         * @description Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' permission (globally or scoped to this group). Changing `type` or `subtype` requires 'groups:manage' across all of TIHLDE.
          */
         patch: operations["updateGroup"];
         trace?: never;
@@ -4741,7 +4741,7 @@ export interface components {
             isAnonymous: boolean;
             /** @description Whether the requesting user filed this. */
             isAuthor: boolean;
-            /** @description Who filed it, also when the feedback is anonymous. Clients must hide it from members when 'isAnonymous' is true. */
+            /** @description Who filed it. Null on anonymous feedback, except for its author and for moderators. */
             author: components["schemas"]["FeedbackAuthor"] | null;
             upvotes: number;
             downvotes: number;
