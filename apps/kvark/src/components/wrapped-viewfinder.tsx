@@ -1,5 +1,6 @@
 import {
     type CameraFacingMode,
+    type CameraFlashMode,
     type CameraViewfinderHandle,
     type CameraViewfinderState,
     CameraControlButton,
@@ -17,7 +18,7 @@ import type { ReactNode, Ref } from "react";
 type WrappedViewfinderProps = {
     viewfinderRef: Ref<CameraViewfinderHandle>;
     facingMode: CameraFacingMode;
-    torch: boolean;
+    flash: CameraFlashMode;
     viewfinderState: CameraViewfinderState;
     shotsLeft: number;
     shotsPerPerson: number;
@@ -28,7 +29,6 @@ type WrappedViewfinderProps = {
     /** Photos waiting for the network, above the shutter row. */
     waiting?: ReactNode;
     onStateChange: (state: CameraViewfinderState) => void;
-    onTorchSupportChange: (supported: boolean) => void;
     onShutter: () => void;
     /** The flip button, and a double tap on the preview. */
     onSwitchCamera: () => void;
@@ -48,7 +48,7 @@ type WrappedViewfinderProps = {
 export function WrappedViewfinder({
     viewfinderRef,
     facingMode,
-    torch,
+    flash,
     viewfinderState,
     shotsLeft,
     shotsPerPerson,
@@ -56,7 +56,6 @@ export function WrappedViewfinder({
     receipt,
     waiting,
     onStateChange,
-    onTorchSupportChange,
     onShutter,
     onSwitchCamera,
     onUseSystemCamera,
@@ -68,9 +67,8 @@ export function WrappedViewfinder({
             <CameraViewfinder
                 ref={viewfinderRef}
                 facingMode={facingMode}
-                torch={torch}
+                flash={flash}
                 onStateChange={onStateChange}
-                onTorchSupportChange={onTorchSupportChange}
                 onDoubleTap={onSwitchCamera}
                 className="min-h-[50dvh] flex-1"
             >

@@ -11,13 +11,13 @@ import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
 import {
     type CameraFacingMode,
+    type CameraFlashMode,
     type CameraViewfinderHandle,
     type CameraViewfinderState,
-    CameraControlButton,
 } from "@tihlde/ui/ui/camera-viewfinder";
 import { convertHeicToJpeg, isHeicFile } from "@tihlde/ui/lib/heic";
 import { toast } from "@tihlde/ui/ui/sonner";
-import { Flashlight, FlashlightOff, Images } from "lucide-react";
+import { Images } from "lucide-react";
 import { z } from "zod";
 
 import { authClientWithRedirect } from "#/api/auth";
@@ -35,6 +35,7 @@ import {
     WrappedCameraRollConfirm,
     WrappedCameraRollInput,
 } from "#/components/wrapped-camera-roll";
+import { WrappedFlashButton } from "#/components/wrapped-flash-button";
 import { WrappedCameraFallback } from "#/components/wrapped-camera-fallback";
 import { WrappedCameraScreen } from "#/components/wrapped-camera-screen";
 import { WrappedCameraSkeleton } from "#/components/wrapped-camera-skeleton";
@@ -196,13 +197,11 @@ function WrappedCameraContainer({
         onRejected: (message) =>
             toast.error("Bildet ble ikke lastet opp", { description: message }),
     });
-    // Bilder som er trykket, men ikke ferdig fanget fra søkeren ennå. JPEG-en
-    // tar et øyeblikk å lage, og kvitteringen skal ikke vente på den.
-    const [capturing, setCapturing] = useState(0);
-    // Telleren går ned i det utløseren trykkes, ikke når bildet er lastet
-    // opp: det serveren har talt, minus det som er på vei. Et svar eller en
-    // ny henting kan da aldri dytte tallet opp igjen mens bilder venter.
-    const shotsLeft = Math.max(0, camera.shotsLeft - queue.count - capturing);
+    // Telleren går ned i det bildet er fanget fra søkeren (etter blitsen),
+    // ikke når det er lastet opp: det serveren har talt, minus det som er på
+    // vei. Et svar eller en ny henting kan da aldri dytte tallet opp igjen
+    // mens bilder venter.
+    const shotsLeft = Math.max(0, camera.shotsLeft - queue.count);
 
     useEffect(() => {
         if (!receipt) return;
@@ -215,10 +214,11 @@ function WrappedCameraContainer({
         useState<CameraViewfinderState>("requesting");
     const [facingMode, setFacingMode] =
         useState<CameraFacingMode>("environment");
-    const [torchSupported, setTorchSupported] = useState(false);
-    const [torch, setTorch] = useState(false);
+    const [flash, setFlash] = useState<CameraFlashMode>("auto");
     const [useSystemCamera, setUseSystemCamera] = useState(false);
     const lastShutterAt = useRef(0);
+    // Blitsen gjør at et bilde tar litt tid; ikke ta et nytt midt i det.
+    const shooting = useRef(false);
 
     const cameraRollRef = useRef<HTMLInputElement>(null);
     const [picked, setPicked] = useState<PickedPhoto | null>(null);
@@ -342,24 +342,26 @@ function WrappedCameraContainer({
     async function shoot() {
         const pressedAt = Date.now();
         if (pressedAt - lastShutterAt.current < SHUTTER_COOLDOWN_MS) return;
-        if (shotsLeft <= 0) return;
+        if (shotsLeft <= 0 || shooting.current) return;
         lastShutterAt.current = pressedAt;
+        shooting.current = true;
 
-        acknowledge();
-        setCapturing((n) => n + 1);
         try {
             const viewfinder = viewfinderRef.current;
             if (!viewfinder) throw new Error("Kameraet er ikke klart ennå.");
-            queue.enqueue(await viewfinder.capture());
+            const file = await viewfinder.capture();
+            // Først nå er bildet tatt: telleren, kvitteringen og blitsen i
+            // søkeren hører til det.
+            acknowledge();
+            queue.enqueue(file);
         } catch (error) {
             console.error("Kunne ikke ta bilde med søkeren", error);
-            setReceipt(null);
             toast.error("Fikk ikke tatt bildet", {
                 description:
                     error instanceof Error ? error.message : "Prøv igjen.",
             });
         } finally {
-            setCapturing((n) => n - 1);
+            shooting.current = false;
         }
     }
 
@@ -507,21 +509,21 @@ function WrappedCameraContainer({
             {...closeProps}
             title={event.title}
             action={
-                torchSupported ? (
-                    <CameraControlButton
-                        aria-label="Lommelykt"
-                        aria-pressed={torch}
-                        onClick={() => setTorch((on) => !on)}
-                    >
-                        {torch ? <Flashlight /> : <FlashlightOff />}
-                    </CameraControlButton>
-                ) : null
+                <WrappedFlashButton
+                    mode={flash}
+                    onChange={(next) => {
+                        if (import.meta.env.DEV) {
+                            console.log("Wrapped: flash mode", next);
+                        }
+                        setFlash(next);
+                    }}
+                />
             }
         >
             <WrappedViewfinder
                 viewfinderRef={viewfinderRef}
                 facingMode={facingMode}
-                torch={torch}
+                flash={flash}
                 viewfinderState={viewfinderState}
                 shotsLeft={shotsLeft}
                 shotsPerPerson={camera.shotsPerPerson}
@@ -537,10 +539,6 @@ function WrappedCameraContainer({
                 }
                 waiting={waiting}
                 onStateChange={setViewfinderState}
-                onTorchSupportChange={(supported) => {
-                    setTorchSupported(supported);
-                    if (!supported) setTorch(false);
-                }}
                 onShutter={() => void shoot()}
                 onSwitchCamera={() =>
                     setFacingMode((mode) =>

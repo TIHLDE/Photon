@@ -12,7 +12,7 @@ type WrappedCameraScreenProps = {
     /** Skjermleser-teksten på X-en, f.eks. «Lukk kameraet». */
     closeLabel: string;
     title: string;
-    /** The top-right control, e.g. the torch. */
+    /** The top-right control, e.g. the flash. */
     action?: ReactNode;
     children: ReactNode;
 };
