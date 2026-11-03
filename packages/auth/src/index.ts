@@ -719,6 +719,18 @@ export function createAuth(options: CreateAuthOptions) {
 
         hooks: {
             before: createAuthMiddleware(async (ctx) => {
+                // No uploader check runs here, and the asset cleanup counts this
+                // column as a reference. Avatars go through the settings route.
+                if (
+                    (ctx.path === "/update-user" ||
+                        ctx.path === "/sign-up/email") &&
+                    ctx.body?.image !== undefined
+                ) {
+                    throw new APIError("BAD_REQUEST", {
+                        message: "Profilbildet endres i profilinnstillingene.",
+                    });
+                }
+
                 if (ctx.path !== "/sign-up/email") return;
 
                 const rawEmail = ctx.body?.email;

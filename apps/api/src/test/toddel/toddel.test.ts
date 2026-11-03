@@ -7,15 +7,21 @@ async function stageAsset(
         upload: (
             key: string,
             body: Buffer,
-            meta: { originalFilename: string; contentType: string },
+            meta: {
+                originalFilename: string;
+                contentType: string;
+                uploadedById: string;
+            },
         ) => Promise<string>;
     },
     key: string,
     contentType: string,
+    uploadedById: string,
 ): Promise<string> {
     return bucket.upload(key, Buffer.from("file bytes"), {
         originalFilename: key.split("/").pop() ?? key,
         contentType,
+        uploadedById,
     });
 }
 
@@ -36,11 +42,13 @@ describe("TÖDDEL archive", () => {
                 bucket,
                 "uploads/2026/07/issue-99.pdf",
                 "application/pdf",
+                editor.id,
             );
             const coverKey = await stageAsset(
                 bucket,
                 "uploads/2026/07/issue-99.png",
                 "image/png",
+                editor.id,
             );
 
             // === CREATE ===
@@ -102,7 +110,7 @@ describe("TÖDDEL archive", () => {
                     pdfKey: "uploads/2026/07/does-not-exist.pdf",
                 },
             });
-            expect(unknownAsset.status).toBe(400);
+            expect(unknownAsset.status).toBe(403);
 
             // === LIST (public) ===
 

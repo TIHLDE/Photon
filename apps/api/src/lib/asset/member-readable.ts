@@ -61,8 +61,8 @@ async function isGalleryAsset(ctx: AppContext, key: string): Promise<boolean> {
 
 /**
  * Bare medlemmets eget bilde teller: `user_settings` har rader fra før
- * opplaster ble sjekket ved lagring, og `auth_user.image` kan medlemmet sette
- * selv gjennom Better Auth, uten noen sjekk.
+ * opplaster ble sjekket ved lagring, og `auth_user.image` har rader fra da
+ * medlemmet kunne sette den selv gjennom Better Auth, uten noen sjekk.
  *
  * Uten opplaster er enten importert (gjenopprettingen i juli 2026 registrerte
  * ingen) eller lastet opp av en konto som senere ble slettet eller slått

@@ -14671,13 +14671,6 @@ export interface operations {
                     "application/json": components["schemas"]["ToddelIssue"];
                 };
             };
-            /** @description Bad Request - Unknown asset key */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
             /** @description Authentication required */
             401: {
                 headers: {
@@ -14775,13 +14768,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ToddelIssue"];
                 };
-            };
-            /** @description Bad Request - Unknown asset key */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Authentication required */
             401: {

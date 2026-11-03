@@ -23,9 +23,11 @@ export const updateRoute = route().patch(
             schema: toddelIssueSchema,
             description: "Issue updated",
         })
-        .badRequest({ description: "Unknown asset key" })
         .unauthorized()
-        .forbidden({ description: "Insufficient permissions" })
+        .forbidden({
+            description:
+                "Insufficient permissions, or an asset key the caller did not upload",
+        })
         .notFound({ description: "Issue not found" })
         .build(),
     requireAuth,
@@ -36,6 +38,7 @@ export const updateRoute = route().patch(
     async (c) => {
         const body = c.req.valid("json");
         const { db, bucket } = c.get("ctx");
+        const userId = c.get("user").id;
         const edition = Number(c.req.param("edition"));
 
         if (!Number.isInteger(edition)) {
@@ -51,12 +54,18 @@ export const updateRoute = route().patch(
         }
 
         // `imageKey: null` clears the cover; omitting it leaves it alone.
+        const heldByRow = [existing.pdfUrl, existing.imageUrl];
         const imageUrl =
             body.imageKey === undefined
                 ? undefined
                 : body.imageKey === null
                   ? null
-                  : await publishAsset(bucket, body.imageKey);
+                  : await publishAsset(
+                        bucket,
+                        userId,
+                        body.imageKey,
+                        heldByRow,
+                    );
 
         const [issue] = await db
             .update(schema.toddel)
@@ -64,7 +73,7 @@ export const updateRoute = route().patch(
                 title: body.title,
                 publishedAt: body.publishedAt,
                 pdfUrl: body.pdfKey
-                    ? await publishAsset(bucket, body.pdfKey)
+                    ? await publishAsset(bucket, userId, body.pdfKey, heldByRow)
                     : undefined,
                 imageUrl,
             })

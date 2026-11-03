@@ -1,5 +1,6 @@
 import { schema } from "@photon/db";
 import { validator } from "hono-openapi";
+import { assertMayUseAssetUrls } from "~/lib/asset";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -32,6 +33,8 @@ export const createRoute = route().post(
         const body = c.req.valid("json");
         const userId = c.get("user").id;
         const { db } = c.get("ctx");
+
+        await assertMayUseAssetUrls(c.get("ctx"), userId, [body.url]);
 
         const [newBanner] = await db
             .insert(schema.banner)
