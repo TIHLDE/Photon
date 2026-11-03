@@ -7,13 +7,21 @@ import { integrationTest } from "~/test/config/integration";
  * here; a merge that brings in another branch's routes may need their lines too.
  *
  * - `public`: anyone on the internet. This is the line to read closely.
+ * - `own-check`: no session is needed to reach the handler, which then decides
+ *   for itself from a token, a signature or what the row says. Not probed here;
+ *   the route's own tests cover the check.
  * - `api-key`: no session gets in, only the key.
  * - `signed-in`: a session or token, plus whatever the route checks against the
  *   resource itself. This includes group-scoped routes, whose permission check
  *   needs a group that exists.
  * - `permission`: a member with no grants is refused before the handler runs.
  */
-type AccessDecision = "public" | "api-key" | "signed-in" | "permission";
+type AccessDecision =
+    | "public"
+    | "own-check"
+    | "api-key"
+    | "signed-in"
+    | "permission";
 
 const ROUTE_ACCESS: Record<string, AccessDecision> = {
     "DELETE /api/api-keys/:id": "permission",
@@ -60,9 +68,9 @@ const ROUTE_ACCESS: Record<string, AccessDecision> = {
     "GET /api/applications/:id/pdf": "signed-in",
     "GET /api/applications/mine": "signed-in",
     "GET /api/applications/options": "signed-in",
-    "GET /api/assets/:key{.+}": "public",
-    "GET /api/assets/metadata/:key{.+}": "public",
-    "GET /api/auth/*": "public",
+    "GET /api/assets/:key{.+}": "own-check",
+    "GET /api/assets/metadata/:key{.+}": "own-check",
+    "GET /api/auth/*": "own-check",
     "GET /api/auth/.well-known/openid-configuration": "public",
     "GET /api/banners": "permission",
     "GET /api/banners/visible": "public",
@@ -73,14 +81,14 @@ const ROUTE_ACCESS: Record<string, AccessDecision> = {
     "GET /api/contracts/signed-pdf": "signed-in",
     "GET /api/contracts/signed-pdf/:userId": "permission",
     "GET /api/event": "public",
-    "GET /api/event/:eventId": "public",
+    "GET /api/event/:eventId": "own-check",
     "GET /api/event/:eventId/allergies": "permission",
     "GET /api/event/:eventId/forms": "signed-in",
     "GET /api/event/:eventId/forms/:type": "signed-in",
     "GET /api/event/:eventId/messages": "permission",
     "GET /api/event/:eventId/payments": "permission",
     "GET /api/event/:eventId/registration": "signed-in",
-    "GET /api/event/calendar/:token/events.ics": "public",
+    "GET /api/event/calendar/:token/events.ics": "own-check",
     "GET /api/event/favorite": "signed-in",
     "GET /api/event/my-registrations": "signed-in",
     "GET /api/event/my-upcoming-registrations": "signed-in",
@@ -102,17 +110,17 @@ const ROUTE_ACCESS: Record<string, AccessDecision> = {
     "GET /api/groups": "public",
     "GET /api/groups/:groupSlug/fines": "signed-in",
     "GET /api/groups/:groupSlug/fines/:fineId": "signed-in",
-    "GET /api/groups/:groupSlug/fines/:fineId/image": "public",
+    "GET /api/groups/:groupSlug/fines/:fineId/image": "own-check",
     "GET /api/groups/:groupSlug/fines/statistics": "signed-in",
     "GET /api/groups/:groupSlug/fines/users": "signed-in",
     "GET /api/groups/:groupSlug/join-requests": "permission",
     "GET /api/groups/:groupSlug/laws": "signed-in",
     "GET /api/groups/:groupSlug/leader-permissions": "signed-in",
     "GET /api/groups/:groupSlug/member-permissions": "signed-in",
-    "GET /api/groups/:groupSlug/members": "public",
-    "GET /api/groups/:groupSlug/members/history": "public",
+    "GET /api/groups/:groupSlug/members": "own-check",
+    "GET /api/groups/:groupSlug/members/history": "own-check",
     "GET /api/groups/:groupSlug/positions": "signed-in",
-    "GET /api/groups/:slug": "public",
+    "GET /api/groups/:slug": "own-check",
     "GET /api/groups/:slug/forms": "signed-in",
     "GET /api/groups/join-requests": "signed-in",
     "GET /api/groups/mine": "signed-in",
@@ -120,7 +128,7 @@ const ROUTE_ACCESS: Record<string, AccessDecision> = {
     "GET /api/jobs": "public",
     "GET /api/jobs/:id": "public",
     "GET /api/news": "public",
-    "GET /api/news/:id": "public",
+    "GET /api/news/:id": "own-check",
     "GET /api/notification": "signed-in",
     "GET /api/roles": "permission",
     "GET /api/toddel": "public",
@@ -177,7 +185,7 @@ const ROUTE_ACCESS: Record<string, AccessDecision> = {
     "POST /api/applications/support": "signed-in",
     "POST /api/assets": "signed-in",
     "POST /api/assets/promote/:key{.+}": "signed-in",
-    "POST /api/auth/*": "public",
+    "POST /api/auth/*": "own-check",
     "POST /api/banners": "permission",
     "POST /api/company/contact": "public",
     "POST /api/contracts": "permission",
@@ -193,7 +201,7 @@ const ROUTE_ACCESS: Record<string, AccessDecision> = {
     "POST /api/event/:eventId/reactions": "signed-in",
     "POST /api/event/:eventId/registration": "signed-in",
     "POST /api/event/:eventId/registration/:userId": "permission",
-    "POST /api/event/payment/webhook": "public",
+    "POST /api/event/payment/webhook": "own-check",
     "POST /api/event/strikes": "permission",
     "POST /api/feedback": "signed-in",
     "POST /api/feedback/:id/comments": "permission",

@@ -10,6 +10,14 @@ import { deriveStudyFromGroups, loadStudyGroupRows } from "~/lib/user/study";
 import { requireAuthAllowPending } from "~/middleware/auth";
 import { userProfileSchema } from "./schema";
 
+async function filterAsync<T>(
+    items: T[],
+    keep: (item: T) => boolean | Promise<boolean>,
+): Promise<T[]> {
+    const kept = await Promise.all(items.map(keep));
+    return items.filter((_, index) => kept[index]);
+}
+
 /**
  * Another member's profile.
  *
@@ -28,14 +36,6 @@ import { userProfileSchema } from "./schema";
  * for å komme til innstillinger og til «Logg ut»; andres profiler er fortsatt
  * medlemsinnhold.
  */
-async function filterAsync<T>(
-    items: T[],
-    keep: (item: T) => boolean | Promise<boolean>,
-): Promise<T[]> {
-    const kept = await Promise.all(items.map(keep));
-    return items.filter((_, index) => kept[index]);
-}
-
 export const getUserRoute = route().get(
     "/:id",
     describeRoute({
