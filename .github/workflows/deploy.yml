@@ -10,6 +10,9 @@ on:
             - "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].release-*"
     workflow_dispatch:
 
+permissions:
+    contents: read
+
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: false
@@ -19,7 +22,7 @@ jobs:
         permissions:
             contents: read
             packages: write
-        uses: TIHLDE/tihlde-workflows/.github/workflows/_ci_ghcr.yml@main
+        uses: TIHLDE/tihlde-workflows/.github/workflows/_ci_ghcr.yml@edef4c87e3c4338469df293ab1741483017f9f3b # main, 2026-08-29
         with:
             context: .
             dockerfile: ./infra/docker/Dockerfile
@@ -36,7 +39,7 @@ jobs:
 
     deploy:
         needs: build
-        uses: TIHLDE/tihlde-workflows/.github/workflows/_notify_deploy.yml@main
+        uses: TIHLDE/tihlde-workflows/.github/workflows/_notify_deploy.yml@edef4c87e3c4338469df293ab1741483017f9f3b # main, 2026-08-29
         with:
             deploy_url: "https://deploy-king.tihlde.org/deploy"
         secrets:
@@ -49,12 +52,12 @@ jobs:
         permissions:
             contents: write
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
               with:
                   fetch-depth: 0
 
             - name: Setup Tools
-              uses: tihlde/tihlde-workflows/.github/setup-bun@v1
+              uses: tihlde/tihlde-workflows/.github/setup-bun@86297ca8bce65c80159645100f5e15c34cab76b9 # v1.1.4
 
             # Teksten kommer fra «For medlemmer»-feltet i hver PR-beskrivelse.
             # Feiler skriptet, får releasen GitHubs vanlige liste i stedet for ingen release.

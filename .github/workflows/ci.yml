@@ -8,6 +8,9 @@ on:
         branches:
             - main
 
+permissions:
+    contents: read
+
 concurrency:
     group: ci-${{ github.ref }}
     cancel-in-progress: true
@@ -22,8 +25,8 @@ jobs:
         outputs:
             backend: ${{ steps.filter.outputs.backend }}
         steps:
-            - uses: actions/checkout@v3
-            - uses: dorny/paths-filter@v3
+            - uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3.7.0
+            - uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3.0.4
               id: filter
               with:
                   # Only a PR/push changing exclusively apps/kvark can skip tests.
@@ -39,11 +42,11 @@ jobs:
         runs-on: blacksmith-4vcpu-ubuntu-2404
         steps:
             - name: Checkout code
-              uses: actions/checkout@v3
+              uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3.7.0
               with:
                   fetch-depth: 1
             - name: Setup Tools
-              uses: tihlde/tihlde-workflows/.github/setup-bun@v1
+              uses: tihlde/tihlde-workflows/.github/setup-bun@86297ca8bce65c80159645100f5e15c34cab76b9 # v1.1.4
 
             - name: Check linting
               run: bun run lint
@@ -70,11 +73,11 @@ jobs:
                 shard: ["1/2", "2/2"]
         steps:
             - name: Checkout code
-              uses: actions/checkout@v3
+              uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3.7.0
               with:
                   fetch-depth: 1
             - name: Setup Tools
-              uses: tihlde/tihlde-workflows/.github/setup-bun@v1
+              uses: tihlde/tihlde-workflows/.github/setup-bun@86297ca8bce65c80159645100f5e15c34cab76b9 # v1.1.4
 
             - name: Run API test shard
               run: bun run test -- --filter=@photon/api --log-order=stream -- --shard=${{ matrix.shard }}
@@ -86,11 +89,44 @@ jobs:
         runs-on: blacksmith-2vcpu-ubuntu-2404
         steps:
             - name: Checkout code
-              uses: actions/checkout@v3
+              uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3.7.0
               with:
                   fetch-depth: 1
             - name: Setup Tools
-              uses: tihlde/tihlde-workflows/.github/setup-bun@v1
+              uses: tihlde/tihlde-workflows/.github/setup-bun@86297ca8bce65c80159645100f5e15c34cab76b9 # v1.1.4
 
             - name: Run non-API tests
               run: bun run test -- --filter='!@photon/api' --log-order=stream
+
+    docker-image:
+        name: Check Docker Image
+        needs: [changes]
+        if: needs.changes.outputs.backend == 'true'
+        runs-on: blacksmith-2vcpu-ubuntu-2404
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3.7.0
+              with:
+                  fetch-depth: 1
+
+            # A deploy only builds the image once a release is tagged, so a
+            # lockfile the image rejects would otherwise first fail on release.
+            - name: Build production image
+              run: docker build --file infra/docker/Dockerfile .
+
+    ci-result:
+        name: CI Result
+        needs: [changes, check, api-tests, other-tests, docker-image]
+        if: always()
+        runs-on: blacksmith-2vcpu-ubuntu-2404
+        steps:
+            # Skipped matrix jobs never report their shard names, so a required
+            # check can only point at this job.
+            - name: Fail if any job failed
+              env:
+                  RESULTS: ${{ join(needs.*.result, ' ') }}
+              run: |
+                  echo "$RESULTS"
+                  if [[ "$RESULTS" =~ failure|cancelled ]]; then
+                      exit 1
+                  fi

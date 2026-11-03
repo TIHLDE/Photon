@@ -3,7 +3,7 @@ WORKDIR /usr/src/app
 
 # Prune stage - turbo figures out exactly what's needed
 FROM base AS prune
-RUN bun install --global turbo
+RUN bun install --global turbo@2.10.13
 COPY . .
 RUN turbo prune @photon/api --docker
 
@@ -16,7 +16,7 @@ WORKDIR /usr/src/app
 COPY --from=prune /usr/src/app/out/json/ .
 COPY --from=prune /usr/src/app/out/bun.lock ./bun.lock
 # Install the dependencies
-RUN bun install
+RUN bun install --frozen-lockfile
 
 # Build stage
 FROM base AS build
