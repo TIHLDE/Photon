@@ -44,11 +44,8 @@ import { WrappedMyPhotosStrip } from "#/components/wrapped-my-photos-strip";
 import { WrappedShotReceipt } from "#/components/wrapped-shot-receipt";
 import { WrappedUploadWaiting } from "#/components/wrapped-upload-waiting";
 import { WrappedViewfinder } from "#/components/wrapped-viewfinder";
-import { useNow } from "#/hooks/use-now";
 import { useObjectUrls } from "#/hooks/use-object-urls";
 import { useWrappedUploadQueue } from "#/hooks/use-wrapped-upload-queue";
-import { formatInOslo } from "#/lib/date";
-import { isDraftWarning } from "#/lib/wrapped";
 
 /**
  * Engangskameraet for et arrangement: /arrangementer/<slug>/kamera.
@@ -156,9 +153,6 @@ function WrappedCameraContainer({
         [myPhotos, event.id],
     );
     const thumbnails = useObjectUrls(newestPaths, fetchMyWrappedPhotoThumb);
-    // Klokka tikker fram til kameraet stenger, så varselet om bilder som snart sendes
-    // både dukker opp og forsvinner uten at sida lastes på nytt.
-    const now = useNow(camera.closesAt);
 
     // Kvitteringen for siste bilde, med det som var igjen etter det. Ny
     // nøkkel per bilde, så blitsen og kortet spilles av på nytt hver gang.
@@ -235,7 +229,7 @@ function WrappedCameraContainer({
 
     // Ingen skal måtte laste sida på nytt når kameraet åpner eller stenger:
     // statusen hentes igjen i det tidspunktet passerer. Når det stenger,
-    // forsvinner også utkastene, så Mine bilder hentes på nytt samtidig.
+    // sendes bildene til arrangøren, så Mine bilder hentes på nytt samtidig.
     const waitingUntil =
         camera.reason === "not_open_yet"
             ? camera.opensAt
@@ -403,11 +397,6 @@ function WrappedCameraContainer({
                     (path) => thumbnails.get(path) ?? [],
                 )}
                 draftCount={camera.draftCount}
-                warningUntil={
-                    isDraftWarning(camera.closesAt, camera.draftCount, now)
-                        ? formatInOslo(camera.closesAt, "HH:mm")
-                        : undefined
-                }
             />
         ) : null;
 

@@ -58,7 +58,8 @@ export function WrappedMyPhotos({
                     </EmptyMedia>
                     <EmptyTitle>Ingen bilder ennå</EmptyTitle>
                     <EmptyDescription>
-                        Bildene du tar, havner her til du sender dem inn.
+                        Bildene du tar, havner her. De sendes automatisk til
+                        arrangøren når kameraet stenger.
                     </EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent>
@@ -78,7 +79,7 @@ export function WrappedMyPhotos({
     return (
         <div className="flex flex-col gap-4">
             <p>
-                Bare du ser disse til du sender dem inn. Trykk på et bilde for å
+                Bare du ser disse til kameraet stenger. Trykk på et bilde for å
                 se det eller slette det.
             </p>
             <ul className="grid grid-cols-2 gap-3">
@@ -128,7 +129,7 @@ function MyPhotoTile({ photo }: { photo: WrappedMyPhotoTile }) {
             // Uten en rolle leser ikke skjermlesere etiketten på et kort. Merkene
             // inni blir da skjult, så etiketten sier det samme som dem.
             role="img"
-            aria-label={`Bilde ${photo.number}, ${photo.fromCameraRoll ? "fra kamerarullen, " : ""}${photo.submitted ? "sendt" : "ikke sendt"}`}
+            aria-label={`Bilde ${photo.number}, ${photo.fromCameraRoll ? "fra kamerarullen, " : ""}${photo.submitted ? "sendt til arrangøren" : "bare synlig for deg"}`}
         >
             {photo.src ? (
                 <img

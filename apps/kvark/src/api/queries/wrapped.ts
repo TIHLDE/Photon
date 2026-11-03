@@ -54,8 +54,8 @@ export const getWrappedCameraQuery = (eventId: string) =>
     });
 
 /**
- * Den innloggedes egne bilder fra arrangementet, eldste først — utkast og
- * innsendte. Ingen andre ser utkastene.
+ * Den innloggedes egne bilder fra arrangementet, eldste først. Ingen andre
+ * ser dem før kameraet stenger.
  */
 export const getMyWrappedPhotosQuery = (eventId: string) =>
     queryOptions({
@@ -64,7 +64,7 @@ export const getMyWrappedPhotosQuery = (eventId: string) =>
             apiClient.get("/api/event/{eventId}/wrapped/photos/mine", {
                 params: { eventId },
             }),
-        // Utkast sendes inn når kameraet stenger, så lista hentes på nytt.
+        // Bildene sendes til arrangøren når kameraet stenger, så lista hentes på nytt.
         staleTime: 0,
     });
 
@@ -111,8 +111,8 @@ export const deleteMyWrappedPhotoMutation = mutationOptions({
         );
         return invalidateMine(ctx.client, eventId);
     },
-    // 409 betyr at bildet fortsatt finnes (sendt inn, eller kameraet har
-    // stengt), så lista hentes på nytt og viser det igjen.
+    // 409 betyr at bildet fortsatt finnes: kameraet har stengt, og bildet er
+    // sendt til arrangøren. Lista hentes på nytt og viser det igjen.
     onError(_, { eventId }, __, ctx) {
         return invalidateMine(ctx.client, eventId);
     },

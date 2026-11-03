@@ -20,7 +20,6 @@ import { SiteHeader } from "#/components/site-header";
 import { useSiteNavItems } from "#/components/site-nav-items";
 import { WrappedCameraBanner } from "#/components/wrapped-camera-banner";
 import { useEventRulesConsent } from "#/hooks/use-event-rules-consent";
-import { useNow } from "#/hooks/use-now";
 import { useSetPassword } from "#/hooks/use-set-password";
 import { cameraShortcut } from "#/lib/wrapped";
 
@@ -96,10 +95,6 @@ function AppLayout() {
         openCamera !== undefined &&
         pathname !== "/" &&
         !pathname.startsWith(`/arrangementer/${openCamera.slug}/kamera`);
-    // Bildene sendes til arrangøren når kameraet stenger, så den siste halvtimen
-    // blir snarveien et varsel som peker til Mine bilder. Klokka tikker til
-    // stengetid, så varselet også forsvinner av seg selv.
-    const now = useNow(openCamera?.closesAt);
 
     if (immersive) {
         return (
@@ -168,7 +163,7 @@ function AppLayout() {
                         <WrappedCameraBanner
                             slug={openCamera.slug}
                             title={openCamera.title}
-                            shortcut={cameraShortcut(openCamera, now)}
+                            shortcut={cameraShortcut(openCamera)}
                         />
                     ) : null
                 }

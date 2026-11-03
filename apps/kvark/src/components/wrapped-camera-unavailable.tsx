@@ -133,7 +133,7 @@ function describe({
             return {
                 title: "Kameraet er stengt",
                 description:
-                    "Bildene er sendt til arrangøren, som velger ut de som deles.",
+                    "Bildene dine er sendt til arrangøren, som velger ut hvilke som deles.",
                 secondary: toEvent,
             };
         case "not_registered":
@@ -155,7 +155,7 @@ function describe({
             if (draftCount > 0) {
                 return {
                     title: "Filmen er full",
-                    description: `Alle bildene ligger i Mine bilder. De sendes til arrangøren kl. ${formatInOslo(closesAt, "HH:mm")}.`,
+                    description: `Alle bildene ligger i Mine bilder. De sendes automatisk til arrangøren kl. ${formatInOslo(closesAt, "HH:mm")}.`,
                     primary: (
                         <Button
                             size="lg"

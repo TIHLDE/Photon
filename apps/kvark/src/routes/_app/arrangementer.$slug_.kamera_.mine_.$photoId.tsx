@@ -240,7 +240,7 @@ function WrappedPhotoReviewContainer({
             return;
         }
         setCurrentId(next.id);
-        // Slett-knappen forsvinner når neste bilde er sendt inn.
+        // Slett-knappen forsvinner når neste bilde er sendt til arrangøren.
         requestAnimationFrame(() =>
             (deleteRef.current ?? closeRef.current)?.focus(),
         );

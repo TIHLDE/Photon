@@ -1,75 +1,28 @@
-import { formatInOslo } from "#/lib/date";
-
-/** Hvor lenge før kameraet stenger bildene begynner å mase. */
-const DRAFT_WARNING_MS = 30 * 60 * 1000;
-
-/**
- * Om varselet om bilder som snart sendes skal vises. Bildene går automatisk
- * til arrangøren når kameraet stenger, så den siste halvtimen sier vi fra, slik
- * at de som vil slette noe rekker det.
- */
-export function isDraftWarning(
-    closesAt: string,
-    draftCount: number,
-    now: Date,
-): boolean {
-    return (
-        draftCount > 0 &&
-        now.getTime() >= new Date(closesAt).getTime() - DRAFT_WARNING_MS &&
-        now.getTime() < new Date(closesAt).getTime()
-    );
-}
-
 export type CameraShortcut = {
     action: string;
     detail: string;
-    /** «shoot» går til kameraet, «submit» og «done» til Mine bilder. */
-    kind: "shoot" | "submit" | "done";
-    /** Bildene sendes snart til arrangøren: vises i varselfarge. */
-    warning: boolean;
+    /** «shoot» går til kameraet, «done» til Mine bilder. */
+    kind: "shoot" | "done";
 };
 
 /**
  * What the shortcut to an open camera offers. The camera stays listed until
- * it closes: with shots left it is a photo; with none left but drafts waiting,
- * it points to Mine bilder, where they can be reviewed; with a full film and
- * nothing waiting it points there too. The last half hour before the drafts
- * are sent to the organizer, reviewing them wins over taking another photo,
- * whatever is left.
+ * it closes: with shots left it is a photo; with a full film it points to
+ * Mine bilder. The photos are sent to the organizer automatically when the
+ * camera closes, so there is nothing to send in.
  */
-export function cameraShortcut(
-    camera: { shotsLeft: number; draftCount: number; closesAt: string },
-    now: Date,
-): CameraShortcut {
-    if (isDraftWarning(camera.closesAt, camera.draftCount, now)) {
-        return {
-            action: "Se over",
-            detail: `${camera.draftCount} sendes kl. ${formatInOslo(camera.closesAt, "HH:mm")}`,
-            kind: "submit",
-            warning: true,
-        };
-    }
+export function cameraShortcut(camera: { shotsLeft: number }): CameraShortcut {
     if (camera.shotsLeft > 0) {
         return {
             action: "Ta bilde",
             detail: `${camera.shotsLeft} ${camera.shotsLeft === 1 ? "bilde" : "bilder"} igjen`,
             kind: "shoot",
-            warning: false,
-        };
-    }
-    if (camera.draftCount > 0) {
-        return {
-            action: "Mine bilder",
-            detail: `${camera.draftCount} sendes når kameraet stenger`,
-            kind: "submit",
-            warning: false,
         };
     }
     return {
         action: "Mine bilder",
         detail: "Alle bildene er tatt",
         kind: "done",
-        warning: false,
     };
 }
 

@@ -1,9 +1,8 @@
-import { type ReactElement, type ReactNode, cloneElement } from "react";
-import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
+import type { ReactElement, ReactNode } from "react";
 import { Avatar, AvatarGroup, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
-import { ChevronRight, Images, TriangleAlert } from "lucide-react";
+import { ChevronRight, Images } from "lucide-react";
 
 type WrappedMyPhotosStripProps = {
     /** Lenken til Mine bilder, som `<Link />`. */
@@ -11,39 +10,14 @@ type WrappedMyPhotosStripProps = {
     /** Object-URL-ene til de nyeste bildene, høyst to. */
     thumbnails: string[];
     draftCount: number;
-    /** Satt den siste halvtimen før bildene sendes til arrangøren: `HH:mm`. */
-    warningUntil?: string;
 };
 
-/**
- * Snarveien fra kameraet til Mine bilder. Blir et varsel når bildene snart
- * sendes til arrangøren.
- */
+/** Snarveien fra kameraet til Mine bilder. */
 export function WrappedMyPhotosStrip({
     link,
     thumbnails,
     draftCount,
-    warningUntil,
 }: WrappedMyPhotosStripProps) {
-    if (warningUntil) {
-        // Hele varselet er lenken: det skal være så lett som mulig å komme
-        // seg dit bildene kan slettes.
-        return cloneElement(
-            link,
-            { className: "block" },
-            <Alert variant="warning">
-                <TriangleAlert />
-                <AlertTitle>
-                    {draftCount} {draftCount === 1 ? "bilde" : "bilder"} sendes
-                    kl. {warningUntil}
-                </AlertTitle>
-                <AlertDescription>
-                    Trykk her for å se over, og slett det du ikke vil dele.
-                </AlertDescription>
-            </Alert>,
-        );
-    }
-
     return (
         <Button
             variant="outline"
@@ -66,7 +40,9 @@ export function WrappedMyPhotosStrip({
             </span>
             <span className="flex items-center gap-2">
                 {draftCount > 0 ? (
-                    <Badge variant="secondary">{draftCount} ikke sendt</Badge>
+                    <Badge variant="secondary">
+                        {draftCount} {draftCount === 1 ? "bilde" : "bilder"}
+                    </Badge>
                 ) : null}
                 <ChevronRight />
             </span>
