@@ -164,8 +164,6 @@ export async function syncHsPositions({ db }: AppContext) {
         name: string;
         description: string;
         permissions: string[];
-        /** Subgroup whose leader auto-holds this verv (see linkedGroupSlug) */
-        linkedGroupSlug?: string;
     }[] = [
         {
             name: "President",
@@ -219,7 +217,6 @@ export async function syncHsPositions({ db }: AppContext) {
             name: "Teknologiminister",
             description: "Leder av Index — full systemtilgang (root)",
             permissions: ["root"],
-            linkedGroupSlug: "index",
         },
         // Øvrige undergruppeledere sitter også i HS. Vervene bærer ingen
         // ekstra globale tilganger (HS-rollen følger av gruppemedlemskapet),
@@ -243,7 +240,6 @@ export async function syncHsPositions({ db }: AppContext) {
             name: "Innovasjonsminister",
             description: "Leder av Beta",
             permissions: [],
-            linkedGroupSlug: "beta",
         },
     ];
 
@@ -279,7 +275,6 @@ export async function syncHsPositions({ db }: AppContext) {
             description: position.description,
             permissions: position.permissions,
             scope: "global",
-            linkedGroupSlug: position.linkedGroupSlug ?? null,
         });
     }
 }

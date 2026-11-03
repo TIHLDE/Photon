@@ -1,0 +1,58 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "98c17a06-56d7-4b71-a9fd-2a14b8441957",
+  "prevIds": [
+    "cb29b8cb-5e97-4431-a9b1-804502719390"
+  ],
+  "footprints": [
+    {
+      "statementType": "drop_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "org_group_position"
+      ],
+      "writes": [
+        "s|fk|public.org_group_position.org_group_position_linked_group_slug_org_group_slug_fkey",
+        "n|fk|public.org_group_position.org_group_position_linked_group_slug_org_group_slug_fkey",
+        "e|fk|public.org_group_position.org_group_position_linked_group_slug_org_group_slug_fkey",
+        "n|con|public.org_group_position.org_group_position_linked_group_slug_org_group_slug_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.org_group_position",
+        "n|sch|public",
+        "e|col|public.org_group_position.linked_group_slug"
+      ]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "org_group_position",
+        "linked_group_slug"
+      ],
+      "writes": [
+        "s|col|public.org_group_position.linked_group_slug",
+        "n|col|public.org_group_position.linked_group_slug",
+        "e|col|public.org_group_position.linked_group_slug"
+      ],
+      "reads": [
+        "n|tbl|public.org_group_position",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"org_group_position\",\"linked_group_slug\"]"
+    },
+    {
+      "op": "drop",
+      "key": "fks\u0000[\"public\",\"org_group_position\",\"org_group_position_linked_group_slug_org_group_slug_fkey\"]"
+    }
+  ]
+}

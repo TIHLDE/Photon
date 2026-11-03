@@ -29,6 +29,8 @@ import { avatarImageUrl } from "#/lib/assets";
 type GroupDetailHeaderProps = {
     group: Group;
     isAdmin: boolean;
+    /** Om den innloggede får bytte gruppetype (krever global tilgang). */
+    canChangeType: boolean;
     canArchive: boolean;
     onArchive: () => void;
     onUnarchive: () => void;
@@ -59,6 +61,7 @@ type GroupDetailHeaderProps = {
 export function GroupDetailHeader({
     group,
     isAdmin,
+    canChangeType,
     canArchive,
     onArchive,
     onUnarchive,
@@ -222,6 +225,7 @@ export function GroupDetailHeader({
                             <GroupEditDialog
                                 group={group}
                                 members={members}
+                                canChangeType={canChangeType}
                                 onSubmit={onSaveGroup}
                                 isSubmitting={isSavingGroup}
                                 error={saveGroupError}

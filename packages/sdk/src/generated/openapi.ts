@@ -1788,7 +1788,7 @@ export interface paths {
         head?: never;
         /**
          * Partially update group
-         * @description Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' permission (globally or scoped to this group).
+         * @description Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' permission (globally or scoped to this group). Changing the group's type additionally requires 'groups:update' or 'groups:manage' globally.
          */
         patch: operations["updateGroup"];
         trace?: never;
@@ -2209,7 +2209,7 @@ export interface paths {
         post?: never;
         /**
          * Delete a position
-         * @description Delete a position (verv). Holders lose the position's permissions. Deleting an HS position also takes the holder's seat in HS unless something else warrants it. Deleting a global position requires 'roles:create'.
+         * @description Delete a position (verv). Holders lose the position's permissions. Deleting a global position requires 'roles:create'.
          */
         delete: operations["deleteGroupPosition"];
         options?: never;
@@ -5847,8 +5847,6 @@ export interface components {
             /** @enum {string} */
             scope: "group" | "global";
             globalPermissions: string[];
-            /** @description If set, this position is held automatically by the leader of the given subgroup and cannot be assigned manually. */
-            linkedGroupSlug: string | null;
             /** @description Everyone holding this position. A verv may be shared by several people (issue #646); empty when nobody holds it. */
             holders: components["schemas"]["GroupPositionHolder"][];
             createdAt: string;

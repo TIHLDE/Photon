@@ -1098,10 +1098,9 @@ describe("group members", () => {
                     memberships.map((m) => [m.userId, m.role]),
                 );
                 expect(roleByUser.get(successor.user.id)).toBe("leader");
-                // Den avgatte presidenten blir ikke staende igjen i HS: uten
-                // AU-verv eller undergruppelederskap er plassen ikke lenger
-                // hennes.
-                expect(roleByUser.has(president.id)).toBe(false);
+                // Den avgatte presidenten blir sittende som vanlig medlem:
+                // HS-medlemskap legges til og fjernes for hand.
+                expect(roleByUser.get(president.id)).toBe("member");
             },
             500_000,
         );
