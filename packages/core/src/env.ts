@@ -106,6 +106,11 @@ const envSchema = z
          * X-Forwarded-For, so the client is that many entries from the
          * right. Anything further left was sent by the client and is not
          * trusted. Raise this if a CDN is ever put in front of nginx.
+         *
+         * This assumes every request comes through those proxies. A request
+         * that reaches port 4000 directly has its own X-Forwarded-For
+         * trusted, so the API must only listen where nginx can reach it
+         * (BINDING_IP_ADDRESS stays on loopback), or be set to 0.
          */
         TRUSTED_PROXY_COUNT: z
             .string()
