@@ -188,8 +188,8 @@ export function WrappedStoryPublish({
                         </AlertDialogTitle>
                         <AlertDialogDescription>
                             {confirm === "unpublish"
-                                ? "Storyen blir borte for medlemmene, og varslene om den slettes. Likes og kommentarer blir liggende og kommer tilbake om du publiserer igjen."
-                                : `${selectedCount === 1 ? "1 bilde" : `${selectedCount} bilder`} blir synlige for alle med TIHLDE-konto. Alle som var påmeldt får et varsel.`}
+                                ? "Storyen blir borte for medlemmene. Likes og kommentarer blir liggende og kommer tilbake om du publiserer igjen."
+                                : `${selectedCount === 1 ? "1 bilde blir synlig" : `${selectedCount} bilder blir synlige`} for alle med TIHLDE-konto.${publishedBefore ? " Ingen får nytt varsel." : " Alle som var påmeldt får et varsel."}`}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
