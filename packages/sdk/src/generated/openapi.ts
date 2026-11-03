@@ -2080,7 +2080,7 @@ export interface paths {
         put?: never;
         /**
          * Ask to join group
-         * @description Ask to join an interest group. The group's leaders are notified and approve or decline the request; a group without leaders gets an email at its contact address instead.
+         * @description Ask to join an interest group. The group's leaders are notified and approve or decline the request; a group without leaders gets an email at its contact address instead. Rate limited per user.
          */
         post: operations["requestToJoinGroup"];
         /**
@@ -3338,7 +3338,7 @@ export interface components {
             contactName: string;
             /**
              * Format: email
-             * @description Contact email address
+             * @description Where handlers can reach the submitter. The receipt goes to the account's own address.
              */
             contactEmail: string;
             /**
@@ -3369,7 +3369,7 @@ export interface components {
             contactName: string;
             /**
              * Format: email
-             * @description Contact email address
+             * @description Where handlers can reach the submitter. The receipt goes to the account's own address.
              */
             contactEmail: string;
             /** @description Slug of the group applying */
@@ -3397,7 +3397,7 @@ export interface components {
             contactName: string;
             /**
              * Format: email
-             * @description Contact email address
+             * @description Where handlers can reach the submitter. The receipt goes to the account's own address.
              */
             contactEmail: string;
             /** @description Name of the case */
@@ -12961,6 +12961,13 @@ export interface operations {
             };
             /** @description Not Found - Group not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too many requests from this user */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

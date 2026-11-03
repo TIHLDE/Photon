@@ -1,5 +1,6 @@
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
+import { HTTPException } from "hono/http-exception";
 import type { AppContext } from "~/lib/ctx";
 import { env } from "~/lib/env";
 import { HTTPAppException } from "~/lib/errors";
@@ -11,6 +12,9 @@ import { requireAuth } from "~/middleware/auth";
 import { joinRequestSchema } from "../schema";
 
 type Group = typeof schema.group.$inferSelect;
+
+const JOIN_RATE_LIMIT_MAX = 10;
+const JOIN_RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
 
 export async function findGroup(ctx: AppContext, slug: string): Promise<Group> {
     const group = await ctx.db.query.group.findFirst({
@@ -90,7 +94,7 @@ export const requestToJoinRoute = route().post(
         summary: "Ask to join group",
         operationId: "requestToJoinGroup",
         description:
-            "Ask to join an interest group. The group's leaders are notified and approve or decline the request; a group without leaders gets an email at its contact address instead.",
+            "Ask to join an interest group. The group's leaders are notified and approve or decline the request; a group without leaders gets an email at its contact address instead. Rate limited per user.",
     })
         .schemaResponse({
             statusCode: 201,
@@ -99,6 +103,10 @@ export const requestToJoinRoute = route().post(
         })
         .badRequest({ description: "The group does not take requests" })
         .notFound({ description: "Group not found" })
+        .response({
+            statusCode: 429,
+            description: "Too many requests from this user",
+        })
         .build(),
     requireAuth,
     async (c) => {
@@ -115,6 +123,14 @@ export const requestToJoinRoute = route().post(
             throw HTTPAppException.Conflict("Du er allerede medlem av gruppen");
         }
 
+        const rateLimitKey = `group-join-request:${userId}`;
+        const attempts = Number(await ctx.cache.getString(rateLimitKey)) || 0;
+        if (attempts >= JOIN_RATE_LIMIT_MAX) {
+            throw new HTTPException(429, {
+                message: "For mange forespørsler. Prøv igjen senere.",
+            });
+        }
+
         const [request] = await ctx.db
             .insert(schema.groupJoinRequest)
             .values({ userId, groupSlug: group.slug })
@@ -125,6 +141,11 @@ export const requestToJoinRoute = route().post(
                 "Du har allerede bedt om å bli med i gruppen",
             );
         }
+        await ctx.cache.setString(
+            rateLimitKey,
+            String(attempts + 1),
+            JOIN_RATE_LIMIT_WINDOW_SECONDS,
+        );
         // Ble man lagt til mens forespørselen ble opprettet, ryddet ikke
         // addUserToGroup den bort — gjør det her i stedet.
         if (await findMembership(ctx, group.slug, userId)) {

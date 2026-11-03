@@ -166,7 +166,8 @@ const envSchema = z
          * rest — so this is a limit, not a grant.
          */
         MAIL_ALLOWED_FROM: z.string().default(""),
-        EMAIL_API_KEY: z.string().default("test-email-api-key"),
+        /** Unset leaves the rest of the API running; only POST /api/email/send answers 503. */
+        EMAIL_API_KEY: z.string().optional(),
         /** Where the "for bedrifter" contact form delivers its submissions */
         COMPANY_CONTACT_EMAIL: z
             .string()

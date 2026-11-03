@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { schema } from "@photon/db";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { clientIp } from "~/lib/client-ip";
 import { stampContractPdf } from "~/lib/contract/pdf";
 import { env } from "~/lib/env";
 import { describeRoute } from "~/lib/openapi";
@@ -100,8 +101,7 @@ require contract signing.`,
 
         const originalPdf = await bucket.download(activeContract.fileKey);
         const signedAt = new Date();
-        const signerIp =
-            c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+        const signerIp = clientIp(c) ?? null;
         const signerUa = c.req.header("user-agent") ?? null;
 
         let stampedPdf: Buffer;
