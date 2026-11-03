@@ -176,6 +176,9 @@ export const createPaymentRoute = route().post(
                 // if the row still carries the reference we read. Two presses at
                 // once would otherwise both hand out a URL, and money paid on the
                 // overwritten reference would have no payment to land on.
+                // Status is deliberately not part of the condition: cancelling
+                // the old checkout makes Vipps send a webhook that can mark the
+                // row `failed` while the new checkout is being created.
                 [payment] = await db
                     .update(schema.eventPayment)
                     .set({
@@ -187,7 +190,6 @@ export const createPaymentRoute = route().post(
                     .where(
                         and(
                             eq(schema.eventPayment.id, obligation.id),
-                            eq(schema.eventPayment.status, "pending"),
                             obligation.providerPaymentId
                                 ? eq(
                                       schema.eventPayment.providerPaymentId,

@@ -1,4 +1,5 @@
 import { schema } from "@photon/db";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, vi } from "vitest";
 import * as vipps from "~/lib/vipps";
 import type { IntegrationTestContext } from "~/test/config/integration";
@@ -164,6 +165,43 @@ describe("Restarting an abandoned Vipps checkout", () => {
 
             expect(res.status).toBe(409);
             expect(vi.mocked(vipps.createPayment)).not.toHaveBeenCalled();
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "still restarts when the cancelled checkout's webhook lands first",
+        async ({ ctx }) => {
+            const { event, user, payment } = await seedStartedCheckout(ctx);
+            mockVippsState("CREATED");
+            // Cancelling the old checkout makes Vipps report it, and that
+            // webhook marks the row failed before the new checkout is attached.
+            vi.mocked(vipps.cancelPayment).mockImplementationOnce(async () => {
+                await ctx.db
+                    .update(schema.eventPayment)
+                    .set({ status: "failed" })
+                    .where(eq(schema.eventPayment.id, payment.id));
+            });
+            vi.mocked(vipps.createPayment).mockResolvedValue(
+                "https://vipps.test/checkout-2",
+            );
+
+            const client = await ctx.utils.clientForUser(user);
+            const res = await client.api.event[":eventId"].payment.$post({
+                param: { eventId: event.id },
+                json: {
+                    returnUrl: "https://tihlde.org/arrangementer/test",
+                    userFlow: "WEB_REDIRECT",
+                },
+            });
+
+            expect(res.status).toBe(201);
+            const row = await ctx.db.query.eventPayment.findFirst({
+                where: { id: payment.id },
+            });
+            expect(row?.providerPaymentId).toBe(
+                vi.mocked(vipps.createPayment).mock.calls[0]?.[0].reference,
+            );
         },
         500_000,
     );
