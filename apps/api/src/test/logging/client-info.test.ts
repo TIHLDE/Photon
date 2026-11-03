@@ -70,6 +70,15 @@ describe("parseUserAgent", () => {
         expect(parsed.botMatch).toBeTruthy();
     });
 
+    test("caps fields copied out of an oversized header", () => {
+        const bot = parseUserAgent("a".repeat(7000));
+        expect(bot.isBot).toBe(true);
+        expect(bot.botMatch?.length).toBeLessThanOrEqual(128);
+
+        const named = parseUserAgent(`${"A".repeat(7000)}/1.0 (hello world)`);
+        expect(named.browser?.length ?? 0).toBeLessThanOrEqual(128);
+    });
+
     test("handles a missing header", () => {
         expect(parseUserAgent(undefined)).toEqual({ isBot: false });
     });

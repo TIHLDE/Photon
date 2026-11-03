@@ -5,6 +5,8 @@ import { isbotMatch } from "isbot";
 
 /** Long headers are almost always junk or abuse; don't let them bloat Loki. */
 const MAX_HEADER_LENGTH = 512;
+/** Names and matches parsed out of the header; real ones are far shorter. */
+const MAX_PARSED_LENGTH = 128;
 
 /**
  * The values bowser puts in `platform.type` (its `PLATFORMS_MAP`). Its types
@@ -36,11 +38,12 @@ export type ClientInfo = {
     };
 };
 
-function truncate(value: string | undefined): string | undefined {
+function truncate(
+    value: string | undefined,
+    maxLength: number = MAX_HEADER_LENGTH,
+): string | undefined {
     if (!value) return undefined;
-    return value.length > MAX_HEADER_LENGTH
-        ? value.slice(0, MAX_HEADER_LENGTH)
-        : value;
+    return value.length > maxLength ? value.slice(0, maxLength) : value;
 }
 
 /**
@@ -90,7 +93,7 @@ export function parseUserAgent(
 ): ClientInfo["ua"] {
     if (!userAgent) return { isBot: false };
 
-    const botMatch = isbotMatch(userAgent) ?? undefined;
+    const match = isbotMatch(userAgent);
     let parsed: Bowser.Parser.ParsedResult | undefined;
     try {
         parsed = Bowser.parse(userAgent);
@@ -99,11 +102,13 @@ export function parseUserAgent(
     }
 
     return {
-        browser: parsed?.browser.name || undefined,
-        os: parsed?.os.name || undefined,
+        // These are copied out of the header, so they are as long as the
+        // client makes them.
+        browser: truncate(parsed?.browser.name, MAX_PARSED_LENGTH),
+        os: truncate(parsed?.os.name, MAX_PARSED_LENGTH),
         device: toDeviceType(parsed?.platform.type),
-        isBot: botMatch !== undefined,
-        botMatch,
+        isBot: match !== null,
+        botMatch: truncate(match ?? undefined, MAX_PARSED_LENGTH),
     };
 }
 
