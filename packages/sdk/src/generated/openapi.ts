@@ -373,7 +373,7 @@ export interface paths {
          *
          *     **Constraints:**
          *     - Maximum file size: 50MB
-         *     - Allowed MIME types: image/jpeg, image/png, image/gif, image/webp, application/pdf. The file's first bytes decide, and the stored type is the one found there, not the one declared.
+         *     - Allowed MIME types: image/jpeg, image/png, image/gif, image/webp, application/pdf. The file must really be one of them, and the stored type is the one found in its first bytes, not the one declared.
          *     - Images larger than 120 megapixels are refused.
          *     - Signed-in users have a limit on uploads per minute and per day. API keys do not.
          *

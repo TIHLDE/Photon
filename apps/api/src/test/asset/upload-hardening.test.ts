@@ -1,6 +1,7 @@
 import sharp from "sharp";
 import { describe, expect, vi } from "vitest";
 import { isImageQueueFull, withImageSlot } from "~/lib/asset/image";
+import { takeFromWindow } from "~/lib/asset/limits";
 import { runAssetCleanup } from "~/lib/asset/worker";
 import { createApiKeyService } from "~/lib/service/api-key";
 import {
@@ -251,6 +252,49 @@ describe("image decoding is bounded", () => {
             expect(response.status).toBe(200);
             expect(response.headers.get("Content-Type")).toBe("image/png");
             expect(Buffer.from(await response.arrayBuffer())).toEqual(svg);
+        },
+        60_000,
+    );
+});
+
+describe("usage windows", () => {
+    integrationTest(
+        "parallel counts cannot read the same number and all pass",
+        async ({ ctx }) => {
+            const allowed = await Promise.all(
+                Array.from({ length: 100 }, () =>
+                    takeFromWindow(ctx.cache, {
+                        name: "parallel",
+                        limit: 10,
+                        seconds: 60,
+                    }),
+                ),
+            );
+
+            expect(allowed.filter(Boolean)).toHaveLength(10);
+        },
+        60_000,
+    );
+
+    integrationTest(
+        "a cache that never answers lets the request through instead of hanging",
+        async ({ ctx }) => {
+            const get = vi
+                .spyOn(ctx.cache, "getString")
+                .mockReturnValue(new Promise(() => {}));
+
+            const usage = { name: "hung", limit: 10, seconds: 60 };
+            const started = performance.now();
+            const allowed = await Promise.all(
+                Array.from({ length: 20 }, () =>
+                    takeFromWindow(ctx.cache, usage),
+                ),
+            );
+            get.mockRestore();
+
+            expect(performance.now() - started).toBeLessThan(2000);
+
+            expect(allowed.every(Boolean)).toBe(true);
         },
         60_000,
     );
@@ -533,7 +577,6 @@ describe("variant generation is bounded", () => {
         "one asset cannot be re-encoded over and over when the cache write fails",
         async ({ ctx }) => {
             const key = await storeImage(ctx, "full-boette", "ready");
-            const download = vi.spyOn(ctx.bucket, "download");
             const put = vi
                 .spyOn(ctx.bucket, "putObject")
                 .mockRejectedValue(new Error("QuotaExceeded"));
@@ -545,7 +588,7 @@ describe("variant generation is bounded", () => {
                 );
             }
 
-            expect(put.mock.calls.length).toBeLessThanOrEqual(14);
+            expect(put).toHaveBeenCalledTimes(14);
 
             // The picture still shows, but a fallback must not be cached as if
             // it were the variant, or the URL keeps the heavy file for a year.
@@ -555,7 +598,6 @@ describe("variant generation is bounded", () => {
             expect(last?.headers.get("Cache-Control")).toBe("no-store");
 
             put.mockRestore();
-            download.mockRestore();
         },
         60_000,
     );

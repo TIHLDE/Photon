@@ -1,7 +1,6 @@
 import type Sharp from "sharp";
 import type { LoggerType } from "~/middleware/logger";
 
-/** The libvips loaders for JPEG, PNG and WebP, the formats we re-encode. */
 const ALLOWED_DECODERS = [
     "VipsForeignLoadJpegBuffer",
     "VipsForeignLoadPngBuffer",
@@ -46,7 +45,9 @@ let sharpModule: typeof Sharp | null | undefined;
  * fires on every upload and images are stored unoptimized, silently. It did
  * exactly that in production from late July until 2026-08-14.
  */
-async function loadSharp(logger?: LoggerType): Promise<typeof Sharp | null> {
+export async function loadSharp(
+    logger?: LoggerType,
+): Promise<typeof Sharp | null> {
     if (sharpModule !== undefined) {
         return sharpModule;
     }

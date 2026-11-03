@@ -44,7 +44,7 @@ async function mayEncodeVariant(
         return false;
     }
 
-    return (
+    const withinBudget =
         (await takeFromWindow(
             cache,
             {
@@ -62,8 +62,9 @@ async function mayEncodeVariant(
                 seconds: VARIANT_WINDOW_SECONDS,
             },
             logger,
-        ))
-    );
+        ));
+
+    return withinBudget && !isImageQueueFull();
 }
 
 async function encodeVariant(
@@ -98,7 +99,6 @@ async function encodeVariant(
     return variant;
 }
 
-/** Requests for a variant being encoded right now share that one encode. */
 function encodeVariantOnce(
     ctx: AppContext,
     key: string,
@@ -252,7 +252,8 @@ Variants of a staged asset are not cached until it is promoted.`,
 
 /**
  * Asset keys are content-addressed by a UUID and their bytes never change, so
- * every response here — original or variant — is safe to cache forever.
+ * an original at its own URL and a variant at its width are safe to cache
+ * forever.
  *
  * `private` for det som krever innlogging: uten det kan nginx eller en CDN
  * servere galleribildet videre til noen som ikke er logget inn, og gaten er

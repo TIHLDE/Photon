@@ -12,6 +12,11 @@
  */
 
 import type { SignaturePlacement } from "@photon/db/schema";
+import {
+    IMAGE_MAX_INPUT_PIXELS,
+    loadSharp,
+    withImageSlot,
+} from "~/lib/asset/image";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { formatOsloDate, formatOsloDateTime } from "~/lib/oslo-day";
 
@@ -59,7 +64,7 @@ function formatDateTime(date: Date): string {
  * Falls back to the original bytes if the image cannot be trimmed — a
  * misaligned signature beats a failed signing.
  *
- * `sharp` is imported here rather than at the top of the file on purpose. It
+ * `sharp` is loaded here rather than at the top of the file on purpose. It
  * loads a native binary, and a top-level import makes that load part of booting
  * the API: this module hangs off the contract routes, so a `sharp` that cannot
  * load takes down every endpoint, not just signing. That is exactly what
@@ -68,16 +73,22 @@ function formatDateTime(date: Date): string {
  * Imported here, the same failure lands in the catch below and costs us a
  * slightly misaligned signature.
  */
-async function trimSignature(png: Uint8Array): Promise<Uint8Array> {
+export async function trimSignature(png: Uint8Array): Promise<Uint8Array> {
     try {
-        const { default: sharp } = await import("sharp");
-        const trimmed = await sharp(Buffer.from(png))
-            .trim({
-                background: { r: 0, g: 0, b: 0, alpha: 0 },
-                threshold: 10,
+        const sharp = await loadSharp();
+        if (!sharp) return png;
+
+        const trimmed = await withImageSlot(() =>
+            sharp(Buffer.from(png), {
+                limitInputPixels: IMAGE_MAX_INPUT_PIXELS,
             })
-            .png()
-            .toBuffer();
+                .trim({
+                    background: { r: 0, g: 0, b: 0, alpha: 0 },
+                    threshold: 10,
+                })
+                .png()
+                .toBuffer(),
+        );
         return new Uint8Array(trimmed);
     } catch {
         return png;

@@ -54,8 +54,7 @@ const TOO_MANY_UPLOADS =
  * Session and OAuth uploads count per person. API keys are left out on purpose:
  * they belong to sibling apps and are handed out by hand, one per service.
  *
- * The in-flight cap also keeps the window counts honest. They are read and
- * written in two steps, so parallel requests could otherwise all pass together.
+ * The in-flight cap bounds memory: each request holds its whole file until done.
  */
 const limitUserUploads = createMiddleware<{
     Variables: { user?: AuthUser; ctx: AppContext; logger: LoggerType };
@@ -106,7 +105,7 @@ Requires either session authentication or a valid API key.
 
 **Constraints:**
 - Maximum file size: ${MAX_FILE_SIZE / 1024 / 1024}MB
-- Allowed MIME types: ${ALLOWED_MIME_TYPES.join(", ")}. The file's first bytes decide, and the stored type is the one found there, not the one declared.
+- Allowed MIME types: ${ALLOWED_MIME_TYPES.join(", ")}. The file must really be one of them, and the stored type is the one found in its first bytes, not the one declared.
 - Images larger than ${IMAGE_MAX_INPUT_PIXELS / 1_000_000} megapixels are refused.
 - Signed-in users have a limit on uploads per minute and per day. API keys do not.
 
