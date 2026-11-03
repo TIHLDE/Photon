@@ -3081,6 +3081,26 @@ export interface paths {
         patch: operations["updateUserStatus"];
         trace?: never;
     };
+    "/api/user/{id}/email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change a member's e-mail address
+         * @description Replaces the address the member signs in with and receives mail at. The new address is treated as verified. Requires 'root'.
+         */
+        patch: operations["updateUserEmail"];
+        trace?: never;
+    };
     "/api/user/{id}/baseline-role": {
         parameters: {
             query?: never;
@@ -6714,6 +6734,17 @@ export interface components {
             isActive: boolean;
             /** @description Why the account was deactivated. Ignored when activating. */
             reason?: string;
+        };
+        UpdateUserEmail: {
+            message: string;
+            email: string;
+        };
+        UpdateUserEmailInput: {
+            /**
+             * Format: email
+             * @description The member's new address
+             */
+            email: string;
         };
         UpdateUserBaselineRole: {
             message: string;
@@ -16019,6 +16050,64 @@ export interface operations {
             };
             /** @description Not Found - User not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateUserEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserEmailInput"];
+            };
+        };
+        responses: {
+            /** @description E-mail updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateUserEmail"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Another account already uses this address */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
