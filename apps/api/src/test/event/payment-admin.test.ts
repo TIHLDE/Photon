@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, vi } from "vitest";
+import { sendNotification } from "~/lib/notification";
 import * as vipps from "~/lib/vipps";
 import type { IntegrationTestContext } from "~/test/config/integration";
 import { integrationTest } from "~/test/config/integration";
@@ -15,6 +16,12 @@ vi.mock("~/lib/vipps", () => ({
     setupWebhooks: vi.fn(),
     verifyVippsWebhookRequest: vi.fn(),
 }));
+
+// Real notifications, so a single test can make one fail.
+vi.mock("~/lib/notification", async (importOriginal) => {
+    const actual = await importOriginal<typeof import("~/lib/notification")>();
+    return { ...actual, sendNotification: vi.fn(actual.sendNotification) };
+});
 
 /** Make the provider report a fully captured, unrefunded payment. */
 function mockCaptured(amount: number, refunded = 0) {
@@ -243,6 +250,43 @@ describe("Event payment administration", () => {
                     where: { id: payment.id },
                 });
                 expect(row?.status).toBe("refunded");
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "stays refunded when the notice to the member fails",
+            async ({ ctx }) => {
+                // The money has already left, so a failed notice must not put
+                // the row back to `paid` and erase the record of the refund.
+                const { event, payment } = await seedPaidPayment(ctx);
+                mockCaptured(7500);
+                vi.mocked(sendNotification).mockRejectedValueOnce(
+                    new Error("queue down"),
+                );
+                const silenced = vi
+                    .spyOn(console, "error")
+                    .mockImplementation(() => {});
+
+                const admin = await ctx.utils.createTestUser();
+                await ctx.utils.giveUserPermissions(admin, [
+                    "events:payments:refund",
+                ]);
+                const client = await ctx.utils.clientForUser(admin);
+
+                const res = await client.api.event[":eventId"].payments[
+                    ":paymentId"
+                ].refund.$post({
+                    param: { eventId: event.id, paymentId: payment.id },
+                });
+
+                expect(res.status).toBe(200);
+                expect(vi.mocked(sendNotification)).toHaveBeenCalled();
+                const row = await ctx.db.query.eventPayment.findFirst({
+                    where: { id: payment.id },
+                });
+                expect(row?.status).toBe("refunded");
+                silenced.mockRestore();
             },
             500_000,
         );

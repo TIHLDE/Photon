@@ -16,7 +16,7 @@ export const deleteRoute = route().delete(
         summary: "Delete an event",
         operationId: "deleteEvent",
         description:
-            "Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' — globally or for the arranging group — can delete any event they hold it for. This action is irreversible and will remove all associated data, including registrations and feedback. An event with paid or refunded payments, or a checkout still open at Vipps, cannot be deleted.",
+            "Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' — globally or for the arranging group — can delete any event they hold it for. This action is irreversible and will remove all associated data, including registrations and feedback. An event with paid or refunded payments cannot be deleted.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -30,8 +30,7 @@ export const deleteRoute = route().delete(
         .notFound({ description: "Event with the specified ID does not exist" })
         .response({
             statusCode: 409,
-            description:
-                "The event has paid or refunded payments, or a checkout still open at Vipps",
+            description: "The event has paid or refunded payments",
         })
         .build(),
     requireAuth,
@@ -56,50 +55,22 @@ export const deleteRoute = route().delete(
             return c.json({ message: "Event not found" }, 404);
         }
 
+        // Payment rows cascade with the event, so this is the last chance to
+        // keep the record of money that has moved.
+        const movedMoney = await db.query.eventPayment.findFirst({
+            columns: { id: true },
+            where: { eventId, status: { in: ["paid", "refunded"] } },
+        });
+
+        if (movedMoney) {
+            throw new HTTPException(409, {
+                message:
+                    "Arrangementet har betalinger og kan ikke slettes. Betalinger og refusjoner må bevares.",
+            });
+        }
+
+        // Delete the event and all associated data in a transaction
         await db.transaction(async (tx) => {
-            // Payment rows cascade with the event, so this is the last chance to
-            // keep them. The locks stop a checkout attaching after the check.
-            await tx
-                .select({ id: schema.event.id })
-                .from(schema.event)
-                .where(eq(schema.event.id, eventId))
-                .for("update");
-            await tx
-                .select({ userId: schema.eventRegistration.userId })
-                .from(schema.eventRegistration)
-                .where(eq(schema.eventRegistration.eventId, eventId))
-                .for("update");
-            const payments = await tx
-                .select({
-                    status: schema.eventPayment.status,
-                    providerPaymentId: schema.eventPayment.providerPaymentId,
-                })
-                .from(schema.eventPayment)
-                .where(eq(schema.eventPayment.eventId, eventId))
-                .for("update");
-
-            if (
-                payments.some(
-                    (p) => p.status === "paid" || p.status === "refunded",
-                )
-            ) {
-                throw new HTTPException(409, {
-                    message:
-                        "Arrangementet har betalinger og kan ikke slettes. Betalinger og refusjoner må bevares.",
-                });
-            }
-
-            if (
-                payments.some(
-                    (p) => p.status === "pending" && p.providerPaymentId,
-                )
-            ) {
-                throw new HTTPException(409, {
-                    message:
-                        "Noen er i gang med å betale for arrangementet. Prøv igjen om litt.",
-                });
-            }
-
             await tx.delete(schema.event).where(eq(schema.event.id, eventId));
         });
 

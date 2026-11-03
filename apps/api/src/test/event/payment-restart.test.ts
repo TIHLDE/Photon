@@ -167,4 +167,51 @@ describe("Restarting an abandoned Vipps checkout", () => {
         },
         500_000,
     );
+
+    integrationTest(
+        "two presses at once leave one payable checkout",
+        async ({ ctx }) => {
+            const { event, user, payment } = await seedStartedCheckout(ctx);
+            mockVippsState("CREATED");
+
+            // Hold both requests inside the Vipps call until both have read
+            // the row, so they race to attach their checkout to it.
+            let calls = 0;
+            let release: () => void = () => {};
+            const bothInside = new Promise<void>((resolve) => {
+                release = resolve;
+            });
+            vi.mocked(vipps.createPayment).mockImplementation(async () => {
+                calls += 1;
+                const url = `https://vipps.test/checkout-${calls}`;
+                if (calls === 2) release();
+                await bothInside;
+                return url;
+            });
+
+            const client = await ctx.utils.clientForUser(user);
+            const press = () =>
+                client.api.event[":eventId"].payment.$post({
+                    param: { eventId: event.id },
+                    json: {
+                        returnUrl: "https://tihlde.org/arrangementer/test",
+                        userFlow: "WEB_REDIRECT",
+                    },
+                });
+
+            const responses = await Promise.all([press(), press()]);
+
+            expect(responses.map((r) => r.status).sort()).toEqual([201, 409]);
+            const rows = await ctx.db.query.eventPayment.findMany({
+                where: { eventId: event.id },
+            });
+            expect(rows).toHaveLength(1);
+            expect(rows[0]?.id).toBe(payment.id);
+            const references = vi
+                .mocked(vipps.createPayment)
+                .mock.calls.map((call) => call[0].reference);
+            expect(references).toContain(rows[0]?.providerPaymentId);
+        },
+        500_000,
+    );
 });

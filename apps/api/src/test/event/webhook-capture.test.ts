@@ -257,4 +257,30 @@ describe("Vipps webhook — capture and status mapping", () => {
         },
         500_000,
     );
+
+    integrationTest(
+        "acknowledges a reference no payment holds, so Vipps stops retrying",
+        async ({ ctx }) => {
+            // A restarted checkout replaces the reference on its row, and Vipps
+            // then reports the cancelled session under the old one.
+            const { payment } = await seedPayment(ctx);
+            const silenced = vi
+                .spyOn(console, "warn")
+                .mockImplementation(() => {});
+
+            const client = ctx.utils.client();
+            const res = await client.api.event.payment.webhook.$post({
+                json: { reference: "replaced-ref" },
+            });
+
+            expect(res.status).toBe(200);
+            expect(vi.mocked(vipps.capturePayment)).not.toHaveBeenCalled();
+            const row = await ctx.db.query.eventPayment.findFirst({
+                where: { id: payment.id },
+            });
+            expect(row?.status).toBe("pending");
+            silenced.mockRestore();
+        },
+        500_000,
+    );
 });

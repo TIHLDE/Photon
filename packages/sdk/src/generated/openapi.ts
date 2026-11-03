@@ -849,7 +849,7 @@ export interface paths {
         post?: never;
         /**
          * Delete an event
-         * @description Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' — globally or for the arranging group — can delete any event they hold it for. This action is irreversible and will remove all associated data, including registrations and feedback. An event with paid or refunded payments, or a checkout still open at Vipps, cannot be deleted.
+         * @description Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' — globally or for the arranging group — can delete any event they hold it for. This action is irreversible and will remove all associated data, including registrations and feedback. An event with paid or refunded payments cannot be deleted.
          */
         delete: operations["deleteEvent"];
         options?: never;
@@ -8774,7 +8774,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The event has paid or refunded payments, or a checkout still open at Vipps */
+            /** @description The event has paid or refunded payments */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -9317,13 +9317,6 @@ export interface operations {
             };
             /** @description Payment already exists for this user and event */
             409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Too many payment attempts */
-            429: {
                 headers: {
                     [name: string]: unknown;
                 };

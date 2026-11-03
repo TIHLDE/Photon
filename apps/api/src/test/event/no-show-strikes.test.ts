@@ -14,7 +14,7 @@ async function register(
     ctx: IntegrationTestContext,
     eventId: string,
     userId: string,
-    status: "registered" | "attended" | "waitlisted",
+    status: "registered" | "attended" | "no_show" | "waitlisted",
 ) {
     await ctx.db
         .insert(schema.eventRegistration)
@@ -201,4 +201,67 @@ describe("No-show strikes", () => {
         },
         500_000,
     );
+});
+
+describe("Unregistering after the event has ended", () => {
+    async function unregister(
+        ctx: IntegrationTestContext,
+        user: Awaited<
+            ReturnType<IntegrationTestContext["utils"]["createTestUser"]>
+        >,
+        eventId: string,
+    ) {
+        const client = await ctx.utils.clientForUser(user);
+        return client.api.event[":eventId"].registration.$delete({
+            param: { eventId },
+        });
+    }
+
+    integrationTest(
+        "a no-show cannot trade two strikes for one or promote the waitlist",
+        async ({ ctx }) => {
+            await ctx.utils.setupEventCategories();
+            const event = await endedEvent(ctx, true);
+            const attendee = await ctx.utils.createTestUser();
+            const skipper = await ctx.utils.createTestUser();
+            const waiting = await ctx.utils.createTestUser();
+            await register(ctx, event.id, attendee.id, "attended");
+            await register(ctx, event.id, skipper.id, "registered");
+            await ctx.db.insert(schema.eventRegistration).values({
+                eventId: event.id,
+                userId: waiting.id,
+                status: "waitlisted",
+                waitlistPosition: 1,
+            });
+
+            const res = await unregister(ctx, skipper, event.id);
+
+            expect(res.status).toBe(400);
+            expect(await statusOf(ctx, event.id, waiting.id)).toBe(
+                "waitlisted",
+            );
+
+            await processEventNoShows(event.id, ctx);
+            expect(await strikeTotal(ctx, event.id, skipper.id)).toBe(2);
+        },
+        500_000,
+    );
+
+    for (const status of ["attended", "no_show"] as const) {
+        integrationTest(
+            `an ${status} record cannot be erased`,
+            async ({ ctx }) => {
+                await ctx.utils.setupEventCategories();
+                const event = await endedEvent(ctx, true);
+                const member = await ctx.utils.createTestUser();
+                await register(ctx, event.id, member.id, status);
+
+                const res = await unregister(ctx, member, event.id);
+
+                expect(res.status).toBe(400);
+                expect(await statusOf(ctx, event.id, member.id)).toBe(status);
+            },
+            500_000,
+        );
+    }
 });

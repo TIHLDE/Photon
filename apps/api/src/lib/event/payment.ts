@@ -861,12 +861,6 @@ export async function handlePaymentExpiration(
         where: { eventId, userId, status: "pending" },
     });
 
-    // `failed` is our own record, and the provider decides. A row can carry that
-    // status while its checkout holds money, and the spot must not go on that.
-    if (payment.status === "failed") {
-        attempts.push(payment);
-    }
-
     let verdict: ProviderVerdict = "dead";
     for (const attempt of attempts) {
         const attemptVerdict = await reconcileWithProvider(ctx, attempt);

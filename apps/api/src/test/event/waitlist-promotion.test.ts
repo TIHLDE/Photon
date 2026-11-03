@@ -2,6 +2,7 @@ import { delay } from "es-toolkit";
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
+import { promoteFromWaitlist } from "~/lib/event/payment";
 import { resolveRegistrationsForEvent } from "~/lib/event/resolve-registration";
 import { integrationTest } from "~/test/config/integration";
 import type { IntegrationTestContext } from "~/test/config/integration";
@@ -372,6 +373,64 @@ describe("waitlist promotion when the capacity is raised", () => {
                     position: 1,
                 });
             }
+        },
+        500_000,
+    );
+});
+
+/**
+ * Innsjekkede (`attended`) og uteblitte (`no_show`) har fortsatt plassen sin.
+ * Før telte bare `registered`, så hver innsjekking så ut som en ledig plass, og
+ * en avmelding under arrangementet ga bort flere plasser enn det fantes.
+ */
+describe("waitlist promotion counts checked-in members", () => {
+    async function seedCheckedInWithWaitlist(
+        ctx: IntegrationTestContext,
+        capacity: number,
+    ) {
+        await ctx.utils.setupEventCategories();
+        const event = await ctx.utils.createTestEvent({ capacity });
+        const attended = await ctx.utils.createTestUser();
+        const waiting = await ctx.utils.createTestUser();
+        await ctx.db.insert(schema.eventRegistration).values([
+            { eventId: event.id, userId: attended.id, status: "attended" },
+            {
+                eventId: event.id,
+                userId: waiting.id,
+                status: "waitlisted",
+                waitlistPosition: 1,
+            },
+        ]);
+        const loaded = await ctx.db.query.event.findFirst({
+            where: { id: event.id },
+            with: { pools: true, priorityUsers: true },
+        });
+        if (!loaded) throw new Error("Event not found");
+        return { event: loaded, waiting };
+    }
+
+    integrationTest(
+        "a checked-in member keeps their seat",
+        async ({ ctx }) => {
+            const { event, waiting } = await seedCheckedInWithWaitlist(ctx, 1);
+
+            expect(await promoteFromWaitlist(ctx, event)).toBe(false);
+            expect((await statusFor(ctx, event.id, waiting.id)).status).toBe(
+                "waitlisted",
+            );
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "a seat that really is free still goes to the waitlist",
+        async ({ ctx }) => {
+            const { event, waiting } = await seedCheckedInWithWaitlist(ctx, 2);
+
+            expect(await promoteFromWaitlist(ctx, event)).toBe(true);
+            expect((await statusFor(ctx, event.id, waiting.id)).status).toBe(
+                "registered",
+            );
         },
         500_000,
     );
