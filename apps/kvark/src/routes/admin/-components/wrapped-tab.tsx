@@ -240,7 +240,7 @@ function PhotosSection({ eventId }: { eventId: string }) {
             <AdminEmptyState
                 icon={Camera}
                 title="Ingen bilder ennå"
-                description="Bildene deltakerne tar, dukker opp her etter hvert."
+                description="Bildene deltakerne tar, dukker opp her når kameraet har stengt."
             />
         ) : (
             <AdminEmptyState

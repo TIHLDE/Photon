@@ -64,7 +64,7 @@ export const getMyWrappedPhotosQuery = (eventId: string) =>
             apiClient.get("/api/event/{eventId}/wrapped/photos/mine", {
                 params: { eventId },
             }),
-        // Utkast forsvinner når kameraet stenger, så lista hentes på nytt.
+        // Utkast sendes inn når kameraet stenger, så lista hentes på nytt.
         staleTime: 0,
     });
 
@@ -84,18 +84,6 @@ export function fetchMyWrappedPhotoLarge(path: string): Promise<string> {
 export function myWrappedPhotoImagePath(eventId: string, photoId: string) {
     return `api/event/${eventId}/wrapped/photos/mine/${photoId}/image`;
 }
-
-/** Sender inn alle utkastene på én gang. */
-export const submitMyWrappedPhotosMutation = mutationOptions({
-    mutationFn: ({ eventId }: { eventId: string }) =>
-        apiClient.post("/api/event/{eventId}/wrapped/photos/mine/submit", {
-            params: { eventId },
-            json: {},
-        }),
-    onSuccess(_, { eventId }, __, ctx) {
-        return invalidateMine(ctx.client, eventId);
-    },
-});
 
 /**
  * Sletter et utkast, og gir bildet tilbake. `keepalive`, så slettingen kommer

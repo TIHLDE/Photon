@@ -1,11 +1,12 @@
 import { formatInOslo } from "#/lib/date";
 
-/** Hvor lenge før kameraet stenger utkastene begynner å mase. */
+/** Hvor lenge før kameraet stenger bildene begynner å mase. */
 const DRAFT_WARNING_MS = 30 * 60 * 1000;
 
 /**
- * Om varselet om usendte bilder skal vises. Utkast som ikke er sendt inn når
- * kameraet stenger, slettes, så den siste halvtimen sier vi fra.
+ * Om varselet om bilder som snart sendes skal vises. Bildene går automatisk
+ * til arrangøren når kameraet stenger, så den siste halvtimen sier vi fra, slik
+ * at de som vil slette noe rekker det.
  */
 export function isDraftWarning(
     closesAt: string,
@@ -24,16 +25,17 @@ export type CameraShortcut = {
     detail: string;
     /** «shoot» går til kameraet, «submit» og «done» til Mine bilder. */
     kind: "shoot" | "submit" | "done";
-    /** Usendte bilder slettes snart: vises i varselfarge. */
+    /** Bildene sendes snart til arrangøren: vises i varselfarge. */
     warning: boolean;
 };
 
 /**
  * What the shortcut to an open camera offers. The camera stays listed until
  * it closes: with shots left it is a photo; with none left but drafts waiting,
- * it is sending them in; with a full film and nothing to send it points to
- * Mine bilder. The last half hour before drafts are discarded, sending them
- * in wins over taking another photo, whatever is left.
+ * it points to Mine bilder, where they can be reviewed; with a full film and
+ * nothing waiting it points there too. The last half hour before the drafts
+ * are sent to the organizer, reviewing them wins over taking another photo,
+ * whatever is left.
  */
 export function cameraShortcut(
     camera: { shotsLeft: number; draftCount: number; closesAt: string },
@@ -41,8 +43,8 @@ export function cameraShortcut(
 ): CameraShortcut {
     if (isDraftWarning(camera.closesAt, camera.draftCount, now)) {
         return {
-            action: "Send inn",
-            detail: `${camera.draftCount} ikke sendt før ${formatInOslo(camera.closesAt, "HH:mm")}`,
+            action: "Se over",
+            detail: `${camera.draftCount} sendes kl. ${formatInOslo(camera.closesAt, "HH:mm")}`,
             kind: "submit",
             warning: true,
         };
@@ -57,8 +59,8 @@ export function cameraShortcut(
     }
     if (camera.draftCount > 0) {
         return {
-            action: "Send inn",
-            detail: `${camera.draftCount} ikke sendt`,
+            action: "Mine bilder",
+            detail: `${camera.draftCount} sendes når kameraet stenger`,
             kind: "submit",
             warning: false,
         };

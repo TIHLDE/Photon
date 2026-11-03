@@ -156,7 +156,7 @@ function WrappedCameraContainer({
         [myPhotos, event.id],
     );
     const thumbnails = useObjectUrls(newestPaths, fetchMyWrappedPhotoThumb);
-    // Klokka tikker fram til kameraet stenger, så varselet om usendte bilder
+    // Klokka tikker fram til kameraet stenger, så varselet om bilder som snart sendes
     // både dukker opp og forsvinner uten at sida lastes på nytt.
     const now = useNow(camera.closesAt);
 

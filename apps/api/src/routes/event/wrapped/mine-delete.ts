@@ -14,7 +14,7 @@ export const deleteMyWrappedPhotoRoute = route().delete(
         summary: "Delete one of my drafts",
         operationId: "deleteMyWrappedPhoto",
         description:
-            "Delete one of the caller's drafts, image and all. This gives the shot back. A submitted photo cannot be deleted, and nothing can once the camera has closed.",
+            "Delete one of the caller's drafts, image and all. This gives the shot back. A submitted photo cannot be deleted. A draft can be deleted until a minute after the camera closes; then it is sent to the organizer automatically.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -25,7 +25,7 @@ export const deleteMyWrappedPhotoRoute = route().delete(
         .response({
             statusCode: 409,
             description:
-                "Conflict - the photo is already submitted, or the camera has closed",
+                "Conflict - the photo is already submitted, or the camera closed more than a minute ago",
         })
         .unauthorized({ description: "Authentication required" })
         .build(),
@@ -40,6 +40,12 @@ export const deleteMyWrappedPhotoRoute = route().delete(
         const result = await deleteDraft(db, { eventId, userId, photoId });
 
         if ("rejected" in result) {
+            if (result.rejected !== "not_found") {
+                logger.warn(
+                    { eventId, userId, photoId, reason: result.rejected },
+                    "Wrapped draft delete refused",
+                );
+            }
             switch (result.rejected) {
                 case "not_found":
                     throw HTTPAppException.NotFound("Photo");
@@ -49,7 +55,7 @@ export const deleteMyWrappedPhotoRoute = route().delete(
                     );
                 case "closed":
                     throw HTTPAppException.Conflict(
-                        "Kameraet har stengt, så bildet kan ikke slettes.",
+                        "Kameraet har stengt, så bildet er sendt til arrangøren og kan ikke slettes lenger.",
                     );
             }
         }

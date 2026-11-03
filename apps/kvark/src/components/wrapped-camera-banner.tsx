@@ -22,8 +22,8 @@ type WrappedCameraBannerProps = {
 
 /**
  * Snarveien til engangskameraet for arrangementet man er på. Ett trykk fra
- * hvor som helst på sida til kameraet — eller til Mine bilder når det er
- * innsending som gjenstår.
+ * hvor som helst på sida til kameraet — eller til Mine bilder når kvoten er
+ * brukt opp eller bildene snart sendes.
  */
 export function WrappedCameraBanner({
     slug,

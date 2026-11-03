@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import type { RegistrationStatus } from "@photon/db/schema";
+import { eq } from "drizzle-orm";
+import { submitClosedDrafts } from "~/lib/wrapped/drafts";
 import type { IntegrationTestContext } from "~/test/config/integration";
 
 type TestUser = Awaited<
@@ -104,24 +105,34 @@ export function uploadPhoto(
     });
 }
 
-/** Submit the member's drafts — all of them, or the listed ones. */
-export function submitPhotos(
+/** Move the event back so its camera closed an hour ago. */
+export async function closeCamera(
     ctx: IntegrationTestContext,
-    cookie: string,
     eventId: string,
-    photoIds?: string[],
 ) {
-    return ctx.app.request(`/api/event/${eventId}/wrapped/photos/mine/submit`, {
-        method: "POST",
-        body: JSON.stringify(photoIds ? { photoIds } : {}),
-        headers: { Cookie: cookie, "Content-Type": "application/json" },
-    });
+    const now = Date.now();
+    await ctx.db
+        .update(schema.event)
+        .set({ start: new Date(now - 8 * HOUR), end: new Date(now - 5 * HOUR) })
+        .where(eq(schema.event.id, eventId));
 }
 
 /**
- * An event whose camera has been used: one photographer has taken and
- * submitted `count` photos, and the organizer has picked all of them. The
- * story is not published.
+ * Close the camera and run the sweep: how photos reach the organizer in
+ * production.
+ */
+export async function closeAndSubmit(
+    ctx: IntegrationTestContext,
+    eventId: string,
+) {
+    await closeCamera(ctx, eventId);
+    return submitClosedDrafts(ctx.db);
+}
+
+/**
+ * An event whose camera has been used and closed: one photographer has taken
+ * `count` photos, the sweep has sent them in, and the organizer has picked
+ * all of them. The story is not published.
  */
 export async function eventWithPickedPhotos(
     ctx: IntegrationTestContext,
@@ -137,7 +148,7 @@ export async function eventWithPickedPhotos(
         await uploadPhoto(ctx, cookie, event.id);
     }
     if (count > 0) {
-        await submitPhotos(ctx, cookie, event.id);
+        await closeAndSubmit(ctx, event.id);
     }
     await ctx.db
         .update(schema.wrappedPhoto)

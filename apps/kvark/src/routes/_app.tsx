@@ -96,7 +96,7 @@ function AppLayout() {
         openCamera !== undefined &&
         pathname !== "/" &&
         !pathname.startsWith(`/arrangementer/${openCamera.slug}/kamera`);
-    // Usendte bilder slettes når kameraet stenger, så den siste halvtimen
+    // Bildene sendes til arrangøren når kameraet stenger, så den siste halvtimen
     // blir snarveien et varsel som peker til Mine bilder. Klokka tikker til
     // stengetid, så varselet også forsvinner av seg selv.
     const now = useNow(openCamera?.closesAt);

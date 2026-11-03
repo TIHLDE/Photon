@@ -22,6 +22,13 @@ import {
 export const CAMERA_OPENS_BEFORE_START_MS = 2 * 60 * 60 * 1000;
 /** The camera stays open this long after `event.end`. */
 export const CAMERA_CLOSES_AFTER_END_MS = 4 * 60 * 60 * 1000;
+/**
+ * Drafts left when the camera closes are sent in automatically this long after
+ * closing. Until then a delete still lands: one sent just before closing (the
+ * undo toast holds it ~5 s, a slow network longer) must reach us before the
+ * photo reaches the organizer.
+ */
+export const AUTO_SUBMIT_AFTER_CLOSE_MS = 60 * 1000;
 
 export const DEFAULT_SHOTS_PER_PERSON = 5;
 export const MAX_SHOTS_PER_PERSON = 20;
@@ -57,7 +64,10 @@ export type CameraStatus = {
     shotsLeft: number;
     canShoot: boolean;
     reason: CameraBlockedReason | null;
-    /** The caller's photos not yet submitted. Always 0 once the camera has closed. */
+    /**
+     * The caller's photos not yet submitted. Drafts left at close are sent to
+     * the organizer automatically a minute after closing, after which this is 0.
+     */
     draftCount: number;
     /** When the story went live, or null while it is not published. */
     publishedAt: Date | null;
@@ -112,23 +122,11 @@ export function holdsSpot(status: RegistrationStatus | undefined): boolean {
 
 /**
  * Photos the member has submitted. The organizer only ever sees these: every
- * organizer query goes through this condition.
+ * organizer query goes through this condition. Drafts become submitted only
+ * through `submitClosedDrafts`, a minute after the camera closes.
  */
 export function submittedOnly(): SQL {
     return isNotNull(schema.wrappedPhoto.submittedAt);
-}
-
-/**
- * The member's own photos they may still see: all of them while the camera is
- * open, only the submitted ones after it has closed. Drafts left at closing
- * are discarded — by {@link discardExpiredDrafts}, and until that has run,
- * by this condition.
- */
-export function visibleToOwner(
-    closesAt: Date,
-    now: Date = new Date(),
-): { submittedAt?: { isNotNull: true } } {
-    return now > closesAt ? { submittedAt: { isNotNull: true } } : {};
 }
 
 /**
@@ -184,16 +182,14 @@ export async function readShootState(
             columns: { status: true },
         }),
         countPhotosBy(db, eventId, userId),
-        now > closesAt
-            ? 0
-            : db.$count(
-                  schema.wrappedPhoto,
-                  and(
-                      eq(schema.wrappedPhoto.eventId, eventId),
-                      eq(schema.wrappedPhoto.uploadedById, userId),
-                      isNull(schema.wrappedPhoto.submittedAt),
-                  ),
-              ),
+        db.$count(
+            schema.wrappedPhoto,
+            and(
+                eq(schema.wrappedPhoto.eventId, eventId),
+                eq(schema.wrappedPhoto.uploadedById, userId),
+                isNull(schema.wrappedPhoto.submittedAt),
+            ),
+        ),
     ]);
 
     const enabled = camera?.enabled ?? false;

@@ -46,7 +46,7 @@ export const uploadWrappedPhotoRoute = route().post(
         operationId: "uploadWrappedPhoto",
         description: `Upload one photo to the event's disposable camera. The caller must hold a spot on the event, the camera must be on and inside its window, and the caller must have photos left.
 
-The photo is stored as the caller's draft: the organizer sees it only once the caller submits it (\`submitMyWrappedPhotos\`), and drafts not submitted before the camera closes are discarded. The response carries the new counts and never a URL.
+The photo is stored as the caller's draft: the organizer sees it only once it is submitted, and drafts still unsubmitted when the camera closes are sent in automatically. The response carries the new counts and never a URL.
 
 Pass \`source=camera_roll\` for a photo picked from the phone's camera roll. It costs a shot like any other.
 

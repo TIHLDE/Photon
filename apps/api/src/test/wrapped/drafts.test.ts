@@ -1,21 +1,21 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
-import { discardExpiredDrafts } from "~/lib/wrapped/drafts";
+import { AUTO_SUBMIT_AFTER_CLOSE_MS, cameraWindow } from "~/lib/wrapped";
+import { deleteDraft, submitClosedDrafts } from "~/lib/wrapped/drafts";
 import {
     type IntegrationTestContext,
     integrationTest,
 } from "~/test/config/integration";
 import {
+    closeAndSubmit,
+    closeCamera,
     createOngoingEvent,
     enableCamera,
     register,
     sessionCookie,
-    submitPhotos,
     uploadPhoto,
 } from "./helpers";
-
-const HOUR = 60 * 60 * 1000;
 
 type MyPhoto = { id: string; source: string; submitted: boolean };
 
@@ -84,15 +84,6 @@ async function organizerPhotoIds(
     });
     const body = await response.json();
     return { ids: body.items.map((p) => p.id), body };
-}
-
-/** Move the event back so its camera closed an hour ago. */
-async function closeCamera(ctx: IntegrationTestContext, eventId: string) {
-    const now = Date.now();
-    await ctx.db
-        .update(schema.event)
-        .set({ start: new Date(now - 8 * HOUR), end: new Date(now - 5 * HOUR) })
-        .where(eq(schema.event.id, eventId));
 }
 
 function photoRow(ctx: IntegrationTestContext, id: string) {
@@ -177,56 +168,18 @@ describe("wrapped drafts", () => {
     );
 
     integrationTest(
-        "submitting picked drafts, then the rest, then again changes nothing",
-        async ({ ctx }) => {
-            const { event, cookie, organizer } = await openCamera(ctx);
-            const first = await upload(ctx, cookie, event.id);
-            const second = await upload(ctx, cookie, event.id);
-            const third = await upload(ctx, cookie, event.id);
-
-            const some = await submitPhotos(ctx, cookie, event.id, [first]);
-            expect(some.status).toBe(200);
-            expect(await some.json()).toEqual({
-                submittedCount: 1,
-                draftCount: 2,
-            });
-            expect(
-                (await organizerPhotoIds(ctx, organizer, event.id)).ids,
-            ).toEqual([first]);
-
-            const rest = await submitPhotos(ctx, cookie, event.id);
-            expect(await rest.json()).toEqual({
-                submittedCount: 2,
-                draftCount: 0,
-            });
-
-            const again = await submitPhotos(ctx, cookie, event.id);
-            expect(again.status).toBe(200);
-            expect(await again.json()).toEqual({
-                submittedCount: 0,
-                draftCount: 0,
-            });
-
-            const { ids, body } = await organizerPhotoIds(
-                ctx,
-                organizer,
-                event.id,
-            );
-            expect(ids.sort()).toEqual([first, second, third].sort());
-            expect(body.totalCount).toBe(3);
-        },
-        500_000,
-    );
-
-    integrationTest(
-        "nothing can be submitted once the camera has closed",
+        "the submit route is gone",
         async ({ ctx }) => {
             const { event, cookie } = await openCamera(ctx);
             await upload(ctx, cookie, event.id);
-            await closeCamera(ctx, event.id);
 
-            const response = await submitPhotos(ctx, cookie, event.id);
-            expect(response.status).toBe(409);
+            const response = await request(
+                ctx,
+                cookie,
+                `${event.id}/wrapped/photos/mine/submit`,
+                "POST",
+            );
+            expect(response.status).toBe(404);
         },
         500_000,
     );
@@ -266,7 +219,6 @@ describe("wrapped drafts", () => {
         async ({ ctx }) => {
             const { event, cookie } = await openCamera(ctx);
             const submitted = await upload(ctx, cookie, event.id);
-            await submitPhotos(ctx, cookie, event.id);
             const draft = await upload(ctx, cookie, event.id);
 
             const other = await ctx.utils.createTestUser();
@@ -279,14 +231,7 @@ describe("wrapped drafts", () => {
             );
             expect(theirs.status).toBe(404);
 
-            const done = await request(
-                ctx,
-                cookie,
-                `${event.id}/wrapped/photos/mine/${submitted}`,
-                "DELETE",
-            );
-            expect(done.status).toBe(409);
-
+            // Closed longer ago than the grace minute, sweep not yet run.
             await closeCamera(ctx, event.id);
             const late = await request(
                 ctx,
@@ -296,6 +241,16 @@ describe("wrapped drafts", () => {
             );
             expect(late.status).toBe(409);
 
+            // Once the sweep has run, the photo is submitted: still 409.
+            await submitClosedDrafts(ctx.db);
+            const done = await request(
+                ctx,
+                cookie,
+                `${event.id}/wrapped/photos/mine/${submitted}`,
+                "DELETE",
+            );
+            expect(done.status).toBe(409);
+
             expect(await photoRow(ctx, draft)).toBeDefined();
             expect(await photoRow(ctx, submitted)).toBeDefined();
         },
@@ -303,54 +258,152 @@ describe("wrapped drafts", () => {
     );
 
     integrationTest(
-        "drafts left at closing are hidden from everyone and then discarded",
+        "drafts left at closing are submitted automatically, file and all",
         async ({ ctx }) => {
             const { event, cookie, organizer } = await openCamera(ctx);
-            const submitted = await upload(ctx, cookie, event.id);
-            await submitPhotos(ctx, cookie, event.id);
-            const draft = await upload(ctx, cookie, event.id);
-            const draftRow = await photoRow(ctx, draft);
+            const first = await upload(ctx, cookie, event.id);
+            const second = await upload(ctx, cookie, event.id);
+            const rows = await Promise.all([
+                photoRow(ctx, first),
+                photoRow(ctx, second),
+            ]);
 
             await closeCamera(ctx, event.id);
 
-            // Hidden before the cleanup has run.
+            // Still the member's own until the sweep has run.
+            expect(await myPhotos(ctx, cookie, event.id)).toEqual([
+                expect.objectContaining({ id: first, submitted: false }),
+                expect.objectContaining({ id: second, submitted: false }),
+            ]);
             expect(
-                (await myPhotos(ctx, cookie, event.id)).map((p) => p.id),
-            ).toEqual([submitted]);
+                (await organizerPhotoIds(ctx, organizer, event.id)).ids,
+            ).toEqual([]);
+            expect(
+                await (
+                    await request(ctx, cookie, `${event.id}/wrapped`)
+                ).json(),
+            ).toMatchObject({ draftCount: 2 });
+
+            expect(await submitClosedDrafts(ctx.db)).toEqual({
+                submitted: 2,
+                eventIds: [event.id],
+            });
+
+            expect(
+                (await organizerPhotoIds(ctx, organizer, event.id)).ids.sort(),
+            ).toEqual([first, second].sort());
+            expect(await myPhotos(ctx, cookie, event.id)).toEqual([
+                expect.objectContaining({ id: first, submitted: true }),
+                expect.objectContaining({ id: second, submitted: true }),
+            ]);
             expect(
                 (
                     await request(
                         ctx,
                         cookie,
-                        `${event.id}/wrapped/photos/mine/${draft}/image`,
+                        `${event.id}/wrapped/photos/mine/${first}/image`,
                     )
                 ).status,
-            ).toBe(404);
-            expect(
-                (await organizerPhotoIds(ctx, organizer, event.id)).ids,
-            ).toEqual([submitted]);
+            ).toBe(200);
+            for (const row of rows) {
+                expect(await ctx.bucket.getAsset(row!.assetKey)).not.toBeNull();
+            }
             const status = await request(ctx, cookie, `${event.id}/wrapped`);
             expect(await status.json()).toMatchObject({ draftCount: 0 });
 
-            expect(await discardExpiredDrafts(ctx)).toBe(1);
-
-            expect(await photoRow(ctx, draft)).toBeUndefined();
-            expect(await ctx.bucket.getAsset(draftRow!.assetKey)).toBeNull();
-            expect(await photoRow(ctx, submitted)).toBeDefined();
             // Nothing left to do on the next run.
-            expect(await discardExpiredDrafts(ctx)).toBe(0);
+            expect(await submitClosedDrafts(ctx.db)).toEqual({
+                submitted: 0,
+                eventIds: [],
+            });
         },
         500_000,
     );
 
     integrationTest(
-        "a draft at a camera that is still open is never discarded",
+        "a draft at an open camera, or one closed less than a minute ago, is left alone",
         async ({ ctx }) => {
             const { event, cookie } = await openCamera(ctx);
-            const draft = await upload(ctx, cookie, event.id);
+            await upload(ctx, cookie, event.id);
 
-            expect(await discardExpiredDrafts(ctx)).toBe(0);
-            expect(await photoRow(ctx, draft)).toBeDefined();
+            expect((await submitClosedDrafts(ctx.db)).submitted).toBe(0);
+
+            const eventRow = await ctx.db.query.event.findFirst({
+                where: { id: event.id },
+            });
+            const { closesAt } = cameraWindow(eventRow!);
+            const closedFor = (ms: number) =>
+                new Date(closesAt.getTime() + AUTO_SUBMIT_AFTER_CLOSE_MS + ms);
+
+            expect(
+                (await submitClosedDrafts(ctx.db, closedFor(-1000))).submitted,
+            ).toBe(0);
+            expect(
+                (await submitClosedDrafts(ctx.db, closedFor(1000))).submitted,
+            ).toBe(1);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "a draft can be deleted until a minute after closing, never after",
+        async ({ ctx }) => {
+            const { event, member, cookie } = await openCamera(ctx);
+            const first = await upload(ctx, cookie, event.id);
+            const second = await upload(ctx, cookie, event.id);
+            const eventRow = await ctx.db.query.event.findFirst({
+                where: { id: event.id },
+            });
+            const closesAt = cameraWindow(eventRow!).closesAt.getTime();
+            const owner = { eventId: event.id, userId: member.id };
+
+            expect(
+                await deleteDraft(
+                    ctx.db,
+                    { ...owner, photoId: first },
+                    new Date(closesAt + 30_000),
+                ),
+            ).toMatchObject({ assetKey: expect.any(String) });
+            expect(
+                await deleteDraft(
+                    ctx.db,
+                    { ...owner, photoId: second },
+                    new Date(closesAt + AUTO_SUBMIT_AFTER_CLOSE_MS + 1000),
+                ),
+            ).toEqual({ rejected: "closed" });
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "a draft the sweep has submitted cannot be deleted, even inside the grace minute",
+        async ({ ctx }) => {
+            const { event, member, cookie } = await openCamera(ctx);
+            const id = await upload(ctx, cookie, event.id);
+            const eventRow = await ctx.db.query.event.findFirst({
+                where: { id: event.id },
+            });
+            const closesAt = cameraWindow(eventRow!).closesAt.getTime();
+            // The sweep got there first: the delete's own checks passed on a
+            // draft that is submitted by the time its DELETE runs.
+            await ctx.db
+                .update(schema.wrappedPhoto)
+                .set({ submittedAt: new Date() })
+                .where(eq(schema.wrappedPhoto.id, id));
+
+            expect(
+                await deleteDraft(
+                    ctx.db,
+                    { eventId: event.id, userId: member.id, photoId: id },
+                    new Date(closesAt + 30_000),
+                ),
+            ).toEqual({ rejected: "submitted" });
+
+            const row = await ctx.db.query.wrappedPhoto.findFirst({
+                where: { id },
+            });
+            expect(row).toBeDefined();
+            expect(await ctx.bucket.getAsset(row!.assetKey)).not.toBeNull();
         },
         500_000,
     );
@@ -390,7 +443,7 @@ describe("wrapped drafts", () => {
             // The one shot is spent.
             expect((await uploadPhoto(ctx, cookie, event.id)).status).toBe(409);
 
-            await submitPhotos(ctx, cookie, event.id);
+            await closeAndSubmit(ctx, event.id);
             const { body: list } = await organizerPhotoIds(
                 ctx,
                 organizer,
