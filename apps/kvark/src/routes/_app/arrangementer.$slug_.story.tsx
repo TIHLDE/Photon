@@ -1,20 +1,8 @@
-import {
-    Suspense,
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { PointerEvent, ReactNode } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import {
-    useInfiniteQuery,
-    useMutation,
-    useSuspenseInfiniteQuery,
-} from "@tanstack/react-query";
+import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { CameraControlButton } from "@tihlde/ui/ui/camera-viewfinder";
-import { toast } from "@tihlde/ui/ui/sonner";
 import {
     StoryFeed,
     StoryHeartBurst,
@@ -27,26 +15,25 @@ import z from "zod";
 
 import { authClientWithRedirect } from "#/api/auth";
 import { getEventByIdQuery } from "#/api/queries/events";
-import {
-    type WrappedStoryPhoto as StoryPhoto,
-    createWrappedStoryCommentMutation,
-    deleteWrappedStoryCommentMutation,
-    fetchWrappedStoryImage,
-    getWrappedStoryCommentsQuery,
-    getWrappedStoryQuery,
-    likeWrappedStoryPhotoMutation,
-} from "#/api/queries/wrapped-story";
+import { getWrappedStoryQuery } from "#/api/queries/wrapped-story";
 import { WrappedStoryActions } from "#/components/wrapped-story/wrapped-story-actions";
-import { WrappedStoryComments } from "#/components/wrapped-story/wrapped-story-comments";
 import { WrappedStoryCover } from "#/components/wrapped-story/wrapped-story-cover";
 import { WrappedStoryPhoto } from "#/components/wrapped-story/wrapped-story-photo";
 import {
     WrappedStorySkeleton,
     WrappedStoryUnavailable,
 } from "#/components/wrapped-story/wrapped-story-states";
-import { useObjectUrls } from "#/hooks/use-object-urls";
-import { extractErrorMessage } from "#/lib/api-error";
 import { errorStatus } from "#/lib/utils";
+
+import { WrappedStoryCards } from "./-components/wrapped-story-cards";
+import {
+    StoryComments,
+    isStoryKey,
+    toPhotoData,
+    useNearbyImages,
+    useStoryLikes,
+    useStoryPhotos,
+} from "./-components/wrapped-story-shared";
 
 const searchSchema = z.object({
     /** Bildet man står på, så en omlasting eller delt lenke lander der. */
@@ -85,35 +72,12 @@ export const Route = createFileRoute("/_app/arrangementer/$slug_/story")({
     },
 });
 
-/** Hvor mange bilder før og etter det man ser på som holdes i minnet. */
-const KEEP_BEHIND = 2;
-const KEEP_AHEAD = 3;
-
 /** Så langt musa må dras for å bla, i piksler. */
 const MOUSE_DRAG_PX = 60;
 
 /** Tastene som blar fram og tilbake, som i en vanlig bildeviser. */
 const NEXT_KEYS = ["ArrowDown", "PageDown", "j"];
 const PREVIOUS_KEYS = ["ArrowUp", "PageUp", "k"];
-
-/**
- * Om tastetrykket hører til noe annet enn storyen: et skrivefelt, eller et
- * ark eller en dialog som ligger over den.
- */
-function belongsElsewhere(target: EventTarget | null): boolean {
-    return (
-        target instanceof Element &&
-        target.closest(
-            'input, textarea, select, [contenteditable="true"], [role="dialog"], [role="alertdialog"]',
-        ) !== null
-    );
-}
-
-/** Neste side hentes når så mange bilder er igjen. */
-const LOAD_MORE_WHEN_LEFT = 3;
-
-/** Hvor lenge hjertet etter et dobbelttrykk står. */
-const HEART_BURST_MS = 800;
 
 function WrappedStoryPage() {
     const { slug } = Route.useParams();
@@ -151,9 +115,25 @@ function WrappedStoryPage() {
                     </>
                 }
             >
-                <WrappedStoryFeed eventId={eventId} close={close} />
+                <WrappedStory eventId={eventId} close={close} />
             </Suspense>
         </StoryViewer>
+    );
+}
+
+/** Arrangøren velger visningen: rulle opp og ned, eller kort til siden. */
+function WrappedStory({
+    eventId,
+    close,
+}: {
+    eventId: string;
+    close: ReactNode;
+}) {
+    const { data } = useSuspenseInfiniteQuery(getWrappedStoryQuery(eventId));
+    return data.pages[0]?.layout === "cards" ? (
+        <WrappedStoryCards eventId={eventId} close={close} />
+    ) : (
+        <WrappedStoryFeed eventId={eventId} close={close} />
     );
 }
 
@@ -166,50 +146,22 @@ function WrappedStoryFeed({
 }) {
     const { bilde } = Route.useSearch();
     const navigate = Route.useNavigate();
-    const storyQuery = useSuspenseInfiniteQuery(getWrappedStoryQuery(eventId));
-    const { hasNextPage, isFetchingNextPage, fetchNextPage } = storyQuery;
-    const firstPage = storyQuery.data.pages[0];
-    const event = firstPage?.event;
-    const totalCount = firstPage?.totalCount ?? 0;
-
-    const photos = useMemo(
-        () => storyQuery.data.pages.flatMap((page) => page.items),
-        [storyQuery.data],
-    );
 
     const feedRef = useRef<HTMLDivElement>(null);
     // Sida man ser på: 0 er forsiden, 1 er første bilde.
     const [active, setActive] = useState(0);
     const [commentsFor, setCommentsFor] = useState<string | null>(null);
-    // Ny nøkkel per dobbelttrykk, så hjertet spilles av på nytt hver gang.
-    const [burst, setBurst] = useState<{ photoId: string; key: number } | null>(
-        null,
-    );
 
-    const like = useMutation({
-        ...likeWrappedStoryPhotoMutation,
-        onError: async (error) => {
-            console.error("Lik av bilde feilet", error);
-            toast.error(await extractErrorMessage(error));
-        },
-    });
-
-    function setLiked(photo: StoryPhoto, liked: boolean) {
-        if (photo.likedByMe === liked) return;
-        like.mutate({ eventId, photoId: photo.id, liked });
-    }
-
-    function doubleTapLike(photo: StoryPhoto) {
-        // Et dobbelttrykk liker alltid, som på TikTok — det fjerner aldri.
-        setLiked(photo, true);
-        setBurst({ photoId: photo.id, key: Date.now() });
-    }
-
-    useEffect(() => {
-        if (!burst) return;
-        const timeout = setTimeout(() => setBurst(null), HEART_BURST_MS);
-        return () => clearTimeout(timeout);
-    }, [burst]);
+    const {
+        event,
+        totalCount,
+        photos,
+        hasNextPage,
+        isFetchingNextPage,
+        fetchNextPage,
+    } = useStoryPhotos(eventId, active);
+    const imageUrls = useNearbyImages(photos, active);
+    const { burst, setLiked, doubleTapLike } = useStoryLikes(eventId);
 
     // Hver side er nøyaktig én skjermhøyde, så side `index` starter på
     // `index` skjermhøyder ned. Rett på ruta, ikke `scrollIntoView`, som også
@@ -278,31 +230,6 @@ function WrappedStoryFeed({
         });
     }, [activePhotoId, navigate]);
 
-    useEffect(() => {
-        if (
-            hasNextPage &&
-            !isFetchingNextPage &&
-            active >= photos.length - LOAD_MORE_WHEN_LEFT
-        ) {
-            void fetchNextPage();
-        }
-    }, [active, photos.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-    // Bare bildene nær det man ser på er hentet; resten frigjøres.
-    const nearby = useMemo(
-        () =>
-            photos
-                .slice(
-                    Math.max(0, active - 1 - KEEP_BEHIND),
-                    Math.max(0, active - 1) + KEEP_AHEAD + 1,
-                )
-                .map((photo) => photo.imageUrl),
-        [photos, active],
-    );
-    const imageUrls = useObjectUrls(nearby, fetchWrappedStoryImage, {
-        releaseDropped: true,
-    });
-
     /**
      * Ett steg fram eller tilbake. Regnet fra der rullingen faktisk står, ikke
      * fra `active`: observatøren henger litt etter, og et nytt tastetrykk midt
@@ -325,8 +252,7 @@ function WrappedStoryFeed({
     // skrivefelt eller et ark over storyen trenger dem selv.
     useEffect(() => {
         function onKeyDown(event: globalThis.KeyboardEvent) {
-            if (event.defaultPrevented || event.altKey || event.metaKey) return;
-            if (event.ctrlKey || belongsElsewhere(event.target)) return;
+            if (!isStoryKey(event)) return;
             const next = NEXT_KEYS.includes(event.key);
             if (!next && !PREVIOUS_KEYS.includes(event.key)) return;
             event.preventDefault();
@@ -426,95 +352,4 @@ function WrappedStoryFeed({
             />
         </>
     );
-}
-
-/**
- * Arket med kommentarene på ett bilde. Hentes først når arket åpnes, og
- * bare for det bildet.
- */
-function StoryComments({
-    eventId,
-    photoId,
-    totalCount,
-    onClose,
-}: {
-    eventId: string;
-    photoId: string | null;
-    totalCount: number;
-    onClose: () => void;
-}) {
-    // Bildet henger igjen mens arket animeres ut, så innholdet ikke
-    // forsvinner før arket er borte.
-    const [shown, setShown] = useState(photoId);
-    if (photoId && photoId !== shown) setShown(photoId);
-    const ref = { eventId, photoId: shown ?? "" };
-
-    const comments = useInfiniteQuery({
-        ...getWrappedStoryCommentsQuery(ref),
-        enabled: shown !== null,
-    });
-    const [error, setError] = useState<string | null>(null);
-    const onError = async (err: Error) => {
-        console.error("Kommentaren feilet", err);
-        setError(await extractErrorMessage(err));
-    };
-    const create = useMutation({
-        ...createWrappedStoryCommentMutation,
-        onError,
-    });
-    const remove = useMutation({
-        ...deleteWrappedStoryCommentMutation,
-        onError,
-    });
-
-    return (
-        <WrappedStoryComments
-            open={photoId !== null}
-            onOpenChange={(open) => {
-                if (open) return;
-                setError(null);
-                onClose();
-            }}
-            comments={comments.data?.pages
-                .flatMap((page) => page.items)
-                .map((comment) => ({
-                    id: comment.id,
-                    body: comment.body,
-                    createdAt: comment.createdAt,
-                    authorName: comment.author.name,
-                    authorImage: comment.author.image,
-                    canDelete: comment.canDelete,
-                }))}
-            totalCount={totalCount}
-            hasMore={comments.hasNextPage}
-            isLoadingMore={comments.isFetchingNextPage}
-            isSubmitting={create.isPending}
-            error={error}
-            onLoadMore={() => void comments.fetchNextPage()}
-            onSubmit={async (body) => {
-                setError(null);
-                try {
-                    await create.mutateAsync({ ...ref, body });
-                    return true;
-                } catch {
-                    // Feilen vises av `onError` over.
-                    return false;
-                }
-            }}
-            onDelete={(commentId) => {
-                setError(null);
-                remove.mutate({ ...ref, commentId });
-            }}
-        />
-    );
-}
-
-function toPhotoData(photo: StoryPhoto, src: string | null | undefined) {
-    return {
-        id: photo.id,
-        src,
-        photographerName: photo.photographer.name,
-        photographerImage: photo.photographer.image,
-        takenAt: photo.takenAt,
-    };
 }

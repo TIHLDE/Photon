@@ -1,4 +1,5 @@
 import {
+    StoryCard,
     StoryCoverContent,
     StoryCoverEyebrow,
     StoryCoverImage,
@@ -15,8 +16,10 @@ type WrappedStoryCoverProps = {
     start: string;
     imageUrl: string | null;
     photoCount: number;
-    /** Til første bilde, fra «Sveip opp»-knappen. */
+    /** Til første bilde, fra «Sveip»-knappen. */
     onNext: () => void;
+    /** `slide` fyller skjermen i storyen som rulles, `card` ligger i kortbunken. */
+    variant?: "slide" | "card";
 };
 
 /**
@@ -29,9 +32,11 @@ export function WrappedStoryCover({
     imageUrl,
     photoCount,
     onNext,
+    variant = "slide",
 }: WrappedStoryCoverProps) {
+    const Frame = variant === "card" ? StoryCard : StorySlide;
     return (
-        <StorySlide aria-label={`Wrapped fra ${title}`} data-story-index={0}>
+        <Frame aria-label={`Wrapped fra ${title}`} data-story-index={0}>
             {imageUrl ? <StoryCoverImage src={imageUrl} /> : null}
             <StoryCoverContent>
                 <StoryCoverEyebrow>Wrapped</StoryCoverEyebrow>
@@ -47,8 +52,13 @@ export function WrappedStoryCover({
                 </StoryCoverMeta>
             </StoryCoverContent>
             {photoCount > 0 ? (
-                <StorySwipeHint onClick={onNext}>Sveip opp</StorySwipeHint>
+                <StorySwipeHint
+                    onClick={onNext}
+                    direction={variant === "card" ? "right" : "up"}
+                >
+                    {variant === "card" ? "Sveip til høyre" : "Sveip opp"}
+                </StorySwipeHint>
             ) : null}
-        </StorySlide>
+        </Frame>
     );
 }

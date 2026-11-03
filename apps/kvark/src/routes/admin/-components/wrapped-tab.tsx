@@ -120,6 +120,7 @@ function StoryPublishSection({
         setError(await extractErrorMessage(err));
     };
     const publish = useMutation({ ...publishWrappedStoryMutation, onError });
+    const setLayout = useMutation({ ...setWrappedCameraMutation, onError });
     const unpublish = useMutation({
         ...unpublishWrappedStoryMutation,
         onError,
@@ -140,6 +141,16 @@ function StoryPublishSection({
             publishedAt={camera.publishedAt}
             firstPublishedAt={camera.firstPublishedAt}
             isPending={publish.isPending || unpublish.isPending}
+            layout={camera.storyLayout}
+            isSavingLayout={setLayout.isPending}
+            onLayoutChange={(storyLayout) => {
+                setError(null);
+                // `enabled` må være med i kallet; det er det som er lagret.
+                setLayout.mutate({
+                    eventId,
+                    data: { enabled: camera.enabled, storyLayout },
+                });
+            }}
             error={error}
             storyLink={storyLink}
             onPublish={() => {

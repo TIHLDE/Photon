@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 import {
+    StoryCard,
     StoryCaption,
     StoryImage,
     StorySlide,
@@ -27,6 +28,8 @@ type WrappedStoryPhotoProps = WrappedStoryPhotoData & {
     actions?: ReactNode;
     /** Det som legges over bildet, f.eks. hjertet ved dobbelttrykk. */
     overlay?: ReactNode;
+    /** `slide` fyller skjermen i storyen som rulles, `card` ligger i kortbunken. */
+    variant?: "slide" | "card";
     /** Dobbelttrykk på bildet, med finger eller mus. */
     onDoubleTap?: () => void;
 };
@@ -50,12 +53,14 @@ export function WrappedStoryPhoto({
     index,
     actions,
     overlay,
+    variant = "slide",
     onDoubleTap,
 }: WrappedStoryPhotoProps) {
     const doubleTap = useDoubleTap(() => onDoubleTap?.());
+    const Frame = variant === "card" ? StoryCard : StorySlide;
 
     return (
-        <StorySlide
+        <Frame
             aria-label={`Bilde tatt av ${photographerName}`}
             data-story-index={index}
             data-photo-id={id}
@@ -94,6 +99,6 @@ export function WrappedStoryPhoto({
                 </div>
             </StoryCaption>
             {actions}
-        </StorySlide>
+        </Frame>
     );
 }
