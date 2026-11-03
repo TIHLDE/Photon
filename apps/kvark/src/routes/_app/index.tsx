@@ -9,11 +9,12 @@ import { Button } from "@tihlde/ui/ui/button";
 import { Reveal, Stagger } from "@tihlde/ui/ui/motion";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
-import { Plus } from "lucide-react";
+import { Plus, Camera } from "lucide-react";
 import { type ReactNode, Suspense } from "react";
 
 import { authQueryOptions } from "#/api/auth";
 import { useAnyScopePermission } from "#/hooks/use-permission";
+import { useWrappedHomeMode } from "#/hooks/use-wrapped-home-mode";
 import { getEventsQuery } from "#/api/queries/events";
 import { getNewsQuery } from "#/api/queries/news";
 import { getVisibleBannersQuery } from "#/api/queries/banners";
@@ -38,9 +39,6 @@ import { formatNewsDateRelative } from "#/lib/news";
  */
 const ACTIVITY_SLUGS = ACTIVITY_CATEGORIES.map((category) => category.value);
 const EVENT_SLUGS = EVENT_CATEGORIES.map((category) => category.value);
-
-/** Ankeret «Se resten av forsiden» på kamerakortet hopper til. */
-const REST_OF_HOME_ID = "forside";
 
 /** Seks arrangementer, fordelt på to spalter — resten ligger på arrangementssida. */
 const LIST_PREVIEW_COUNT = 6;
@@ -91,6 +89,7 @@ function Home() {
     ]);
     const canCreateNews = useAnyScopePermission(["news:create", "news:manage"]);
     const liveCamera = useLiveCamera();
+    const { mode, setMode } = useWrappedHomeMode(liveCamera?.eventId);
 
     // Bannere er beskjeder vi av og til har. Både mens de lastes og hvis de
     // feiler er riktig svar det samme: ingenting.
@@ -105,35 +104,51 @@ function Home() {
         </CatchBoundary>
     );
 
+    // Med et åpent kamera er det det medlemmet er her for: kortet er hele
+    // forsida, på én skjerm uten scrolling (`_app.tsx` låser høyden). Veien ut
+    // er «Tilbake til hovedside», som gir den vanlige forsida med en vei
+    // tilbake øverst.
+    if (liveCamera && mode === "wrapped") {
+        return (
+            <WrappedLiveCard
+                slug={liveCamera.slug}
+                title={liveCamera.title}
+                closesAt={liveCamera.closesAt}
+                imageUrl={liveCamera.imageUrl}
+                imageAlt={liveCamera.imageAlt}
+                shortcut={cameraShortcut(liveCamera)}
+                onBackToHome={() => setMode("normal")}
+            />
+        );
+    }
+
     return (
         <>
-            {/* Med et åpent kamera er det det medlemmet er her for, og kortet
-             * tar heroens plass på førsteskjermen. Bannerne flytter da ned
-             * under kortet. Ellers bor de inne i heroen, ikke foran den: de
-             * deler førsteskjermen med den i stedet for å skyve den nedover. */}
-            {liveCamera ? (
-                <>
-                    <WrappedLiveCard
-                        slug={liveCamera.slug}
-                        title={liveCamera.title}
-                        closesAt={liveCamera.closesAt}
-                        imageUrl={liveCamera.imageUrl}
-                        imageAlt={liveCamera.imageAlt}
-                        shortcut={cameraShortcut(liveCamera)}
-                        restId={REST_OF_HOME_ID}
-                    />
-                    {banners}
-                </>
-            ) : (
-                <Hero banners={banners} />
-            )}
+            {/* Bannere bor inne i heroen, ikke foran den: de deler
+             * førsteskjermen med den i stedet for å skyve den nedover. */}
+            <Hero
+                banners={
+                    <>
+                        {liveCamera ? (
+                            <div className="container mx-auto flex w-full px-4 pt-4">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setMode("wrapped")}
+                                >
+                                    <Camera />
+                                    Tilbake til wrapped
+                                </Button>
+                            </div>
+                        ) : null}
+                        {banners}
+                    </>
+                }
+            />
 
             {/* Én komponent: overskrifta står på linje med fanene og «Nytt
              * arrangement», og de styrer både lista og kalenderen. */}
-            <section
-                id={REST_OF_HOME_ID}
-                className="container mx-auto w-full scroll-mt-14 px-4 py-8"
-            >
+            <section className="container mx-auto w-full px-4 py-8">
                 <Tabs defaultValue="list">
                     <Reveal
                         render={

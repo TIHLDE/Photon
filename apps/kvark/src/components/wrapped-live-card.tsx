@@ -10,7 +10,7 @@ import {
     LiveCardMeta,
     LiveCardTitle,
 } from "@tihlde/ui/ui/live-card";
-import { ArrowDown, Camera, Images } from "lucide-react";
+import { Camera, House, Images } from "lucide-react";
 
 import { assetImageProps } from "#/lib/assets";
 import { formatOsloDateTime } from "#/lib/date";
@@ -25,12 +25,12 @@ type WrappedLiveCardProps = {
     imageUrl: string | null;
     imageAlt: string | null;
     shortcut: CameraShortcut;
-    /** Id of the section below, for «Se resten av forsiden». */
-    restId: string;
+    /** «Tilbake til hovedside»: swaps this card for the normal home page. */
+    onBackToHome: () => void;
 };
 
 /**
- * The first screen of the home page while the member has an open camera: the
+ * The whole home page while the member has an open camera: the
  * event, its banner (or the default cover when it has none) and when the
  * camera closes, with one full-width pill below the banner that says what
  * the tap does. The whole card is the link, to the camera or to Mine bilder
@@ -43,7 +43,7 @@ export function WrappedLiveCard({
     imageUrl,
     imageAlt,
     shortcut,
-    restId,
+    onBackToHome,
 }: WrappedLiveCardProps) {
     const { action, detail, kind } = shortcut;
     const closesAtTime = formatOsloDateTime(closesAt, {
@@ -52,7 +52,7 @@ export function WrappedLiveCard({
     });
 
     return (
-        <div className="container mx-auto flex w-full flex-col gap-2 px-4 pt-4 pb-2 lg:py-8">
+        <div className="container mx-auto my-auto flex w-full flex-col gap-2 px-4 py-4 lg:py-8">
             <LiveCard
                 render={
                     kind === "shoot" ? (
@@ -93,13 +93,9 @@ export function WrappedLiveCard({
                 </LiveCardAction>
             </LiveCard>
             <div className="flex justify-center">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    render={<a href={`#${restId}`} />}
-                >
-                    <ArrowDown />
-                    Se resten av forsiden
+                <Button variant="ghost" size="sm" onClick={onBackToHome}>
+                    <House />
+                    Tilbake til hovedside
                 </Button>
             </div>
         </div>
