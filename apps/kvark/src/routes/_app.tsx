@@ -21,6 +21,7 @@ import { useSiteNavItems } from "#/components/site-nav-items";
 import { WrappedCameraBanner } from "#/components/wrapped-camera-banner";
 import { useEventRulesConsent } from "#/hooks/use-event-rules-consent";
 import { useSetPassword } from "#/hooks/use-set-password";
+import { useWrappedHomeMode } from "#/hooks/use-wrapped-home-mode";
 import { cameraShortcut } from "#/lib/wrapped";
 
 export const Route = createFileRoute("/_app")({ component: AppLayout });
@@ -83,17 +84,26 @@ function AppLayout() {
         select: (matches) =>
             matches.some((match) => match.staticData.immersive === true),
     });
+    // Samme valg som forsida leser: i wrapped-modus er kortet hele sida.
+    const { mode: homeMode } = useWrappedHomeMode(openCamera?.eventId);
     // Innlogget-sjekken må stå her også: en spørring som slås av beholder
     // det den sist hentet, så uten den ville forrige medlems arrangement
     // blitt stående etter utlogging.
-    //
-    // Ikke på forsida heller: der fyller kamerakortet førsteskjermen, og to
-    // snarveier til samme kamera er én for mye.
-    const showCameraBanner =
-        isAuthenticated &&
-        !isPendingApproval &&
+    const cameraVisible = isAuthenticated && !isPendingApproval;
+    // Forsida med kamerakortet: én skjerm, uten bannere, footer og scrolling.
+    // Låsen er en klasse på denne rota og ikke på body, så den følger ruta og
+    // slippes i det man navigerer videre.
+    const wrappedHome =
+        cameraVisible &&
         openCamera !== undefined &&
-        pathname !== "/" &&
+        pathname === "/" &&
+        homeMode === "wrapped";
+    // Ikke på forsida mens kortet vises: to snarveier til samme kamera er én
+    // for mye. Den vanlige forsida har bannere igjen.
+    const showCameraBanner =
+        cameraVisible &&
+        openCamera !== undefined &&
+        !wrappedHome &&
         !pathname.startsWith(`/arrangementer/${openCamera.slug}/kamera`);
 
     if (immersive) {
@@ -109,7 +119,7 @@ function AppLayout() {
         // which only exists below lg — and is taller while the camera banner
         // sits on top of it.
         <div
-            className={`flex min-h-screen flex-col lg:pb-0 ${showCameraBanner ? "pb-32" : "pb-16"}`}
+            className={`flex flex-col lg:pb-0 ${wrappedHome ? "h-dvh overflow-hidden" : "min-h-screen"} ${showCameraBanner ? "pb-32" : "pb-16"}`}
         >
             <SiteHeader
                 navItems={navItems}
@@ -150,10 +160,12 @@ function AppLayout() {
                     />
                 </div>
             ) : null}
-            <main className="flex flex-1 flex-col">
+            <main
+                className={`flex flex-1 flex-col ${wrappedHome ? "min-h-0 overflow-hidden" : ""}`}
+            >
                 <Outlet />
             </main>
-            <SiteFooter />
+            {wrappedHome ? null : <SiteFooter />}
             <SiteBottomBar
                 navItems={navItems}
                 isAuthenticated={isAuthenticated}
