@@ -21,6 +21,13 @@ export class AuthError extends Error {
     }
 }
 
+/** The header Better Auth's captcha plugin reads a Turnstile token from. */
+function captchaHeaders(captchaToken: string | undefined) {
+    return captchaToken
+        ? { headers: { "x-captcha-response": captchaToken } }
+        : undefined;
+}
+
 export const getAuthSession = createIsomorphicFn()
     .client(async () => {
         const session = await clientAuthInstance.getSession();
@@ -527,9 +534,7 @@ export const signUpEmailMutationOptions = mutationOptions({
             email,
             password,
             ...(username ? { username } : {}),
-            fetchOptions: captchaToken
-                ? { headers: { "x-captcha-response": captchaToken } }
-                : undefined,
+            fetchOptions: captchaHeaders(captchaToken),
         });
         if (result.error) {
             throw new Error(
@@ -623,13 +628,17 @@ export const requestPasswordResetMutationOptions = mutationOptions({
     mutationFn: async ({
         email,
         redirectTo,
+        captchaToken,
     }: {
         email: string;
         redirectTo: string;
+        /** Solved Turnstile challenge; absent when the widget is turned off. */
+        captchaToken?: string;
     }) => {
         const result = await clientAuthInstance.requestPasswordReset({
             email,
             redirectTo,
+            fetchOptions: captchaHeaders(captchaToken),
         });
         if (result.error) {
             throw new Error(
@@ -643,18 +652,15 @@ export const requestPasswordResetMutationOptions = mutationOptions({
     },
 });
 
-/**
- * Mails the signed-in member a link to choose a password — Better Auth's own
- * reset flow, which creates the credential when there is none.
- *
- * The address comes from a fresh session read, never the cached one: the
- * session cookie caches the user for minutes, so right after root changes a
- * member's address the cached copy still names the old one, and the reset
- * would go to an address no account has — answered with the same 200 as a
- * real send, so the page would claim success.
- */
 export const sendPasswordSetupLinkMutationOptions = mutationOptions({
-    mutationFn: async ({ redirectTo }: { redirectTo: string }) => {
+    mutationFn: async ({
+        redirectTo,
+        captchaToken,
+    }: {
+        redirectTo: string;
+        /** Solved Turnstile challenge; absent when the widget is turned off. */
+        captchaToken?: string;
+    }) => {
         const session = await clientAuthInstance.getSession({
             query: { disableCookieCache: true },
         });
@@ -666,6 +672,7 @@ export const sendPasswordSetupLinkMutationOptions = mutationOptions({
         const result = await clientAuthInstance.requestPasswordReset({
             email,
             redirectTo,
+            fetchOptions: captchaHeaders(captchaToken),
         });
         if (result.error) {
             throw new Error(

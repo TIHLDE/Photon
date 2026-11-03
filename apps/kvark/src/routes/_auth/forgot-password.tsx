@@ -1,5 +1,7 @@
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
+import { useRef, useState } from "react";
 import { z } from "zod";
 import {
     Card,
@@ -16,7 +18,9 @@ import {
     requestPasswordResetMutationOptions,
     sanitizeRedirectTo,
 } from "#/api/auth";
+import { TurnstileChallenge } from "#/components/turnstile-challenge";
 import { formHandlers, useAppForm } from "#/hooks/form";
+import { TURNSTILE_PASSWORD_RESET_ACTION } from "#/lib/turnstile";
 
 export const Route = createFileRoute("/_auth/forgot-password")({
     component: ForgotPasswordPage,
@@ -33,6 +37,10 @@ function ForgotPasswordPage() {
     const requestResetMutation = useMutation(
         requestPasswordResetMutationOptions,
     );
+    // The form sends mail to whatever address is typed in, so in production
+    // the server wants proof of a human before it does.
+    const turnstileRef = useRef<TurnstileInstance>(undefined);
+    const [captchaToken, setCaptchaToken] = useState<string>();
 
     const form = useAppForm({
         validators: {
@@ -55,10 +63,19 @@ function ForgotPasswordPage() {
                     ? new URL(resetPath, window.location.origin).toString()
                     : resetPath;
 
-            await requestResetMutation.mutateAsync({
-                email: value.email,
-                redirectTo: resetUrl,
-            });
+            try {
+                await requestResetMutation.mutateAsync({
+                    email: value.email,
+                    redirectTo: resetUrl,
+                    captchaToken,
+                });
+            } catch (error) {
+                // A token is spent once Cloudflare has checked it, so a retry
+                // needs a fresh one.
+                setCaptchaToken(undefined);
+                turnstileRef.current?.reset();
+                throw error;
+            }
         },
     });
 
@@ -109,6 +126,12 @@ function ForgotPasswordPage() {
                             )}
                         </form.AppField>
                     </FieldGroup>
+
+                    <TurnstileChallenge
+                        action={TURNSTILE_PASSWORD_RESET_ACTION}
+                        turnstileRef={turnstileRef}
+                        onToken={setCaptchaToken}
+                    />
 
                     <form.AppForm>
                         <form.FormErrors />

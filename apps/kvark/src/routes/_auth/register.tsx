@@ -13,7 +13,7 @@ import {
 import { FieldGroup } from "@tihlde/ui/ui/field";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 
-import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 import { useRef, useState } from "react";
 
 import {
@@ -24,8 +24,8 @@ import {
 import { FeideSignInButton } from "#/components/feide-sign-in-button";
 import { OrDivider } from "#/components/or-divider";
 import { formHandlers, useAppForm } from "#/hooks/form";
-import { useTheme } from "#/integrations/theme";
-import { TURNSTILE_SIGN_UP_ACTION, TURNSTILE_SITE_KEY } from "#/lib/turnstile";
+import { TurnstileChallenge } from "#/components/turnstile-challenge";
+import { TURNSTILE_SIGN_UP_ACTION } from "#/lib/turnstile";
 
 export const Route = createFileRoute("/_auth/register")({
     component: RegisterPage,
@@ -95,7 +95,6 @@ function RegisterPage() {
      */
     const [needsUsername, setNeedsUsername] = useState(false);
 
-    const { theme, mounted } = useTheme();
     const turnstileRef = useRef<TurnstileInstance>(undefined);
     const [captchaToken, setCaptchaToken] = useState<string>();
 
@@ -272,26 +271,11 @@ function RegisterPage() {
                             </form.AppField>
                         </FieldGroup>
 
-                        {/* Waits for `mounted`: before that `theme` is a
-                            placeholder, not the one the page is shown in. */}
-                        {TURNSTILE_SITE_KEY && mounted && (
-                            <Turnstile
-                                // The widget reads its theme once, so a theme
-                                // switch has to render a new one.
-                                key={theme}
-                                ref={turnstileRef}
-                                siteKey={TURNSTILE_SITE_KEY}
-                                options={{
-                                    action: TURNSTILE_SIGN_UP_ACTION,
-                                    size: "flexible",
-                                    theme,
-                                    language: "nb",
-                                }}
-                                onSuccess={setCaptchaToken}
-                                onExpire={() => setCaptchaToken(undefined)}
-                                onError={() => setCaptchaToken(undefined)}
-                            />
-                        )}
+                        <TurnstileChallenge
+                            action={TURNSTILE_SIGN_UP_ACTION}
+                            turnstileRef={turnstileRef}
+                            onToken={setCaptchaToken}
+                        />
 
                         <form.AppForm>
                             <form.FormErrors />

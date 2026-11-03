@@ -317,8 +317,9 @@ export interface CreateAuthOptions {
     };
 
     /**
-     * Cloudflare Turnstile. When set, `/sign-up/email` over HTTP demands a
-     * solved challenge; when unset the check is off entirely.
+     * Cloudflare Turnstile. When set, `/sign-up/email` and
+     * `/request-password-reset` over HTTP demand a solved challenge; when
+     * unset the check is off entirely.
      */
     turnstile?: {
         secretKey: string;
@@ -387,32 +388,52 @@ function preferredUsernameClaim(
 }
 
 /**
- * The `action` the sign-up widget is rendered with. The server demands it, so
- * a token solved on some other widget sharing our site key is no good here.
- * Kvark's register page sends the same string.
+ * The `action` each widget is rendered with, per endpoint it guards. The
+ * server demands the matching one, so a token solved on some other widget
+ * sharing our site key — including our own other form — is no good here.
+ * Kvark sends the same strings (`apps/kvark/src/lib/turnstile.ts`).
  */
-const TURNSTILE_SIGN_UP_ACTION = "signup";
+const TURNSTILE_ACTIONS = {
+    "/sign-up/email": "signup",
+    "/request-password-reset": "passwordreset",
+} as const;
 
 /**
- * Better Auth's captcha plugin with Cloudflare Turnstile on `/sign-up/email`,
- * doing nothing when `turnstile` is unset (dev and the test suite).
+ * Better Auth's captcha plugin with Cloudflare Turnstile on the endpoints in
+ * {@link TURNSTILE_ACTIONS}, doing nothing when `turnstile` is unset (dev and
+ * the test suite).
+ *
+ * The plugin takes a single `expectedAction`, so each endpoint gets its own
+ * instance; each one ignores requests for paths it was not given, so running
+ * them in turn applies exactly one check per guarded request. They sit behind
+ * a single plugin entry because Better Auth keys plugins by id.
  *
  * Always present rather than spread in conditionally, so the plugins tuple
  * stays stable for `$Infer` — a conditional entry widens it to an array and
  * the session type loses every plugin field.
  */
 function turnstilePlugin(turnstile: CreateAuthOptions["turnstile"]) {
-    const plugin = captcha({
-        provider: "cloudflare-turnstile",
-        secretKey: turnstile?.secretKey ?? "",
-        endpoints: ["/sign-up/email"],
-        expectedAction: TURNSTILE_SIGN_UP_ACTION,
-        allowedHostnames: turnstile?.hostnames,
-    });
+    const [first, ...rest] = Object.entries(TURNSTILE_ACTIONS).map(
+        ([endpoint, action]) =>
+            captcha({
+                provider: "cloudflare-turnstile",
+                secretKey: turnstile?.secretKey ?? "",
+                endpoints: [endpoint],
+                expectedAction: action,
+                allowedHostnames: turnstile?.hostnames,
+            }),
+    );
+    if (!first) throw new Error("TURNSTILE_ACTIONS is empty");
     return {
-        ...plugin,
-        onRequest: async (...args: Parameters<typeof plugin.onRequest>) =>
-            turnstile ? plugin.onRequest(...args) : undefined,
+        ...first,
+        onRequest: async (...args: Parameters<typeof first.onRequest>) => {
+            if (!turnstile) return undefined;
+            for (const plugin of [first, ...rest]) {
+                const result = await plugin.onRequest(...args);
+                if (result) return result;
+            }
+            return undefined;
+        },
     };
 }
 
@@ -1003,9 +1024,12 @@ export function createAuth(options: CreateAuthOptions) {
             }),
 
             /**
-             * Bots were creating accounts through the public sign-up form.
-             * Only `/sign-up/email`: sign-in and password reset have not been
-             * abused, and a challenge there is friction for every member.
+             * Bots were creating accounts through the public sign-up form, and
+             * `/request-password-reset` is the other public form that sends
+             * mail to any address typed into it — left open, it lets anyone
+             * flood a member's inbox with reset links. Sign-in stays without:
+             * it sends nothing, and a challenge there is friction for every
+             * member on every login.
              *
              * The plugin hooks `onRequest`, which only sees requests arriving
              * over HTTP — so a trusted server-side `signUpEmail` (Fadderuka,

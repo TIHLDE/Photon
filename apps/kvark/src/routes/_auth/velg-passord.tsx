@@ -1,6 +1,7 @@
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { Suspense } from "react";
+import { Suspense, useRef, useState } from "react";
 import { z } from "zod";
 import { Button } from "@tihlde/ui/ui/button";
 import {
@@ -19,6 +20,8 @@ import {
     sendPasswordSetupLinkMutationOptions,
     sanitizeRedirectTo,
 } from "#/api/auth";
+import { TurnstileChallenge } from "#/components/turnstile-challenge";
+import { TURNSTILE_PASSWORD_RESET_ACTION } from "#/lib/turnstile";
 
 /**
  * The step a member lands on the first time they sign in with Feide.
@@ -81,6 +84,8 @@ function ChoosePasswordCard() {
     const { redirectTo, passwordRevoked } = Route.useSearch();
     const { data: auth } = useSuspenseQuery(authQueryOptions);
     const mutation = useMutation(sendPasswordSetupLinkMutationOptions);
+    const turnstileRef = useRef<TurnstileInstance>(undefined);
+    const [captchaToken, setCaptchaToken] = useState<string>();
 
     // Hard navigation, as after a normal login: this page is reached by a
     // redirect from the backend callback, so the router state behind it is
@@ -97,9 +102,23 @@ function ChoosePasswordCard() {
         const resetPath = `/reset-password?redirectTo=${encodeURIComponent(
             sanitizeRedirectTo(redirectTo ?? "/"),
         )}`;
-        mutation.mutate({
-            redirectTo: new URL(resetPath, window.location.origin).toString(),
-        });
+        mutation.mutate(
+            {
+                redirectTo: new URL(
+                    resetPath,
+                    window.location.origin,
+                ).toString(),
+                captchaToken,
+            },
+            {
+                // A token is spent once Cloudflare has checked it, so a retry
+                // needs a fresh one.
+                onError: () => {
+                    setCaptchaToken(undefined);
+                    turnstileRef.current?.reset();
+                },
+            },
+        );
     };
 
     if (mutation.isSuccess) {
@@ -144,6 +163,12 @@ function ChoosePasswordCard() {
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
+                <TurnstileChallenge
+                    action={TURNSTILE_PASSWORD_RESET_ACTION}
+                    turnstileRef={turnstileRef}
+                    onToken={setCaptchaToken}
+                />
+
                 {mutation.isError && (
                     <p className="text-sm text-destructive">
                         {mutation.error.message}
