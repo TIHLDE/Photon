@@ -26,7 +26,7 @@ describe("POST /api/user/register", () => {
         permissions: string[],
     ): Promise<string> {
         const owner = await ctx.utils.createTestUser();
-        await ctx.utils.giveUserPermissions(owner, ["api-keys:create"]);
+        await ctx.utils.giveUserPermissions(owner, ["api-keys:create", "root"]);
         const client = await ctx.utils.clientForUser(owner);
 
         const res = await client.api["api-keys"].$post({

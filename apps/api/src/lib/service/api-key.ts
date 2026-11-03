@@ -1,8 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
+import { hasPermission } from "@photon/auth/rbac";
 import { managedApiKey as apiKeyTable } from "@photon/db/schema";
 import { eq } from "drizzle-orm";
 import type { AppContext } from "../ctx";
-import { ValidationError } from "../errors";
+import { HTTPAppException, ValidationError } from "../errors";
 
 // ============================================================================
 // Permission Registry - Type-safe permission handling for API keys
@@ -99,6 +100,28 @@ export function validateApiKeyPermissions(
         );
     }
     return permissions as ApiKeyPermission[];
+}
+
+/**
+ * A key acts with its own permissions and nobody's identity, so whoever controls
+ * one holds them outright. Nobody gets to hand themselves more that way than the
+ * role API lets them grant. Permissions that exist only on keys (`email:send`)
+ * are held by root alone.
+ */
+export async function assertHoldsApiKeyPermissions(
+    ctx: Pick<AppContext, "db">,
+    userId: string,
+    permissions: string[],
+): Promise<void> {
+    validateApiKeyPermissions(permissions);
+
+    for (const permission of new Set(permissions)) {
+        if (!(await hasPermission(ctx, userId, permission))) {
+            throw HTTPAppException.Forbidden(
+                `You cannot manage an API key with '${permission}' — you do not hold it yourself`,
+            );
+        }
+    }
 }
 
 // ============================================================================

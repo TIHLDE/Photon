@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { assertNotAboveActor, revokeUserAccess } from "~/lib/user-access";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 
@@ -27,7 +28,7 @@ export const deleteUserRoute = route().delete(
         summary: "Delete a member permanently",
         operationId: "deleteUser",
         description:
-            "Irreversibly deletes the account along with its registrations, payments, fines, memberships and history. Prefer 'PATCH /user/{id}/status' to deactivate instead. Requires 'users:delete'.",
+            "Irreversibly deletes the account along with its registrations, payments, fines, memberships and history. Prefer 'PATCH /user/{id}/status' to deactivate instead. Requires 'users:delete', and root or a higher role to act on someone holding those.",
     })
         .response({
             statusCode: 204,
@@ -36,12 +37,15 @@ export const deleteUserRoute = route().delete(
         .badRequest({ description: "Cannot delete your own account" })
         .notFound({ description: "User not found" })
         .unauthorized()
-        .forbidden({ description: "Requires users:delete" })
+        .forbidden({
+            description: "Requires users:delete, and not outranked by the user",
+        })
         .build(),
     requireAuth,
     requireAccess({ permission: "users:delete" }),
     async (c) => {
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
         const userId = c.req.param("id");
 
         // Same guard as deactivation: there may be no one else left holding
@@ -62,6 +66,12 @@ export const deleteUserRoute = route().delete(
                 message: `User "${userId}" not found`,
             });
         }
+
+        await assertNotAboveActor(ctx, c.get("user").id, userId);
+
+        // Before the row goes: the cascade only reaches Postgres, and the copy
+        // in secondary storage would keep answering for the deleted account.
+        await revokeUserAccess(ctx, userId);
 
         await db.transaction(async (tx) => {
             // `group.fines_admin_id` is the one reference to a user that does

@@ -1,6 +1,8 @@
 import { validator } from "hono-openapi";
+import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { assertHoldsApiKeyPermissions } from "~/lib/service/api-key";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 import { createApiKeyResponseSchema, idParamSchema } from "./schema";
@@ -12,7 +14,7 @@ export const regenerateRoute = route().post(
         summary: "Regenerate API key",
         operationId: "regenerateApiKey",
         description:
-            "Generate a new key value for an existing API key. The old key will be invalidated. The new full key is returned only once and cannot be retrieved again. Requires 'api-keys:update' permission.",
+            "Generate a new key value for an existing API key. The old key will be invalidated. The new full key is returned only once and cannot be retrieved again. Requires 'api-keys:update' permission, and every permission on the key.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -21,6 +23,9 @@ export const regenerateRoute = route().post(
                 "API key regenerated successfully. The 'key' field contains the new API key and will not be shown again.",
         })
         .notFound({ description: "API key not found" })
+        .forbidden({
+            description: "Requires api-keys:update and the key's permissions",
+        })
         .build(),
     requireAuth,
     requireAccess({ permission: "api-keys:update" }),
@@ -28,6 +33,18 @@ export const regenerateRoute = route().post(
     async (c) => {
         const { apiKey: service } = c.get("service");
         const { id } = c.req.valid("param");
+
+        // The caller walks away with the new key, so this is the same as
+        // handing them its permissions.
+        const existing = await service.getById(id);
+        if (!existing) {
+            throw HTTPAppException.NotFound("API key not found");
+        }
+        await assertHoldsApiKeyPermissions(
+            c.get("ctx"),
+            c.get("user").id,
+            existing.permissions,
+        );
 
         const regeneratedApiKey = await service.regenerate(id);
 

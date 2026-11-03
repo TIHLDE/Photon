@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import {
     betterAuth,
     type BetterAuthOptions,
+    type BetterAuthPlugin,
     type DBAdapter,
 } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
@@ -437,6 +438,35 @@ function turnstilePlugin(turnstile: CreateAuthOptions["turnstile"]) {
     };
 }
 
+/**
+ * `/update-user` takes any field the username plugin declares, and a Feide login
+ * finds its account by username. Changing it would let a member take a student's
+ * NTNU username before that student's first login.
+ */
+function usernameLockPlugin() {
+    return {
+        id: "username-lock",
+        hooks: {
+            before: [
+                {
+                    matcher: (ctx: { path?: string }) =>
+                        ctx.path === "/update-user",
+                    handler: createAuthMiddleware(async (ctx) => {
+                        if (
+                            ctx.body?.username !== undefined ||
+                            ctx.body?.displayUsername !== undefined
+                        ) {
+                            throw new APIError("BAD_REQUEST", {
+                                message: "Brukernavnet kan ikke endres.",
+                            });
+                        }
+                    }),
+                },
+            ],
+        },
+    } satisfies BetterAuthPlugin;
+}
+
 export function createAuth(options: CreateAuthOptions) {
     const isProd = options.isDevMode !== true;
 
@@ -511,6 +541,7 @@ export function createAuth(options: CreateAuthOptions) {
             enabled: true,
             requireEmailVerification: true,
             autoSignIn: true,
+            revokeSessionsOnPasswordReset: true,
             async sendResetPassword({ user: u, url }) {
                 await options.services.email.sendPasswordResetMail({
                     to: u.email,
@@ -701,7 +732,9 @@ export function createAuth(options: CreateAuthOptions) {
             expiresIn: 60 * 60 * 24 * 30, // 30d
             updateAge: 60 * 60 * 24, // 1d
             storeSessionInDatabase: true,
-            cookieCache: { enabled: true, maxAge: 60 * 5 },
+            // A cached cookie answers without asking the session store, so a
+            // revoked session would keep working until the cookie expired.
+            cookieCache: { enabled: false },
         },
 
         advanced: {
@@ -926,6 +959,7 @@ export function createAuth(options: CreateAuthOptions) {
                 // Better Auth's default rejects "-", which self-registration hands out.
                 usernameValidator: (value) => /^[a-zA-Z0-9_.-]+$/.test(value),
             }),
+            usernameLockPlugin(),
             jwt({
                 // Recommended by better-auth docs when using with OAuth Provider plugin
                 disableSettingJwtHeader: true,

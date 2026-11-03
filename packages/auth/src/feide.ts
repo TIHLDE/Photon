@@ -2045,6 +2045,12 @@ function pickStartYears(groups: FeideGroup[]): Map<ProgramCode, number> {
 }
 
 /**
+ * A Feide id from NTNU. The local part is only unique within one institution,
+ * so `feide:ola@annen.no` says nothing about the NTNU member `ola`.
+ */
+const NTNU_FEIDE_ID = /^feide:([^@]+)@ntnu\.no$/i;
+
+/**
  * Extracts the NTNU username from a Feide profile: `feide:mathstr@ntnu.no`
  * becomes `mathstr`. Identical to the rule Lepton used when it set `user_id`,
  * which is what the migration stored as `username` — the whole point is that
@@ -2054,10 +2060,8 @@ export function feideUsernameOf(profile: {
     "https://n.feide.no/claims/userid_sec"?: string[];
 }): string | null {
     for (const id of profile["https://n.feide.no/claims/userid_sec"] ?? []) {
-        if (id.startsWith("feide:")) {
-            const local = id.slice("feide:".length).split("@")[0];
-            if (local) return local.toLowerCase();
-        }
+        const local = NTNU_FEIDE_ID.exec(id)?.[1];
+        if (local) return local.toLowerCase();
     }
     return null;
 }
@@ -2090,7 +2094,11 @@ function describeUserIdClaims(profile: Record<string, unknown>): string {
             const raw = profile[key];
             if (raw === undefined) return `${key}: absent`;
             if (Array.isArray(raw)) {
-                const prefixes = raw.map((v) => `${String(v).split(":")[0]}:…`);
+                const prefixes = raw.map((v) => {
+                    const [prefix, rest = ""] = String(v).split(":");
+                    const organisation = rest.split("@")[1];
+                    return `${prefix}:…${organisation ? `@${organisation}` : ""}`;
+                });
                 return `${key}: array(${raw.length}) [${prefixes.join(", ")}]`;
             }
             if (typeof raw === "string") {
@@ -2473,6 +2481,45 @@ async function backfillUsername(
 }
 
 /**
+ * What a Feide profile means to Better Auth: which account it should land on,
+ * and whether its address counts as proven. Exported for testing.
+ */
+export async function feideUserInfoFromProfile(
+    db: NodePgDatabase<DbRelations>,
+    profile: OpenIDProfile,
+): Promise<OAuth2UserInfo> {
+    /**
+     * `userid_sec` is the only thing that ties a first-time Feide login to
+     * a migrated member, and Feide drops it silently when the `userid`
+     * scope is not released — no error, no empty field, just an absent
+     * key. {@link resolveMigratedEmail} then returns null and Better Auth
+     * mints a brand-new empty account while the member's history sits on
+     * the old one. That failure is invisible in the data: the only trace
+     * is a user row with no username, which reads exactly like a member
+     * who never had one. Name the claims we actually received so one
+     * login is enough to tell a missing scope from a missing member.
+     */
+    const ntnuUsername = feideUsernameOf(profile);
+    if (!ntnuUsername) {
+        console.warn(
+            `Feide userinfo carried no usable userid_sec claim, so a migrated account cannot be matched by username. Claims received: ${Object.keys(profile).join(", ")}. ${describeUserIdClaims(profile)}`,
+        );
+    }
+
+    const migratedEmail = await resolveMigratedEmail(db, profile);
+
+    return {
+        id: profile.sub,
+        name: profile.name,
+        email: migratedEmail ?? profile.email,
+        // Better Auth links this login to any account holding the address when
+        // this is true, and only NTNU's directory speaks for addresses here.
+        emailVerified: ntnuUsername !== null,
+        image: undefined,
+    };
+}
+
+/**
  * Creates the profile fetcher for the Feide provider.
  *
  * Needs the database because a first-time login may belong to a migrated
@@ -2485,32 +2532,8 @@ const createGetUserInfo =
             throw new Error("No access token provided");
         }
 
-        const profile = await fetchFeideProfile(tokens.accessToken);
-
-        /**
-         * `userid_sec` is the only thing that ties a first-time Feide login to
-         * a migrated member, and Feide drops it silently when the `userid`
-         * scope is not released — no error, no empty field, just an absent
-         * key. {@link resolveMigratedEmail} then returns null and Better Auth
-         * mints a brand-new empty account while the member's history sits on
-         * the old one. That failure is invisible in the data: the only trace
-         * is a user row with no username, which reads exactly like a member
-         * who never had one. Name the claims we actually received so one
-         * login is enough to tell a missing scope from a missing member.
-         */
-        if (!feideUsernameOf(profile)) {
-            console.warn(
-                `Feide userinfo carried no usable userid_sec claim, so a migrated account cannot be matched by username. Claims received: ${Object.keys(profile).join(", ")}. ${describeUserIdClaims(profile)}`,
-            );
-        }
-
-        const migratedEmail = await resolveMigratedEmail(db, profile);
-
-        return {
-            id: profile.sub,
-            name: profile.name,
-            email: migratedEmail ?? profile.email,
-            emailVerified: true,
-            image: undefined,
-        };
+        return feideUserInfoFromProfile(
+            db,
+            await fetchFeideProfile(tokens.accessToken),
+        );
     };
