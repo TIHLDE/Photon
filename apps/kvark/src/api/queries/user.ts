@@ -206,7 +206,7 @@ export const updateUserStatusMutation = mutationOptions({
  */
 export const updateUserEmailMutation = mutationOptions({
     mutationFn: ({ userId, email }: { userId: string; email: string }) =>
-        apiClient.patch("/api/user/{id}/email", {
+        apiClient.patch("/api/admin/users/{id}/email", {
             params: { id: userId },
             json: { email },
         }),

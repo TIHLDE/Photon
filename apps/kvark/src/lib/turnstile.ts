@@ -9,7 +9,8 @@ export const TURNSTILE_SITE_KEY = import.meta.env.PROD
     : undefined;
 
 /**
- * The `action` the sign-up widget is rendered with. Must match
- * `TURNSTILE_SIGN_UP_ACTION` in @photon/auth, which the server demands.
+ * The `action` each widget is rendered with. Must match `TURNSTILE_ACTIONS`
+ * in @photon/auth, which the server demands per endpoint.
  */
 export const TURNSTILE_SIGN_UP_ACTION = "signup";
+export const TURNSTILE_PASSWORD_RESET_ACTION = "passwordreset";

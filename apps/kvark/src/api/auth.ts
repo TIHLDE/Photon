@@ -21,6 +21,13 @@ export class AuthError extends Error {
     }
 }
 
+/** The header Better Auth's captcha plugin reads a Turnstile token from. */
+function captchaHeaders(captchaToken: string | undefined) {
+    return captchaToken
+        ? { headers: { "x-captcha-response": captchaToken } }
+        : undefined;
+}
+
 export const getAuthSession = createIsomorphicFn()
     .client(async () => {
         const session = await clientAuthInstance.getSession();
@@ -527,9 +534,7 @@ export const signUpEmailMutationOptions = mutationOptions({
             email,
             password,
             ...(username ? { username } : {}),
-            fetchOptions: captchaToken
-                ? { headers: { "x-captcha-response": captchaToken } }
-                : undefined,
+            fetchOptions: captchaHeaders(captchaToken),
         });
         if (result.error) {
             throw new Error(
@@ -623,13 +628,17 @@ export const requestPasswordResetMutationOptions = mutationOptions({
     mutationFn: async ({
         email,
         redirectTo,
+        captchaToken,
     }: {
         email: string;
         redirectTo: string;
+        /** Solved Turnstile challenge; absent when the widget is turned off. */
+        captchaToken?: string;
     }) => {
         const result = await clientAuthInstance.requestPasswordReset({
             email,
             redirectTo,
+            fetchOptions: captchaHeaders(captchaToken),
         });
         if (result.error) {
             throw new Error(
@@ -640,5 +649,39 @@ export const requestPasswordResetMutationOptions = mutationOptions({
             );
         }
         return result.data;
+    },
+});
+
+export const sendPasswordSetupLinkMutationOptions = mutationOptions({
+    mutationFn: async ({
+        redirectTo,
+        captchaToken,
+    }: {
+        redirectTo: string;
+        /** Solved Turnstile challenge; absent when the widget is turned off. */
+        captchaToken?: string;
+    }) => {
+        const session = await clientAuthInstance.getSession({
+            query: { disableCookieCache: true },
+        });
+        const email = session.data?.user.email;
+        if (!email) {
+            throw new Error("Fant ikke e-postadressen din. Logg inn på nytt.");
+        }
+
+        const result = await clientAuthInstance.requestPasswordReset({
+            email,
+            redirectTo,
+            fetchOptions: captchaHeaders(captchaToken),
+        });
+        if (result.error) {
+            throw new Error(
+                authErrorMessage(
+                    result.error,
+                    "Kunne ikke sende lenke akkurat nå.",
+                ),
+            );
+        }
+        return { email };
     },
 });

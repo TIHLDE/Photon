@@ -8,13 +8,14 @@ import {
 } from "~/test/config/integration";
 
 /**
- * Cloudflare Turnstile on the public sign-up.
+ * Cloudflare Turnstile on the public forms that create accounts or send mail:
+ * sign-up and password reset.
  *
  * The suite's shared context runs without a secret key, so the check is off
  * everywhere else; these tests build an auth instance with one. Cloudflare is
  * never reached — `fetch` is stubbed with what siteverify would answer.
  */
-describe("sign-up with Turnstile", () => {
+describe("Turnstile", () => {
     afterEach(() => {
         vi.unstubAllGlobals();
     });
@@ -91,6 +92,26 @@ describe("sign-up with Turnstile", () => {
                     name: "Kari Nordmann",
                     email,
                     password: "hemmeligpassord",
+                }),
+            }),
+        );
+    }
+
+    async function requestReset(
+        auth: ReturnType<typeof createAuth>,
+        email: string,
+        token?: string,
+    ) {
+        return await auth.handler(
+            new Request(`${env.ROOT_URL}/api/auth/request-password-reset`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(token ? { "x-captcha-response": token } : {}),
+                },
+                body: JSON.stringify({
+                    email,
+                    redirectTo: `${env.WEBSITE_URL}/reset-password`,
                 }),
             }),
         );
@@ -207,4 +228,81 @@ describe("sign-up with Turnstile", () => {
             expect(await userExists(ctx, "olanor@stud.ntnu.no")).toBe(true);
         },
     );
+
+    describe("password reset", () => {
+        integrationTest(
+            "refuses a reset request without a token",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const fetchMock = stubSiteverify(true);
+                const sendReset = vi.spyOn(ctx.email, "sendPasswordResetMail");
+
+                const res = await requestReset(
+                    authWithTurnstile(ctx),
+                    user.email,
+                );
+
+                expect(res.status).toBe(400);
+                expect(fetchMock).not.toHaveBeenCalled();
+                expect(sendReset).not.toHaveBeenCalled();
+            },
+        );
+
+        integrationTest(
+            "refuses a token solved on the sign-up widget",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                stubSiteverify(true, { action: "signup" });
+                const sendReset = vi.spyOn(ctx.email, "sendPasswordResetMail");
+
+                const res = await requestReset(
+                    authWithTurnstile(ctx),
+                    user.email,
+                    "signup-token",
+                );
+
+                expect(res.status).toBe(403);
+                expect(sendReset).not.toHaveBeenCalled();
+            },
+        );
+
+        integrationTest(
+            "sends the link for a solved challenge",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const fetchMock = stubSiteverify(true, {
+                    action: "passwordreset",
+                });
+                const sendReset = vi.spyOn(ctx.email, "sendPasswordResetMail");
+
+                const res = await requestReset(
+                    authWithTurnstile(ctx),
+                    user.email,
+                    "solved-token",
+                );
+
+                expect(res.status).toBe(200);
+                expect(fetchMock).toHaveBeenCalledOnce();
+                expect(sendReset).toHaveBeenCalledWith(
+                    expect.objectContaining({ to: user.email }),
+                );
+            },
+        );
+
+        integrationTest(
+            "a reset token does not open sign-up",
+            async ({ ctx }) => {
+                stubSiteverify(true, { action: "passwordreset" });
+
+                const res = await signUp(
+                    authWithTurnstile(ctx),
+                    "bot@example.com",
+                    "reset-token",
+                );
+
+                expect(res.status).toBe(403);
+                expect(await userExists(ctx, "bot@example.com")).toBe(false);
+            },
+        );
+    });
 });
