@@ -43,6 +43,32 @@ describe("self-registration and approval", () => {
     }
 
     integrationTest(
+        "signing up with a taken address leaves the existing member alone",
+        async ({ ctx }) => {
+            const member = await ctx.utils.createTestUser();
+            await ctx.db
+                .update(schema.user)
+                .set({ approvalStatus: null })
+                .where(eq(schema.user.id, member.id));
+
+            const res = await signUp(ctx, {
+                name: "Noen Andre",
+                email: member.email,
+                password: "hemmeligpassord",
+                username: "noenandre",
+            });
+
+            expect(res.status).toBeLessThan(500);
+            const row = await userByEmail(ctx, member.email);
+            expect(row?.approvalStatus).toBeNull();
+
+            const client = await ctx.utils.clientForUser(member);
+            expect((await client.api.groups.mine.$get()).status).toBe(200);
+        },
+        500_000,
+    );
+
+    integrationTest(
         "a private address is accepted, and the account waits for approval",
         async ({ ctx }) => {
             const res = await signUp(ctx, {
