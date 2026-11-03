@@ -2,7 +2,7 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { claimPrivateAssetUrls } from "~/lib/asset";
+import { assertMayUseAssetUrls, claimPrivateAssetUrls } from "~/lib/asset";
 import { releaseReplacedAssetUrls } from "~/lib/asset/release";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -186,6 +186,13 @@ export const updateFineRoute = route().patch(
         }
 
         if (body.image !== undefined) {
+            await assertMayUseAssetUrls(
+                ctx,
+                user.id,
+                [body.image],
+                [fine.image],
+            );
+
             // Uploaded pictures are staged until a row claims them, and the
             // one a fine points at is private: it shows who was fined for what.
             await claimPrivateAssetUrls(bucket, [body.image]);
