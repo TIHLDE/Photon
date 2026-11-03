@@ -100,6 +100,18 @@ const envSchema = z
             .default("4000")
             .transform((val) => Number(val)),
         WEBHOOK_URL: z.string().optional().default(""),
+        /**
+         * How many reverse proxies we own sit in front of the API (nginx = 1).
+         * Each appends the address it received the request from to
+         * X-Forwarded-For, so the client is that many entries from the
+         * right. Anything further left was sent by the client and is not
+         * trusted. Raise this if a CDN is ever put in front of nginx.
+         */
+        TRUSTED_PROXY_COUNT: z
+            .string()
+            .default("1")
+            .transform((val) => Number(val))
+            .pipe(z.number().int().min(0)),
         NODE_ENV: z
             .enum(["production", "development", "test"])
             .default("development"),
