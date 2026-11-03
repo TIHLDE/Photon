@@ -849,7 +849,7 @@ export interface paths {
         post?: never;
         /**
          * Delete an event
-         * @description Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' — globally or for the arranging group — can delete any event they hold it for. This action is irreversible and will remove all associated data, including registrations and feedback.
+         * @description Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' — globally or for the arranging group — can delete any event they hold it for. This action is irreversible and will remove all associated data, including registrations and feedback. An event with paid or refunded payments cannot be deleted.
          */
         delete: operations["deleteEvent"];
         options?: never;
@@ -877,7 +877,7 @@ export interface paths {
         post: operations["createEventRegistration"];
         /**
          * Unregister from event
-         * @description Remove the authenticated user's registration from an event. If the event can cause strikes and the user unregisters from a confirmed spot after the cancellation deadline, they are given 1 strike. Registrations with a completed payment cannot be cancelled by the user.
+         * @description Remove the authenticated user's registration from an event. If the event can cause strikes and the user unregisters from a confirmed spot after the cancellation deadline, they are given 1 strike. Registrations with a completed payment cannot be cancelled by the user, and a spot cannot be given up after the event has ended.
          */
         delete: operations["deleteEventRegistration"];
         options?: never;
@@ -1080,7 +1080,7 @@ export interface paths {
         put?: never;
         /**
          * Vipps payment webhook
-         * @description Webhook endpoint for Vipps to notify about payment status changes. Updates payment record based on Vipps payment state.
+         * @description Webhook endpoint for Vipps to notify about payment status changes. Updates payment record based on Vipps payment state. A reference no payment holds, such as one replaced by a restarted checkout, is acknowledged without changing anything.
          */
         post: operations["handlePaymentWebhook"];
         delete?: never;
@@ -8774,6 +8774,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description The event has paid or refunded payments */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     listEventRegistrations: {
@@ -8901,6 +8908,13 @@ export interface operations {
         responses: {
             /** @description OK */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request - The spot is paid for, or the event has ended and the user holds a spot on it */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9498,13 +9512,6 @@ export interface operations {
             };
             /** @description Invalid webhook signature */
             401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not Found - Payment not found */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };

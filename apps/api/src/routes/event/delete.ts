@@ -1,5 +1,6 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
+import { HTTPException } from "hono/http-exception";
 import { releaseAssetUrls } from "~/lib/asset/release";
 import { describeRoute } from "~/lib/openapi";
 import { requireEventAccess } from "~/lib/event/access";
@@ -15,7 +16,7 @@ export const deleteRoute = route().delete(
         summary: "Delete an event",
         operationId: "deleteEvent",
         description:
-            "Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' — globally or for the arranging group — can delete any event they hold it for. This action is irreversible and will remove all associated data, including registrations and feedback.",
+            "Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' — globally or for the arranging group — can delete any event they hold it for. This action is irreversible and will remove all associated data, including registrations and feedback. An event with paid or refunded payments cannot be deleted.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -27,6 +28,10 @@ export const deleteRoute = route().delete(
                 "You must be the event creator or have events:delete permission",
         })
         .notFound({ description: "Event with the specified ID does not exist" })
+        .response({
+            statusCode: 409,
+            description: "The event has paid or refunded payments",
+        })
         .build(),
     requireAuth,
     requireEventAccess({
@@ -48,6 +53,20 @@ export const deleteRoute = route().delete(
 
         if (!event) {
             return c.json({ message: "Event not found" }, 404);
+        }
+
+        // Payment rows cascade with the event, so this is the last chance to
+        // keep the record of money that has moved.
+        const movedMoney = await db.query.eventPayment.findFirst({
+            columns: { id: true },
+            where: { eventId, status: { in: ["paid", "refunded"] } },
+        });
+
+        if (movedMoney) {
+            throw new HTTPException(409, {
+                message:
+                    "Arrangementet har betalinger og kan ikke slettes. Betalinger og refusjoner må bevares.",
+            });
         }
 
         // Delete the event and all associated data in a transaction

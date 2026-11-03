@@ -1,4 +1,5 @@
 import { schema } from "@photon/db";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, vi } from "vitest";
 import * as vipps from "~/lib/vipps";
 import type { IntegrationTestContext } from "~/test/config/integration";
@@ -164,6 +165,129 @@ describe("Restarting an abandoned Vipps checkout", () => {
 
             expect(res.status).toBe(409);
             expect(vi.mocked(vipps.createPayment)).not.toHaveBeenCalled();
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "still restarts when the cancelled checkout's webhook lands first",
+        async ({ ctx }) => {
+            const { event, user, payment } = await seedStartedCheckout(ctx);
+            mockVippsState("CREATED");
+            // Cancelling the old checkout makes Vipps report it, and that
+            // webhook marks the row failed before the new checkout is attached.
+            vi.mocked(vipps.cancelPayment).mockImplementationOnce(async () => {
+                await ctx.db
+                    .update(schema.eventPayment)
+                    .set({ status: "failed" })
+                    .where(eq(schema.eventPayment.id, payment.id));
+            });
+            vi.mocked(vipps.createPayment).mockResolvedValue(
+                "https://vipps.test/checkout-2",
+            );
+
+            const client = await ctx.utils.clientForUser(user);
+            const res = await client.api.event[":eventId"].payment.$post({
+                param: { eventId: event.id },
+                json: {
+                    returnUrl: "https://tihlde.org/arrangementer/test",
+                    userFlow: "WEB_REDIRECT",
+                },
+            });
+
+            expect(res.status).toBe(201);
+            const row = await ctx.db.query.eventPayment.findFirst({
+                where: { id: payment.id },
+            });
+            expect(row?.providerPaymentId).toBe(
+                vi.mocked(vipps.createPayment).mock.calls[0]?.[0].reference,
+            );
+            // The new checkout is live, so the row must be payable again.
+            expect(row?.status).toBe("pending");
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "refuses when an unstarted obligation expired during the Vipps call",
+        async ({ ctx }) => {
+            const { event, user, payment } = await seedStartedCheckout(ctx);
+            await ctx.db
+                .update(schema.eventPayment)
+                .set({ provider: null, providerPaymentId: null })
+                .where(eq(schema.eventPayment.id, payment.id));
+            // The deadline passes while Vipps creates the checkout, and the
+            // expiry marks the obligation failed and gives the spot away.
+            vi.mocked(vipps.createPayment).mockImplementationOnce(async () => {
+                await ctx.db
+                    .update(schema.eventPayment)
+                    .set({ status: "failed" })
+                    .where(eq(schema.eventPayment.id, payment.id));
+                return "https://vipps.test/too-late";
+            });
+
+            const client = await ctx.utils.clientForUser(user);
+            const res = await client.api.event[":eventId"].payment.$post({
+                param: { eventId: event.id },
+                json: {
+                    returnUrl: "https://tihlde.org/arrangementer/test",
+                    userFlow: "WEB_REDIRECT",
+                },
+            });
+
+            expect(res.status).toBe(409);
+            const row = await ctx.db.query.eventPayment.findFirst({
+                where: { id: payment.id },
+            });
+            expect(row?.status).toBe("failed");
+            expect(row?.providerPaymentId).toBeNull();
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "two presses at once leave one payable checkout",
+        async ({ ctx }) => {
+            const { event, user, payment } = await seedStartedCheckout(ctx);
+            mockVippsState("CREATED");
+
+            // Hold both requests inside the Vipps call until both have read
+            // the row, so they race to attach their checkout to it.
+            let calls = 0;
+            let release: () => void = () => {};
+            const bothInside = new Promise<void>((resolve) => {
+                release = resolve;
+            });
+            vi.mocked(vipps.createPayment).mockImplementation(async () => {
+                calls += 1;
+                const url = `https://vipps.test/checkout-${calls}`;
+                if (calls === 2) release();
+                await bothInside;
+                return url;
+            });
+
+            const client = await ctx.utils.clientForUser(user);
+            const press = () =>
+                client.api.event[":eventId"].payment.$post({
+                    param: { eventId: event.id },
+                    json: {
+                        returnUrl: "https://tihlde.org/arrangementer/test",
+                        userFlow: "WEB_REDIRECT",
+                    },
+                });
+
+            const responses = await Promise.all([press(), press()]);
+
+            expect(responses.map((r) => r.status).sort()).toEqual([201, 409]);
+            const rows = await ctx.db.query.eventPayment.findMany({
+                where: { eventId: event.id },
+            });
+            expect(rows).toHaveLength(1);
+            expect(rows[0]?.id).toBe(payment.id);
+            const references = vi
+                .mocked(vipps.createPayment)
+                .mock.calls.map((call) => call[0].reference);
+            expect(references).toContain(rows[0]?.providerPaymentId);
         },
         500_000,
     );

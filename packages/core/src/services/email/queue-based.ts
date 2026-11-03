@@ -7,6 +7,7 @@ import {
 import {
     EMAIL_QUEUE_NAME,
     EMAIL_SEND_RATE_MS,
+    type QueueAddOptions,
     type QueueJob,
     type QueueService,
     type WorkerLike,
@@ -16,6 +17,18 @@ export type EmailQueueJobData = {
     options: SendOptions;
     content: ContentOptions;
 };
+
+/**
+ * Six tries over about half an hour rides out a mail server restart. The job
+ * body is the whole email, password reset links included, so it must not stay
+ * in Redis once the queue is done with it.
+ */
+export const EMAIL_JOB_OPTIONS = {
+    attempts: 6,
+    backoff: { type: "exponential", delay: 60_000 },
+    removeOnComplete: true,
+    removeOnFail: true,
+} satisfies QueueAddOptions;
 
 export class QueuedEmailService extends BaseEmailService {
     constructor(private readonly queue: QueueService) {
@@ -28,10 +41,7 @@ export class QueuedEmailService extends BaseEmailService {
     ): Promise<void> {
         await this.queue
             .getQueue<EmailQueueJobData>(EMAIL_QUEUE_NAME)
-            .add("send-email", {
-                options,
-                content,
-            });
+            .add("send-email", { options, content }, EMAIL_JOB_OPTIONS);
     }
 
     /** The whole batch onto the queue in one round trip. */
@@ -44,6 +54,7 @@ export class QueuedEmailService extends BaseEmailService {
             emails.map((email) => ({
                 name: "send-email",
                 data: { options: email.options, content: email.content },
+                opts: EMAIL_JOB_OPTIONS,
             })),
         );
     }

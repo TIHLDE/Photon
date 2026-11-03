@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { flagPayment } from "~/lib/event/payment";
 import { describeRoute } from "~/lib/openapi";
@@ -36,7 +36,7 @@ export const paymentWebhookRoute = route().post(
         summary: "Vipps payment webhook",
         operationId: "handlePaymentWebhook",
         description:
-            "Webhook endpoint for Vipps to notify about payment status changes. Updates payment record based on Vipps payment state.",
+            "Webhook endpoint for Vipps to notify about payment status changes. Updates payment record based on Vipps payment state. A reference no payment holds, such as one replaced by a restarted checkout, is acknowledged without changing anything.",
     })
         .response({
             statusCode: 200,
@@ -47,7 +47,6 @@ export const paymentWebhookRoute = route().post(
             statusCode: 401,
             description: "Invalid webhook signature",
         })
-        .notFound({ description: "Payment not found" })
         .build(),
     async (c) => {
         // Read the raw body BEFORE parsing: the signature is computed over the
@@ -80,9 +79,14 @@ export const paymentWebhookRoute = route().post(
         });
 
         if (!payment) {
-            throw new HTTPException(409, {
-                message: `Payment not found for reference: ${reference}`,
-            });
+            // A restarted checkout replaces the reference on its row, and Vipps
+            // then reports the cancelled session. Only `CREATED` sessions are
+            // replaced, so there is no money on it. Acknowledge it so Vipps
+            // stops retrying.
+            console.warn(
+                `Webhook for reference ${reference}, which no payment holds`,
+            );
+            return c.json({ message: "No payment holds this reference" }, 200);
         }
 
         try {
@@ -145,7 +149,11 @@ export const paymentWebhookRoute = route().post(
             // Update payment record using id. `receivedPaymentAt` is only
             // stamped once, so redelivered webhooks never move the recorded
             // payment time.
-            await db
+            //
+            // The reference is part of the condition: a restart can attach a
+            // new checkout to this row during the Vipps call above, and the
+            // cancelled checkout's `failed` must not overwrite the live one.
+            const [updated] = await db
                 .update(schema.eventPayment)
                 .set({
                     status: newStatus,
@@ -153,7 +161,20 @@ export const paymentWebhookRoute = route().post(
                         payment.receivedPaymentAt ??
                         (paymentReceived ? new Date() : null),
                 })
-                .where(eq(schema.eventPayment.id, payment.id));
+                .where(
+                    and(
+                        eq(schema.eventPayment.id, payment.id),
+                        eq(schema.eventPayment.providerPaymentId, reference),
+                    ),
+                )
+                .returning({ id: schema.eventPayment.id });
+
+            if (!updated) {
+                return c.json(
+                    { message: "No payment holds this reference" },
+                    200,
+                );
+            }
 
             // Safety net: money can land on a registration that is gone — a
             // checkout completed just after the deadline reclaimed the spot, or

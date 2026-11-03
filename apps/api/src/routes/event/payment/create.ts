@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { type DbSchema, schema } from "@photon/db";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
@@ -157,9 +157,12 @@ export const createPaymentRoute = route().post(
         // Generate unique reference for Vipps
         const vippsReference = randomUUID();
 
+        let checkoutUrl: string;
+        let payment: InferSelectModel<DbSchema["eventPayment"]> | undefined;
+
         try {
             // Initiate Vipps payment first
-            const checkoutUrl = await createPayment({
+            checkoutUrl = await createPayment({
                 amount: event.priceMinor,
                 currency: "NOK",
                 reference: vippsReference,
@@ -168,10 +171,17 @@ export const createPaymentRoute = route().post(
                 description: buildPaymentDescription(event.title, user.name),
             });
 
-            let payment: InferSelectModel<DbSchema["eventPayment"]> | undefined;
-
             if (obligation) {
-                // Attach the Vipps checkout to the existing obligation.
+                // Attach the Vipps checkout to the existing obligation, but only
+                // if the row still carries the reference we read. Two presses at
+                // once would otherwise both hand out a URL, and money paid on the
+                // overwritten reference would have no payment to land on.
+                //
+                // On a restart, cancelling the old checkout makes Vipps send a
+                // webhook that can mark the row `failed` while the new checkout
+                // is being created. The new checkout is live, so the row goes
+                // back to `pending`. An unstarted obligation must still be
+                // `pending`: if its deadline passed meanwhile, the spot is gone.
                 [payment] = await db
                     .update(schema.eventPayment)
                     .set({
@@ -179,8 +189,24 @@ export const createPaymentRoute = route().post(
                         providerPaymentId: vippsReference,
                         amountMinor: event.priceMinor,
                         currency: "NOK",
+                        status: "pending",
                     })
-                    .where(eq(schema.eventPayment.id, obligation.id))
+                    .where(
+                        and(
+                            eq(schema.eventPayment.id, obligation.id),
+                            obligation.providerPaymentId
+                                ? eq(
+                                      schema.eventPayment.providerPaymentId,
+                                      obligation.providerPaymentId,
+                                  )
+                                : and(
+                                      isNull(
+                                          schema.eventPayment.providerPaymentId,
+                                      ),
+                                      eq(schema.eventPayment.status, "pending"),
+                                  ),
+                        ),
+                    )
                     .returning();
             } else {
                 const newPayment: InferInsertModel<DbSchema["eventPayment"]> = {
@@ -199,27 +225,29 @@ export const createPaymentRoute = route().post(
                     .values(newPayment)
                     .returning();
             }
-
-            if (!payment) {
-                throw new HTTPException(500, {
-                    message: "Failed to create payment record",
-                });
-            }
-
-            return c.json(
-                {
-                    eventId: payment.eventId,
-                    userId: payment.userId,
-                    checkoutUrl,
-                    amount: event.priceMinor,
-                    currency: "NOK",
-                },
-                201,
-            );
         } catch (error) {
             throw new HTTPException(500, {
                 message: `Failed to initiate Vipps payment: ${error instanceof Error ? error.message : "Unknown error"}`,
             });
         }
+
+        if (!payment) {
+            // Another request attached its checkout to the row first. The URL
+            // from this one never leaves, so its session simply expires at Vipps.
+            throw new HTTPException(409, {
+                message: "A pending payment already exists for this event",
+            });
+        }
+
+        return c.json(
+            {
+                eventId: payment.eventId,
+                userId: payment.userId,
+                checkoutUrl,
+                amount: event.priceMinor,
+                currency: "NOK",
+            },
+            201,
+        );
     },
 );

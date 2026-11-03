@@ -559,4 +559,31 @@ describe("Registration Resolver", () => {
             500_000,
         );
     });
+
+    describe("Seats held by checked-in members", () => {
+        integrationTest(
+            "a checked-in member keeps their seat from a new registration",
+            async ({ ctx }) => {
+                await ctx.utils.setupEventCategories();
+                const event = await ctx.utils.createTestEvent({ capacity: 1 });
+                const attended = await ctx.utils.createTestUser();
+                const late = await ctx.utils.createTestUser();
+                await ctx.db.insert(schema.eventRegistration).values({
+                    eventId: event.id,
+                    userId: attended.id,
+                    status: "attended",
+                });
+                await ctx.utils.createPendingRegistration(event.id, late.id);
+
+                await resolveRegistrationsForEvent(event.id, ctx);
+
+                const registration =
+                    await ctx.db.query.eventRegistration.findFirst({
+                        where: { eventId: event.id, userId: late.id },
+                    });
+                expect(registration?.status).toBe("waitlisted");
+            },
+            500_000,
+        );
+    });
 });

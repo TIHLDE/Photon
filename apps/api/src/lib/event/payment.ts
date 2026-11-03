@@ -5,11 +5,12 @@ import {
     type QueueJob,
     type WorkerLike,
 } from "@photon/core/services/queue";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { AppContext } from "../ctx";
 import { env } from "../env";
 import { sendNotification } from "../notification";
 import { capturePayment, getPaymentDetails, refundPayment } from "../vipps";
+import { DEFAULT_STATUSES as SEAT_HOLDING_STATUSES } from "./access";
 import { calculateWaitlistPositions } from "./priority";
 import { eventEnforcesStrikes } from "./strikes";
 
@@ -389,11 +390,20 @@ export async function reverseEventPayment(
         .set({ status: "refunded" })
         .where(eq(schema.eventPayment.id, payment.id));
 
+    // The money has left. A notice that fails must not reach the caller, which
+    // would put the row back to `paid` and erase the record of the refund.
     if (options.notification) {
-        await sendNotification(
-            { userId: payment.userId, ...options.notification },
-            ctx,
-        );
+        try {
+            await sendNotification(
+                { userId: payment.userId, ...options.notification },
+                ctx,
+            );
+        } catch (error) {
+            console.error(
+                `Payment ${payment.id} was refunded, but the member could not be notified:`,
+                error,
+            );
+        }
     }
 
     return refundable;
@@ -442,7 +452,10 @@ async function promoteFromWaitlistWithLock(
             .where(
                 and(
                     eq(schema.eventRegistration.eventId, event.id),
-                    eq(schema.eventRegistration.status, "registered"),
+                    inArray(
+                        schema.eventRegistration.status,
+                        SEAT_HOLDING_STATUSES,
+                    ),
                 ),
             );
 
