@@ -178,24 +178,28 @@ function StoryCoverMeta({ className, ...props }: React.ComponentProps<"p">) {
     );
 }
 
-/** "Sveip opp" at the bottom of the cover, nudging upwards. */
+/**
+ * "Sveip opp" at the bottom of the cover, nudging upwards. A real button, so
+ * a mouse or a keyboard can take the step a finger takes by swiping.
+ */
 function StorySwipeHint({
     className,
     children,
     ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"button">) {
     return (
-        <div
+        <button
+            type="button"
             data-slot="story-swipe-hint"
             className={cn(
-                "absolute inset-x-0 bottom-[max(env(safe-area-inset-bottom),1.5rem)] z-10 flex flex-col items-center gap-1 text-xs text-white/80 motion-safe:animate-bounce",
+                "absolute inset-x-0 bottom-[max(env(safe-area-inset-bottom),1.5rem)] z-10 mx-auto flex w-fit cursor-pointer flex-col items-center gap-1 rounded-full px-4 py-2 text-xs text-white/80 outline-none focus-visible:ring-3 focus-visible:ring-white/60 motion-safe:animate-bounce",
                 className,
             )}
             {...props}
         >
             <ChevronUp className="size-5" aria-hidden />
             {children}
-        </div>
+        </button>
     );
 }
 

@@ -71,6 +71,7 @@ import { Route as AdminArrangementerEventIdRouteImport } from './routes/admin/ar
 import { Route as AdminArrangementerNyRouteImport } from './routes/admin/arrangementer.ny'
 import { Route as AppArrangementerSlugTitleRouteImport } from './routes/_app/arrangementer.$slug.$title'
 import { Route as AppArrangementerSlugKameraRouteImport } from './routes/_app/arrangementer.$slug_.kamera'
+import { Route as AppArrangementerSlugStoryRouteImport } from './routes/_app/arrangementer.$slug_.story'
 import { Route as AppGalleriSlugTitleRouteImport } from './routes/_app/galleri.$slug.$title'
 import { Route as AppGrupperSlugSectionRouteImport } from './routes/_app/grupper.$slug.$section'
 import { Route as AppNyheterSlugTitleRouteImport } from './routes/_app/nyheter.$slug.$title'
@@ -394,6 +395,12 @@ const AppArrangementerSlugKameraRoute =
     path: '/arrangementer/$slug/kamera',
     getParentRoute: () => AppRoute,
   } as any)
+const AppArrangementerSlugStoryRoute =
+  AppArrangementerSlugStoryRouteImport.update({
+    id: '/arrangementer/$slug_/story',
+    path: '/arrangementer/$slug/story',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppGalleriSlugTitleRoute = AppGalleriSlugTitleRouteImport.update({
   id: '/$title',
   path: '/$title',
@@ -519,6 +526,7 @@ export interface FileRoutesByFullPath {
   '/admin/arrangementer/': typeof AdminArrangementerIndexRoute
   '/arrangementer/$slug/$title': typeof AppArrangementerSlugTitleRoute
   '/arrangementer/$slug/kamera': typeof AppArrangementerSlugKameraRoute
+  '/arrangementer/$slug/story': typeof AppArrangementerSlugStoryRoute
   '/galleri/$slug/$title': typeof AppGalleriSlugTitleRoute
   '/grupper/$slug/$section': typeof AppGrupperSlugSectionRoute
   '/nyheter/$slug/$title': typeof AppNyheterSlugTitleRoute
@@ -589,6 +597,7 @@ export interface FileRoutesByTo {
   '/admin/arrangementer': typeof AdminArrangementerIndexRoute
   '/arrangementer/$slug/$title': typeof AppArrangementerSlugTitleRoute
   '/arrangementer/$slug/kamera': typeof AppArrangementerSlugKameraRoute
+  '/arrangementer/$slug/story': typeof AppArrangementerSlugStoryRoute
   '/galleri/$slug/$title': typeof AppGalleriSlugTitleRoute
   '/grupper/$slug/$section': typeof AppGrupperSlugSectionRoute
   '/nyheter/$slug/$title': typeof AppNyheterSlugTitleRoute
@@ -666,6 +675,7 @@ export interface FileRoutesById {
   '/admin/arrangementer/': typeof AdminArrangementerIndexRoute
   '/_app/arrangementer/$slug/$title': typeof AppArrangementerSlugTitleRoute
   '/_app/arrangementer/$slug_/kamera': typeof AppArrangementerSlugKameraRoute
+  '/_app/arrangementer/$slug_/story': typeof AppArrangementerSlugStoryRoute
   '/_app/galleri/$slug/$title': typeof AppGalleriSlugTitleRoute
   '/_app/grupper/$slug/$section': typeof AppGrupperSlugSectionRoute
   '/_app/nyheter/$slug/$title': typeof AppNyheterSlugTitleRoute
@@ -740,6 +750,7 @@ export interface FileRouteTypes {
     | '/admin/arrangementer/'
     | '/arrangementer/$slug/$title'
     | '/arrangementer/$slug/kamera'
+    | '/arrangementer/$slug/story'
     | '/galleri/$slug/$title'
     | '/grupper/$slug/$section'
     | '/nyheter/$slug/$title'
@@ -810,6 +821,7 @@ export interface FileRouteTypes {
     | '/admin/arrangementer'
     | '/arrangementer/$slug/$title'
     | '/arrangementer/$slug/kamera'
+    | '/arrangementer/$slug/story'
     | '/galleri/$slug/$title'
     | '/grupper/$slug/$section'
     | '/nyheter/$slug/$title'
@@ -886,6 +898,7 @@ export interface FileRouteTypes {
     | '/admin/arrangementer/'
     | '/_app/arrangementer/$slug/$title'
     | '/_app/arrangementer/$slug_/kamera'
+    | '/_app/arrangementer/$slug_/story'
     | '/_app/galleri/$slug/$title'
     | '/_app/grupper/$slug/$section'
     | '/_app/nyheter/$slug/$title'
@@ -1343,6 +1356,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppArrangementerSlugKameraRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/arrangementer/$slug_/story': {
+      id: '/_app/arrangementer/$slug_/story'
+      path: '/arrangementer/$slug/story'
+      fullPath: '/arrangementer/$slug/story'
+      preLoaderRoute: typeof AppArrangementerSlugStoryRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/galleri/$slug/$title': {
       id: '/_app/galleri/$slug/$title'
       path: '/$title'
@@ -1528,6 +1548,7 @@ interface AppRouteChildren {
   AppKontraktIndexRoute: typeof AppKontraktIndexRoute
   AppNyheterIndexRoute: typeof AppNyheterIndexRoute
   AppArrangementerSlugKameraRoute: typeof AppArrangementerSlugKameraRoute
+  AppArrangementerSlugStoryRoute: typeof AppArrangementerSlugStoryRoute
   AppSporreskjemaIdSvarRoute: typeof AppSporreskjemaIdSvarRoute
   AppArrangementerSlugKameraMineRoute: typeof AppArrangementerSlugKameraMineRoute
   AppArrangementerSlugKameraMinePhotoIdRoute: typeof AppArrangementerSlugKameraMinePhotoIdRoute
@@ -1562,6 +1583,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppKontraktIndexRoute: AppKontraktIndexRoute,
   AppNyheterIndexRoute: AppNyheterIndexRoute,
   AppArrangementerSlugKameraRoute: AppArrangementerSlugKameraRoute,
+  AppArrangementerSlugStoryRoute: AppArrangementerSlugStoryRoute,
   AppSporreskjemaIdSvarRoute: AppSporreskjemaIdSvarRoute,
   AppArrangementerSlugKameraMineRoute: AppArrangementerSlugKameraMineRoute,
   AppArrangementerSlugKameraMinePhotoIdRoute:
