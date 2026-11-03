@@ -3,6 +3,13 @@
 import { useRender } from "@base-ui/react/use-render";
 import * as React from "react";
 
+import {
+    FLASH_SAMPLE_SIZE_PX,
+    FLASH_SETTLE_MS,
+    meanLuminance,
+    shouldFireFlash,
+    type CameraFlashMode,
+} from "#/lib/camera-flash";
 import { createDoubleTapDetector } from "#/lib/double-tap";
 import { cn } from "#/lib/utils";
 
@@ -14,19 +21,25 @@ export type CameraViewfinderState =
 
 export type CameraFacingMode = "environment" | "user";
 
+export type { CameraFlashMode };
+
 export type CameraViewfinderHandle = {
-    /** The current frame as a JPEG, at the camera's own resolution. */
+    /**
+     * The current frame as a JPEG, at the camera's own resolution. Lights the
+     * shot first when the flash mode asks for it, so it takes a moment.
+     */
     capture: () => Promise<File>;
 };
 
 type CameraViewfinderProps = Omit<React.ComponentProps<"div">, "ref"> & {
     ref?: React.Ref<CameraViewfinderHandle>;
     facingMode?: CameraFacingMode;
-    /** Turn the torch on. Ignored where the camera has none. */
-    torch?: boolean;
+    /**
+     * When `capture()` lights the shot: always, never, or when the preview is
+     * dark. The back camera's torch where it has one, else a white screen.
+     */
+    flash?: CameraFlashMode;
     onStateChange?: (state: CameraViewfinderState) => void;
-    /** Whether the running camera has a torch; false until it is live. */
-    onTorchSupportChange?: (supported: boolean) => void;
     /**
      * Two quick taps on the preview itself. Only fires while the camera is
      * live; taps on buttons and links over the preview never count.
@@ -40,6 +53,55 @@ const INTERACTIVE_SELECTOR = "button, a, [role=button]";
 const JPEG_QUALITY = 0.9;
 
 type TorchCapabilities = MediaTrackCapabilities & { torch?: boolean };
+
+const sleep = (ms: number) =>
+    new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+function setTorch(track: MediaStreamTrack, on: boolean) {
+    return track.applyConstraints({
+        advanced: [{ torch: on } as MediaTrackConstraintSet],
+    });
+}
+
+/** The video's current frame as a JPEG file. */
+async function grabFrame(video: HTMLVideoElement): Promise<File> {
+    // The frame's own size, not the CSS box: the preview is cropped to fill
+    // the screen, the photo is not.
+    if (video.videoWidth === 0) throw new Error("Kameraet er ikke klart ennå.");
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Fikk ikke tatt bildet.");
+    // Never mirrored, even when the preview of the front camera is: the photo
+    // is what the camera saw.
+    context.drawImage(video, 0, 0);
+    const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/jpeg", JPEG_QUALITY),
+    );
+    if (!blob) throw new Error("Fikk ikke tatt bildet.");
+    return new File([blob], `wrapped-${Date.now()}.jpg`, {
+        type: "image/jpeg",
+    });
+}
+
+/** Mean luminance of the live preview, 0 to 1; 0 (dark) if it can't be read. */
+function previewLuminance(video: HTMLVideoElement): number {
+    try {
+        const canvas = document.createElement("canvas");
+        canvas.width = FLASH_SAMPLE_SIZE_PX;
+        canvas.height = FLASH_SAMPLE_SIZE_PX;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        if (!context) throw new Error("No 2d context");
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        return meanLuminance(
+            context.getImageData(0, 0, canvas.width, canvas.height).data,
+        );
+    } catch (error) {
+        console.error("Could not measure the light, assuming dark", error);
+        return 0;
+    }
+}
 
 function stopStream(stream: MediaStream) {
     for (const track of stream.getTracks()) track.stop();
@@ -65,9 +127,8 @@ function useLatest<T>(value: T) {
 function CameraViewfinder({
     ref,
     facingMode = "environment",
-    torch = false,
+    flash = "auto",
     onStateChange,
-    onTorchSupportChange,
     onDoubleTap,
     onPointerDown,
     onPointerUp,
@@ -82,7 +143,9 @@ function CameraViewfinder({
         React.useState<CameraViewfinderState>("requesting");
     const [visible, setVisible] = React.useState(true);
     const onStateRef = useLatest(onStateChange);
-    const onTorchRef = useLatest(onTorchSupportChange);
+    const flashRef = useLatest(flash);
+    const facingModeRef = useLatest(facingMode);
+    const [screenFlash, setScreenFlash] = React.useState(false);
     const onDoubleTapRef = useLatest(onDoubleTap);
     const stateRef = useLatest(state);
     const [doubleTap] = React.useState(createDoubleTapDetector);
@@ -134,11 +197,6 @@ function CameraViewfinder({
                         );
                     });
                 }
-                const track = stream.getVideoTracks()[0];
-                const capabilities = track?.getCapabilities?.() as
-                    | TorchCapabilities
-                    | undefined;
-                onTorchRef.current?.(capabilities?.torch === true);
                 setState("live");
             })
             .catch((error: unknown) => {
@@ -157,56 +215,72 @@ function CameraViewfinder({
             if (streamRef.current) stopStream(streamRef.current);
             streamRef.current = null;
             if (videoRef.current) videoRef.current.srcObject = null;
-            onTorchRef.current?.(false);
         };
-    }, [visible, facingMode, onTorchRef, doubleTap]);
-
-    // Applied again whenever the camera comes back live: a restarted track
-    // starts with the torch off.
-    React.useEffect(() => {
-        if (state !== "live") return;
-        const track = streamRef.current?.getVideoTracks()[0];
-        const capabilities = track?.getCapabilities?.() as
-            | TorchCapabilities
-            | undefined;
-        if (!track || capabilities?.torch !== true) return;
-        track
-            .applyConstraints({
-                advanced: [{ torch } as MediaTrackConstraintSet],
-            })
-            .catch((error: unknown) => {
-                console.error("Could not switch the torch", error);
-            });
-    }, [torch, state]);
+    }, [visible, facingMode, doubleTap]);
 
     React.useImperativeHandle(
         ref,
         () => ({
             async capture() {
                 const video = videoRef.current;
-                // The frame's own size, not the CSS box: the preview is
-                // cropped to fill the screen, the photo is not.
                 if (!video || video.videoWidth === 0) {
                     throw new Error("Kameraet er ikke klart ennå.");
                 }
-                const canvas = document.createElement("canvas");
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                const context = canvas.getContext("2d");
-                if (!context) throw new Error("Fikk ikke tatt bildet.");
-                // Never mirrored, even when the preview of the front camera
-                // is: the photo is what the camera saw.
-                context.drawImage(video, 0, 0);
-                const blob = await new Promise<Blob | null>((resolve) =>
-                    canvas.toBlob(resolve, "image/jpeg", JPEG_QUALITY),
+                const mode = flashRef.current;
+                const fire = shouldFireFlash(
+                    mode,
+                    mode === "auto" ? previewLuminance(video) : 0,
                 );
-                if (!blob) throw new Error("Fikk ikke tatt bildet.");
-                return new File([blob], `wrapped-${Date.now()}.jpg`, {
-                    type: "image/jpeg",
-                });
+                if (!fire) return grabFrame(video);
+
+                // A torch only on the back camera, and only where the track
+                // reports one (iOS Safari never does). Anything else, or a
+                // torch that refuses, lights the shot with the screen.
+                const track = streamRef.current?.getVideoTracks()[0];
+                const capabilities = track?.getCapabilities?.() as
+                    | TorchCapabilities
+                    | undefined;
+                if (
+                    track &&
+                    facingModeRef.current === "environment" &&
+                    capabilities?.torch === true
+                ) {
+                    let lit = false;
+                    try {
+                        try {
+                            await setTorch(track, true);
+                            lit = true;
+                        } catch (error) {
+                            console.warn(
+                                "Could not switch the torch on, using the screen flash",
+                                error,
+                            );
+                        }
+                        if (lit) {
+                            await sleep(FLASH_SETTLE_MS);
+                            return await grabFrame(video);
+                        }
+                    } finally {
+                        // Never leave the preview lit, whatever happened.
+                        await setTorch(track, false).catch((error: unknown) => {
+                            console.error(
+                                "Could not switch the torch off",
+                                error,
+                            );
+                        });
+                    }
+                }
+
+                setScreenFlash(true);
+                try {
+                    await sleep(FLASH_SETTLE_MS);
+                    return await grabFrame(video);
+                } finally {
+                    setScreenFlash(false);
+                }
             },
         }),
-        [],
+        [flashRef, facingModeRef],
     );
 
     function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
@@ -266,6 +340,7 @@ function CameraViewfinder({
                 )}
             />
             {children}
+            {screenFlash ? <CameraScreenFlash /> : null}
         </div>
     );
 }
@@ -364,6 +439,28 @@ function CameraFlash({ className, ...props }: React.ComponentProps<"div">) {
             aria-hidden
             className={cn(
                 "pointer-events-none absolute inset-0 z-10 bg-white animate-out fade-out fill-mode-forwards duration-200 motion-reduce:hidden",
+                className,
+            )}
+            {...props}
+        />
+    );
+}
+
+/**
+ * A full-screen white light for a shot where the phone has no torch: the
+ * front camera, or iOS. It is a light, not an animation, so reduced motion
+ * keeps it. It never takes taps.
+ */
+function CameraScreenFlash({
+    className,
+    ...props
+}: React.ComponentProps<"div">) {
+    return (
+        <div
+            data-slot="camera-screen-flash"
+            aria-hidden
+            className={cn(
+                "pointer-events-none fixed inset-0 z-50 bg-white",
                 className,
             )}
             {...props}
@@ -475,6 +572,7 @@ export {
     CameraReceiptDescription,
     CameraReceiptTitle,
     CameraScreen,
+    CameraScreenFlash,
     CameraShutter,
     CameraTitle,
     CameraViewfinder,
