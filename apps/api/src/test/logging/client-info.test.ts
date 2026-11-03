@@ -115,6 +115,20 @@ describe("getClientInfo", () => {
         expect(info.ip).toBe("203.0.113.7");
     });
 
+    test("detects a bot marker past the logged length", async () => {
+        const userAgent = `${CHROME_MAC}${" ".repeat(600)} Googlebot/2.1`;
+        const app = new Hono().get("/", (c) => c.json(getClientInfo(c, 1)));
+        const response = await app.request("/", {
+            headers: { "user-agent": userAgent },
+        });
+        const info = (await response.json()) as {
+            userAgent?: string;
+            ua: { isBot: boolean };
+        };
+        expect(info.ua.isBot).toBe(true);
+        expect(info.userAgent).toHaveLength(512);
+    });
+
     test("logs no IP when neither is available", async () => {
         expect((await infoFor({}, 1)).ip).toBeUndefined();
     });

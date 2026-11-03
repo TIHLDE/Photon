@@ -112,12 +112,14 @@ export function getClientInfo(
     trustedProxies: number = env.TRUSTED_PROXY_COUNT,
 ): ClientInfo {
     const forwardedFor = c.req.header("x-forwarded-for");
-    const userAgent = truncate(c.req.header("user-agent"));
+    // Classify the whole header and only shorten what gets logged: a bot
+    // marker past the cut would otherwise go unnoticed.
+    const userAgent = c.req.header("user-agent");
     const ua = parseUserAgent(userAgent);
 
     return {
         ip: clientIpFromChain(forwardedFor, trustedProxies) ?? socketAddress(c),
-        ...(ua.isBot ? { userAgent } : {}),
+        ...(ua.isBot ? { userAgent: truncate(userAgent) } : {}),
         ua,
     };
 }
