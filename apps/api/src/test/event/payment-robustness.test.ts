@@ -79,6 +79,7 @@ async function holdSpot(
         userId,
         status: "registered",
         createdAt,
+        updatedAt: createdAt,
     });
 }
 
@@ -320,7 +321,12 @@ describe("sweep of failed obligations", () => {
         {
             name: "a failed row from before the current registration",
             seed: async (ctx, eventId, userId) => {
-                await holdSpot(ctx, eventId, userId, new Date());
+                await holdSpot(
+                    ctx,
+                    eventId,
+                    userId,
+                    new Date(Date.now() - HOUR),
+                );
                 await addPayment(ctx, overdueFailed(eventId, userId));
             },
         },
@@ -389,19 +395,43 @@ describe("sweep of failed obligations", () => {
     );
 
     integrationTest(
-        "leaves an event that has started alone",
+        "reclaims a deadline that was capped at the event's start",
+        async ({ ctx }) => {
+            const event = await paidEvent(ctx);
+            const member = await ctx.utils.createTestUser();
+            await holdSpot(ctx, event.id, member.id);
+            const start = new Date(Date.now() - 60_000);
+            await addPayment(ctx, {
+                ...overdueFailed(event.id, member.id),
+                expiresAt: start,
+            });
+            await ctx.db
+                .update(schema.event)
+                .set({ start, end: new Date(Date.now() + HOUR) })
+                .where(eq(schema.event.id, event.id));
+
+            expect(await enforceExpiredPaymentDeadlines(ctx)).toBe(1);
+            expect(await registrationStatus(ctx, event.id, member.id)).toBe(
+                "cancelled",
+            );
+        },
+    );
+
+    integrationTest(
+        "leaves a seat an organiser corrected after the deadline alone",
         async ({ ctx }) => {
             const event = await paidEvent(ctx);
             const member = await ctx.utils.createTestUser();
             await holdSpot(ctx, event.id, member.id);
             await addPayment(ctx, overdueFailed(event.id, member.id));
             await ctx.db
-                .update(schema.event)
-                .set({
-                    start: new Date(Date.now() - HOUR),
-                    end: new Date(Date.now() + HOUR),
-                })
-                .where(eq(schema.event.id, event.id));
+                .update(schema.eventRegistration)
+                .set({ status: "attended" })
+                .where(eq(schema.eventRegistration.userId, member.id));
+            await ctx.db
+                .update(schema.eventRegistration)
+                .set({ status: "registered" })
+                .where(eq(schema.eventRegistration.userId, member.id));
 
             expect(await enforceExpiredPaymentDeadlines(ctx)).toBe(0);
             expect(await registrationStatus(ctx, event.id, member.id)).toBe(

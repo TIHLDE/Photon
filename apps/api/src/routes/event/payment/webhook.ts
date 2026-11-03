@@ -190,6 +190,11 @@ export const paymentWebhookRoute = route().post(
                 .returning({ id: schema.eventPayment.id });
 
             if (!updated) {
+                if (paymentReceived) {
+                    console.error(
+                        `Vipps reports money on reference ${reference}, but payment ${payment.id} no longer holds it.`,
+                    );
+                }
                 return c.json(
                     { message: "No payment holds this reference" },
                     200,

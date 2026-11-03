@@ -32,10 +32,11 @@ const SWEEP_BATCH_SIZE = 100;
  * stående til fristen. Har køen mistet timeren, er det ingen som tar den.
  *
  * Avgrensningene hindrer at runden tar en plass den ikke skal ta. Fristen må ha
- * tilhørt denne påmeldingen, arrangementet må være betalt og ikke startet (ved
- * døra er plassen arrangørens sak), og bare den nyeste raden med egen frist
- * teller. En betaling stopper runden, og det gjør også en refusjon på denne
- * påmeldingen: refunderer en arrangør uten å frigjøre plassen, skal den stå.
+ * tilhørt denne påmeldingen, arrangementet må være betalt og ikke over, og bare
+ * den nyeste raden med egen frist teller. En betaling stopper runden, og det
+ * gjør også en refusjon på denne påmeldingen: refunderer en arrangør uten å
+ * frigjøre plassen, skal den stå. Er påmeldingen endret etter fristen, har noen
+ * tatt stilling til den, for eksempel en arrangør som retter en innsjekking.
  */
 async function findReclaimableFailedObligations(
     ctx: AppContext,
@@ -59,6 +60,7 @@ async function findReclaimableFailedObligations(
                 eq(registration.userId, payment.userId),
                 eq(registration.status, "registered"),
                 gte(payment.createdAt, registration.createdAt),
+                lte(registration.updatedAt, payment.expiresAt),
             ),
         )
         .innerJoin(
@@ -66,7 +68,7 @@ async function findReclaimableFailedObligations(
             and(
                 eq(schema.event.id, payment.eventId),
                 eq(schema.event.isPaidEvent, true),
-                gt(schema.event.start, now),
+                gt(schema.event.end, now),
             ),
         )
         .where(
