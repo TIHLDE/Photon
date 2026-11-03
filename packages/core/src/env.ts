@@ -100,6 +100,23 @@ const envSchema = z
             .default("4000")
             .transform((val) => Number(val)),
         WEBHOOK_URL: z.string().optional().default(""),
+        /**
+         * How many reverse proxies we own sit in front of the API (nginx = 1).
+         * Each appends the address it received the request from to
+         * X-Forwarded-For, so the client is that many entries from the
+         * right. Anything further left was sent by the client and is not
+         * trusted. Raise this if a CDN is ever put in front of nginx.
+         *
+         * This assumes every request comes through those proxies. A request
+         * that reaches port 4000 directly has its own X-Forwarded-For
+         * trusted, so the API must only listen where nginx can reach it
+         * (BINDING_IP_ADDRESS stays on loopback), or be set to 0.
+         */
+        TRUSTED_PROXY_COUNT: z
+            .string()
+            .default("1")
+            .transform((val) => Number(val))
+            .pipe(z.number().int().min(0)),
         NODE_ENV: z
             .enum(["production", "development", "test"])
             .default("development"),

@@ -32,6 +32,19 @@ const forwardServerCookies: BeforeRequestHook = ({ request }) => {
     }
 };
 
+// Name SSR requests so the API's request logs can tell them apart from
+// scripts. Without this they arrive as the runtime's default User-Agent
+// ("node"), the same as any home-made scraper.
+const setServerUserAgent = createIsomorphicFn()
+    .client((_request: Request) => {})
+    .server((request: Request) => {
+        request.headers.set("user-agent", "kvark-ssr");
+    });
+
+const nameServerRequests: BeforeRequestHook = ({ request }) => {
+    setServerUserAgent(request);
+};
+
 // -- Operation type extraction --
 
 type OpOf<
@@ -146,6 +159,7 @@ class Client<Paths extends object> {
                 ...kyHooks,
                 beforeRequest: [
                     forwardServerCookies,
+                    nameServerRequests,
                     ...(kyHooks.beforeRequest ?? []),
                 ],
                 beforeError: beforeHTTPError ?? [],

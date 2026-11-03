@@ -3,6 +3,7 @@ import { routePath } from "hono/route";
 import { every } from "hono/combine";
 import { createMiddleware } from "hono/factory";
 import { requestId as requestIdMiddleware } from "hono/request-id";
+import { getClientInfo } from "~/lib/client-info";
 import { logger as rootLogger, type LoggerType } from "~/lib/logger";
 export type { LoggerType } from "~/lib/logger";
 
@@ -22,6 +23,7 @@ export const pinoLoggerMiddleware = every(
                 url,
                 route,
             },
+            client: getClientInfo(c),
         });
         c.set("logger", logger);
 
