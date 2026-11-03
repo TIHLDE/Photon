@@ -190,7 +190,7 @@ export const groupDetailSchema = Schema(
     groupSchema.extend({
         leaderTitle: z.string().nullable().meta({
             description:
-                "What this group calls its leader, e.g. «President» or «Innovasjonsminister». Reconciled with the linked Hovedstyret verv, so both pages name the leader the same. Null means the plain «Leder».",
+                "What this group calls its leader, e.g. «President» or «Innovasjonsminister». Set per group on its own; a verv in Hovedstyret has its own name. Null means the plain «Leder».",
         }),
         archivable: z.boolean().meta({
             description:

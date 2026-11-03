@@ -1174,6 +1174,205 @@ describe("groups", () => {
             500_000,
         );
 
+        describe("changing the type", () => {
+            integrationTest(
+                "a group leader may not change the type",
+                async ({ ctx }) => {
+                    const leader = await ctx.utils.createTestUser();
+                    const client = await ctx.utils.clientForUser(leader);
+                    const group = await ctx.utils.createTestGroup({
+                        slug: "leder-bytter-type",
+                        type: "committee",
+                    });
+                    await ctx.db.insert(schema.groupMembership).values({
+                        userId: leader.id,
+                        groupSlug: group.slug,
+                        role: "leader",
+                    });
+
+                    const response = await client.api.groups[":slug"].$patch({
+                        param: { slug: group.slug },
+                        json: { type: "subgroup", name: "Sneaky" },
+                    });
+                    expect(response.status).toBe(403);
+
+                    // Nothing in the request was written, the name included.
+                    const after = await ctx.db.query.group.findFirst({
+                        where: { slug: group.slug },
+                    });
+                    expect(after?.type).toBe("committee");
+                    expect(after?.name).not.toBe("Sneaky");
+
+                    // The rest of the form still works for the leader, and
+                    // re-sending the current type (in any case) is no change.
+                    const rename = await client.api.groups[":slug"].$patch({
+                        param: { slug: group.slug },
+                        json: { type: "COMMITTEE", name: "Renamed" },
+                    });
+                    expect(rename.status).toBe(200);
+
+                    // …and the matching type is not written back.
+                    const renamed = await ctx.db.query.group.findFirst({
+                        where: { slug: group.slug },
+                    });
+                    expect(renamed?.name).toBe("Renamed");
+                    expect(renamed?.type).toBe("committee");
+                },
+                500_000,
+            );
+
+            integrationTest(
+                "groups:update scoped to the group is not enough",
+                async ({ ctx }) => {
+                    const user = await ctx.utils.createTestUser();
+                    const client = await ctx.utils.clientForUser(user);
+                    const group = await ctx.utils.createTestGroup({
+                        slug: "scoped-bytter-type",
+                        type: "committee",
+                    });
+                    await ctx.db.insert(schema.groupMembership).values({
+                        userId: user.id,
+                        groupSlug: group.slug,
+                        role: "member",
+                    });
+                    const [position] = await ctx.db
+                        .insert(schema.groupPosition)
+                        .values({
+                            groupSlug: group.slug,
+                            name: "Nestleder",
+                            permissions: ["groups:update"],
+                            scope: "group",
+                        })
+                        .returning();
+                    await ctx.db.insert(schema.groupPositionHolder).values({
+                        positionId: position!.id,
+                        userId: user.id,
+                    });
+
+                    // The scoped grant does open the route…
+                    const rename = await client.api.groups[":slug"].$patch({
+                        param: { slug: group.slug },
+                        json: { name: "Renamed" },
+                    });
+                    expect(rename.status).toBe(200);
+
+                    // …but not the type.
+                    const response = await client.api.groups[":slug"].$patch({
+                        param: { slug: group.slug },
+                        json: { type: "subgroup" },
+                    });
+                    expect(response.status).toBe(403);
+                },
+                500_000,
+            );
+
+            integrationTest(
+                "a global groups:manage may update the group and its type",
+                async ({ ctx }) => {
+                    const admin = await ctx.utils.createTestUser();
+                    await ctx.utils.giveUserPermissions(admin, [
+                        "groups:manage",
+                    ]);
+                    const client = await ctx.utils.clientForUser(admin);
+                    const group = await ctx.utils.createTestGroup({
+                        slug: "manage-bytter-type",
+                        type: "committee",
+                    });
+
+                    const response = await client.api.groups[":slug"].$patch({
+                        param: { slug: group.slug },
+                        json: { name: "Renamed", type: "interestgroup" },
+                    });
+                    expect(response.status).toBe(200);
+
+                    const after = await ctx.db.query.group.findFirst({
+                        where: { slug: group.slug },
+                    });
+                    expect(after?.type).toBe("interestgroup");
+                },
+                500_000,
+            );
+
+            integrationTest(
+                "a subtype is only kept on interest groups",
+                async ({ ctx }) => {
+                    const leader = await ctx.utils.createTestUser();
+                    const client = await ctx.utils.clientForUser(leader);
+                    const group = await ctx.utils.createTestGroup({
+                        slug: "subtype-gruppe",
+                        type: "interestgroup",
+                    });
+                    await ctx.db.insert(schema.groupMembership).values({
+                        userId: leader.id,
+                        groupSlug: group.slug,
+                        role: "leader",
+                    });
+
+                    // The leader sets the subtype without touching the type.
+                    const set = await client.api.groups[":slug"].$patch({
+                        param: { slug: group.slug },
+                        json: { subtype: "IDRETTSGRUPPE" },
+                    });
+                    expect(set.status).toBe(200);
+                    expect(
+                        (
+                            await ctx.db.query.group.findFirst({
+                                where: { slug: group.slug },
+                            })
+                        )?.subtype,
+                    ).toBe("IDRETTSGRUPPE");
+
+                    // An administrator makes it a committee; a form opened
+                    // before that still sends the subtype, which is dropped.
+                    await ctx.db
+                        .update(schema.group)
+                        .set({ type: "committee", subtype: null })
+                        .where(eq(schema.group.slug, group.slug));
+
+                    const stale = await client.api.groups[":slug"].$patch({
+                        param: { slug: group.slug },
+                        json: { subtype: "IDRETTSGRUPPE" },
+                    });
+                    expect(stale.status).toBe(200);
+                    expect(
+                        (
+                            await ctx.db.query.group.findFirst({
+                                where: { slug: group.slug },
+                            })
+                        )?.subtype,
+                    ).toBeNull();
+                },
+                500_000,
+            );
+
+            integrationTest(
+                "a global groups:update may change the type",
+                async ({ ctx }) => {
+                    const admin = await ctx.utils.createTestUser();
+                    await ctx.utils.giveUserPermissions(admin, [
+                        "groups:update",
+                    ]);
+                    const client = await ctx.utils.clientForUser(admin);
+                    const group = await ctx.utils.createTestGroup({
+                        slug: "admin-bytter-type",
+                        type: "committee",
+                    });
+
+                    const response = await client.api.groups[":slug"].$patch({
+                        param: { slug: group.slug },
+                        json: { type: "subgroup" },
+                    });
+                    expect(response.status).toBe(200);
+
+                    const after = await ctx.db.query.group.findFirst({
+                        where: { slug: group.slug },
+                    });
+                    expect(after?.type).toBe("subgroup");
+                },
+                500_000,
+            );
+        });
+
         integrationTest(
             "returns 404 when updating non-existent group",
             async ({ ctx }) => {

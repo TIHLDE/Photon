@@ -164,10 +164,6 @@ export const positionSchema = Schema(
         permissions: z.array(z.string()),
         scope: z.enum(["group", "global"]),
         globalPermissions: z.array(z.string()),
-        linkedGroupSlug: z.string().nullable().meta({
-            description:
-                "If set, this position is held automatically by the leader of the given subgroup and cannot be assigned manually.",
-        }),
         holders: z.array(positionHolderSchema).meta({
             description:
                 "Everyone holding this position. A verv may be shared by several people (issue #646); empty when nobody holds it.",

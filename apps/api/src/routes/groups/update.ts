@@ -5,7 +5,6 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { promoteAssetUrls } from "~/lib/asset";
 import { releaseReplacedAssetUrls } from "~/lib/asset/release";
-import { isEditableGroupType } from "~/lib/group";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -20,7 +19,7 @@ export const updateRoute = route().patch(
         summary: "Partially update group",
         operationId: "updateGroup",
         description:
-            "Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' permission (globally or scoped to this group). Changing `type` or `subtype` requires 'groups:manage' across all of TIHLDE.",
+            "Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' or 'groups:manage' (globally or scoped to this group). Changing the group's type additionally requires 'groups:update' or 'groups:manage' globally.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -30,7 +29,7 @@ export const updateRoute = route().patch(
         .badRequest({ description: "Invalid input" })
         .forbidden({
             description:
-                "Not a group leader or missing groups:update permission",
+                "Not a group leader or missing groups:update/groups:manage, or changing the type without a global groups:update/groups:manage",
         })
         .notFound({
             description: "Group with the specified slug does not exist",
@@ -38,7 +37,7 @@ export const updateRoute = route().patch(
         .build(),
     requireAuth,
     requireAccess({
-        permission: "groups:update",
+        permission: ["groups:update", "groups:manage"],
         scope: (c) => `group:${c.req.param("slug")}`,
         ownership: { param: "slug", check: isGroupLeader },
     }),
@@ -47,6 +46,7 @@ export const updateRoute = route().patch(
         const body = c.req.valid("json");
         const slug = c.req.param("slug");
         const ctx = c.get("ctx");
+        const user = c.get("user");
         const { db, bucket } = ctx;
 
         // Check if group exists
@@ -63,6 +63,48 @@ export const updateRoute = route().patch(
             });
         }
 
+        // The type decides what the group is: who may lead it, whether it
+        // takes join requests, whether Feide keeps its roster and what
+        // registration priority it gives. That is the organisation's call, not
+        // the group's own, so a leader — or a grant scoped to this group —
+        // may not change it.
+        //
+        // Without that access the type is never written, not even when it
+        // matches: the comparison is against a read that may be stale by the
+        // time the update runs, and re-writing it would undo a type change an
+        // administrator made in between.
+        const { type, subtype, ...fields } = body;
+        const writeType =
+            type !== undefined &&
+            (await hasPermission(ctx, user.id, [
+                "groups:update",
+                "groups:manage",
+            ]));
+        if (
+            type !== undefined &&
+            !writeType &&
+            type.toLowerCase() !== previousGroup.type.toLowerCase()
+        ) {
+            throw new HTTPException(403, {
+                message:
+                    "Changing a group's type requires the global groups:update or groups:manage permission",
+            });
+        }
+
+        // Only interest groups have a subtype. A form opened before an
+        // administrator changed the type can still send the old one, so it is
+        // judged against the type the group ends up with.
+        const effectiveType = writeType ? type : previousGroup.type;
+        const writeSubtype =
+            subtype === undefined
+                ? {}
+                : {
+                      subtype:
+                          effectiveType.toLowerCase() === "interestgroup"
+                              ? subtype
+                              : null,
+                  };
+
         // Validate fines admin if provided
         if (body.finesAdminId !== undefined && body.finesAdminId !== null) {
             const finesAdmin = await db
@@ -78,46 +120,12 @@ export const updateRoute = route().patch(
             }
         }
 
-        const { type, ...rest } = body;
-        const typeChanged =
-            type !== undefined &&
-            type.toUpperCase() !== previousGroup.type.toUpperCase();
-        // A group without a subtype is shown as GRUPPE, so saving that back
-        // is not a change.
-        const subtypeChanged =
-            body.subtype !== undefined &&
-            (body.subtype ?? "GRUPPE").toUpperCase() !==
-                (previousGroup.subtype ?? "GRUPPE").toUpperCase();
-
-        // A group's type decides whether its leader sits in HS, so it cannot
-        // be set by anyone holding the permission for this group alone.
-        if (
-            (typeChanged || subtypeChanged) &&
-            !(await hasPermission(ctx, c.get("user").id, "groups:manage"))
-        ) {
-            throw new HTTPException(403, {
-                message:
-                    "Changing a group's type requires the 'groups:manage' permission across all of TIHLDE",
-            });
-        }
-
-        if (
-            typeChanged &&
-            !(
-                isEditableGroupType(type) &&
-                isEditableGroupType(previousGroup.type)
-            )
-        ) {
-            throw new HTTPException(400, {
-                message: `The group's type cannot be changed from "${previousGroup.type}" to "${type}"`,
-            });
-        }
-
         await db
             .update(schema.group)
             .set({
-                ...rest,
-                ...(typeChanged ? { type: type.toUpperCase() } : {}),
+                ...fields,
+                ...(writeType ? { type } : {}),
+                ...writeSubtype,
                 updatedAt: new Date(),
             })
             .where(eq(schema.group.slug, slug));

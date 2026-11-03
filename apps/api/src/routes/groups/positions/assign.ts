@@ -25,11 +25,6 @@ export const assignPositionRoute = route().post(
         .badRequest({ description: "User is not a member of the group" })
         .forbidden({ description: "Not authorized to assign this position" })
         .notFound({ description: "Position not found" })
-        .response({
-            statusCode: 409,
-            description:
-                "Position is managed automatically and cannot be assigned by hand",
-        })
         .build(),
     requireAuth,
     validator("json", assignPositionSchema),
@@ -44,15 +39,6 @@ export const assignPositionRoute = route().post(
         const position = await getPosition(ctx, positionId);
         if (!position || position.groupSlug !== groupSlug) {
             throw new HTTPException(404, { message: "Position not found" });
-        }
-
-        // Linked leader-verv follow the linked subgroup's leadership and are
-        // synced automatically — they must never be assigned by hand here.
-        if (position.linkedGroupSlug) {
-            throw new HTTPException(409, {
-                message:
-                    "This position is held automatically by the linked group's leader and cannot be assigned manually. Change the group's leader on the group page instead.",
-            });
         }
 
         if (!(await canAssignPosition(ctx, user.id, position))) {

@@ -2,7 +2,6 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { assertGroupVisible } from "~/lib/group";
-import { readLinkedPositionPermissionsBatch } from "~/lib/group/linked-leader";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { userImageExtra } from "~/lib/user/avatar";
@@ -67,25 +66,15 @@ export const listPositionsRoute = route().get(
             orderBy: { name: "asc" },
         });
 
-        // A verv linked to a subgroup shares its grant with that subgroup's
-        // org-wide leader permissions, so show the two as the one set they
-        // effectively are (see lib/group/linked-leader.ts).
-        const permissionsById = await readLinkedPositionPermissionsBatch(
-            ctx,
-            positions,
-        );
-
         return c.json(
             positions.map((position) => ({
                 id: position.id,
                 groupSlug: position.groupSlug,
                 name: position.name,
                 description: position.description,
-                permissions:
-                    permissionsById.get(position.id) ?? position.permissions,
+                permissions: position.permissions,
                 scope: position.scope,
                 globalPermissions: position.globalPermissions,
-                linkedGroupSlug: position.linkedGroupSlug,
                 holders: position.holders.map((holder) => ({
                     userId: holder.user.id,
                     name: holder.user.name,

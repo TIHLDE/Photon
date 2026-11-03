@@ -250,6 +250,10 @@ function GroupDetail() {
     const isLeader = useIsGroupLeaderOf(slug);
     const isArchived = Boolean(apiGroup.archivedAt);
     const canManage = (canEditGroup || isLeader) && !isArchived;
+    // Gruppetypen er organisasjonens valg, ikke gruppas: API-et krever
+    // tilgangen globalt, så verken lederen eller et grant for denne gruppa
+    // holder.
+    const canChangeType = usePermission(["groups:update", "groups:manage"]);
     // Roster changes: `groups:manage` for this group, or being its leader.
     // Det samme gjelder å gi ledervervet videre — men «Legg til medlem»-veien
     // legger fortsatt bare til vanlige medlemmer, slik API-et krever.
@@ -536,7 +540,11 @@ function GroupDetail() {
                     description: values.description,
                     contactEmail: values.contactEmail,
                     ...(values.type ? { type: values.type } : {}),
-                    ...(values.type ? { subtype: values.subtype } : {}),
+                    // Lederen kan sette underkategorien uten å få velge
+                    // typen, så den sendes for seg selv.
+                    ...(values.subtype !== undefined
+                        ? { subtype: values.subtype }
+                        : {}),
                     finesActivated: values.finesActivated,
                     finesAdminId: values.finesAdminId,
                     finesInfo: values.finesInfo,
@@ -806,6 +814,7 @@ function GroupDetail() {
                     <GroupDetailHeader
                         group={group}
                         isAdmin={canManage}
+                        canChangeType={canChangeType}
                         canArchive={canArchive}
                         onArchive={() => changeArchived(archiveGroup)}
                         onUnarchive={() => changeArchived(unarchiveGroup)}

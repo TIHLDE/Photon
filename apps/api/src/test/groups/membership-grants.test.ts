@@ -7,11 +7,8 @@ import {
     integrationTest,
 } from "~/test/config/integration";
 
-async function groupWithLeader(
-    ctx: IntegrationTestContext,
-    type = "INTERESTGROUP",
-) {
-    const group = await ctx.utils.createTestGroup({ type });
+async function groupWithLeader(ctx: IntegrationTestContext) {
+    const group = await ctx.utils.createTestGroup({ type: "INTERESTGROUP" });
     const leader = await ctx.utils.createTestUser();
     await ctx.db.insert(schema.groupMembership).values({
         userId: leader.id,
@@ -19,11 +16,6 @@ async function groupWithLeader(
         role: "leader",
     });
     return { group, leader, client: await ctx.utils.clientForUser(leader) };
-}
-
-async function currentType(ctx: IntegrationTestContext, slug: string) {
-    const row = await ctx.db.query.group.findFirst({ where: { slug } });
-    return row?.type;
 }
 
 async function membership(
@@ -35,99 +27,6 @@ async function membership(
         where: { groupSlug, userId },
     });
 }
-
-describe("group type", () => {
-    integrationTest(
-        "a leader cannot change it, but saving the same value still works",
-        async ({ ctx }) => {
-            const { group, client } = await groupWithLeader(ctx);
-
-            const changed = await client.api.groups[":slug"].$patch({
-                param: { slug: group.slug },
-                json: { type: "SUBGROUP" },
-            });
-            expect(changed.status).toBe(403);
-            expect(await currentType(ctx, group.slug)).toBe("INTERESTGROUP");
-
-            const subtype = await client.api.groups[":slug"].$patch({
-                param: { slug: group.slug },
-                json: { subtype: "IDRETTSGRUPPE" },
-            });
-            expect(subtype.status).toBe(403);
-
-            const unchanged = await client.api.groups[":slug"].$patch({
-                param: { slug: group.slug },
-                json: { type: "interestgroup", name: "Nytt navn" },
-            });
-            expect(unchanged.status).toBe(200);
-            expect(await currentType(ctx, group.slug)).toBe("INTERESTGROUP");
-
-            const defaultSubtype = await client.api.groups[":slug"].$patch({
-                param: { slug: group.slug },
-                json: { subtype: "GRUPPE" },
-            });
-            expect(defaultSubtype.status).toBe(200);
-        },
-        500_000,
-    );
-
-    integrationTest(
-        "a grant for the group alone is not enough",
-        async ({ ctx }) => {
-            const { group } = await groupWithLeader(ctx);
-            const manager = await ctx.utils.createTestUser();
-            await ctx.db.insert(schema.userPermission).values(
-                ["groups:manage", "groups:update"].map((permission) => ({
-                    userId: manager.id,
-                    permission,
-                    scope: `group:${group.slug}`,
-                })),
-            );
-            const client = await ctx.utils.clientForUser(manager);
-
-            const res = await client.api.groups[":slug"].$patch({
-                param: { slug: group.slug },
-                json: { type: "SUBGROUP" },
-            });
-            expect(res.status).toBe(403);
-        },
-        500_000,
-    );
-
-    integrationTest(
-        "groups:manage may switch between editable types only",
-        async ({ ctx }) => {
-            const { group } = await groupWithLeader(ctx);
-            const admin = await ctx.utils.createTestUser();
-            await ctx.utils.giveUserPermissions(admin, [
-                "groups:manage",
-                "groups:update",
-            ]);
-            const client = await ctx.utils.clientForUser(admin);
-
-            const ok = await client.api.groups[":slug"].$patch({
-                param: { slug: group.slug },
-                json: { type: "committee" },
-            });
-            expect(ok.status).toBe(200);
-            expect(await currentType(ctx, group.slug)).toBe("COMMITTEE");
-
-            const refused = await client.api.groups[":slug"].$patch({
-                param: { slug: group.slug },
-                json: { type: "STUDY" },
-            });
-            expect(refused.status).toBe(400);
-
-            const study = await ctx.utils.createTestGroup({ type: "STUDY" });
-            const fromGenerated = await client.api.groups[":slug"].$patch({
-                param: { slug: study.slug },
-                json: { type: "COMMITTEE" },
-            });
-            expect(fromGenerated.status).toBe(400);
-        },
-        500_000,
-    );
-});
 
 describe("granting a group's org-wide permissions through membership", () => {
     async function privilegedGroup(ctx: IntegrationTestContext) {
@@ -184,83 +83,6 @@ describe("granting a group's org-wide permissions through membership", () => {
             });
 
             expect(res.status).toBe(201);
-        },
-        500_000,
-    );
-
-    integrationTest(
-        "appointing a subgroup leader requires what HS grants",
-        async ({ ctx }) => {
-            const hs = await ctx.utils.createTestGroup({
-                slug: "hs",
-                type: "BOARD",
-            });
-            await ctx.db
-                .update(schema.group)
-                .set({ memberGlobalPermissions: ["users:view"] })
-                .where(eq(schema.group.slug, hs.slug));
-
-            const { group } = await groupWithLeader(ctx, "SUBGROUP");
-            const member = await ctx.utils.createTestUser();
-            await ctx.db.insert(schema.groupMembership).values({
-                userId: member.id,
-                groupSlug: group.slug,
-                role: "member",
-            });
-            const manager = await ctx.utils.createTestUser();
-            await ctx.utils.giveUserPermissions(manager, ["groups:manage"]);
-            const client = await ctx.utils.clientForUser(manager);
-
-            const res = await client.api.groups[":groupSlug"].members[
-                ":userId"
-            ].$patch({
-                param: { groupSlug: group.slug, userId: member.id },
-                json: { role: "leader" },
-            });
-
-            expect(res.status).toBe(403);
-            expect(await membership(ctx, "hs", member.id)).toBeUndefined();
-        },
-        500_000,
-    );
-
-    integrationTest(
-        "a sitting subgroup leader can still hand over to a member",
-        async ({ ctx }) => {
-            const hs = await ctx.utils.createTestGroup({
-                slug: "hs",
-                type: "BOARD",
-            });
-            await ctx.db
-                .update(schema.group)
-                .set({ memberGlobalPermissions: ["users:view"] })
-                .where(eq(schema.group.slug, hs.slug));
-
-            const { group, leader, client } = await groupWithLeader(
-                ctx,
-                "SUBGROUP",
-            );
-            await ctx.db.insert(schema.groupMembership).values({
-                userId: leader.id,
-                groupSlug: "hs",
-                role: "member",
-            });
-            const successor = await ctx.utils.createTestUser();
-            await ctx.db.insert(schema.groupMembership).values({
-                userId: successor.id,
-                groupSlug: group.slug,
-                role: "member",
-            });
-
-            const res = await client.api.groups[":groupSlug"].members[
-                ":userId"
-            ].$patch({
-                param: { groupSlug: group.slug, userId: successor.id },
-                json: { role: "leader" },
-            });
-
-            expect(res.status).toBe(200);
-            expect(await membership(ctx, "hs", successor.id)).toBeDefined();
         },
         500_000,
     );
