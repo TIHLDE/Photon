@@ -1344,7 +1344,7 @@ export interface paths {
         put?: never;
         /**
          * Publish the event's Wrapped story
-         * @description Put the picked photos live as the event's story for every logged-in member. Every publish that takes the story live notifies everyone who held a spot on the event (registered, attended or no-show) in the bell and by push. Unpublishing deletes those notifications, so publishing again notifies again; publishing a story that is already live notifies nobody. Requires 'events:update' or 'events:manage', globally or for the arranging group.
+         * @description Put the picked photos live as the event's story for every logged-in member. Only the first publish of an event notifies everyone who held a spot on it (registered, attended or no-show), in the bell and by push; unpublishing and publishing again, or publishing a story that is already live, notifies nobody. A failing notification send does not fail the publish. Requires 'events:update' or 'events:manage', globally or for the arranging group.
          */
         post: operations["publishWrappedStory"];
         delete?: never;
@@ -1364,7 +1364,7 @@ export interface paths {
         put?: never;
         /**
          * Unpublish the event's Wrapped story
-         * @description Take the story down for members, and delete the notifications that point to it. Likes and comments stay and come back if the story is published again, and that publish notifies the attendees again. Requires 'events:update' or 'events:manage', globally or for the arranging group.
+         * @description Take the story down for members. The first publish is the only one that notifies the attendees, so unpublishing keeps their notifications and publishing again sends nothing; a notification opened while the story is unpublished lands on the story page, which says it is not published. Likes and comments stay and come back if the story is published again. Requires 'events:update' or 'events:manage', globally or for the arranging group.
          */
         post: operations["unpublishWrappedStory"];
         delete?: never;

@@ -3,6 +3,7 @@ import { and, eq, isNotNull } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 import { HTTPAppException } from "~/lib/errors";
 import { findRecipientIds } from "~/lib/event/message";
+import type { LoggerType } from "~/lib/logger";
 import { createDeferredNotifications } from "~/lib/notification/deferred";
 import { submittedOnly } from ".";
 
@@ -20,26 +21,27 @@ export function inStory() {
 }
 
 export type PublishResult = {
-    /** Whether this publish put the story live, and so notified the attendees. */
-    notified: boolean;
+    /** Whether this was the event's first publish, and so notified the attendees. */
+    isFirstPublish: boolean;
     recipientCount: number;
 };
 
 /**
- * Put the story live, and notify everyone who held a spot on the event, in
- * the bell and by push. Every publish that takes the story from unpublished
- * to live notifies: unpublishing deletes the notifications, so there is never
- * more than one waiting in a member's bell. Publishing a story that is
- * already live notifies nobody.
+ * Put the story live. The first publish of an event, and only that one,
+ * notifies everyone who held a spot on it, in the bell and by push.
+ * Unpublishing and publishing again, or publishing a story that is already
+ * live, notifies nobody: `first_published_at` is never cleared, and the first
+ * notifications stay in the members' bells.
  *
  * The camera row is locked for the decision, so two quick clicks cannot both
- * see the story as unpublished and notify everyone twice. The notifications
- * are sent after the commit: a rollback must not leave a push about a story
- * that never went live.
+ * see a story that was never published and notify everyone twice. The
+ * notifications are sent after the commit: a rollback must not leave a push
+ * about a story that never went live.
  */
 export async function publishStory(
     ctx: AppContext,
     eventId: string,
+    logger: LoggerType,
     now: Date = new Date(),
 ): Promise<PublishResult> {
     const event = await ctx.db.query.event.findFirst({
@@ -50,49 +52,54 @@ export async function publishStory(
         throw HTTPAppException.NotFound("Event");
     }
 
-    const { goesLive, recipientIds } = await ctx.db.transaction(async (tx) => {
-        const [camera] = await tx
-            .select({
-                publishedAt: schema.wrappedCamera.publishedAt,
-                firstPublishedAt: schema.wrappedCamera.firstPublishedAt,
-            })
-            .from(schema.wrappedCamera)
-            .where(eq(schema.wrappedCamera.eventId, eventId))
-            .for("update");
+    const { isFirstPublish, recipientIds } = await ctx.db.transaction(
+        async (tx) => {
+            const [camera] = await tx
+                .select({
+                    publishedAt: schema.wrappedCamera.publishedAt,
+                    firstPublishedAt: schema.wrappedCamera.firstPublishedAt,
+                })
+                .from(schema.wrappedCamera)
+                .where(eq(schema.wrappedCamera.eventId, eventId))
+                .for("update");
 
-        const picked = camera
-            ? await tx.$count(
-                  schema.wrappedPhoto,
-                  and(eq(schema.wrappedPhoto.eventId, eventId), inStory()),
-              )
-            : 0;
-        if (!camera || picked === 0) {
-            throw HTTPAppException.Conflict(
-                "Pick at least one photo before publishing the story",
-            );
-        }
+            const picked = camera
+                ? await tx.$count(
+                      schema.wrappedPhoto,
+                      and(eq(schema.wrappedPhoto.eventId, eventId), inStory()),
+                  )
+                : 0;
+            if (!camera || picked === 0) {
+                logger.warn(
+                    { eventId },
+                    "Wrapped story publish refused: no photos picked",
+                );
+                throw HTTPAppException.Conflict(
+                    "Velg minst ett bilde før du publiserer storyen.",
+                );
+            }
 
-        const goesLive = camera.publishedAt === null;
-        await tx
-            .update(schema.wrappedCamera)
-            .set({
-                publishedAt: now,
-                ...(camera.firstPublishedAt === null
-                    ? { firstPublishedAt: now }
-                    : {}),
-                updatedAt: now,
-            })
-            .where(eq(schema.wrappedCamera.eventId, eventId));
+            const isFirstPublish = camera.firstPublishedAt === null;
+            await tx
+                .update(schema.wrappedCamera)
+                .set({
+                    // Publishing a live story keeps the time it went live.
+                    publishedAt: camera.publishedAt ?? now,
+                    ...(isFirstPublish ? { firstPublishedAt: now } : {}),
+                    updatedAt: now,
+                })
+                .where(eq(schema.wrappedCamera.eventId, eventId));
 
-        return {
-            goesLive,
-            recipientIds: goesLive
-                ? await findRecipientIds({ db: tx }, eventId)
-                : [],
-        };
-    });
+            return {
+                isFirstPublish,
+                recipientIds: isFirstPublish
+                    ? await findRecipientIds({ db: tx }, eventId)
+                    : [],
+            };
+        },
+    );
 
-    if (goesLive) {
+    if (isFirstPublish) {
         const notifications = createDeferredNotifications();
         for (const userId of recipientIds) {
             notifications.add({
@@ -103,46 +110,48 @@ export async function publishStory(
                 sendTo: { website: true, push: true, email: false },
             });
         }
-        await notifications.flush(ctx);
+        // A crash between the commit and the flush loses the notification for
+        // good (accepted, same trade-off as event messages).
+        try {
+            await notifications.flush(ctx);
+            logger.info(
+                { eventId, recipientCount: recipientIds.length },
+                "Wrapped story notifications queued",
+            );
+        } catch (err) {
+            logger.error(
+                { err, eventId },
+                "Wrapped story notifications failed after publish",
+            );
+        }
     }
 
-    return { notified: goesLive, recipientCount: recipientIds.length };
+    return { isFirstPublish, recipientCount: recipientIds.length };
 }
 
 /**
- * Take the story down, and the notifications about it with it: a
- * notification that opens a story members can no longer see is a dead end.
- * Likes and comments stay, so publishing again brings the story back as it
- * was — and notifies the attendees again.
+ * Take the story down. Only `published_at` is cleared: `first_published_at`
+ * stays, so publishing again notifies nobody, and the notifications already in
+ * the members' bells stay too. Likes and comments stay, so publishing again
+ * brings the story back as it was.
  *
- * A push that has already reached a phone cannot be taken back. Opening it
- * lands on the story page, which says the story is not published.
+ * A bell or push item opened while the story is unpublished lands on the story
+ * page, which says the story is not published.
  */
 export async function unpublishStory(
     ctx: AppContext,
     eventId: string,
-): Promise<{ removedNotifications: number }> {
+): Promise<void> {
     const event = await ctx.db.query.event.findFirst({
         where: { id: eventId },
-        columns: { slug: true },
+        columns: { id: true },
     });
     if (!event) {
         throw HTTPAppException.NotFound("Event");
     }
 
-    return ctx.db.transaction(async (tx) => {
-        await tx
-            .update(schema.wrappedCamera)
-            .set({ publishedAt: null, updatedAt: new Date() })
-            .where(eq(schema.wrappedCamera.eventId, eventId));
-
-        // The story link is the event's own, so it matches only this story's
-        // notifications, for every member who got one.
-        const removed = await tx
-            .delete(schema.notification)
-            .where(eq(schema.notification.link, storyPath(event.slug)))
-            .returning({ id: schema.notification.id });
-
-        return { removedNotifications: removed.length };
-    });
+    await ctx.db
+        .update(schema.wrappedCamera)
+        .set({ publishedAt: null, updatedAt: new Date() })
+        .where(eq(schema.wrappedCamera.eventId, eventId));
 }

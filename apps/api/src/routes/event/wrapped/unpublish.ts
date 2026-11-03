@@ -16,7 +16,7 @@ export const unpublishWrappedStoryRoute = route().post(
         summary: "Unpublish the event's Wrapped story",
         operationId: "unpublishWrappedStory",
         description:
-            "Take the story down for members, and delete the notifications that point to it. Likes and comments stay and come back if the story is published again, and that publish notifies the attendees again. Requires 'events:update' or 'events:manage', globally or for the arranging group.",
+            "Take the story down for members. The first publish is the only one that notifies the attendees, so unpublishing keeps their notifications and publishing again sends nothing; a notification opened while the story is unpublished lands on the story page, which says it is not published. Likes and comments stay and come back if the story is published again. Requires 'events:update' or 'events:manage', globally or for the arranging group.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -37,12 +37,9 @@ export const unpublishWrappedStoryRoute = route().post(
         const ctx = c.get("ctx");
         const { eventId } = c.req.valid("param");
 
-        const { removedNotifications } = await unpublishStory(ctx, eventId);
+        await unpublishStory(ctx, eventId);
 
-        c.get("logger").info(
-            { eventId, removedNotifications },
-            "Wrapped story unpublished",
-        );
+        c.get("logger").info({ eventId }, "Wrapped story unpublished");
 
         const status = await getCameraStatus(ctx, eventId, c.get("user").id);
         if (!status) {
