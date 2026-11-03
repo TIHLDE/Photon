@@ -719,6 +719,13 @@ export function createAuth(options: CreateAuthOptions) {
 
         hooks: {
             before: createAuthMiddleware(async (ctx) => {
+                // Access is decided by RBAC, and these routes would bypass it.
+                // The plugin stays for its server-side createUser and for
+                // refusing banned users at sign-in.
+                if (ctx.request && ctx.path.startsWith("/admin/")) {
+                    throw new APIError("NOT_FOUND");
+                }
+
                 if (ctx.path !== "/sign-up/email") return;
 
                 const rawEmail = ctx.body?.email;
