@@ -10,9 +10,9 @@ import type { IntegrationTestContext } from "~/test/config/integration";
  *
  * This is the question "password as the default login" rests on: 17 members in
  * production have only a Feide account, and 215 more carry the Lepton
- * migration's placeholder — a value nobody knows, which `/user/me/password`
- * refuses to overwrite while it is there. Both groups are pointed at "Glemt
- * passord", so if `requestPasswordReset` quietly does nothing for an account
+ * migration's placeholder — a value nobody knows. Both groups are pointed at
+ * Better Auth's own reset flow, which is the only way a member adds or replaces
+ * a password, so if `requestPasswordReset` quietly does nothing for an account
  * with no `credential` row, that banner points at a dead end.
  *
  * The endpoint is no help on its own: it answers 200 with "If this email
@@ -48,6 +48,45 @@ describe("password recovery without a chosen password", () => {
     );
 
     integrationTest(
+        "completing the reset gives a password-less member a working login",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            await ctx.db
+                .update(schema.user)
+                .set({ emailVerified: true })
+                .where(eq(schema.user.id, user.id));
+            await ctx.db
+                .delete(schema.account)
+                .where(eq(schema.account.userId, user.id));
+
+            const sendReset = vi.spyOn(ctx.email, "sendPasswordResetMail");
+            await requestReset(ctx, user.email);
+
+            const mailedUrl = sendReset.mock.calls[0]?.[0].url;
+            expect(mailedUrl).toBeTruthy();
+            const token = tokenFromResetUrl(mailedUrl ?? "");
+            expect(token).toBeTruthy();
+
+            const newPassword = "et-nytt-passord-123";
+            const reset = await ctx.app.request(
+                `${env.ROOT_URL}/api/auth/reset-password`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token, newPassword }),
+                },
+            );
+            expect(reset.status).toBe(200);
+
+            const signIn = await ctx.auth.api.signInEmail({
+                body: { email: user.email, password: newPassword },
+                asResponse: true,
+            });
+            expect(signIn.status).toBe(200);
+        },
+    );
+
+    integrationTest(
         "a member who already has a password also gets one",
         async ({ ctx }) => {
             // The control: proves the spy would have caught a send, so a
@@ -79,4 +118,11 @@ function requestReset(ctx: IntegrationTestContext, email: string) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, redirectTo: "/reset-password" }),
     });
+}
+
+/** Better Auth mails `<base>/reset-password/<token>?callbackURL=…`. */
+function tokenFromResetUrl(url: string): string | null {
+    return (
+        new URL(url).pathname.match(/\/reset-password\/([^/]+)$/)?.[1] ?? null
+    );
 }

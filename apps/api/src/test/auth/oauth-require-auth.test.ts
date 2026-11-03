@@ -17,6 +17,7 @@ type OAuthClient = {
 
 type TokenResponse = {
     access_token: string;
+    id_token?: string;
     token_type: "Bearer";
     expires_in: number;
     scope: string;
@@ -75,7 +76,11 @@ async function signInAndGetCookie(
     return cookie;
 }
 
-async function createOAuthClient(ctx: IntegrationTestContext, cookie: string) {
+async function createOAuthClient(
+    ctx: IntegrationTestContext,
+    cookie: string,
+    options: { enableEndSession?: boolean } = {},
+) {
     return (await ctx.auth.api.adminCreateOAuthClient({
         headers: new Headers({ Cookie: cookie }),
         body: {
@@ -88,6 +93,7 @@ async function createOAuthClient(ctx: IntegrationTestContext, cookie: string) {
             scope: scopes,
             skip_consent: true,
             require_pkce: true,
+            ...(options.enableEndSession ? { enable_end_session: true } : {}),
         },
     })) as OAuthClient;
 }
@@ -110,7 +116,7 @@ async function createPkcePair() {
     return { verifier, challenge };
 }
 
-async function issueOAuthAccessToken(
+async function issueOAuthTokens(
     ctx: IntegrationTestContext,
     options: {
         cookie: string;
@@ -158,7 +164,14 @@ async function issueOAuthAccessToken(
     const token = (await tokenResponse.json()) as TokenResponse;
     expect(token.token_type).toBe("Bearer");
     expect(token.access_token.split(".")).toHaveLength(3);
-    return token.access_token;
+    return token;
+}
+
+async function issueOAuthAccessToken(
+    ctx: IntegrationTestContext,
+    options: Parameters<typeof issueOAuthTokens>[1],
+) {
+    return (await issueOAuthTokens(ctx, options)).access_token;
 }
 
 async function getProtectedState(
@@ -276,6 +289,44 @@ describe("requireAuth OAuth access tokens", () => {
             expect(response.body?.user.id).toBe(user.id);
             expect(response.body?.session?.userId).toBe(user.id);
             expect(response.body?.oauthClient).toBeNull();
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "refuses an ID token even when it carries a live session id",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(user, ["oauth-clients:create"]);
+            const cookie = await signInAndGetCookie(ctx, user);
+            // End-session support is what puts `sid` in the ID token, which
+            // is the claim that would let it hydrate a live session.
+            const oauthClient = await createOAuthClient(ctx, cookie, {
+                enableEndSession: true,
+            });
+            const tokens = await issueOAuthTokens(ctx, {
+                cookie,
+                clientId: oauthClient.client_id,
+            });
+            const app = createRequireAuthHarness(ctx);
+
+            const idToken = tokens.id_token ?? "";
+            const [, idPayload] = idToken.split(".");
+            expect(
+                JSON.parse(Buffer.from(idPayload ?? "", "base64url").toString())
+                    .sid,
+            ).toBeTruthy();
+
+            const withIdToken = await getProtectedState(app, {
+                Authorization: `Bearer ${idToken}`,
+            });
+            const withAccessToken = await getProtectedState(app, {
+                Authorization: `Bearer ${tokens.access_token}`,
+            });
+
+            expect(withIdToken.response.status).toBe(401);
+            expect(withAccessToken.response.status).toBe(200);
+            expect(withAccessToken.body?.user.id).toBe(user.id);
         },
         500_000,
     );

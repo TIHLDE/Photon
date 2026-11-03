@@ -42,7 +42,7 @@ const userFromClaims = (
 
 /**
  * Middleware that requires one of:
- * - A valid JWT (first-party from `/api/auth/token` or OAuth access token)
+ * - A valid OAuth access token (see `verifyJWTAccessToken`)
  * - A valid Photon API key (`Authorization: Bearer photon_...`)
  * - A Better Auth session cookie
  *
@@ -54,7 +54,7 @@ export const requireAuthOrApiKey = describeMiddleware(
         const { auth } = c.get("ctx");
         const token = getBearerTokenFromHeader(c.req.header("Authorization"));
 
-        // 1. JWT (first-party or OAuth access token).
+        // 1. OAuth access token.
         const verified = await verifyJWTAccessToken(auth, token ?? undefined);
         if (verified) {
             c.set("user", userFromClaims(verified.sub, verified.payload));

@@ -15,6 +15,7 @@ import { HTTPAppException, httpAppExceptionSchema } from "./errors";
  */
 const tags = [
     "account-link",
+    "admin",
     "api-keys",
     "applications",
     "assets",

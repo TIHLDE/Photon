@@ -24,6 +24,7 @@ import { apiKeyRoutes } from "./routes/api-key";
 import { applicationRoutes } from "./routes/application";
 import { assetRoutes } from "./routes/asset";
 import { bannerRoutes } from "./routes/banner";
+import { adminRoutes } from "./routes/admin";
 import { accountLinkRoutes } from "./routes/account-link";
 import { companyRoutes } from "./routes/company";
 import { contractsRoutes } from "./routes/contracts";
@@ -102,7 +103,8 @@ export const createApp = async (variables?: Variables) => {
         .route("/toddel", toddelRoutes)
         .route("/roles", rolesRoutes)
         .route("/jobs", jobRoutes)
-        .route("/user", userRoutes);
+        .route("/user", userRoutes)
+        .route("/admin", adminRoutes);
 
     const app = new Hono<{ Variables: Variables }>()
         .use(pinoLoggerMiddleware)

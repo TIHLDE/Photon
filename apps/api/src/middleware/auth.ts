@@ -139,11 +139,9 @@ function assertApproved(user: AuthUser): void {
  * OAuth tokens are verified locally against our JWKS, then hydrated to the
  * same user/session shape that cookie-authenticated requests receive.
  *
- * Accepts both kinds of JWTs we issue:
- *   - First-party JWTs from `/api/auth/token` (the web client)
- *   - OAuth access tokens from `/api/auth/oauth2/token` (third-party apps)
- *
- * Both use the same JWKS, the same audience, and the same issuer.
+ * Only OAuth access tokens from `/api/auth/oauth2/token` are accepted —
+ * `verifyJWTAccessToken` pins issuer, audience, expiry and purpose, so an ID
+ * token signed with the same keys is not a way in.
  *
  * `allowPendingApproval` lets an account that has not been approved yet
  * through — only for the handful of routes that exist to serve exactly that

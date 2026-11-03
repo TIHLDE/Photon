@@ -642,3 +642,39 @@ export const requestPasswordResetMutationOptions = mutationOptions({
         return result.data;
     },
 });
+
+/**
+ * Mails the signed-in member a link to choose a password — Better Auth's own
+ * reset flow, which creates the credential when there is none.
+ *
+ * The address comes from a fresh session read, never the cached one: the
+ * session cookie caches the user for minutes, so right after root changes a
+ * member's address the cached copy still names the old one, and the reset
+ * would go to an address no account has — answered with the same 200 as a
+ * real send, so the page would claim success.
+ */
+export const sendPasswordSetupLinkMutationOptions = mutationOptions({
+    mutationFn: async ({ redirectTo }: { redirectTo: string }) => {
+        const session = await clientAuthInstance.getSession({
+            query: { disableCookieCache: true },
+        });
+        const email = session.data?.user.email;
+        if (!email) {
+            throw new Error("Fant ikke e-postadressen din. Logg inn på nytt.");
+        }
+
+        const result = await clientAuthInstance.requestPasswordReset({
+            email,
+            redirectTo,
+        });
+        if (result.error) {
+            throw new Error(
+                authErrorMessage(
+                    result.error,
+                    "Kunne ikke sende lenke akkurat nå.",
+                ),
+            );
+        }
+        return { email };
+    },
+});

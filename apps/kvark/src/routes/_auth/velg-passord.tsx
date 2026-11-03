@@ -11,13 +11,14 @@ import {
     CardHeader,
     CardTitle,
 } from "@tihlde/ui/ui/card";
-import { FieldGroup } from "@tihlde/ui/ui/field";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 
-import { authQueryOptions, sanitizeRedirectTo } from "#/api/auth";
-import { setPasswordMutation } from "#/api/queries/password";
-import { formHandlers, useAppForm } from "#/hooks/form";
+import {
+    authQueryOptions,
+    sendPasswordSetupLinkMutationOptions,
+    sanitizeRedirectTo,
+} from "#/api/auth";
 
 /**
  * The step a member lands on the first time they sign in with Feide.
@@ -30,6 +31,11 @@ import { formHandlers, useAppForm } from "#/hooks/form";
  * page's fallback form asks for username and password. Without this the member
  * has exactly one way in, and nothing to fall back on the day Feide or
  * Dataporten is unavailable.
+ *
+ * The password itself is chosen through Better Auth's own reset flow: we mail
+ * a link to the address on the account, and `/reset-password` creates the
+ * credential. A signed-in session alone is never enough to add a password —
+ * the link proves the inbox is theirs as well.
  *
  * Skipping is a first-class answer: Feide alone is a perfectly good login, and
  * the reset flow can add a password later.
@@ -46,24 +52,6 @@ export const Route = createFileRoute("/_auth/velg-passord")({
         passwordRevoked: z.coerce.boolean().optional(),
     }),
 });
-
-const choosePasswordSchema = z
-    .object({
-        password: z
-            .string()
-            .min(8, { error: "Passordet må være minst 8 tegn" }),
-        confirmPassword: z.string(),
-    })
-    .superRefine((value, ctx) => {
-        if (value.password !== value.confirmPassword) {
-            ctx.addIssue({
-                code: "custom",
-                message: "Passordene er ikke like",
-                path: ["confirmPassword"],
-            });
-            return z.NEVER;
-        }
-    });
 
 function ChoosePasswordPage() {
     return (
@@ -92,7 +80,7 @@ function ChoosePasswordSkeleton() {
 function ChoosePasswordCard() {
     const { redirectTo, passwordRevoked } = Route.useSearch();
     const { data: auth } = useSuspenseQuery(authQueryOptions);
-    const mutation = useMutation(setPasswordMutation);
+    const mutation = useMutation(sendPasswordSetupLinkMutationOptions);
 
     // Hard navigation, as after a normal login: this page is reached by a
     // redirect from the backend callback, so the router state behind it is
@@ -101,22 +89,38 @@ function ChoosePasswordCard() {
         window.location.href = sanitizeRedirectTo(redirectTo ?? "/");
     };
 
-    const form = useAppForm({
-        validators: {
-            onChange: choosePasswordSchema,
-            onSubmit: choosePasswordSchema,
-        },
-        defaultValues: {
-            password: "",
-            confirmPassword: "",
-        },
-        async onSubmit({ value }) {
-            await mutation.mutateAsync({ newPassword: value.password });
-            leave();
-        },
-    });
-
     const username = auth?.user.username;
+
+    const sendLink = () => {
+        // Absolute, because Better Auth checks it against trustedOrigins; the
+        // destination rides along the same way the forgot-password page does.
+        const resetPath = `/reset-password?redirectTo=${encodeURIComponent(
+            sanitizeRedirectTo(redirectTo ?? "/"),
+        )}`;
+        mutation.mutate({
+            redirectTo: new URL(resetPath, window.location.origin).toString(),
+        });
+    };
+
+    if (mutation.isSuccess) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Sjekk e-posten din</CardTitle>
+                    <CardDescription>
+                        Vi har sendt en lenke til {mutation.data.email}. Åpne
+                        den for å velge passord. Lenken er gyldig i en kort
+                        periode.
+                    </CardDescription>
+                </CardHeader>
+                <CardFooter className="justify-center">
+                    <Button type="button" variant="link" onClick={leave}>
+                        Fortsett
+                    </Button>
+                </CardFooter>
+            </Card>
+        );
+    }
 
     return (
         <Card>
@@ -133,74 +137,49 @@ function ChoosePasswordCard() {
                 </CardTitle>
                 <CardDescription>
                     {passwordRevoked
-                        ? `Det gamle passordet ble fjernet fordi e-posten på kontoen aldri ble bekreftet. Du er logget inn med Feide nå${username ? `, som ${username}` : ""}. Velg et nytt passord.`
+                        ? `Det gamle passordet ble fjernet fordi e-posten på kontoen aldri ble bekreftet. Du er logget inn med Feide nå${username ? `, som ${username}` : ""}. Vi sender deg en lenke for å velge et nytt passord.`
                         : username
-                          ? `Brukernavnet ditt er ${username}. Velg et passord, så kommer du inn selv om Feide er nede.`
-                          : "Velg et passord, så kommer du inn selv om Feide er nede."}
+                          ? `Brukernavnet ditt er ${username}. Vi sender deg en lenke for å velge passord, så kommer du inn selv om Feide er nede.`
+                          : "Vi sender deg en lenke for å velge passord, så kommer du inn selv om Feide er nede."}
                 </CardDescription>
             </CardHeader>
-            <form {...formHandlers(form)} className="flex flex-col gap-4">
-                <CardContent className="flex flex-col gap-5">
-                    <FieldGroup>
-                        <form.AppField name="password">
-                            {(field) => (
-                                <field.PasswordField
-                                    label="Passord"
-                                    required
-                                    autoComplete="new-password"
-                                />
-                            )}
-                        </form.AppField>
-                        <form.AppField name="confirmPassword">
-                            {(field) => (
-                                <field.PasswordField
-                                    label="Bekreft passord"
-                                    required
-                                    autoComplete="new-password"
-                                />
-                            )}
-                        </form.AppField>
-                    </FieldGroup>
-
-                    <form.AppForm>
-                        <form.FormErrors />
-                    </form.AppForm>
-
-                    {mutation.isError && (
-                        <p className="text-sm text-destructive">
-                            {mutation.error.message}
-                        </p>
-                    )}
-
-                    <form.AppForm>
-                        <form.SubmitButton
-                            className="w-full"
-                            loading={
-                                <>
-                                    <Spinner />
-                                    <span>Lagrer...</span>
-                                </>
-                            }
-                        >
-                            Lagre passord
-                        </form.SubmitButton>
-                    </form.AppForm>
-                </CardContent>
-                {/* Skipping stays a first-class answer for an account that
-                    never had a password — Feide alone is a fine login. It is
-                    not one for an account whose password was just taken away:
-                    leaving without setting a new one is how someone ends up
-                    with Feide as their only way in, which is precisely what
-                    this page exists to prevent. The layout's nav bar is still
-                    there, so nobody is trapped. */}
-                {!passwordRevoked && (
-                    <CardFooter className="justify-center">
-                        <Button type="button" variant="link" onClick={leave}>
-                            Hopp over
-                        </Button>
-                    </CardFooter>
+            <CardContent className="flex flex-col gap-5">
+                {mutation.isError && (
+                    <p className="text-sm text-destructive">
+                        {mutation.error.message}
+                    </p>
                 )}
-            </form>
+
+                <Button
+                    type="button"
+                    className="w-full"
+                    disabled={mutation.isPending}
+                    onClick={sendLink}
+                >
+                    {mutation.isPending ? (
+                        <>
+                            <Spinner />
+                            <span>Sender...</span>
+                        </>
+                    ) : (
+                        "Send lenke"
+                    )}
+                </Button>
+            </CardContent>
+            {/* Skipping stays a first-class answer for an account that never
+                had a password — Feide alone is a fine login. It is not one for
+                an account whose password was just taken away: leaving without
+                setting a new one is how someone ends up with Feide as their
+                only way in, which is precisely what this page exists to
+                prevent. The layout's nav bar is still there, so nobody is
+                trapped. */}
+            {!passwordRevoked && (
+                <CardFooter className="justify-center">
+                    <Button type="button" variant="link" onClick={leave}>
+                        Hopp over
+                    </Button>
+                </CardFooter>
+            )}
         </Card>
     );
 }

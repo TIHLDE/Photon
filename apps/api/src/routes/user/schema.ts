@@ -88,23 +88,6 @@ export const updateUserSettingsResponseSchema = Schema(
     }),
 );
 
-export const setPasswordInputSchema = Schema(
-    "SetPasswordInput",
-    z.object({
-        newPassword: z.string().meta({
-            description:
-                "The password to set. Length is checked against Better Auth's own bounds, since those are what sign-in enforces.",
-        }),
-    }),
-);
-
-export const setPasswordResponseSchema = Schema(
-    "SetPasswordResponse",
-    z.object({
-        success: z.boolean(),
-    }),
-);
-
 export const unansweredEvaluationsSchema = Schema(
     "UnansweredEvaluations",
     z.array(
@@ -484,22 +467,5 @@ export const updateUserBaselineRoleResponseSchema = Schema(
     z.object({
         message: z.string(),
         role: z.enum(BASELINE_ROLES),
-    }),
-);
-
-export const updateUserEmailInputSchema = Schema(
-    "UpdateUserEmailInput",
-    z.object({
-        email: z.string().trim().toLowerCase().email().meta({
-            description: "The member's new address",
-        }),
-    }),
-);
-
-export const updateUserEmailResponseSchema = Schema(
-    "UpdateUserEmail",
-    z.object({
-        message: z.string(),
-        email: z.string(),
     }),
 );

@@ -6,11 +6,11 @@ import { authQueryOptions } from "#/api/auth";
  * Whether the member still owes themselves a TIHLDE password, and where to
  * send them for it.
  *
- * The two repairs are not interchangeable. A member with no `credential` row
- * can set one directly, while a member carrying the Lepton migration's
- * placeholder cannot: `/user/me/password` answers 409 as long as a row exists,
- * so their only route is a reset — which works, because linking Feide marks
- * their address verified.
+ * Both states end in Better Auth's reset flow — the only way a password is
+ * ever added or replaced. A member with no `credential` row gets the
+ * `/velg-passord` step, which mails the link to the address on the account; a
+ * member carrying the Lepton migration's placeholder goes through "Glemt
+ * passord" — which works, because linking Feide marks their address verified.
  */
 export function useSetPassword() {
     const { data: session } = useQuery(authQueryOptions);

@@ -4,12 +4,12 @@ import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 
 /**
- * PATCH /api/user/:id/email — root changing a member's address.
+ * PATCH /api/admin/users/:id/email — root changing a member's address.
  *
  * The address is the login and where resets go, so changing it is an account
  * takeover in all but name: `users:manage` is not enough.
  */
-describe("PATCH /api/user/:id/email", () => {
+describe("PATCH /api/admin/users/:id/email", () => {
     integrationTest("refuses users:manage without root", async ({ ctx }) => {
         const caller = await ctx.utils.createTestUser();
         await ctx.utils.giveUserPermissions(caller, [
@@ -19,7 +19,7 @@ describe("PATCH /api/user/:id/email", () => {
         const client = await ctx.utils.clientForUser(caller);
         const target = await ctx.utils.createTestUser();
 
-        const res = await client.api.user[":id"].email.$patch({
+        const res = await client.api.admin.users[":id"].email.$patch({
             param: { id: target.id },
             json: { email: "ny@example.com" },
         });
@@ -46,7 +46,7 @@ describe("PATCH /api/user/:id/email", () => {
                 .set({ emailVerified: false })
                 .where(eq(schema.user.id, target.id));
 
-            const res = await client.api.user[":id"].email.$patch({
+            const res = await client.api.admin.users[":id"].email.$patch({
                 param: { id: target.id },
                 json: { email: "  Ny.Adresse@Example.com " },
             });
@@ -73,7 +73,7 @@ describe("PATCH /api/user/:id/email", () => {
             const target = await ctx.utils.createTestUser();
             const other = await ctx.utils.createTestUser();
 
-            const res = await client.api.user[":id"].email.$patch({
+            const res = await client.api.admin.users[":id"].email.$patch({
                 param: { id: target.id },
                 json: { email: other.email },
             });
@@ -90,7 +90,7 @@ describe("PATCH /api/user/:id/email", () => {
             const client = await ctx.utils.clientForUser(root);
             const target = await ctx.utils.createTestUser();
 
-            const res = await client.api.user[":id"].email.$patch({
+            const res = await client.api.admin.users[":id"].email.$patch({
                 param: { id: target.id },
                 json: { email: target.email },
             });
@@ -105,7 +105,7 @@ describe("PATCH /api/user/:id/email", () => {
         const client = await ctx.utils.clientForUser(root);
         const target = await ctx.utils.createTestUser();
 
-        const res = await client.api.user[":id"].email.$patch({
+        const res = await client.api.admin.users[":id"].email.$patch({
             param: { id: target.id },
             json: { email: "ikke-en-adresse" },
         });
@@ -118,7 +118,7 @@ describe("PATCH /api/user/:id/email", () => {
         await ctx.utils.giveUserPermissions(root, ["root"]);
         const client = await ctx.utils.clientForUser(root);
 
-        const res = await client.api.user[":id"].email.$patch({
+        const res = await client.api.admin.users[":id"].email.$patch({
             param: { id: "does-not-exist" },
             json: { email: "ny@example.com" },
         });

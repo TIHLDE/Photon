@@ -5,7 +5,6 @@ import { updateUserAllergiesRoute } from "./allergy/update-for-user";
 import { approveUserRoute } from "./approve";
 import { updateUserBaselineRoleRoute } from "./baseline-role/update";
 import { deleteUserRoute } from "./delete";
-import { updateUserEmailRoute } from "./email/update";
 import { getUserRoute } from "./get";
 import { listUsersRoute } from "./list";
 import { meRoutes } from "./me";
@@ -26,7 +25,6 @@ export const userRoutes = route()
     .route("/", getUserAllergiesRoute)
     .route("/", updateUserAllergiesRoute)
     .route("/", updateUserStatusRoute)
-    .route("/", updateUserEmailRoute)
     .route("/", updateUserBaselineRoleRoute)
     .route("/", approveUserRoute)
     .route("/", deleteUserRoute)

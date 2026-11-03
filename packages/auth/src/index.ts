@@ -1097,10 +1097,10 @@ export function createAuth(options: CreateAuthOptions) {
                         isPendingApproval: row?.approvalStatus === "pending",
                         /**
                          * Three states, not two, and the prompt differs:
-                         * `none` sets a password, `placeholder` has to reset
-                         * one (the Lepton migration left a value nobody knows,
-                         * and `/user/me/password` answers 409 while it is
-                         * there), `chosen` needs nothing.
+                         * `none` has never had a password, `placeholder`
+                         * carries the value the Lepton migration left that
+                         * nobody knows, `chosen` needs nothing. Both of the
+                         * first two get one through Better Auth's reset flow.
                          */
                         passwordState: !credential
                             ? ("none" as const)

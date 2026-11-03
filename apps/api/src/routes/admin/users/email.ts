@@ -1,5 +1,3 @@
-import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
@@ -25,7 +23,12 @@ import {
  * password sign-in demands a verified address and a later Feide link would
  * revoke the password (see `revokeUnprovenCredentials`).
  *
- * Sessions are left alone: changing the address says nothing about who is
+ * The write goes through Better Auth's own `internalAdapter.updateUser` rather
+ * than a raw update, so its database hooks run and the member's cached
+ * sessions in secondary storage pick up the new address instead of serving
+ * the old one until they expire.
+ *
+ * Sessions are not revoked: changing the address says nothing about who is
  * signed in. Password-reset links already mailed to the old address live in
  * Better Auth's secondary storage keyed by token, so they cannot be found by
  * user here; they expire on their own within the hour.
@@ -33,7 +36,7 @@ import {
 export const updateUserEmailRoute = route().patch(
     "/:id/email",
     describeRoute({
-        tags: ["users"],
+        tags: ["admin"],
         summary: "Change a member's e-mail address",
         operationId: "updateUserEmail",
         description:
@@ -56,7 +59,7 @@ export const updateUserEmailRoute = route().patch(
     requireAccess({ permission: "root" }),
     validator("json", updateUserEmailInputSchema),
     async (c) => {
-        const { db } = c.get("ctx");
+        const { db, auth } = c.get("ctx");
         const userId = c.req.param("id");
         const { email } = c.req.valid("json");
 
@@ -82,10 +85,11 @@ export const updateUserEmailRoute = route().patch(
             });
         }
 
-        await db
-            .update(schema.user)
-            .set({ email, emailVerified: true, updatedAt: new Date() })
-            .where(eq(schema.user.id, userId));
+        const authContext = await auth.$context;
+        await authContext.internalAdapter.updateUser(userId, {
+            email,
+            emailVerified: true,
+        });
 
         return c.json({ message: "E-mail updated", email }, 200);
     },

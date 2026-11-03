@@ -4,10 +4,9 @@ import { KeyRound } from "lucide-react";
 
 type SetPasswordNoticeProps = {
     /**
-     * `none` has no password row at all and can set one straight away.
-     * `placeholder` carries the value the Lepton migration invented, which
-     * nobody knows and which `/user/me/password` refuses to overwrite — so
-     * that state has to go through a reset instead.
+     * `none` has no password row at all. `placeholder` carries the value the
+     * Lepton migration invented, which nobody knows. Both get their password
+     * through a reset link.
      */
     state: "none" | "placeholder";
     /** Where the action sends them; the route differs per state. */
