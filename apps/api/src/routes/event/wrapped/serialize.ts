@@ -14,6 +14,8 @@ export function serializeCameraStatus(
         ...status,
         opensAt: status.opensAt.toISOString(),
         closesAt: status.closesAt.toISOString(),
+        publishedAt: status.publishedAt?.toISOString() ?? null,
+        firstPublishedAt: status.firstPublishedAt?.toISOString() ?? null,
     };
 }
 

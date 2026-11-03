@@ -59,6 +59,10 @@ export type CameraStatus = {
     reason: CameraBlockedReason | null;
     /** The caller's photos not yet submitted. Always 0 once the camera has closed. */
     draftCount: number;
+    /** When the story went live, or null while it is not published. */
+    publishedAt: Date | null;
+    /** When the story was first published. Never cleared by unpublishing. */
+    firstPublishedAt: Date | null;
     canManage: boolean;
 };
 
@@ -214,6 +218,8 @@ export async function readShootState(
         canShoot: reason === null,
         reason,
         draftCount,
+        publishedAt: camera?.publishedAt ?? null,
+        firstPublishedAt: camera?.firstPublishedAt ?? null,
     };
 }
 

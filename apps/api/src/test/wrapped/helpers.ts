@@ -1,4 +1,5 @@
 import { schema } from "@photon/db";
+import { eq } from "drizzle-orm";
 import type { RegistrationStatus } from "@photon/db/schema";
 import type { IntegrationTestContext } from "~/test/config/integration";
 
@@ -115,4 +116,48 @@ export function submitPhotos(
         body: JSON.stringify(photoIds ? { photoIds } : {}),
         headers: { Cookie: cookie, "Content-Type": "application/json" },
     });
+}
+
+/**
+ * An event whose camera has been used: one photographer has taken and
+ * submitted `count` photos, and the organizer has picked all of them. The
+ * story is not published.
+ */
+export async function eventWithPickedPhotos(
+    ctx: IntegrationTestContext,
+    count: number,
+) {
+    const event = await createOngoingEvent(ctx);
+    await enableCamera(ctx, event.id, Math.max(count, 1));
+
+    const photographer = await ctx.utils.createTestUser();
+    await register(ctx, event.id, photographer.id);
+    const cookie = await sessionCookie(ctx, photographer);
+    for (let i = 0; i < count; i++) {
+        await uploadPhoto(ctx, cookie, event.id);
+    }
+    if (count > 0) {
+        await submitPhotos(ctx, cookie, event.id);
+    }
+    await ctx.db
+        .update(schema.wrappedPhoto)
+        .set({ selectedAt: new Date() })
+        .where(eq(schema.wrappedPhoto.eventId, event.id));
+
+    const organizer = await ctx.utils.createTestUser();
+    await ctx.utils.giveUserPermissions(organizer, ["events:update"]);
+
+    return { event, photographer, organizer, cookie };
+}
+
+/** Put the event's story live directly, without notifying anybody. */
+export async function markPublished(
+    ctx: IntegrationTestContext,
+    eventId: string,
+) {
+    const now = new Date();
+    await ctx.db
+        .update(schema.wrappedCamera)
+        .set({ publishedAt: now, firstPublishedAt: now })
+        .where(eq(schema.wrappedCamera.eventId, eventId));
 }
