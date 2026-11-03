@@ -22,9 +22,11 @@ export const createRoute = route().post(
             schema: toddelIssueSchema,
             description: "Issue published",
         })
-        .badRequest({ description: "Unknown asset key" })
         .unauthorized()
-        .forbidden({ description: "Insufficient permissions" })
+        .forbidden({
+            description:
+                "Insufficient permissions, or an asset key the caller did not upload",
+        })
         .response({
             statusCode: 409,
             description: "Conflict - that edition already exists",
@@ -38,6 +40,7 @@ export const createRoute = route().post(
     async (c) => {
         const body = c.req.valid("json");
         const { db, bucket } = c.get("ctx");
+        const userId = c.get("user").id;
 
         const existing = await db.query.toddel.findFirst({
             where: { edition: body.edition },
@@ -52,9 +55,9 @@ export const createRoute = route().post(
         // The PDF is what makes the row worth having, so it is resolved first:
         // a bad key fails before a cover has been promoted out of reach of the
         // cleanup cron.
-        const pdfUrl = await publishAsset(bucket, body.pdfKey);
+        const pdfUrl = await publishAsset(bucket, userId, body.pdfKey);
         const imageUrl = body.imageKey
-            ? await publishAsset(bucket, body.imageKey)
+            ? await publishAsset(bucket, userId, body.imageKey)
             : null;
 
         const [issue] = await db

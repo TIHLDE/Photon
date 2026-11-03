@@ -2,6 +2,8 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono-openapi";
+import { isAssetUploader } from "~/lib/asset";
+import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -38,7 +40,16 @@ export const createContractRoute = route().post(
             });
         }
 
-        const { db } = c.get("ctx");
+        const { db, bucket } = c.get("ctx");
+
+        // Signing stamps this file and hands the result to every signer, so a
+        // key alone must not be enough to publish someone else's PDF.
+        const asset = await bucket.getAsset(body.fileKey);
+        if (!asset || !isAssetUploader(asset, user.id)) {
+            throw HTTPAppException.Forbidden(
+                "Du kan bare bruke filer du selv har lastet opp.",
+            );
+        }
 
         const [newContract] = await db
             .insert(schema.contract)

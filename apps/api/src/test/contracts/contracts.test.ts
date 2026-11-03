@@ -47,6 +47,7 @@ describe("contracts", () => {
                 // Upload the source PDF, then register and activate a contract.
                 const fileKey = "test/contract.pdf";
                 await ctx.bucket.upload(fileKey, await makeContractPdf(), {
+                    uploadedById: admin.id,
                     originalFilename: "contract.pdf",
                     contentType: "application/pdf",
                 });
@@ -119,6 +120,7 @@ describe("contracts", () => {
 
                 const fileKey = "test/contract-dup.pdf";
                 await ctx.bucket.upload(fileKey, await makeContractPdf(), {
+                    uploadedById: admin.id,
                     originalFilename: "contract.pdf",
                     contentType: "application/pdf",
                 });
@@ -171,6 +173,7 @@ describe("contracts", () => {
 
                 const fileKey = "test/contract-unplaced.pdf";
                 await ctx.bucket.upload(fileKey, await makeContractPdf(), {
+                    uploadedById: admin.id,
                     originalFilename: "contract.pdf",
                     contentType: "application/pdf",
                 });
@@ -213,6 +216,7 @@ describe("contracts", () => {
 
                 const fileKey = "test/contract-bad.pdf";
                 await ctx.bucket.upload(fileKey, await makeContractPdf(), {
+                    uploadedById: admin.id,
                     originalFilename: "contract.pdf",
                     contentType: "application/pdf",
                 });
@@ -257,6 +261,7 @@ describe("contracts", () => {
 
                 const fileKey = "test/contract-mail.pdf";
                 await ctx.bucket.upload(fileKey, await makeContractPdf(), {
+                    uploadedById: admin.id,
                     originalFilename: "contract.pdf",
                     contentType: "application/pdf",
                 });
@@ -327,6 +332,7 @@ describe("contracts", () => {
 
                 const fileKey = "test/contract-status.pdf";
                 await ctx.bucket.upload(fileKey, await makeContractPdf(), {
+                    uploadedById: admin.id,
                     originalFilename: "contract.pdf",
                     contentType: "application/pdf",
                 });
@@ -396,6 +402,7 @@ describe("contracts", () => {
 
                 const fileKey = "test/contract-dl.pdf";
                 await ctx.bucket.upload(fileKey, await makeContractPdf(), {
+                    uploadedById: admin.id,
                     originalFilename: "contract.pdf",
                     contentType: "application/pdf",
                 });
@@ -522,6 +529,7 @@ describe("contracts", () => {
 
                 const fileKey = "test/contract-revoke.pdf";
                 await ctx.bucket.upload(fileKey, await makeContractPdf(), {
+                    uploadedById: admin.id,
                     originalFilename: "contract.pdf",
                     contentType: "application/pdf",
                 });

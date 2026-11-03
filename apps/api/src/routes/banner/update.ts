@@ -2,6 +2,7 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { assertMayUseAssetUrls } from "~/lib/asset";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -33,7 +34,8 @@ export const updateRoute = route().patch(
     validator("json", updateBannerSchema),
     async (c) => {
         const body = c.req.valid("json");
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
         const { id } = c.req.param();
 
         const existing = await db.query.banner.findFirst({
@@ -56,6 +58,13 @@ export const updateRoute = route().patch(
                 message: "visibleFrom must be before visibleUntil",
             });
         }
+
+        await assertMayUseAssetUrls(
+            ctx,
+            c.get("user").id,
+            [body.url],
+            [existing.url],
+        );
 
         const [updatedBanner] = await db
             .update(schema.banner)
