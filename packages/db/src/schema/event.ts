@@ -235,11 +235,7 @@ export const eventRegistration = pgTable(
          */
         evaluationReminderSentAt: timestamp("evaluation_reminder_sent_at"),
         promotedFromWaitlistAt: timestamp("promoted_from_waitlist_at"),
-        /**
-         * An arrangør put the member on the event; the member did not sign up.
-         * Adding needs no consent, so such a row must not open the member's
-         * allergies or prikker to whoever added them.
-         */
+        /** Adding needs no consent, so such a row opens neither allergies nor prikker. */
         addedByOrganizer: boolean("added_by_organizer")
             .default(false)
             .notNull(),

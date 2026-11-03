@@ -660,7 +660,7 @@ export interface paths {
         put?: never;
         /**
          * Create strike
-         * @description Give a user a strike (prikk) connected to an event, and notify them. Requires 'events:strikes:create', or the right to arrange the event ('events:update' / 'events:manage') — globally or for the group arranging it. Unless the caller holds 'events:strikes:create' across TIHLDE, the user must have signed up and held a spot on the event, or already have a strike from it (leaving after the deadline removes the registration but leaves the automatic strike).
+         * @description Give a user a strike (prikk) connected to an event, and notify them. Requires 'events:strikes:create', or the right to arrange the event ('events:update' / 'events:manage') — globally or for the group arranging it. Unless the caller holds 'events:strikes:create' across TIHLDE, the user must have signed up themselves and hold a spot on the event.
          */
         post: operations["createStrike"];
         delete?: never;
@@ -4478,9 +4478,9 @@ export interface components {
             confirmedNone: number;
             /** @description Participants who have never answered. These are the ones an arrangør has to chase — not the same as having no allergies. */
             notAnswered: number;
-            /** @description Participants an organiser added rather than signing up themselves. Included in the tallies above, but not in `summary` or `participants`. */
-            organizerAdded: number;
-            /** @description How many of `organizerAdded` have registered at least one allergy. The arrangør has to ask them directly. */
+            /** @description Everyone an organiser added rather than signing up themselves, so the arrangør knows who to ask. Included in the tallies above, but not in `summary` or `participants`. */
+            organizerAddedNames: string[];
+            /** @description How many of `organizerAddedNames` have registered at least one allergy, without saying which of them. */
             organizerAddedWithAllergies: number;
             /** @description Totals per allergy among those who signed up themselves, most common first. This is what gets handed to the kitchen. */
             summary: components["schemas"]["EventAllergySummaryEntry"][];

@@ -85,7 +85,7 @@ describe("allergies of people an organiser added", () => {
             expect(body.summary).toEqual([]);
             expect(body.totalParticipants).toBe(1);
             expect(body.withAllergies).toBe(1);
-            expect(body.organizerAdded).toBe(1);
+            expect(body.organizerAddedNames).toEqual([stranger.name]);
             expect(body.organizerAddedWithAllergies).toBe(1);
         },
         500_000,
@@ -122,7 +122,42 @@ describe("allergies of people an organiser added", () => {
             expect(JSON.stringify(body)).not.toContain(STRANGER_ALLERGY);
             expect(body.totalParticipants).toBe(2);
             expect(body.withAllergies).toBe(2);
-            expect(body.organizerAdded).toBe(1);
+            expect(body.organizerAddedNames).toEqual([stranger.name]);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "re-adding someone whose own sign-up was cancelled marks the row as added",
+        async ({ ctx }) => {
+            const { event, client } = await setup(ctx);
+            const member = await memberWithAllergy(ctx, STRANGER_ALLERGY);
+            await ctx.db.insert(schema.eventRegistration).values({
+                eventId: event.id,
+                userId: member.id,
+                status: "cancelled",
+            });
+
+            const added = await client.api.event[":eventId"].registration[
+                ":userId"
+            ].$post({
+                param: { eventId: event.id, userId: member.id },
+                json: {},
+            });
+            expect(added.status).toBe(200);
+
+            const row = await ctx.db.query.eventRegistration.findFirst({
+                where: { eventId: event.id, userId: member.id },
+            });
+            expect(row?.status).toBe("registered");
+            expect(row?.addedByOrganizer).toBe(true);
+
+            const allergies = await client.api.event[":eventId"].allergies.$get(
+                { param: { eventId: event.id } },
+            );
+            expect(JSON.stringify(await allergies.json())).not.toContain(
+                STRANGER_ALLERGY,
+            );
         },
         500_000,
     );

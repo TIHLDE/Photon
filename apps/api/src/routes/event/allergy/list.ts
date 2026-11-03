@@ -98,7 +98,7 @@ export const getEventAllergiesRoute = route().get(
         let withAllergies = 0;
         let confirmedNone = 0;
         let notAnswered = 0;
-        let organizerAdded = 0;
+        const organizerAddedNames: string[] = [];
         let organizerAddedWithAllergies = 0;
 
         for (const registration of registrations) {
@@ -118,7 +118,7 @@ export const getEventAllergiesRoute = route().get(
             }
 
             if (registration.addedByOrganizer) {
-                organizerAdded++;
+                organizerAddedNames.push(registration.user.name);
                 if (hasAny) organizerAddedWithAllergies++;
                 continue;
             }
@@ -190,7 +190,9 @@ export const getEventAllergiesRoute = route().get(
                 withAllergies,
                 confirmedNone,
                 notAnswered,
-                organizerAdded,
+                organizerAddedNames: organizerAddedNames.sort((a, b) =>
+                    a.localeCompare(b, "nb"),
+                ),
                 organizerAddedWithAllergies,
                 summary,
                 participants,

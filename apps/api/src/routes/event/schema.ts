@@ -1215,13 +1215,13 @@ export const eventAllergiesResponseSchema = Schema(
             description:
                 "Participants who have never answered. These are the ones an arrangør has to chase — not the same as having no allergies.",
         }),
-        organizerAdded: z.number().meta({
+        organizerAddedNames: z.array(z.string()).meta({
             description:
-                "Participants an organiser added rather than signing up themselves. Included in the tallies above, but not in `summary` or `participants`.",
+                "Everyone an organiser added rather than signing up themselves, so the arrangør knows who to ask. Included in the tallies above, but not in `summary` or `participants`.",
         }),
         organizerAddedWithAllergies: z.number().meta({
             description:
-                "How many of `organizerAdded` have registered at least one allergy. The arrangør has to ask them directly.",
+                "How many of `organizerAddedNames` have registered at least one allergy, without saying which of them.",
         }),
         summary: z.array(eventAllergySummaryEntrySchema).meta({
             description:

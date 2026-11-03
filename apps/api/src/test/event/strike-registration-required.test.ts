@@ -138,7 +138,7 @@ describe("who an arrangør may give a prikk", () => {
     );
 
     integrationTest(
-        "someone who left after the deadline can still get one: the automatic prikk shows they had a spot",
+        "a strike already on the event proves nothing about having held a spot",
         async ({ ctx }) => {
             const { event, target, client } = await setup(ctx);
             await ctx.db.insert(schema.eventStrike).values({
@@ -149,19 +149,49 @@ describe("who an arrangør may give a prikk", () => {
             });
 
             const response = await client.api.event.strikes.$post({
-                json: { userId: target.id, eventId: event.id, count: 1 },
+                json: { userId: target.id, eventId: event.id, count: 3 },
             });
 
-            expect(response.status).toBe(201);
-            expect(await strikesOn(ctx, event.id, target.id)).toHaveLength(2);
+            expect(response.status).toBe(409);
+            expect(await strikesOn(ctx, event.id, target.id)).toHaveLength(1);
         },
         500_000,
     );
 
     integrationTest(
-        "unregistering late through the real route leaves no row, and the check still lets the arrangør act",
+        "someone added who leaves late cannot then be given more by the arrangør",
         async ({ ctx }) => {
             const { event, target, client } = await setup(ctx);
+            await ctx.db
+                .update(schema.event)
+                .set({
+                    canCauseStrikes: true,
+                    cancellationDeadline: new Date(Date.now() - 60_000),
+                })
+                .where(eq(schema.event.id, event.id));
+            await client.api.event[":eventId"].registration[":userId"].$post({
+                param: { eventId: event.id, userId: target.id },
+                json: {},
+            });
+
+            const targetClient = await ctx.utils.clientForUser(target);
+            const left = await targetClient.api.event[
+                ":eventId"
+            ].registration.$delete({ param: { eventId: event.id } });
+            expect(left.status).toBe(200);
+
+            const response = await client.api.event.strikes.$post({
+                json: { userId: target.id, eventId: event.id, count: 3 },
+            });
+            expect(response.status).toBe(409);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "leaving late through the real route still gives the automatic prikk, and the row is gone",
+        async ({ ctx }) => {
+            const { event, target } = await setup(ctx);
             await ctx.db
                 .update(schema.event)
                 .set({
@@ -187,11 +217,6 @@ describe("who an arrangør may give a prikk", () => {
                 }),
             ).toBeUndefined();
             expect(await strikesOn(ctx, event.id, target.id)).toHaveLength(1);
-
-            const response = await client.api.event.strikes.$post({
-                json: { userId: target.id, eventId: event.id, count: 1 },
-            });
-            expect(response.status).toBe(201);
         },
         500_000,
     );

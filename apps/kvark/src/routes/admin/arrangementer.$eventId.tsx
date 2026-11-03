@@ -2371,7 +2371,7 @@ function AllergiesTab({ eventId }: { eventId: string }) {
     const [search, setSearch] = useState("");
     const [hasCopied, setHasCopied] = useState(false);
 
-    const hiddenAllergiesNotice = `Lagt til av arrangør: ${data.organizerAdded}. Med allergier: ${data.organizerAddedWithAllergies}. Spør dem direkte.`;
+    const hiddenAllergiesNotice = `Lagt til av arrangør: ${data.organizerAddedNames?.join(", ")}. ${data.organizerAddedWithAllergies} av dem har oppgitt allergier. Spør dem direkte.`;
 
     const query = search.trim().toLowerCase();
     const visibleParticipants = useMemo(

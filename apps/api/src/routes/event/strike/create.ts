@@ -24,7 +24,7 @@ export const createStrikeRoute = route().post(
         summary: "Create strike",
         operationId: "createStrike",
         description:
-            "Give a user a strike (prikk) connected to an event, and notify them. Requires 'events:strikes:create', or the right to arrange the event ('events:update' / 'events:manage') — globally or for the group arranging it. Unless the caller holds 'events:strikes:create' across TIHLDE, the user must have signed up and held a spot on the event, or already have a strike from it (leaving after the deadline removes the registration but leaves the automatic strike).",
+            "Give a user a strike (prikk) connected to an event, and notify them. Requires 'events:strikes:create', or the right to arrange the event ('events:update' / 'events:manage') — globally or for the group arranging it. Unless the caller holds 'events:strikes:create' across TIHLDE, the user must have signed up themselves and hold a spot on the event.",
     })
         .schemaResponse({
             statusCode: 201,
@@ -115,23 +115,18 @@ export const createStrikeRoute = route().post(
             });
         }
 
-        const hasHeldOwnSpot = registration
-            ? !registration.addedByOrganizer &&
-              DEFAULT_STATUSES.some((status) => status === registration.status)
-            : Boolean(
-                  await db.query.eventStrike.findFirst({
-                      columns: { id: true },
-                      where: { userId: body.userId, eventId: body.eventId },
-                  }),
-              );
+        const holdsOwnSpot =
+            registration &&
+            !registration.addedByOrganizer &&
+            DEFAULT_STATUSES.some((status) => status === registration.status);
 
         if (
-            !hasHeldOwnSpot &&
+            !holdsOwnSpot &&
             !(await hasPermission(ctx, callerId, "events:strikes:create"))
         ) {
             throw new HTTPException(409, {
                 message:
-                    "Medlemmet har ikke meldt seg på dette arrangementet selv, og kan derfor ikke få prikk av arrangøren.",
+                    "Medlemmet har ikke plass på dette arrangementet etter egen påmelding, og kan derfor ikke få prikk av arrangøren.",
             });
         }
 
