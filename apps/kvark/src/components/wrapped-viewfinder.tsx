@@ -30,6 +30,7 @@ type WrappedViewfinderProps = {
     onStateChange: (state: CameraViewfinderState) => void;
     onTorchSupportChange: (supported: boolean) => void;
     onShutter: () => void;
+    /** The flip button, and a double tap on the preview. */
     onSwitchCamera: () => void;
     /** Leave the live camera for the phone's own, through a file input. */
     onUseSystemCamera: () => void;
@@ -70,6 +71,7 @@ export function WrappedViewfinder({
                 torch={torch}
                 onStateChange={onStateChange}
                 onTorchSupportChange={onTorchSupportChange}
+                onDoubleTap={onSwitchCamera}
                 className="min-h-[50dvh] flex-1"
             >
                 <div className="absolute inset-x-0 top-3 flex justify-center">
