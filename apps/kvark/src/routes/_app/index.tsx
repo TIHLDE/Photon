@@ -11,7 +11,6 @@ import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { Plus } from "lucide-react";
 import { type ReactNode, Suspense } from "react";
-import { z } from "zod";
 
 import { authQueryOptions } from "#/api/auth";
 import { useAnyScopePermission } from "#/hooks/use-permission";
@@ -74,27 +73,8 @@ const upcomingActivitiesQuery = () =>
 const NEWS_PREVIEW_COUNT = 3;
 const latestNewsQuery = () => getNewsQuery(0, {}, NEWS_PREVIEW_COUNT);
 
-/**
- * `?kort=` velger hvordan kamerakortet viser handlingen, så teamet kan
- * sammenligne dem på testsida: a = utløser på bildekanten, b = knapp under
- * bildet, c = pille i hjørnet, d = ingen knapp, bare et merke øverst (hele
- * kortet er lenka). Alt annet gir a.
- * ponytail: slettes sammen med variantene som taper.
- */
-const searchSchema = z.object({
-    kort: z.enum(["a", "b", "c", "d"]).optional().catch(undefined),
-});
-
-const CARD_VARIANTS = {
-    a: "shutter",
-    b: "below",
-    c: "chip",
-    d: "tap",
-} as const;
-
 export const Route = createFileRoute("/_app/")({
     component: Home,
-    validateSearch: searchSchema,
     // Bare arrangementene blokkerer — de er grunnen til at forsida finnes.
     // Bannere og nyheter henter seg selv bak hver sin Suspense- og feilgrense,
     // så et feilende kall der koster oss den seksjonen og ikke hele sida.
@@ -112,7 +92,6 @@ function Home() {
     ]);
     const canCreateNews = useAnyScopePermission(["news:create", "news:manage"]);
     const liveCamera = useLiveCamera();
-    const { kort } = Route.useSearch();
     // Kortet er det snarveien i bunnlinja er på resten av sida, og må varsle
     // om usendte bilder på samme måte: klokka tikker til stengetid.
     const now = useNow(liveCamera?.closesAt);
@@ -145,8 +124,6 @@ function Home() {
                         imageUrl={liveCamera.imageUrl}
                         imageAlt={liveCamera.imageAlt}
                         shortcut={cameraShortcut(liveCamera, now)}
-                        shotsLeft={liveCamera.shotsLeft}
-                        variant={CARD_VARIANTS[kort ?? "a"]}
                         restId={REST_OF_HOME_ID}
                     />
                     {banners}
