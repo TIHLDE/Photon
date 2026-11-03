@@ -472,6 +472,8 @@ function GroupCard({
     const updateGroup = useMutation(updateGroupMutation);
     const { uploadImage, isUploading } = useImageUploader();
     const isLeader = useIsGroupLeaderOf(group.slug);
+    const mayChangeType = usePermission("groups:manage");
+    const typeEditable = mayChangeType && canEditGroupType(group.type);
     // Speiler PATCH /groups/:slug nøyaktig: `groups:update` globalt eller for
     // denne gruppa, eller å være lederen dens (`ownership: isGroupLeader`).
     const canEdit =
@@ -507,7 +509,7 @@ function GroupCard({
                 slug: group.slug,
                 data: {
                     contractSigningRequired: requiresSigning,
-                    ...(canEditGroupType(group.type)
+                    ...(typeEditable
                         ? {
                               type,
                               // Underkategorien gjelder bare interessegrupper;
@@ -593,7 +595,7 @@ function GroupCard({
                                 Krev kontraktsignering for denne gruppen
                             </FieldLabel>
                         </Field>
-                        {canEditGroupType(group.type) ? (
+                        {typeEditable ? (
                             <Field>
                                 <FieldLabel htmlFor={`type-${group.slug}`}>
                                     Gruppetype
@@ -626,8 +628,7 @@ function GroupCard({
                                 </FieldDescription>
                             </Field>
                         ) : null}
-                        {canEditGroupType(group.type) &&
-                        supportsGroupSubtype(type) ? (
+                        {typeEditable && supportsGroupSubtype(type) ? (
                             <Field>
                                 <FieldLabel htmlFor={`subtype-${group.slug}`}>
                                     Underkategori

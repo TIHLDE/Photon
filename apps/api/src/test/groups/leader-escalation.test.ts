@@ -61,6 +61,12 @@ describe("group type", () => {
             });
             expect(unchanged.status).toBe(200);
             expect(await currentType(ctx, group.slug)).toBe("INTERESTGROUP");
+
+            const defaultSubtype = await client.api.groups[":slug"].$patch({
+                param: { slug: group.slug },
+                json: { subtype: "GRUPPE" },
+            });
+            expect(defaultSubtype.status).toBe(200);
         },
         500_000,
     );
@@ -214,6 +220,122 @@ describe("granting a group's org-wide permissions through membership", () => {
 
             expect(res.status).toBe(403);
             expect(await membership(ctx, "hs", member.id)).toBeUndefined();
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "a sitting subgroup leader can still hand over to a member",
+        async ({ ctx }) => {
+            const hs = await ctx.utils.createTestGroup({
+                slug: "hs",
+                type: "BOARD",
+            });
+            await ctx.db
+                .update(schema.group)
+                .set({ memberGlobalPermissions: ["users:view"] })
+                .where(eq(schema.group.slug, hs.slug));
+
+            const { group, leader, client } = await groupWithLeader(
+                ctx,
+                "SUBGROUP",
+            );
+            await ctx.db.insert(schema.groupMembership).values({
+                userId: leader.id,
+                groupSlug: "hs",
+                role: "member",
+            });
+            const successor = await ctx.utils.createTestUser();
+            await ctx.db.insert(schema.groupMembership).values({
+                userId: successor.id,
+                groupSlug: group.slug,
+                role: "member",
+            });
+
+            const res = await client.api.groups[":groupSlug"].members[
+                ":userId"
+            ].$patch({
+                param: { groupSlug: group.slug, userId: successor.id },
+                json: { role: "leader" },
+            });
+
+            expect(res.status).toBe(200);
+            expect(await membership(ctx, "hs", successor.id)).toBeDefined();
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "appointing a leader requires the group's leader permissions",
+        async ({ ctx }) => {
+            const group = await ctx.utils.createTestGroup({
+                type: "COMMITTEE",
+            });
+            await ctx.db
+                .update(schema.group)
+                .set({ leaderGlobalPermissions: ["users:view"] })
+                .where(eq(schema.group.slug, group.slug));
+            const member = await ctx.utils.createTestUser();
+            await ctx.db.insert(schema.groupMembership).values({
+                userId: member.id,
+                groupSlug: group.slug,
+                role: "member",
+            });
+            const manager = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(manager, ["groups:manage"]);
+            const client = await ctx.utils.clientForUser(manager);
+
+            const appointed = await client.api.groups[":groupSlug"].members[
+                ":userId"
+            ].$patch({
+                param: { groupSlug: group.slug, userId: member.id },
+                json: { role: "leader" },
+            });
+            expect(appointed.status).toBe(403);
+
+            const added = await client.api.groups[":groupSlug"].members.$post({
+                param: { groupSlug: group.slug },
+                json: { userId: manager.id },
+            });
+            expect(added.status).toBe(201);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "approving a join request is held to the same rule",
+        async ({ ctx }) => {
+            const group = await ctx.utils.createTestGroup({
+                type: "INTERESTGROUP",
+            });
+            await ctx.db
+                .update(schema.group)
+                .set({ memberGlobalPermissions: ["users:view"] })
+                .where(eq(schema.group.slug, group.slug));
+            const requester = await ctx.utils.createTestUser();
+            await ctx.db.insert(schema.groupJoinRequest).values({
+                userId: requester.id,
+                groupSlug: group.slug,
+            });
+            const manager = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(manager, ["groups:manage"]);
+            const client = await ctx.utils.clientForUser(manager);
+
+            const res = await client.api.groups[":groupSlug"]["join-requests"][
+                ":userId"
+            ].approve.$post({
+                param: { groupSlug: group.slug, userId: requester.id },
+            });
+
+            expect(res.status).toBe(403);
+            expect(
+                await membership(ctx, group.slug, requester.id),
+            ).toBeUndefined();
+            expect(
+                await ctx.db.query.groupJoinRequest.findFirst({
+                    where: { groupSlug: group.slug, userId: requester.id },
+                }),
+            ).toBeDefined();
         },
         500_000,
     );

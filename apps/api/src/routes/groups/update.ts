@@ -82,9 +82,12 @@ export const updateRoute = route().patch(
         const typeChanged =
             type !== undefined &&
             type.toUpperCase() !== previousGroup.type.toUpperCase();
+        // A group without a subtype is shown as GRUPPE, so saving that back
+        // is not a change.
         const subtypeChanged =
             body.subtype !== undefined &&
-            (body.subtype ?? null) !== (previousGroup.subtype ?? null);
+            (body.subtype ?? "GRUPPE").toUpperCase() !==
+                (previousGroup.subtype ?? "GRUPPE").toUpperCase();
 
         // A group's type decides whether its leader sits in HS, so it cannot
         // be set by anyone holding the permission for this group alone.
