@@ -40,6 +40,7 @@ const config = defineConfig({
             // a blob URL on this origin. Vercel sends HSTS on its own.
             vercel: {
                 config: {
+                    version: 3,
                     routes: [
                         {
                             src: "/(.*)",
