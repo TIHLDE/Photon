@@ -159,6 +159,13 @@ export const openWrappedCamerasSchema = Schema(
                 description: "The event's slug, for linking to its camera",
             }),
             title: z.string(),
+            imageUrl: z.url().nullable().meta({
+                description:
+                    "The event's banner image, or null when it has none",
+            }),
+            imageAlt: z.string().nullable().meta({
+                description: "Alt text for the banner image (nullable)",
+            }),
             start: z.iso.datetime(),
             end: z.iso.datetime(),
             closesAt: z.iso.datetime().meta({

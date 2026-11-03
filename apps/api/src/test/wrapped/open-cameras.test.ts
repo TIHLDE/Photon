@@ -16,7 +16,11 @@ describe("the cameras open for a member right now", () => {
         "lists the event they are at, and nothing they cannot shoot at",
         async ({ ctx }) => {
             const now = Date.now();
-            const here = await createOngoingEvent(ctx, { title: "Festen" });
+            const here = await createOngoingEvent(ctx, {
+                title: "Festen",
+                imageUrl: "https://example.com/festen.jpg",
+                imageAlt: "Dansegulvet på Festen",
+            });
             const cameraOff = await createOngoingEvent(ctx);
             const notRegistered = await createOngoingEvent(ctx);
             const queued = await createOngoingEvent(ctx);
@@ -54,6 +58,8 @@ describe("the cameras open for a member right now", () => {
                 eventId: here.id,
                 slug: here.slug,
                 title: "Festen",
+                imageUrl: "https://example.com/festen.jpg",
+                imageAlt: "Dansegulvet på Festen",
                 shotsPerPerson: 3,
                 shotsLeft: 3,
                 closesAt: new Date(here.end.getTime() + 4 * HOUR).toISOString(),
@@ -106,6 +112,16 @@ describe("the cameras open for a member right now", () => {
                 "Snart",
                 "Møtet",
             ]);
+
+            // No banner on the event: the fields are there, and null.
+            const [first] = await (
+                await client.api.event.wrapped.open.$get()
+            ).json();
+            expect(first).toMatchObject({
+                title: "Festen",
+                imageUrl: null,
+                imageAlt: null,
+            });
 
             const cookie = await sessionCookie(ctx, member);
             await uploadPhoto(ctx, cookie, party.id);
