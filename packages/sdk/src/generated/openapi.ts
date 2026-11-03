@@ -4721,7 +4721,7 @@ export interface components {
             isAnonymous: boolean;
             /** @description Whether the requesting user filed this. */
             isAuthor: boolean;
-            /** @description Who filed it, also when the feedback is anonymous. Clients must hide it from members when 'isAnonymous' is true. */
+            /** @description Who filed it. Null on anonymous feedback, except for its author and for moderators. */
             author: components["schemas"]["FeedbackAuthor"] | null;
             upvotes: number;
             downvotes: number;

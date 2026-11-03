@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { addUserToGroup, isDerivedGroupType } from "~/lib/group";
+import { canGrantGroupMembership } from "~/lib/group/positions";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -104,6 +105,20 @@ export const addMemberRoute = route().post(
             throw new HTTPException(403, {
                 message:
                     "Adding a member as leader requires the 'groups:manage' permission",
+            });
+        }
+
+        if (
+            !(await canGrantGroupMembership(
+                ctx,
+                c.get("user").id,
+                group,
+                body.role ?? "member",
+            ))
+        ) {
+            throw new HTTPException(403, {
+                message:
+                    "You can only add members to a group whose TIHLDE-wide permissions you hold yourself",
             });
         }
 

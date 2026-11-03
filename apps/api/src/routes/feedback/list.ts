@@ -4,6 +4,7 @@ import { validator } from "hono-openapi";
 import type z from "zod";
 import {
     selectFeedbackItems,
+    canSeeAnonymousAuthors,
     serializeFeedbackItem,
 } from "~/lib/feedback/serialize";
 import { describeRoute } from "~/lib/openapi";
@@ -73,8 +74,12 @@ export const listRoute = route().get(
             .limit(pageSize)
             .offset(getPageOffset(page, pageSize));
 
+        const seesAnonymousAuthors = await canSeeAnonymousAuthors(
+            c.get("ctx"),
+            userId,
+        );
         const items = rows.map((row) =>
-            serializeFeedbackItem(row, userId),
+            serializeFeedbackItem(row, userId, seesAnonymousAuthors),
         ) satisfies z.infer<typeof feedbackItemSchema>[];
 
         return c.json({

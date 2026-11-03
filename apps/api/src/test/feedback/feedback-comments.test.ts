@@ -22,7 +22,6 @@ describe("Feedback anonymity, comments and rejection", () => {
                 })
             ).json();
             expect(anonymous.isAnonymous).toBe(true);
-            // The API always returns the author; the frontend hides it.
             expect(anonymous.author?.id).toBe(author.id);
 
             const named = await (
@@ -43,7 +42,7 @@ describe("Feedback anonymity, comments and rejection", () => {
             ).json();
             const byId = new Map(list.items.map((item) => [item.id, item]));
             expect(byId.get(anonymous.id)?.isAnonymous).toBe(true);
-            expect(byId.get(anonymous.id)?.author?.id).toBe(author.id);
+            expect(byId.get(anonymous.id)?.author).toBeNull();
             expect(byId.get(named.id)?.author?.id).toBe(author.id);
             expect(byId.get(named.id)?.author?.name).toBe(author.name);
 
@@ -51,7 +50,20 @@ describe("Feedback anonymity, comments and rejection", () => {
                 param: { id: anonymous.id },
             });
             expect(single.status).toBe(200);
-            expect((await single.json()).author?.name).toBe(author.name);
+            expect((await single.json()).author).toBeNull();
+
+            const moderator = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(moderator, ["feedback:update"]);
+            const moderatorClient = await ctx.utils.clientForUser(moderator);
+            const moderated = await moderatorClient.api.feedback[":id"].$get({
+                param: { id: anonymous.id },
+            });
+            expect((await moderated.json()).author?.id).toBe(author.id);
+
+            const own = await authorClient.api.feedback[":id"].$get({
+                param: { id: anonymous.id },
+            });
+            expect((await own.json()).author?.id).toBe(author.id);
         },
         500_000,
     );

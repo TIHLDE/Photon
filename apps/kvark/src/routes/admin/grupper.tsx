@@ -472,6 +472,9 @@ function GroupCard({
     const updateGroup = useMutation(updateGroupMutation);
     const { uploadImage, isUploading } = useImageUploader();
     const isLeader = useIsGroupLeaderOf(group.slug);
+    const canChangeType = usePermission(["groups:update", "groups:manage"]);
+    const typeEditable = canEditGroupType(group.type);
+    const typeSelectable = typeEditable && canChangeType;
     // Speiler PATCH /groups/:slug nøyaktig: `groups:update` globalt eller for
     // denne gruppa, eller å være lederen dens (`ownership: isGroupLeader`).
     const canEdit =
@@ -507,7 +510,7 @@ function GroupCard({
                 slug: group.slug,
                 data: {
                     contractSigningRequired: requiresSigning,
-                    ...(canEditGroupType(group.type)
+                    ...(typeSelectable
                         ? {
                               type,
                               // Underkategorien gjelder bare interessegrupper;
@@ -516,7 +519,9 @@ function GroupCard({
                                   ? subtype
                                   : null,
                           }
-                        : {}),
+                        : typeEditable && supportsGroupSubtype(type)
+                          ? { subtype }
+                          : {}),
                     // Omitted when unchanged, so saving the checkbox never
                     // clears the group's existing logo or gruppebilde.
                     ...(logoUrl ? { logoUrl } : {}),
@@ -593,7 +598,7 @@ function GroupCard({
                                 Krev kontraktsignering for denne gruppen
                             </FieldLabel>
                         </Field>
-                        {canEditGroupType(group.type) ? (
+                        {typeSelectable ? (
                             <Field>
                                 <FieldLabel htmlFor={`type-${group.slug}`}>
                                     Gruppetype
@@ -626,8 +631,7 @@ function GroupCard({
                                 </FieldDescription>
                             </Field>
                         ) : null}
-                        {canEditGroupType(group.type) &&
-                        supportsGroupSubtype(type) ? (
+                        {typeEditable && supportsGroupSubtype(type) ? (
                             <Field>
                                 <FieldLabel htmlFor={`subtype-${group.slug}`}>
                                     Underkategori

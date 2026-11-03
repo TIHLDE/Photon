@@ -1,3 +1,4 @@
+import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import type { FeedbackStatus, FeedbackType } from "@photon/db/schema";
 import { type SQL, asc, eq, sql } from "drizzle-orm";
@@ -95,20 +96,34 @@ type FeedbackItemRow = Awaited<
  * The author is always included, also on anonymous feedback: hiding the name
  * from members is left to the frontend, which shows it only to Index.
  */
+/** Moderators follow up on anonymous reports, so they still see who filed them. */
+export async function canSeeAnonymousAuthors(
+    ctx: AppContext,
+    userId: string,
+): Promise<boolean> {
+    return hasPermission(ctx, userId, [
+        "feedback:update",
+        "feedback:delete",
+        "feedback:manage",
+    ]);
+}
+
 export function serializeFeedbackItem(
     row: FeedbackItemRow,
     userId: string,
+    seesAnonymousAuthors = false,
 ): SerializedFeedbackItem {
+    const isAuthor = row.authorId !== null && row.authorId === userId;
+    const authorHidden = row.isAnonymous && !isAuthor && !seesAnonymousAuthors;
+
     const author =
-        row.authorId && row.authorName
+        !authorHidden && row.authorId && row.authorName
             ? {
                   id: row.authorId,
                   name: row.authorName,
                   image: row.authorImage,
               }
             : null;
-
-    const isAuthor = row.authorId !== null && row.authorId === userId;
 
     return {
         id: row.id,
@@ -138,12 +153,15 @@ export async function getFeedbackItem(
     db: AppContext["db"],
     feedbackId: string,
     userId: string,
+    seesAnonymousAuthors = false,
 ): Promise<SerializedFeedbackItem | null> {
     const [row] = await selectFeedbackItems(db, userId).where(
         eq(schema.feedback.id, feedbackId),
     );
 
-    return row ? serializeFeedbackItem(row, userId) : null;
+    return row
+        ? serializeFeedbackItem(row, userId, seesAnonymousAuthors)
+        : null;
 }
 
 /**

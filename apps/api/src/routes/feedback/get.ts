@@ -1,6 +1,9 @@
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { getFeedbackItem } from "~/lib/feedback/serialize";
+import {
+    canSeeAnonymousAuthors,
+    getFeedbackItem,
+} from "~/lib/feedback/serialize";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -24,10 +27,16 @@ export const getRoute = route().get(
     requireAuth,
     validator("param", feedbackIdParamSchema),
     async (c) => {
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
         const { id } = c.req.valid("param");
+        const userId = c.get("user").id;
 
-        const item = await getFeedbackItem(db, id, c.get("user").id);
+        const item = await getFeedbackItem(
+            ctx.db,
+            id,
+            userId,
+            await canSeeAnonymousAuthors(ctx, userId),
+        );
 
         if (!item) {
             throw new HTTPException(404, { message: "Feedback not found" });

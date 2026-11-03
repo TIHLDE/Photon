@@ -823,9 +823,10 @@ export function createAuth(options: CreateAuthOptions) {
                  * Written here rather than at creation time because the value
                  * depends on *how* the endpoint was called, and the sign-up
                  * body has no room for something the caller must not control.
-                 * The row is found by e-mail: it is unique, the before-hook has
-                 * already normalised it, and the account was created moments
-                 * ago by this very request.
+                 * The row is found by the id in the response, not the e-mail:
+                 * signing up with a taken address answers 200 with a made-up
+                 * user, and matching on the address would put an existing
+                 * member in the approval queue.
                  *
                  * Only ever fills in a status that is missing, so re-running it
                  * can never demote an approved member back to pending.
@@ -834,18 +835,18 @@ export function createAuth(options: CreateAuthOptions) {
                     ctx.path === "/sign-up/email" &&
                     !trustedSignUpStore.getStore()
                 ) {
-                    const email = ctx.body?.email;
-                    if (typeof email === "string" && email.length > 0) {
+                    const returned = ctx.context.returned as
+                        | { user?: { id?: unknown } }
+                        | undefined;
+                    const createdId = returned?.user?.id;
+                    if (typeof createdId === "string") {
                         try {
                             const queued = await options.services.db
                                 .update(user)
                                 .set({ approvalStatus: "pending" })
                                 .where(
                                     and(
-                                        eq(
-                                            user.email,
-                                            email.trim().toLowerCase(),
-                                        ),
+                                        eq(user.id, createdId),
                                         isNull(user.approvalStatus),
                                     ),
                                 )

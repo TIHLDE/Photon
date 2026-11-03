@@ -9,6 +9,7 @@
 
 import {
     PERMISSIONS_SET,
+    getUserPermissions,
     hasPermission,
     hasScopedPermission,
 } from "@photon/auth/rbac";
@@ -139,6 +140,31 @@ export async function canGrantPositionPermissions(
         if (!held) return false;
     }
     return true;
+}
+
+/**
+ * Guardrail: may the user give someone this role in this group?
+ *
+ * Membership hands out the group's org-wide permissions as surely as a verv
+ * does, so the rule from {@link canAssignPosition} applies here too.
+ */
+export async function canGrantGroupMembership(
+    ctx: AppContext,
+    userId: string,
+    group: {
+        memberGlobalPermissions: string[] | null;
+        leaderGlobalPermissions: string[] | null;
+    },
+    role: "member" | "leader",
+): Promise<boolean> {
+    const needed = knownPermissions([
+        ...(group.memberGlobalPermissions ?? []),
+        ...(role === "leader" ? (group.leaderGlobalPermissions ?? []) : []),
+    ]);
+    if (needed.length === 0) return true;
+
+    const held = new Set(await getUserPermissions(ctx, userId));
+    return held.has("root") || needed.every((p) => held.has(p));
 }
 
 /**

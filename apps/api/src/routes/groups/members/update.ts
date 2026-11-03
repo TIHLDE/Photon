@@ -9,6 +9,7 @@ import {
     updateGroupMemberRole,
 } from "~/lib/group";
 import { isGroupLeader } from "~/lib/group/middleware";
+import { canGrantGroupMembership } from "~/lib/group/positions";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -89,6 +90,21 @@ export const updateMemberRoleRoute = route().patch(
         if (isDerivedGroupType(group.type)) {
             throw new HTTPException(400, {
                 message: `Membership of "${groupSlug}" follows the member's Feide study programme and cannot be edited directly`,
+            });
+        }
+
+        if (
+            body.role === "leader" &&
+            !(await canGrantGroupMembership(
+                ctx,
+                c.get("user").id,
+                group,
+                "leader",
+            ))
+        ) {
+            throw new HTTPException(403, {
+                message:
+                    "You can only appoint a leader when you hold the TIHLDE-wide permissions that come with it",
             });
         }
 
