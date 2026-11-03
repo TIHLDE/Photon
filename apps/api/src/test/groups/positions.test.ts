@@ -558,6 +558,9 @@ describe("group positions", () => {
                     subgroup.slug,
                     "member",
                 );
+                // The outgoing leader already sits in HS, so a removal on
+                // handover would show up below.
+                await addUserToGroup(ctx, leader.id, "hs", "member");
 
                 // The leader hands the leadership over — the path the old
                 // sync used to seat the successor in HS.
@@ -572,7 +575,9 @@ describe("group positions", () => {
                 const hsMembers = await ctx.db.query.groupMembership.findMany({
                     where: { groupSlug: "hs" },
                 });
-                expect(hsMembers).toHaveLength(0);
+                expect(
+                    hsMembers.map((m) => ({ userId: m.userId, role: m.role })),
+                ).toEqual([{ userId: leader.id, role: "member" }]);
 
                 // No verv is conjured up in HS either.
                 const positions = await ctx.db

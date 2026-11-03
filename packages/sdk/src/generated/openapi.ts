@@ -1788,7 +1788,7 @@ export interface paths {
         head?: never;
         /**
          * Partially update group
-         * @description Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' permission (globally or scoped to this group). Changing the group's type additionally requires 'groups:update' or 'groups:manage' globally.
+         * @description Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' or 'groups:manage' (globally or scoped to this group). Changing the group's type additionally requires 'groups:update' or 'groups:manage' globally.
          */
         patch: operations["updateGroup"];
         trace?: never;
@@ -5497,7 +5497,7 @@ export interface components {
             createdAt: string;
             /** @description Last update timestamp */
             updatedAt: string;
-            /** @description What this group calls its leader, e.g. «President» or «Innovasjonsminister». Reconciled with the linked Hovedstyret verv, so both pages name the leader the same. Null means the plain «Leder». */
+            /** @description What this group calls its leader, e.g. «President» or «Innovasjonsminister». Set per group on its own; a verv in Hovedstyret has its own name. Null means the plain «Leder». */
             leaderTitle: string | null;
             /** @description Whether this group may be archived at all. False for Hovedstyret and for groups whose roster follows Feide. */
             archivable: boolean;
@@ -13502,13 +13502,6 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Position is managed automatically and cannot be assigned by hand */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
         };
     };
     unassignGroupPosition: {
@@ -13553,13 +13546,6 @@ export interface operations {
             };
             /** @description Not Found - Position not found */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Position is managed automatically from group leadership */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };

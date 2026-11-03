@@ -23,11 +23,6 @@ export const unassignPositionRoute = route().delete(
         })
         .forbidden({ description: "Not authorized to manage this position" })
         .notFound({ description: "Position not found" })
-        .response({
-            statusCode: 409,
-            description:
-                "Position is managed automatically from group leadership",
-        })
         .build(),
     requireAuth,
     async (c) => {

@@ -25,11 +25,6 @@ export const assignPositionRoute = route().post(
         .badRequest({ description: "User is not a member of the group" })
         .forbidden({ description: "Not authorized to assign this position" })
         .notFound({ description: "Position not found" })
-        .response({
-            statusCode: 409,
-            description:
-                "Position is managed automatically and cannot be assigned by hand",
-        })
         .build(),
     requireAuth,
     validator("json", assignPositionSchema),

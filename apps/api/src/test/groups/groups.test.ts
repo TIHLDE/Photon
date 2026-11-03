@@ -1211,8 +1211,7 @@ describe("groups", () => {
                     });
                     expect(rename.status).toBe(200);
 
-                    // …and is never written: a stale copy of the type must
-                    // not undo an administrator's change made in between.
+                    // …and the matching type is not written back.
                     const renamed = await ctx.db.query.group.findFirst({
                         where: { slug: group.slug },
                     });
@@ -1263,6 +1262,85 @@ describe("groups", () => {
                         json: { type: "subgroup" },
                     });
                     expect(response.status).toBe(403);
+                },
+                500_000,
+            );
+
+            integrationTest(
+                "a global groups:manage may update the group and its type",
+                async ({ ctx }) => {
+                    const admin = await ctx.utils.createTestUser();
+                    await ctx.utils.giveUserPermissions(admin, [
+                        "groups:manage",
+                    ]);
+                    const client = await ctx.utils.clientForUser(admin);
+                    const group = await ctx.utils.createTestGroup({
+                        slug: "manage-bytter-type",
+                        type: "committee",
+                    });
+
+                    const response = await client.api.groups[":slug"].$patch({
+                        param: { slug: group.slug },
+                        json: { name: "Renamed", type: "interestgroup" },
+                    });
+                    expect(response.status).toBe(200);
+
+                    const after = await ctx.db.query.group.findFirst({
+                        where: { slug: group.slug },
+                    });
+                    expect(after?.type).toBe("interestgroup");
+                },
+                500_000,
+            );
+
+            integrationTest(
+                "a subtype is only kept on interest groups",
+                async ({ ctx }) => {
+                    const leader = await ctx.utils.createTestUser();
+                    const client = await ctx.utils.clientForUser(leader);
+                    const group = await ctx.utils.createTestGroup({
+                        slug: "subtype-gruppe",
+                        type: "interestgroup",
+                    });
+                    await ctx.db.insert(schema.groupMembership).values({
+                        userId: leader.id,
+                        groupSlug: group.slug,
+                        role: "leader",
+                    });
+
+                    // The leader sets the subtype without touching the type.
+                    const set = await client.api.groups[":slug"].$patch({
+                        param: { slug: group.slug },
+                        json: { subtype: "IDRETTSGRUPPE" },
+                    });
+                    expect(set.status).toBe(200);
+                    expect(
+                        (
+                            await ctx.db.query.group.findFirst({
+                                where: { slug: group.slug },
+                            })
+                        )?.subtype,
+                    ).toBe("IDRETTSGRUPPE");
+
+                    // An administrator makes it a committee; a form opened
+                    // before that still sends the subtype, which is dropped.
+                    await ctx.db
+                        .update(schema.group)
+                        .set({ type: "committee", subtype: null })
+                        .where(eq(schema.group.slug, group.slug));
+
+                    const stale = await client.api.groups[":slug"].$patch({
+                        param: { slug: group.slug },
+                        json: { subtype: "IDRETTSGRUPPE" },
+                    });
+                    expect(stale.status).toBe(200);
+                    expect(
+                        (
+                            await ctx.db.query.group.findFirst({
+                                where: { slug: group.slug },
+                            })
+                        )?.subtype,
+                    ).toBeNull();
                 },
                 500_000,
             );

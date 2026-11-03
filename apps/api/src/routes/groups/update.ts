@@ -19,7 +19,7 @@ export const updateRoute = route().patch(
         summary: "Partially update group",
         operationId: "updateGroup",
         description:
-            "Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' permission (globally or scoped to this group). Changing the group's type additionally requires 'groups:update' or 'groups:manage' globally.",
+            "Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' or 'groups:manage' (globally or scoped to this group). Changing the group's type additionally requires 'groups:update' or 'groups:manage' globally.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -29,7 +29,7 @@ export const updateRoute = route().patch(
         .badRequest({ description: "Invalid input" })
         .forbidden({
             description:
-                "Not a group leader or missing groups:update permission, or changing the type without a global groups:update/groups:manage",
+                "Not a group leader or missing groups:update/groups:manage, or changing the type without a global groups:update/groups:manage",
         })
         .notFound({
             description: "Group with the specified slug does not exist",
@@ -37,7 +37,7 @@ export const updateRoute = route().patch(
         .build(),
     requireAuth,
     requireAccess({
-        permission: "groups:update",
+        permission: ["groups:update", "groups:manage"],
         scope: (c) => `group:${c.req.param("slug")}`,
         ownership: { param: "slug", check: isGroupLeader },
     }),
@@ -73,7 +73,7 @@ export const updateRoute = route().patch(
         // matches: the comparison is against a read that may be stale by the
         // time the update runs, and re-writing it would undo a type change an
         // administrator made in between.
-        const { type, ...fields } = body;
+        const { type, subtype, ...fields } = body;
         const writeType =
             type !== undefined &&
             (await hasPermission(ctx, user.id, [
@@ -90,6 +90,20 @@ export const updateRoute = route().patch(
                     "Changing a group's type requires the global groups:update or groups:manage permission",
             });
         }
+
+        // Only interest groups have a subtype. A form opened before an
+        // administrator changed the type can still send the old one, so it is
+        // judged against the type the group ends up with.
+        const effectiveType = writeType ? type : previousGroup.type;
+        const writeSubtype =
+            subtype === undefined
+                ? {}
+                : {
+                      subtype:
+                          effectiveType.toLowerCase() === "interestgroup"
+                              ? subtype
+                              : null,
+                  };
 
         // Validate fines admin if provided
         if (body.finesAdminId !== undefined && body.finesAdminId !== null) {
@@ -111,6 +125,7 @@ export const updateRoute = route().patch(
             .set({
                 ...fields,
                 ...(writeType ? { type } : {}),
+                ...writeSubtype,
                 updatedAt: new Date(),
             })
             .where(eq(schema.group.slug, slug));

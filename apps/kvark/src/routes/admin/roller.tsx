@@ -1209,19 +1209,21 @@ function PositionDialog({
             );
             const nextIds = holders.map((holder) => holder.id);
 
-            for (const userId of previousIds.filter(
-                (id) => !nextIds.includes(id),
+            // Nye innehavere først: feiler en tildeling, sitter den gamle
+            // fortsatt, i stedet for at vervet blir stående tomt.
+            for (const userId of nextIds.filter(
+                (id) => !previousIds.includes(id),
             )) {
-                await unassign.mutateAsync({
+                await assign.mutateAsync({
                     groupSlug,
                     positionId,
                     userId,
                 });
             }
-            for (const userId of nextIds.filter(
-                (id) => !previousIds.includes(id),
+            for (const userId of previousIds.filter(
+                (id) => !nextIds.includes(id),
             )) {
-                await assign.mutateAsync({
+                await unassign.mutateAsync({
                     groupSlug,
                     positionId,
                     userId,
