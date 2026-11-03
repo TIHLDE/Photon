@@ -1,3 +1,4 @@
+import { env } from "@photon/core/env";
 import { schema } from "@photon/db";
 import type { AppContext } from "~/lib/ctx";
 
@@ -62,8 +63,12 @@ export default async (ctx: AppContext) => {
     // 3. Org (groups)
     await seedOrg(ctx);
 
-    // 4. Auth (users)
-    await seedAuth(ctx);
+    // 4. Auth (users). Their passwords are in this public repo.
+    if (env.NODE_ENV === "production") {
+        console.warn("🌱 Skipped default seed accounts in production.");
+    } else {
+        await seedAuth(ctx);
+    }
 
     // 5. Event (categories)
     await seedEvent(ctx);

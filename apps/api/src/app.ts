@@ -7,6 +7,7 @@ import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { openAPIRouteHandler } from "hono-openapi";
 import { cors } from "hono/cors";
+import { secureHeaders } from "hono/secure-headers";
 import {
     type AppContext,
     type AppServices,
@@ -108,6 +109,25 @@ export const createApp = async (variables?: Variables) => {
 
     const app = new Hono<{ Variables: Variables }>()
         .use(pinoLoggerMiddleware)
+        .use(
+            "*",
+            // The website on another subdomain embeds images and PDFs from
+            // this host, so the library's same-origin resource policy and
+            // frame denial would break it. Only what we need is switched on.
+            secureHeaders({
+                xContentTypeOptions: true,
+                strictTransportSecurity: "max-age=31536000",
+                xFrameOptions: false,
+                crossOriginResourcePolicy: false,
+                crossOriginOpenerPolicy: false,
+                originAgentCluster: false,
+                referrerPolicy: false,
+                xDnsPrefetchControl: false,
+                xDownloadOptions: false,
+                xPermittedCrossDomainPolicies: false,
+                xXssProtection: false,
+            }),
+        )
         .use("*", async (c, next) => {
             c.set("ctx", ctx);
             c.set("service", service);

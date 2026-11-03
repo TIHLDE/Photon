@@ -204,14 +204,18 @@ export const getRoute = route().get(
             label: event.category.label,
         };
 
-        const reactions = event.reactions.map((r) => ({
-            emoji: r.emoji,
-            user: {
-                id: r.userId,
-                name: r.user.name,
-                image: r.user.image,
-            },
-        }));
+        // Hvem som reagerte er en opplysning om enkeltpersoner, og nettsiden
+        // viser reaksjoner bare til innloggede.
+        const reactions = isMemberAudience(user)
+            ? event.reactions.map((r) => ({
+                  emoji: r.emoji,
+                  user: {
+                      id: r.userId,
+                      name: r.user.name,
+                      image: r.user.image,
+                  },
+              }))
+            : [];
 
         const payInfo = event.isPaidEvent
             ? {

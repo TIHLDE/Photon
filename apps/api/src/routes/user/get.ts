@@ -2,6 +2,7 @@ import { hasPermission } from "@photon/auth/rbac";
 import { HTTPException } from "hono/http-exception";
 import { isMemberAudience } from "~/lib/auth";
 import { HTTPAppException } from "~/lib/errors";
+import { canViewGroup } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { computeUserClassYear } from "~/lib/event/priority";
@@ -17,6 +18,9 @@ import { userProfileSchema } from "./schema";
  * notification settings stay private. Any signed-in member may look up any
  * other — the group member lists already link here.
  *
+ * Et medlemskap i en privat gruppe vises bare til dem som kan åpne gruppen, og
+ * til medlemmet selv.
+ *
  * E-posten er unntaket: den følger med for en admin med `users:view`, som er
  * de samme som ser den i brukerlista. For alle andre er den null.
  *
@@ -24,6 +28,14 @@ import { userProfileSchema } from "./schema";
  * for å komme til innstillinger og til «Logg ut»; andres profiler er fortsatt
  * medlemsinnhold.
  */
+async function filterAsync<T>(
+    items: T[],
+    keep: (item: T) => boolean | Promise<boolean>,
+): Promise<T[]> {
+    const kept = await Promise.all(items.map(keep));
+    return items.filter((_, index) => kept[index]);
+}
+
 export const getUserRoute = route().get(
     "/:id",
     describeRoute({
@@ -152,6 +164,13 @@ export const getUserRoute = route().get(
             return true;
         });
 
+        const canSeeMembership = (group: { slug: string; type: string }) =>
+            user.id === viewer.id || canViewGroup(ctx, group, viewer.id);
+        const [visibleMemberships, visibleFormerGroups] = await Promise.all([
+            filterAsync(memberships, (m) => canSeeMembership(m.group)),
+            filterAsync(formerGroups, (entry) => canSeeMembership(entry.group)),
+        ]);
+
         return c.json({
             id: user.id,
             name: user.name,
@@ -166,14 +185,14 @@ export const getUserRoute = route().get(
             studyProgram,
             studyStartYear,
             classYear,
-            groups: memberships.map((m) => ({
+            groups: visibleMemberships.map((m) => ({
                 slug: m.groupSlug,
                 name: m.group.name,
                 type: m.group.type,
                 logoUrl: m.group.logoUrl ?? null,
                 role: m.role,
             })),
-            formerGroups: formerGroups.map((entry) => ({
+            formerGroups: visibleFormerGroups.map((entry) => ({
                 slug: entry.groupSlug,
                 name: entry.group.name,
                 type: entry.group.type,

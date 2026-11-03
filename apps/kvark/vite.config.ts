@@ -34,6 +34,26 @@ const config = defineConfig({
             // Serverside 301-er for de gamle tihlde.org-adressene, se
             // src/legacy-routes.ts.
             routeRules: legacyRouteRules,
+            // Not as a "/**" route rule: Nitro writes those for Vercel without
+            // `continue`, which ends routing before the page is rendered.
+            // 'self' and not 'none': the PDF preview in an upload dialog frames
+            // a blob URL on this origin. Vercel sends HSTS on its own.
+            vercel: {
+                config: {
+                    routes: [
+                        {
+                            src: "/(.*)",
+                            headers: {
+                                "X-Content-Type-Options": "nosniff",
+                                "X-Frame-Options": "SAMEORIGIN",
+                                "Content-Security-Policy":
+                                    "frame-ancestors 'self'",
+                            },
+                            continue: true,
+                        },
+                    ],
+                },
+            },
         }),
         tailwindcss(),
         tanstackStart(),

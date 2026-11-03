@@ -6,6 +6,9 @@ import { createIsomorphicFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
 import { createPhotonAuthClient } from "@photon/auth/client";
 import { authErrorMessage } from "#/lib/auth-error-message";
+import { sanitizeRedirectTo } from "#/lib/safe-redirect";
+
+export { sanitizeRedirectTo };
 
 export const clientAuthInstance = createPhotonAuthClient({
     baseUrl: import.meta.env.VITE_AUTH_BASE_URL ?? "https://photon.tihlde.org",
@@ -248,17 +251,6 @@ export function sessionHasPermissionInAnyScope(
     return names.some((name) =>
         permissions.some((raw) => parsePermission(raw).permission === name),
     );
-}
-
-/**
- * Only allow redirecting back to a path on this site. Without this, a crafted
- * `?redirectTo=https://evil.example` would bounce the user off-site after login.
- */
-export function sanitizeRedirectTo(url: unknown): string {
-    if (typeof url !== "string") return "/";
-    // Reject protocol-relative ("//evil.com") and absolute URLs.
-    if (!url.startsWith("/") || url.startsWith("//")) return "/";
-    return url;
 }
 
 /**
