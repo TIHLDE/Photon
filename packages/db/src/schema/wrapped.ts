@@ -216,8 +216,14 @@ export const wrappedRelations = defineRelationsPart(
                 to: r.user.id,
                 optional: false,
             }),
-            likes: r.many.wrappedPhotoLike(),
-            comments: r.many.wrappedPhotoComment(),
+            likes: r.many.wrappedPhotoLike({
+                from: r.wrappedPhoto.id,
+                to: r.wrappedPhotoLike.photoId,
+            }),
+            comments: r.many.wrappedPhotoComment({
+                from: r.wrappedPhoto.id,
+                to: r.wrappedPhotoComment.photoId,
+            }),
         },
         wrappedPhotoLike: {
             photo: r.one.wrappedPhoto({
