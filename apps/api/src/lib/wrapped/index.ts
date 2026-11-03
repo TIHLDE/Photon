@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import type { RegistrationStatus } from "@photon/db/schema";
+import type { RegistrationStatus, WrappedStoryLayout } from "@photon/db/schema";
 import {
     type SQL,
     and,
@@ -63,6 +63,8 @@ export type CameraStatus = {
     publishedAt: Date | null;
     /** When the story was first published. Never cleared by unpublishing. */
     firstPublishedAt: Date | null;
+    /** How the story is watched: the vertical feed or the card stack. */
+    storyLayout: WrappedStoryLayout;
     canManage: boolean;
 };
 
@@ -220,6 +222,7 @@ export async function readShootState(
         draftCount,
         publishedAt: camera?.publishedAt ?? null,
         firstPublishedAt: camera?.firstPublishedAt ?? null,
+        storyLayout: camera?.storyLayout ?? "feed",
     };
 }
 

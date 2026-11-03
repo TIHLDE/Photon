@@ -24,7 +24,7 @@ export const setWrappedCameraRoute = route().put(
         summary: "Turn the event's camera on or off",
         operationId: "setWrappedCamera",
         description:
-            "Turn the disposable camera on or off for an event and set how many photos each member may take. Requires 'events:update' or 'events:manage', globally or for the arranging group. Turning the camera off keeps the photos already taken.",
+            "Turn the disposable camera on or off for an event and set how many photos each member may take, and how the story is watched (`storyLayout`). Requires 'events:update' or 'events:manage', globally or for the arranging group. Turning the camera off keeps the photos already taken.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -46,7 +46,7 @@ export const setWrappedCameraRoute = route().put(
         const ctx = c.get("ctx");
         const user = c.get("user");
         const { eventId } = c.req.valid("param");
-        const { enabled, shotsPerPerson } = c.req.valid("json");
+        const { enabled, shotsPerPerson, storyLayout } = c.req.valid("json");
 
         // Checked before the write: without the event the insert would die on
         // the foreign key and surface as a 500 instead of a 404.
@@ -60,6 +60,7 @@ export const setWrappedCameraRoute = route().put(
                 eventId,
                 enabled,
                 shotsPerPerson: shotsPerPerson ?? DEFAULT_SHOTS_PER_PERSON,
+                ...(storyLayout === undefined ? {} : { storyLayout }),
             })
             .onConflictDoUpdate({
                 target: schema.wrappedCamera.eventId,
@@ -67,12 +68,13 @@ export const setWrappedCameraRoute = route().put(
                     enabled,
                     // Omitted means "leave it", not "back to the default".
                     ...(shotsPerPerson === undefined ? {} : { shotsPerPerson }),
+                    ...(storyLayout === undefined ? {} : { storyLayout }),
                     updatedAt: new Date(),
                 },
             });
 
         c.get("logger").info(
-            { eventId, enabled, shotsPerPerson },
+            { eventId, enabled, shotsPerPerson, storyLayout },
             "Wrapped camera settings changed",
         );
 

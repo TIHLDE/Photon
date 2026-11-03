@@ -159,4 +159,35 @@ describe("wrapped story", () => {
         },
         500_000,
     );
+    integrationTest(
+        "the organizer picks the card layout, and the story says so",
+        async ({ ctx }) => {
+            const { event, organizer, photographer } =
+                await eventWithPickedPhotos(ctx, 1);
+            await markPublished(ctx, event.id);
+            const param = { eventId: event.id };
+
+            const asOrganizer = await ctx.utils.clientForUser(organizer);
+            const set = await asOrganizer.api.event[":eventId"].wrapped.$put({
+                param,
+                json: { enabled: true, storyLayout: "cards" },
+            });
+            expect(set.status).toBe(200);
+            expect((await set.json()).storyLayout).toBe("cards");
+
+            const asMember = await ctx.utils.clientForUser(photographer);
+            const story = await asMember.api.event[
+                ":eventId"
+            ].wrapped.story.$get({ param, query: {} });
+            expect((await story.json()).layout).toBe("cards");
+
+            // Leaving it out keeps the choice.
+            const again = await asOrganizer.api.event[":eventId"].wrapped.$put({
+                param,
+                json: { enabled: false },
+            });
+            expect((await again.json()).storyLayout).toBe("cards");
+        },
+        500_000,
+    );
 });

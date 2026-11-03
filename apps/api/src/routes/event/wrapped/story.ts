@@ -86,6 +86,7 @@ export const getWrappedStoryRoute = route().get(
                 imageUrl: event.imageUrl,
             },
             publishedAt: event.publishedAt?.toISOString() ?? null,
+            layout: event.layout,
             items: photos.map((photo) => ({
                 id: photo.id,
                 takenAt: photo.createdAt.toISOString(),

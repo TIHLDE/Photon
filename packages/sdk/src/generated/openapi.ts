@@ -1167,7 +1167,7 @@ export interface paths {
         get: operations["getWrappedCamera"];
         /**
          * Turn the event's camera on or off
-         * @description Turn the disposable camera on or off for an event and set how many photos each member may take. Requires 'events:update' or 'events:manage', globally or for the arranging group. Turning the camera off keeps the photos already taken.
+         * @description Turn the disposable camera on or off for an event and set how many photos each member may take, and how the story is watched (`storyLayout`). Requires 'events:update' or 'events:manage', globally or for the arranging group. Turning the camera off keeps the photos already taken.
          */
         put: operations["setWrappedCamera"];
         post?: never;
@@ -5085,6 +5085,11 @@ export interface components {
             publishedAt: string | null;
             /** @description When the story was first published. Stays set after unpublishing. */
             firstPublishedAt: string | null;
+            /**
+             * @description How the story is watched: `feed` scrolls up and down, `cards` is a stack swiped to the side
+             * @enum {string}
+             */
+            storyLayout: "feed" | "cards";
             /** @description Whether the caller arranges the event */
             canManage: boolean;
         };
@@ -5093,6 +5098,11 @@ export interface components {
             enabled: boolean;
             /** @description Photos per member. Omit to keep the current value (5 on a camera that was never configured). */
             shotsPerPerson?: number;
+            /**
+             * @description How the story is watched. Omit to keep the current value (`feed` on a camera that was never configured).
+             * @enum {string}
+             */
+            storyLayout?: "feed" | "cards";
         };
         WrappedPhotoUploaded: {
             /**
@@ -5222,6 +5232,11 @@ export interface components {
             };
             /** @description When the story went live. Null only for an organizer previewing an unpublished story. */
             publishedAt: string | null;
+            /**
+             * @description How the story is watched: `feed` scrolls up and down, `cards` is a stack swiped to the side
+             * @enum {string}
+             */
+            layout: "feed" | "cards";
             /** @description The picked photos, in the order they were taken */
             items: components["schemas"]["WrappedStoryPhoto"][];
         };

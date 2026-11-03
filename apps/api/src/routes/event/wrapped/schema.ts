@@ -4,8 +4,14 @@ import { PagniationResponseSchema } from "~/middleware/pagination";
 import {
     WRAPPED_COMMENT_MAX_LENGTH,
     wrappedPhotoSources,
+    wrappedStoryLayouts,
 } from "@photon/db/schema";
 import { MAX_SHOTS_PER_PERSON, cameraBlockedReasons } from "~/lib/wrapped";
+
+const storyLayoutSchema = z.enum(wrappedStoryLayouts).meta({
+    description:
+        "How the story is watched: `feed` scrolls up and down, `cards` is a stack swiped to the side",
+});
 
 export const eventIdParamSchema = z.object({
     eventId: z.uuid().meta({ description: "Event ID" }),
@@ -75,6 +81,7 @@ export const wrappedCameraSchema = Schema(
             description:
                 "When the story was first published. Stays set after unpublishing.",
         }),
+        storyLayout: storyLayoutSchema,
         canManage: z.boolean().meta({
             description: "Whether the caller arranges the event",
         }),
@@ -95,6 +102,10 @@ export const setWrappedCameraSchema = Schema(
                 description:
                     "Photos per member. Omit to keep the current value (5 on a camera that was never configured).",
             }),
+        storyLayout: storyLayoutSchema.optional().meta({
+            description:
+                "How the story is watched. Omit to keep the current value (`feed` on a camera that was never configured).",
+        }),
     }),
 );
 
@@ -288,6 +299,7 @@ export const wrappedStorySchema = Schema(
             description:
                 "When the story went live. Null only for an organizer previewing an unpublished story.",
         }),
+        layout: storyLayoutSchema,
         items: z
             .array(wrappedStoryPhotoSchema)
             .describe("The picked photos, in the order they were taken"),
