@@ -202,6 +202,45 @@ describe("Restarting an abandoned Vipps checkout", () => {
             expect(row?.providerPaymentId).toBe(
                 vi.mocked(vipps.createPayment).mock.calls[0]?.[0].reference,
             );
+            // The new checkout is live, so the row must be payable again.
+            expect(row?.status).toBe("pending");
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "refuses when an unstarted obligation expired during the Vipps call",
+        async ({ ctx }) => {
+            const { event, user, payment } = await seedStartedCheckout(ctx);
+            await ctx.db
+                .update(schema.eventPayment)
+                .set({ provider: null, providerPaymentId: null })
+                .where(eq(schema.eventPayment.id, payment.id));
+            // The deadline passes while Vipps creates the checkout, and the
+            // expiry marks the obligation failed and gives the spot away.
+            vi.mocked(vipps.createPayment).mockImplementationOnce(async () => {
+                await ctx.db
+                    .update(schema.eventPayment)
+                    .set({ status: "failed" })
+                    .where(eq(schema.eventPayment.id, payment.id));
+                return "https://vipps.test/too-late";
+            });
+
+            const client = await ctx.utils.clientForUser(user);
+            const res = await client.api.event[":eventId"].payment.$post({
+                param: { eventId: event.id },
+                json: {
+                    returnUrl: "https://tihlde.org/arrangementer/test",
+                    userFlow: "WEB_REDIRECT",
+                },
+            });
+
+            expect(res.status).toBe(409);
+            const row = await ctx.db.query.eventPayment.findFirst({
+                where: { id: payment.id },
+            });
+            expect(row?.status).toBe("failed");
+            expect(row?.providerPaymentId).toBeNull();
         },
         500_000,
     );

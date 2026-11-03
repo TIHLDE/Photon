@@ -176,9 +176,12 @@ export const createPaymentRoute = route().post(
                 // if the row still carries the reference we read. Two presses at
                 // once would otherwise both hand out a URL, and money paid on the
                 // overwritten reference would have no payment to land on.
-                // Status is deliberately not part of the condition: cancelling
-                // the old checkout makes Vipps send a webhook that can mark the
-                // row `failed` while the new checkout is being created.
+                //
+                // On a restart, cancelling the old checkout makes Vipps send a
+                // webhook that can mark the row `failed` while the new checkout
+                // is being created. The new checkout is live, so the row goes
+                // back to `pending`. An unstarted obligation must still be
+                // `pending`: if its deadline passed meanwhile, the spot is gone.
                 [payment] = await db
                     .update(schema.eventPayment)
                     .set({
@@ -186,6 +189,7 @@ export const createPaymentRoute = route().post(
                         providerPaymentId: vippsReference,
                         amountMinor: event.priceMinor,
                         currency: "NOK",
+                        status: "pending",
                     })
                     .where(
                         and(
@@ -195,7 +199,12 @@ export const createPaymentRoute = route().post(
                                       schema.eventPayment.providerPaymentId,
                                       obligation.providerPaymentId,
                                   )
-                                : isNull(schema.eventPayment.providerPaymentId),
+                                : and(
+                                      isNull(
+                                          schema.eventPayment.providerPaymentId,
+                                      ),
+                                      eq(schema.eventPayment.status, "pending"),
+                                  ),
                         ),
                     )
                     .returning();
