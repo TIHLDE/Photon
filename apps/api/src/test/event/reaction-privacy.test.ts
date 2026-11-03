@@ -70,3 +70,67 @@ describe("GET /api/event/:eventId — who reacted", () => {
         ]);
     });
 });
+
+async function newsWithReaction(ctx: IntegrationTestContext) {
+    const [article] = await ctx.db
+        .insert(schema.news)
+        .values({ title: "Tittel", header: "Ingress", body: "Tekst" })
+        .returning();
+    if (!article) throw new Error("Failed to create news article");
+
+    const reactor = await ctx.utils.createTestUser();
+    await ctx.db
+        .insert(schema.newsReaction)
+        .values({ newsId: article.id, userId: reactor.id, emoji: "👍" });
+
+    return { article, reactor };
+}
+
+describe("GET /api/news/:id — who reacted", () => {
+    integrationTest("a signed-out visitor is not told", async ({ ctx }) => {
+        const { article, reactor } = await newsWithReaction(ctx);
+
+        const res = await ctx.app.request(`/api/news/${article.id}`);
+
+        expect(res.status).toBe(200);
+        const text = await res.text();
+        expect(text).not.toContain(reactor.id);
+        expect(text).not.toContain(reactor.name);
+        expect(JSON.parse(text).reactions).toEqual([]);
+    });
+
+    integrationTest(
+        "an account awaiting approval is not told",
+        async ({ ctx }) => {
+            const { article } = await newsWithReaction(ctx);
+            const viewer = await ctx.utils.createTestUser();
+            await ctx.db
+                .update(schema.user)
+                .set({ approvalStatus: "pending" })
+                .where(eq(schema.user.id, viewer.id));
+            const client = await ctx.utils.clientForUser(viewer);
+
+            const res = await client.api.news[":id"].$get({
+                param: { id: article.id },
+            });
+            const body = await res.json();
+
+            expect(body.reactions).toEqual([]);
+        },
+    );
+
+    integrationTest("a member still is", async ({ ctx }) => {
+        const { article, reactor } = await newsWithReaction(ctx);
+        const viewer = await ctx.utils.createTestUser();
+        const client = await ctx.utils.clientForUser(viewer);
+
+        const res = await client.api.news[":id"].$get({
+            param: { id: article.id },
+        });
+        const body = await res.json();
+
+        expect(body.reactions.map((reaction) => reaction.user.id)).toEqual([
+            reactor.id,
+        ]);
+    });
+});

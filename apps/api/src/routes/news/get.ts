@@ -1,5 +1,6 @@
 import { schema } from "@photon/db";
 import { HTTPException } from "hono/http-exception";
+import { isMemberAudience } from "~/lib/auth";
 import { canSeeArchivedNews } from "~/lib/news/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -82,6 +83,13 @@ export const getRoute = route().get(
             });
         }
 
-        return c.json(newsArticle);
+        // Hvem som reagerte er en opplysning om enkeltpersoner, og artikkelen
+        // er åpen for alle.
+        return c.json({
+            ...newsArticle,
+            reactions: isMemberAudience(c.get("user"))
+                ? newsArticle.reactions
+                : [],
+        });
     },
 );
