@@ -8,10 +8,17 @@ import { useEffect, useRef, useState } from "react";
  * feilet. Hver sti hentes én gang, også når lista refetches med nye objekter. Alle
  * URL-er frigjøres når komponenten avmonteres. Svar som kommer etter at den
  * er avmontert, frigjøres med en gang.
+ *
+ * Med `releaseDropped` frigjøres også en URL så snart stien forsvinner fra
+ * lista, og den hentes på nytt hvis den kommer tilbake. Det er for lister som
+ * er et vindu rundt det som vises — storyen holder bare bildene nær det man
+ * ser på, ellers fyller hundrevis av bilder i full størrelse opp minnet på
+ * telefonen.
  */
 export function useObjectUrls(
     paths: readonly string[],
     fetchObjectUrl: (path: string) => Promise<string>,
+    { releaseDropped = false }: { releaseDropped?: boolean } = {},
 ): ReadonlyMap<string, string | null> {
     const [urls, setUrls] = useState<ReadonlyMap<string, string | null>>(
         () => new Map(),
@@ -37,13 +44,41 @@ export function useObjectUrls(
 
     useEffect(() => {
         const current = generation.current;
+        const wanted = new Set(paths);
+
+        if (releaseDropped) {
+            const dropped = [...requested.current].filter(
+                (path) => !wanted.has(path),
+            );
+            for (const path of dropped) {
+                requested.current.delete(path);
+                const url = owned.current.get(path);
+                if (url) URL.revokeObjectURL(url);
+                owned.current.delete(path);
+            }
+            if (dropped.length > 0) {
+                setUrls((previous) => {
+                    const next = new Map(previous);
+                    for (const path of dropped) next.delete(path);
+                    return next;
+                });
+            }
+        }
+
         for (const path of paths) {
             if (requested.current.has(path)) continue;
             requested.current.add(path);
 
             fetchObjectUrl(path)
                 .then((url) => {
-                    if (generation.current !== current) {
+                    // Avmontert, eller stien ble droppet mens den ble hentet. Eller
+                    // droppet og bedt om igjen før svaret kom: den andre
+                    // hentingen er allerede lagret.
+                    if (
+                        generation.current !== current ||
+                        (releaseDropped && !requested.current.has(path)) ||
+                        owned.current.has(path)
+                    ) {
                         URL.revokeObjectURL(url);
                         return;
                     }
@@ -56,7 +91,7 @@ export function useObjectUrls(
                     setUrls((previous) => new Map(previous).set(path, null));
                 });
         }
-    }, [paths, fetchObjectUrl]);
+    }, [paths, fetchObjectUrl, releaseDropped]);
 
     return urls;
 }
