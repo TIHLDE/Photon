@@ -43,7 +43,7 @@ export const getEventAllergiesRoute = route().get(
         summary: "Get allergies for event participants",
         operationId: "getEventAllergies",
         description:
-            "The allergies among everyone holding a spot on the event, for the arrangør who orders the food. Returns totals per allergy alongside the per-person detail, and counts how many have never answered — which is not the same as having none. Restricted to the people who run this event; allergies are health data, so the access follows the arrangement rather than a global permission.",
+            "The allergies among everyone holding a spot on the event, for the arrangør who orders the food. Returns totals per allergy alongside the per-person detail, and counts how many have never answered — which is not the same as having none. People an organiser added count only towards the tallies: adding someone needs no consent, so it must not reveal what they are allergic to. Restricted to the people who run this event; allergies are health data, so the access follows the arrangement rather than a global permission. Every read is logged.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -98,6 +98,8 @@ export const getEventAllergiesRoute = route().get(
         let withAllergies = 0;
         let confirmedNone = 0;
         let notAnswered = 0;
+        let organizerAdded = 0;
+        let organizerAddedWithAllergies = 0;
 
         for (const registration of registrations) {
             const settings = registration.user.settings;
@@ -113,6 +115,12 @@ export const getEventAllergiesRoute = route().get(
                 confirmedNone++;
             } else {
                 notAnswered++;
+            }
+
+            if (registration.addedByOrganizer) {
+                organizerAdded++;
+                if (hasAny) organizerAddedWithAllergies++;
+                continue;
             }
 
             if (!hasAny) continue;
@@ -165,12 +173,25 @@ export const getEventAllergiesRoute = route().get(
 
         participants.sort((a, b) => a.name.localeCompare(b.name, "nb"));
 
+        c.get("logger")?.info(
+            {
+                allergyAccess: {
+                    viewerId: user.id,
+                    eventId,
+                    participantsShown: participants.length,
+                },
+            },
+            "Event allergies read",
+        );
+
         return c.json(
             {
                 totalParticipants: registrations.length,
                 withAllergies,
                 confirmedNone,
                 notAnswered,
+                organizerAdded,
+                organizerAddedWithAllergies,
                 summary,
                 participants,
             },

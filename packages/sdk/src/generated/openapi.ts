@@ -660,7 +660,7 @@ export interface paths {
         put?: never;
         /**
          * Create strike
-         * @description Give a user a strike (prikk) connected to an event. Requires 'events:strikes:create', or the right to arrange the event ('events:update' / 'events:manage') — globally or for the group arranging it.
+         * @description Give a user a strike (prikk) connected to an event, and notify them. Requires 'events:strikes:create', or the right to arrange the event ('events:update' / 'events:manage') — globally or for the group arranging it. Unless the caller holds 'events:strikes:create' across TIHLDE, the user must have signed up and held a spot on the event, or already have a strike from it (leaving after the deadline removes the registration but leaves the automatic strike).
          */
         post: operations["createStrike"];
         delete?: never;
@@ -896,7 +896,7 @@ export interface paths {
         put?: never;
         /**
          * Add a user to an event (admin)
-         * @description Add a confirmed participant and include them in the event's priority-user list, including before registration opens or after it closes. Requires events:update or events:manage globally or for the arranging group. Bypasses self-registration eligibility and strike delays, but requires available capacity; pending registrations reserve capacity too. Payment obligations still apply. Events without sign-up, full events and existing active registrations are rejected. Cancelled registrations are reused.
+         * @description Add a confirmed participant and include them in the event's priority-user list, including before registration opens or after it closes. Requires events:update or events:manage globally or for the arranging group. Bypasses self-registration eligibility and strike delays, but requires available capacity; pending registrations reserve capacity too. Payment obligations still apply. Events without sign-up, full events and existing active registrations are rejected. Cancelled registrations are reused. Because the member did not sign up themselves, the registration does not reveal their allergies per person and does not make them eligible for a manual strike from the arranger.
          */
         post: operations["adminCreateEventRegistration"];
         delete?: never;
@@ -934,7 +934,7 @@ export interface paths {
         };
         /**
          * Get allergies for event participants
-         * @description The allergies among everyone holding a spot on the event, for the arrangør who orders the food. Returns totals per allergy alongside the per-person detail, and counts how many have never answered — which is not the same as having none. Restricted to the people who run this event; allergies are health data, so the access follows the arrangement rather than a global permission.
+         * @description The allergies among everyone holding a spot on the event, for the arrangør who orders the food. Returns totals per allergy alongside the per-person detail, and counts how many have never answered — which is not the same as having none. People an organiser added count only towards the tallies: adding someone needs no consent, so it must not reveal what they are allergic to. Restricted to the people who run this event; allergies are health data, so the access follows the arrangement rather than a global permission. Every read is logged.
          */
         get: operations["getEventAllergies"];
         put?: never;
@@ -1781,7 +1781,7 @@ export interface paths {
         post?: never;
         /**
          * Delete a group
-         * @description Delete a group by its slug. Requires being the group's leader OR holding 'groups:delete' for all of TIHLDE, and repeating the slug in `confirm`. This action is irreversible and will remove all associated data, including memberships, fines (and their pictures), laws, forms and verv.
+         * @description Permanently delete a group by its slug. Requires 'groups:delete' across TIHLDE and repeating the slug in `confirm`; a leader archives the group instead. Hovedstyret and groups whose roster follows Feide cannot be deleted. This action is irreversible and will remove all associated data, including memberships, fines (and their pictures), laws, forms and verv.
          */
         delete: operations["deleteGroup"];
         options?: never;
@@ -2537,7 +2537,7 @@ export interface paths {
         post?: never;
         /**
          * Revoke a member's contract signature
-         * @description Removes a member's signature from the active contract. Requires being a group leader or 'contracts:manage' permission.
+         * @description Removes a member's signature from the active contract. The signature belongs to the member, not the group, so this requires 'contracts:manage' across TIHLDE.
          */
         delete: operations["revokeContractSignature"];
         options?: never;
@@ -4478,9 +4478,13 @@ export interface components {
             confirmedNone: number;
             /** @description Participants who have never answered. These are the ones an arrangør has to chase — not the same as having no allergies. */
             notAnswered: number;
-            /** @description Totals per allergy, most common first. This is what gets handed to the kitchen. */
+            /** @description Participants an organiser added rather than signing up themselves. Included in the tallies above, but not in `summary` or `participants`. */
+            organizerAdded: number;
+            /** @description How many of `organizerAdded` have registered at least one allergy. The arrangør has to ask them directly. */
+            organizerAddedWithAllergies: number;
+            /** @description Totals per allergy among those who signed up themselves, most common first. This is what gets handed to the kitchen. */
             summary: components["schemas"]["EventAllergySummaryEntry"][];
-            /** @description Only the participants who registered something, so the list stays readable. */
+            /** @description Only the participants who signed up themselves and registered something, so the list stays readable. */
             participants: components["schemas"]["EventParticipantAllergies"][];
         };
         EventMessage: {
@@ -6059,8 +6063,6 @@ export interface components {
             userId: string;
             /** @description User's display name */
             userName: string;
-            /** @description User's email address */
-            userEmail: string;
             hasSigned: boolean;
             signedAt: string | null;
         };
@@ -8318,7 +8320,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The user was promoted from the waitlist after the event started */
+            /** @description The user was promoted from the waitlist after the event started, or has no registration of their own on the event */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -11892,7 +11894,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad Request - `confirm` does not repeat the group's slug */
+            /** @description Bad Request - `confirm` does not repeat the group's slug, or the group cannot be deleted */
             400: {
                 headers: {
                     [name: string]: unknown;

@@ -493,6 +493,7 @@ export async function resolveRegistrationsForEvent(
                     evaluationReminderSentAt: null,
                     promotedFromWaitlistAt: null,
                     allowPhoto: registration.allowPhoto,
+                    addedByOrganizer: registration.addedByOrganizer,
                 });
             }
             if (swappedUserId) {
@@ -515,6 +516,7 @@ export async function resolveRegistrationsForEvent(
                             promotedFromWaitlistAt:
                                 existing.promotedFromWaitlistAt,
                             allowPhoto: existing.allowPhoto,
+                            addedByOrganizer: existing.addedByOrganizer,
                         };
                     }
                 }
