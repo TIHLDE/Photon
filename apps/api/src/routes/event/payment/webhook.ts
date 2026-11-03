@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { flagPayment } from "~/lib/event/payment";
 import { describeRoute } from "~/lib/openapi";
@@ -149,7 +149,11 @@ export const paymentWebhookRoute = route().post(
             // Update payment record using id. `receivedPaymentAt` is only
             // stamped once, so redelivered webhooks never move the recorded
             // payment time.
-            await db
+            //
+            // The reference is part of the condition: a restart can attach a
+            // new checkout to this row during the Vipps call above, and the
+            // cancelled checkout's `failed` must not overwrite the live one.
+            const [updated] = await db
                 .update(schema.eventPayment)
                 .set({
                     status: newStatus,
@@ -157,7 +161,20 @@ export const paymentWebhookRoute = route().post(
                         payment.receivedPaymentAt ??
                         (paymentReceived ? new Date() : null),
                 })
-                .where(eq(schema.eventPayment.id, payment.id));
+                .where(
+                    and(
+                        eq(schema.eventPayment.id, payment.id),
+                        eq(schema.eventPayment.providerPaymentId, reference),
+                    ),
+                )
+                .returning({ id: schema.eventPayment.id });
+
+            if (!updated) {
+                return c.json(
+                    { message: "No payment holds this reference" },
+                    200,
+                );
+            }
 
             // Safety net: money can land on a registration that is gone — a
             // checkout completed just after the deadline reclaimed the spot, or

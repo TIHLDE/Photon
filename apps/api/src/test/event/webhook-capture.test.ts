@@ -1,4 +1,5 @@
 import { schema } from "@photon/db";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, vi } from "vitest";
 import * as vipps from "~/lib/vipps";
 import type { IntegrationTestContext } from "~/test/config/integration";
@@ -280,6 +281,45 @@ describe("Vipps webhook — capture and status mapping", () => {
             });
             expect(row?.status).toBe("pending");
             silenced.mockRestore();
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "a late cancellation webhook does not fail the checkout that replaced it",
+        async ({ ctx }) => {
+            const { payment } = await seedPayment(ctx);
+            // The member restarts while this webhook waits on Vipps, and the
+            // new checkout is attached to the row under a new reference.
+            vi.mocked(vipps.getPaymentDetails).mockImplementationOnce(
+                async () => {
+                    await ctx.db
+                        .update(schema.eventPayment)
+                        .set({ providerPaymentId: "vipps-new-ref" })
+                        .where(eq(schema.eventPayment.id, payment.id));
+                    return {
+                        state: "ABORTED",
+                        aggregate: {
+                            authorizedAmount: { currency: "NOK", value: 0 },
+                            capturedAmount: { currency: "NOK", value: 0 },
+                            refundedAmount: { currency: "NOK", value: 0 },
+                            cancelledAmount: { currency: "NOK", value: 0 },
+                        },
+                    } as Awaited<ReturnType<typeof vipps.getPaymentDetails>>;
+                },
+            );
+
+            const client = ctx.utils.client();
+            const res = await client.api.event.payment.webhook.$post({
+                json: { reference: "vipps-hook-ref" },
+            });
+
+            expect(res.status).toBe(200);
+            const row = await ctx.db.query.eventPayment.findFirst({
+                where: { id: payment.id },
+            });
+            expect(row?.status).toBe("pending");
+            expect(row?.providerPaymentId).toBe("vipps-new-ref");
         },
         500_000,
     );
