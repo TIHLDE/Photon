@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { DEFAULT_STATUSES as SEAT_HOLDING_STATUSES } from "~/lib/event/access";
 import { promoteFromWaitlist } from "~/lib/event/payment";
 import { cancelPayment, getPaymentDetails } from "~/lib/vipps";
 import { issueStrike, wasPromotedAfterStart } from "~/lib/event/strikes";
@@ -15,9 +16,13 @@ export const deleteEventRegistrationRoute = route().delete(
         summary: "Unregister from event",
         operationId: "deleteEventRegistration",
         description:
-            "Remove the authenticated user's registration from an event. If the event can cause strikes and the user unregisters from a confirmed spot after the cancellation deadline, they are given 1 strike. Registrations with a completed payment cannot be cancelled by the user.",
+            "Remove the authenticated user's registration from an event. If the event can cause strikes and the user unregisters from a confirmed spot after the cancellation deadline, they are given 1 strike. Registrations with a completed payment cannot be cancelled by the user, and a spot cannot be given up after the event has ended.",
     })
         .response({ statusCode: 200, description: "OK" })
+        .badRequest({
+            description:
+                "The spot is paid for, or the event has ended and the user holds a spot on it",
+        })
         .build(),
     requireAuth,
     async (c) => {
@@ -39,6 +44,7 @@ export const deleteEventRegistrationRoute = route().delete(
                 canCauseStrikes: true,
                 cancellationDeadline: true,
                 start: true,
+                end: true,
                 isPaidEvent: true,
                 priceMinor: true,
                 enforcesPreviousStrikes: true,
@@ -49,6 +55,28 @@ export const deleteEventRegistrationRoute = route().delete(
             },
             where: { id: eventId },
         });
+
+        // Once it is over there is no spot left to give up. Leaving now would
+        // swap the no-show strikes for at most one, erase a check-in, and
+        // promote someone from the waitlist into an event that has ended.
+        if (event && event.end <= new Date()) {
+            const registration = await db.query.eventRegistration.findFirst({
+                columns: { status: true },
+                where: { userId, eventId },
+            });
+
+            if (
+                registration &&
+                (SEAT_HOLDING_STATUSES as readonly string[]).includes(
+                    registration.status,
+                )
+            ) {
+                throw new HTTPException(400, {
+                    message:
+                        "Arrangementet er over, så du kan ikke lenger melde deg av.",
+                });
+            }
+        }
 
         // En betalt plass kan ikke gis fra seg av brukeren selv: pengene er
         // allerede trukket, og systemet refunderer ikke automatisk. Sjekken må

@@ -4,6 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { AppContext } from "../ctx";
 import { env } from "../env";
 import { createDeferredNotifications } from "../notification/deferred";
+import { DEFAULT_STATUSES as SEAT_HOLDING_STATUSES } from "./access";
 import { createPaymentObligations } from "./payment";
 import {
     calculateWaitlistPositions,
@@ -101,8 +102,8 @@ export async function resolveRegistrationsForEvent(
         }
 
         // Step 3: Calculate initial capacity state
-        const registeredCount = event.registrations.filter(
-            (r) => r.status === "registered",
+        const registeredCount = event.registrations.filter((r) =>
+            (SEAT_HOLDING_STATUSES as readonly string[]).includes(r.status),
         ).length;
 
         const isUnlimitedCapacity = event.capacity === null;

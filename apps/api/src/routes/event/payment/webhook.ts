@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { flagPayment } from "~/lib/event/payment";
 import { describeRoute } from "~/lib/openapi";
@@ -29,6 +29,33 @@ export interface Amount {
     value: number;
 }
 
+/**
+ * A restarted checkout replaces the reference on its row, so Vipps keeps sending
+ * events for a reference we no longer hold. Nothing here can settle a payment:
+ * there is no row to settle. Vipps is still asked, because money on such a
+ * reference needs a human, and an uncaptured reservation lapses by itself.
+ */
+async function reportMoneyOnUnknownReference(reference: string): Promise<void> {
+    try {
+        const { state, aggregate } = await getPaymentDetails(reference);
+
+        if (
+            state === "AUTHORIZED" ||
+            aggregate.authorizedAmount.value > 0 ||
+            aggregate.capturedAmount.value > 0
+        ) {
+            console.error(
+                `Vipps reports money on reference ${reference}, which no payment holds (state ${state}, captured ${aggregate.capturedAmount.value}).`,
+            );
+        }
+    } catch (error) {
+        console.error(
+            `Could not read Vipps state for unknown reference ${reference}:`,
+            error,
+        );
+    }
+}
+
 export const paymentWebhookRoute = route().post(
     "/payment/webhook",
     describeRoute({
@@ -36,7 +63,7 @@ export const paymentWebhookRoute = route().post(
         summary: "Vipps payment webhook",
         operationId: "handlePaymentWebhook",
         description:
-            "Webhook endpoint for Vipps to notify about payment status changes. Updates payment record based on Vipps payment state.",
+            "Webhook endpoint for Vipps to notify about payment status changes. Updates payment record based on Vipps payment state. A reference no payment holds, such as one replaced by a restarted checkout, is acknowledged without changing anything.",
     })
         .response({
             statusCode: 200,
@@ -47,7 +74,6 @@ export const paymentWebhookRoute = route().post(
             statusCode: 401,
             description: "Invalid webhook signature",
         })
-        .notFound({ description: "Payment not found" })
         .build(),
     async (c) => {
         // Read the raw body BEFORE parsing: the signature is computed over the
@@ -80,9 +106,8 @@ export const paymentWebhookRoute = route().post(
         });
 
         if (!payment) {
-            throw new HTTPException(409, {
-                message: `Payment not found for reference: ${reference}`,
-            });
+            await reportMoneyOnUnknownReference(reference);
+            return c.json({ message: "No payment holds this reference" }, 200);
         }
 
         try {
@@ -145,7 +170,10 @@ export const paymentWebhookRoute = route().post(
             // Update payment record using id. `receivedPaymentAt` is only
             // stamped once, so redelivered webhooks never move the recorded
             // payment time.
-            await db
+            // The reference is part of the condition because a restarted checkout
+            // can replace it during the Vipps call above, and this answer is
+            // about the old checkout, not the one now on the row.
+            const [updated] = await db
                 .update(schema.eventPayment)
                 .set({
                     status: newStatus,
@@ -153,7 +181,20 @@ export const paymentWebhookRoute = route().post(
                         payment.receivedPaymentAt ??
                         (paymentReceived ? new Date() : null),
                 })
-                .where(eq(schema.eventPayment.id, payment.id));
+                .where(
+                    and(
+                        eq(schema.eventPayment.id, payment.id),
+                        eq(schema.eventPayment.providerPaymentId, reference),
+                    ),
+                )
+                .returning({ id: schema.eventPayment.id });
+
+            if (!updated) {
+                return c.json(
+                    { message: "No payment holds this reference" },
+                    200,
+                );
+            }
 
             // Safety net: money can land on a registration that is gone — a
             // checkout completed just after the deadline reclaimed the spot, or

@@ -12,6 +12,11 @@ export const REGISTRATION_QUEUE_NAME = "registration" satisfies QueueName;
 export interface QueueAddOptions {
     /** Delay in milliseconds before the job becomes available to a worker. */
     delay?: number;
+    /** Total tries before the job counts as failed. */
+    attempts?: number;
+    backoff?: { type: "exponential" | "fixed"; delay: number };
+    removeOnComplete?: boolean;
+    removeOnFail?: boolean;
 }
 
 export type QueueJobState =

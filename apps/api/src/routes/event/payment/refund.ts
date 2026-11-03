@@ -7,6 +7,7 @@ import { requireEventAccess } from "~/lib/event/access";
 import { reverseEventPayment } from "~/lib/event/payment";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { getPaymentDetails } from "~/lib/vipps";
 import { requireAuth } from "~/middleware/auth";
 import { refundEventPaymentResponseSchema } from "../schema";
 
@@ -14,6 +15,20 @@ const paramSchema = z.object({
     eventId: z.uuid(),
     paymentId: z.uuid(),
 });
+
+async function isFullyRefundedAtProvider(reference: string): Promise<boolean> {
+    try {
+        const { capturedAmount, refundedAmount } = (
+            await getPaymentDetails(reference)
+        ).aggregate;
+        return (
+            refundedAmount.value > 0 &&
+            refundedAmount.value >= capturedAmount.value
+        );
+    } catch {
+        return false;
+    }
+}
 
 export const refundEventPaymentRoute = route().post(
     "/:eventId/payments/:paymentId/refund",
@@ -77,7 +92,8 @@ export const refundEventPaymentRoute = route().post(
             });
         }
 
-        if (!payment.providerPaymentId) {
+        const reference = payment.providerPaymentId;
+        if (!reference) {
             throw new HTTPException(409, {
                 message: "Payment was never started with the provider",
             });
@@ -121,6 +137,18 @@ export const refundEventPaymentRoute = route().post(
                     : undefined,
             });
         } catch (error) {
+            // The call can fail after the money left, through a timeout or a
+            // database error. Going back to `paid` would then erase the refund.
+            if (await isFullyRefundedAtProvider(reference)) {
+                console.warn(
+                    `[admin] payment ${paymentId} is refunded at the provider despite an error, by ${actor.id}:`,
+                    error,
+                );
+                throw new HTTPException(409, {
+                    message: "Payment has already been refunded",
+                });
+            }
+
             // Release the claim so the refund can be retried once the
             // underlying provider problem is resolved.
             await db

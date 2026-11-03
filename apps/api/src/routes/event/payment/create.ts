@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { type DbSchema, schema } from "@photon/db";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import type { AppContext } from "~/lib/ctx";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import {
@@ -17,6 +18,60 @@ import {
     createPaymentBodySchema,
     createPaymentResponseSchema,
 } from "../schema";
+
+/** Worded like the checks before the Vipps call, which the event page translates. */
+const ATTACH_REFUSALS = {
+    spotGone: {
+        status: 404,
+        message: "You must register for the event before paying",
+    },
+    alreadyPaid: {
+        status: 409,
+        message: "The user has already paid for the event",
+    },
+    lostRace: {
+        status: 409,
+        message: "A pending payment already exists for this event",
+    },
+} as const;
+
+const PAYMENT_ATTEMPT_LIMIT = 10;
+const PAYMENT_ATTEMPT_WINDOW_SECONDS = 10 * 60;
+
+/**
+ * Fails open: a member with a running deadline must not lose their spot because
+ * the counter could not be read.
+ */
+async function hasExceededPaymentAttempts(
+    cache: AppContext["cache"],
+    userId: string,
+): Promise<boolean> {
+    const key = `ratelimit:event-payment:${userId}`;
+
+    try {
+        const attempts = Number(await cache.getString(key)) || 0;
+        if (attempts >= PAYMENT_ATTEMPT_LIMIT) return true;
+
+        await cache.setString(
+            key,
+            String(attempts + 1),
+            PAYMENT_ATTEMPT_WINDOW_SECONDS,
+        );
+        return false;
+    } catch (error) {
+        console.error("Could not read the payment attempt counter:", error);
+        return false;
+    }
+}
+
+/** The URL never left this request, and Vipps expires the session regardless. */
+async function abandonCheckout(reference: string): Promise<void> {
+    try {
+        await cancelPayment(reference);
+    } catch (error) {
+        console.error(`Could not cancel unused checkout ${reference}:`, error);
+    }
+}
 
 export const createPaymentRoute = route().post(
     "/:eventId/payment",
@@ -38,6 +93,10 @@ export const createPaymentRoute = route().post(
             statusCode: 409,
             description: "Payment already exists for this user and event",
         })
+        .response({
+            statusCode: 429,
+            description: "Too many payment attempts",
+        })
         .build(),
     requireAuth,
     validator("json", createPaymentBodySchema),
@@ -46,7 +105,7 @@ export const createPaymentRoute = route().post(
         const user = c.get("user");
         const userId = user.id;
         const body = c.req.valid("json");
-        const { db } = c.get("ctx");
+        const { cache, db } = c.get("ctx");
 
         // Get event details
         const event = await db.query.event.findFirst({
@@ -96,6 +155,12 @@ export const createPaymentRoute = route().post(
         if (existingPayments.some((p) => p.status === "paid")) {
             throw new HTTPException(409, {
                 message: "The user has already paid for the event",
+            });
+        }
+
+        if (await hasExceededPaymentAttempts(cache, userId)) {
+            throw new HTTPException(429, {
+                message: "For mange betalingsforsøk. Vent litt og prøv igjen.",
             });
         }
 
@@ -156,70 +221,140 @@ export const createPaymentRoute = route().post(
 
         // Generate unique reference for Vipps
         const vippsReference = randomUUID();
+        const priceMinor = event.priceMinor;
 
+        const failedToInitiate = (error: unknown) =>
+            new HTTPException(500, {
+                message: `Failed to initiate Vipps payment: ${error instanceof Error ? error.message : "Unknown error"}`,
+            });
+
+        let checkoutUrl: string;
         try {
-            // Initiate Vipps payment first
-            const checkoutUrl = await createPayment({
-                amount: event.priceMinor,
+            checkoutUrl = await createPayment({
+                amount: priceMinor,
                 currency: "NOK",
                 reference: vippsReference,
                 userFlow: body.userFlow,
                 returnUrl: body.returnUrl,
                 description: buildPaymentDescription(event.title, user.name),
             });
+        } catch (error) {
+            throw failedToInitiate(error);
+        }
 
-            let payment: InferSelectModel<DbSchema["eventPayment"]> | undefined;
+        // A checkout is only payable once its URL leaves this request, so the
+        // URL goes out only if this reference won the row. Two presses at once
+        // would otherwise both get a URL, and money paid on the overwritten
+        // reference would have no payment to land on.
+        let outcome:
+            | InferSelectModel<DbSchema["eventPayment"]>
+            | keyof typeof ATTACH_REFUSALS;
+        try {
+            outcome = await db.transaction(async (tx) => {
+                // Same lock order as the resolver: inserting a row takes this
+                // lock anyway, and taking it after the spot could deadlock.
+                if (!obligation) {
+                    await tx
+                        .select({ id: schema.event.id })
+                        .from(schema.event)
+                        .where(eq(schema.event.id, eventId))
+                        .for("key share");
+                }
 
-            if (obligation) {
-                // Attach the Vipps checkout to the existing obligation.
-                [payment] = await db
-                    .update(schema.eventPayment)
-                    .set({
-                        provider: "vipps",
-                        providerPaymentId: vippsReference,
-                        amountMinor: event.priceMinor,
-                        currency: "NOK",
-                    })
-                    .where(eq(schema.eventPayment.id, obligation.id))
-                    .returning();
-            } else {
+                const [spot] = await tx
+                    .select({ userId: schema.eventRegistration.userId })
+                    .from(schema.eventRegistration)
+                    .where(
+                        and(
+                            eq(schema.eventRegistration.eventId, eventId),
+                            eq(schema.eventRegistration.userId, userId),
+                            eq(schema.eventRegistration.status, "registered"),
+                        ),
+                    )
+                    .for("update");
+
+                if (!spot) return "spotGone";
+
+                const current = await tx.query.eventPayment.findMany({
+                    columns: { status: true },
+                    where: {
+                        eventId,
+                        userId,
+                        status: { in: ["pending", "paid"] },
+                    },
+                });
+
+                if (current.some((p) => p.status === "paid")) {
+                    return "alreadyPaid";
+                }
+
+                if (obligation) {
+                    const [attached] = await tx
+                        .update(schema.eventPayment)
+                        .set({
+                            provider: "vipps",
+                            providerPaymentId: vippsReference,
+                            amountMinor: priceMinor,
+                            currency: "NOK",
+                        })
+                        .where(
+                            and(
+                                eq(schema.eventPayment.id, obligation.id),
+                                eq(schema.eventPayment.status, "pending"),
+                                obligation.providerPaymentId
+                                    ? eq(
+                                          schema.eventPayment.providerPaymentId,
+                                          obligation.providerPaymentId,
+                                      )
+                                    : isNull(
+                                          schema.eventPayment.providerPaymentId,
+                                      ),
+                            ),
+                        )
+                        .returning();
+
+                    return attached ?? "lostRace";
+                }
+
+                if (current.length > 0) return "lostRace";
+
                 const newPayment: InferInsertModel<DbSchema["eventPayment"]> = {
                     eventId,
                     userId,
-                    amountMinor: event.priceMinor,
+                    amountMinor: priceMinor,
                     currency: "NOK",
                     provider: "vipps",
                     providerPaymentId: vippsReference,
                     status: "pending",
                 };
 
-                // Create payment record after Vipps payment is created
-                [payment] = await db
+                const [inserted] = await tx
                     .insert(schema.eventPayment)
                     .values(newPayment)
                     .returning();
-            }
 
-            if (!payment) {
-                throw new HTTPException(500, {
-                    message: "Failed to create payment record",
-                });
-            }
-
-            return c.json(
-                {
-                    eventId: payment.eventId,
-                    userId: payment.userId,
-                    checkoutUrl,
-                    amount: event.priceMinor,
-                    currency: "NOK",
-                },
-                201,
-            );
-        } catch (error) {
-            throw new HTTPException(500, {
-                message: `Failed to initiate Vipps payment: ${error instanceof Error ? error.message : "Unknown error"}`,
+                return inserted ?? "lostRace";
             });
+        } catch (error) {
+            await abandonCheckout(vippsReference);
+            throw failedToInitiate(error);
         }
+
+        if (typeof outcome === "string") {
+            await abandonCheckout(vippsReference);
+            const { status, message } = ATTACH_REFUSALS[outcome];
+            throw new HTTPException(status, { message });
+        }
+
+        return c.json(
+            {
+                eventId: outcome.eventId,
+                userId: outcome.userId,
+                checkoutUrl,
+                amount: priceMinor,
+                currency: "NOK",
+            },
+            201,
+        );
     },
 );
