@@ -1413,6 +1413,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/event/{eventId}/wrapped/story/photos/{photoId}/like": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Like a photo in the event's story
+         * @description Like one photo of a story the caller can read. Liking a photo twice is the same as once.
+         */
+        put: operations["likeWrappedStoryPhoto"];
+        post?: never;
+        /**
+         * Remove a like from a photo in the event's story
+         * @description Take back the caller's like. Removing a like that is not there is not an error.
+         */
+        delete: operations["unlikeWrappedStoryPhoto"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/wrapped/story/photos/{photoId}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the comments on a photo in the event's story
+         * @description Comments on one photo of a story the caller can read, oldest first.
+         */
+        get: operations["listWrappedStoryPhotoComments"];
+        put?: never;
+        /**
+         * Comment on a photo in the event's story
+         * @description Add a plain-text comment, 1–500 characters after trimming, to one photo of a story the caller can read.
+         */
+        post: operations["createWrappedStoryPhotoComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/wrapped/story/photos/{photoId}/comments/{commentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a comment on a photo in the event's story
+         * @description Delete a comment. Its author can, and so can an organizer of the event (events:update or events:manage, globally or for the arranging group).
+         */
+        delete: operations["deleteWrappedStoryPhotoComment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/event/{eventId}/reactions": {
         parameters: {
             query?: never;
@@ -5156,6 +5224,39 @@ export interface components {
             publishedAt: string | null;
             /** @description The picked photos, in the order they were taken */
             items: components["schemas"]["WrappedStoryPhoto"][];
+        };
+        WrappedPhotoLikes: {
+            likeCount: number;
+            likedByMe: boolean;
+        };
+        WrappedPhotoComment: {
+            /** Format: uuid */
+            id: string;
+            body: string;
+            /** Format: date-time */
+            createdAt: string;
+            author: {
+                id: string;
+                name: string;
+                /** @description Avatar URL */
+                image: string | null;
+            };
+            /** @description Whether the caller may delete the comment: its author, or an organizer of the event */
+            canDelete: boolean;
+        };
+        WrappedPhotoCommentList: {
+            /** @description Total number of items available */
+            totalCount: number;
+            /** @description Total number of pages available */
+            pages: number;
+            /** @description The next page number that can be fetched */
+            nextPage: number | null;
+            /** @description Comments, oldest first */
+            items: components["schemas"]["WrappedPhotoComment"][];
+        };
+        CreateWrappedPhotoComment: {
+            /** @description Plain text, 1–500 characters */
+            body: string;
         };
         EventReaction: {
             /** @description User ID */
@@ -10918,6 +11019,265 @@ export interface operations {
                 };
             };
             /** @description Not Found - Photo not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    likeWrappedStoryPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+                /** @description Photo ID */
+                photoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrappedPhotoLikes"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Photo not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    unlikeWrappedStoryPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+                /** @description Photo ID */
+                photoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrappedPhotoLikes"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Photo not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listWrappedStoryPhotoComments: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+                /** @description Photo ID */
+                photoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrappedPhotoCommentList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Photo not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createWrappedStoryPhotoComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+                /** @description Photo ID */
+                photoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWrappedPhotoComment"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrappedPhotoComment"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Photo not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteWrappedStoryPhotoComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+                /** @description Photo ID */
+                photoId: string;
+                /** @description Comment ID */
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Comment not found */
             404: {
                 headers: {
                     [name: string]: unknown;

@@ -1,7 +1,10 @@
 import z from "zod";
 import { Schema } from "~/lib/openapi";
 import { PagniationResponseSchema } from "~/middleware/pagination";
-import { wrappedPhotoSources } from "@photon/db/schema";
+import {
+    WRAPPED_COMMENT_MAX_LENGTH,
+    wrappedPhotoSources,
+} from "@photon/db/schema";
 import { MAX_SHOTS_PER_PERSON, cameraBlockedReasons } from "~/lib/wrapped";
 
 export const eventIdParamSchema = z.object({
@@ -288,5 +291,52 @@ export const wrappedStorySchema = Schema(
         items: z
             .array(wrappedStoryPhotoSchema)
             .describe("The picked photos, in the order they were taken"),
+    }),
+);
+
+export const storyCommentParamSchema = photoParamSchema.extend({
+    commentId: z.uuid().meta({ description: "Comment ID" }),
+});
+
+export const wrappedPhotoLikesSchema = Schema(
+    "WrappedPhotoLikes",
+    z.object({
+        likeCount: z.number().int(),
+        likedByMe: z.boolean(),
+    }),
+);
+
+export const wrappedPhotoCommentSchema = Schema(
+    "WrappedPhotoComment",
+    z.object({
+        id: z.uuid(),
+        body: z.string(),
+        createdAt: z.iso.datetime(),
+        author: storyPersonSchema,
+        canDelete: z.boolean().meta({
+            description:
+                "Whether the caller may delete the comment: its author, or an organizer of the event",
+        }),
+    }),
+);
+
+export const wrappedPhotoCommentListSchema = Schema(
+    "WrappedPhotoCommentList",
+    PagniationResponseSchema.extend({
+        items: z
+            .array(wrappedPhotoCommentSchema)
+            .describe("Comments, oldest first"),
+    }),
+);
+
+export const createWrappedPhotoCommentSchema = Schema(
+    "CreateWrappedPhotoComment",
+    z.object({
+        body: z
+            .string()
+            .trim()
+            .min(1)
+            .max(WRAPPED_COMMENT_MAX_LENGTH)
+            .meta({ description: "Plain text, 1–500 characters" }),
     }),
 );
