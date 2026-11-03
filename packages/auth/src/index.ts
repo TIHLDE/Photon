@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import {
     betterAuth,
     type BetterAuthOptions,
+    type BetterAuthPlugin,
     type DBAdapter,
 } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
@@ -21,7 +22,13 @@ import {
 import { and, eq, isNull } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DbRelations } from "@photon/db";
-import { account, user } from "@photon/db/schema";
+import {
+    account,
+    oauthAccessToken,
+    oauthRefreshToken,
+    session as sessionTable,
+    user,
+} from "@photon/db/schema";
 import type { EmailService, CacheService } from "@photon/core/services";
 import { uniq } from "es-toolkit";
 import { env } from "@photon/core/env";
@@ -437,6 +444,71 @@ function turnstilePlugin(turnstile: CreateAuthOptions["turnstile"]) {
     };
 }
 
+/**
+ * What Better Auth's `deleteUserSessions` leaves behind.
+ *
+ * It finds the copies in secondary storage through a list kept there, which is
+ * updated non-atomically and lost with the store, so the tokens Postgres knows
+ * are cleared by name. It has to run first, while those rows still exist.
+ *
+ * OAuth grants outlive their session: the foreign key only nulls `session_id`,
+ * and the refresh grant then issues a token with no session behind it.
+ */
+export async function clearSessionCopiesAndOAuthGrants(
+    services: { db: NodePgDatabase<DbRelations>; cache: CacheService },
+    userId: string,
+): Promise<void> {
+    const { db, cache } = services;
+
+    const sessions = await db
+        .select({ token: sessionTable.token })
+        .from(sessionTable)
+        .where(eq(sessionTable.userId, userId));
+    await Promise.all(sessions.map((s) => cache.delete(s.token)));
+
+    await db
+        .update(oauthRefreshToken)
+        .set({ revoked: new Date() })
+        .where(
+            and(
+                eq(oauthRefreshToken.userId, userId),
+                isNull(oauthRefreshToken.revoked),
+            ),
+        );
+    await db
+        .delete(oauthAccessToken)
+        .where(eq(oauthAccessToken.userId, userId));
+}
+
+/**
+ * `/update-user` takes any field the username plugin declares, and a Feide login
+ * finds its account by username. Changing it would let a member take a student's
+ * NTNU username before that student's first login.
+ */
+function usernameLockPlugin() {
+    return {
+        id: "username-lock",
+        hooks: {
+            before: [
+                {
+                    matcher: (ctx: { path?: string }) =>
+                        ctx.path === "/update-user",
+                    handler: createAuthMiddleware(async (ctx) => {
+                        if (
+                            ctx.body?.username !== undefined ||
+                            ctx.body?.displayUsername !== undefined
+                        ) {
+                            throw new APIError("BAD_REQUEST", {
+                                message: "Brukernavnet kan ikke endres.",
+                            });
+                        }
+                    }),
+                },
+            ],
+        },
+    } satisfies BetterAuthPlugin;
+}
+
 export function createAuth(options: CreateAuthOptions) {
     const isProd = options.isDevMode !== true;
 
@@ -511,6 +583,7 @@ export function createAuth(options: CreateAuthOptions) {
             enabled: true,
             requireEmailVerification: true,
             autoSignIn: true,
+            revokeSessionsOnPasswordReset: true,
             async sendResetPassword({ user: u, url }) {
                 await options.services.email.sendPasswordResetMail({
                     to: u.email,
@@ -549,6 +622,9 @@ export function createAuth(options: CreateAuthOptions) {
                             eq(account.providerId, "credential"),
                         ),
                     );
+
+                // Better Auth runs its own session revocation right after this.
+                await clearSessionCopiesAndOAuthGrants(options.services, u.id);
             },
             ...(options.DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM && !isProd
                 ? {
@@ -701,7 +777,9 @@ export function createAuth(options: CreateAuthOptions) {
             expiresIn: 60 * 60 * 24 * 30, // 30d
             updateAge: 60 * 60 * 24, // 1d
             storeSessionInDatabase: true,
-            cookieCache: { enabled: true, maxAge: 60 * 5 },
+            // A cached cookie answers without asking the session store, so a
+            // revoked session would keep working until the cookie expired.
+            cookieCache: { enabled: false },
         },
 
         advanced: {
@@ -926,6 +1004,7 @@ export function createAuth(options: CreateAuthOptions) {
                 // Better Auth's default rejects "-", which self-registration hands out.
                 usernameValidator: (value) => /^[a-zA-Z0-9_.-]+$/.test(value),
             }),
+            usernameLockPlugin(),
             jwt({
                 // Recommended by better-auth docs when using with OAuth Provider plugin
                 disableSettingJwtHeader: true,
@@ -1062,7 +1141,11 @@ export function createAuth(options: CreateAuthOptions) {
                 const [row, permissions, groups, accounts] = await Promise.all([
                     db.query.user.findFirst({
                         where: { id: user.id },
-                        columns: { approvalStatus: true },
+                        columns: {
+                            approvalStatus: true,
+                            banned: true,
+                            banExpires: true,
+                        },
                         with: {
                             settings: {
                                 with: {
@@ -1094,7 +1177,16 @@ export function createAuth(options: CreateAuthOptions) {
                     }),
                 ]);
 
-                const settings = row?.settings;
+                // Better Auth trusts its stored copy of a session and nothing
+                // else reads the ban, so this is what stops a copy that survived
+                // revocation: from before it reached secondary storage, or
+                // rewritten by a request in flight while it ran.
+                const banActive =
+                    row?.banned &&
+                    (!row.banExpires || row.banExpires > new Date());
+                if (!row || banActive) return null as never;
+
+                const settings = row.settings;
                 const credential = accounts.find(
                     (a) => a.providerId === "credential",
                 );
@@ -1102,7 +1194,7 @@ export function createAuth(options: CreateAuthOptions) {
                 // Uten Feide-konto er det ingenting å be om, og uten en
                 // programrad ville en ny innlogging gitt samme tomme svar —
                 // 13 i prod studerer noe annet ved NTNU.
-                const programmes = row?.studyProgramMemberships ?? [];
+                const programmes = row.studyProgramMemberships ?? [];
                 const feideCheckedAt = programmes
                     .map((m) => m.feideCheckedAt)
                     .filter((at): at is Date => at != null)
@@ -1118,8 +1210,8 @@ export function createAuth(options: CreateAuthOptions) {
                 return {
                     user: {
                         ...user,
-                        approvalStatus: row?.approvalStatus ?? null,
-                        isPendingApproval: row?.approvalStatus === "pending",
+                        approvalStatus: row.approvalStatus ?? null,
+                        isPendingApproval: row.approvalStatus === "pending",
                         /**
                          * Three states, not two, and the prompt differs:
                          * `none` has never had a password, `placeholder`

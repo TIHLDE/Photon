@@ -13,6 +13,7 @@ integrationTest(
             "api-keys:create",
             "api-keys:update",
             "api-keys:delete",
+            "root",
         ]);
 
         const client = await ctx.utils.clientForUser(testUser);

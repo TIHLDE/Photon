@@ -4,6 +4,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { assertNotAboveActor, revokeUserAccess } from "~/lib/user-access";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 import {
@@ -17,8 +18,8 @@ import {
  * Written onto Better Auth's own `banned` column rather than a column of our
  * own: that flag is already checked at sign-in, so a deactivated account is
  * shut out by the auth layer instead of by a rule every route would have to
- * remember. Existing sessions are deleted in the same transaction — without
- * that, deactivation would not take hold until the current session expired.
+ * remember. Existing sessions are revoked as well — without that, deactivation
+ * would not take hold until the current session expired.
  *
  * Deliberately not a delete. Registrations, fines and group history all point
  * at the user, and removing the row would take the record with it.
@@ -30,7 +31,7 @@ export const updateUserStatusRoute = route().patch(
         summary: "Activate or deactivate a member",
         operationId: "updateUserStatus",
         description:
-            "Deactivating blocks sign-in and ends the member's sessions; the account and its history are kept. Requires 'users:manage'.",
+            "Deactivating blocks sign-in and ends the member's sessions and OAuth grants; the account and its history are kept. Requires 'users:manage', and root or a higher role to act on someone holding those.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -40,13 +41,16 @@ export const updateUserStatusRoute = route().patch(
         .badRequest({ description: "Cannot deactivate your own account" })
         .notFound({ description: "User not found" })
         .unauthorized()
-        .forbidden({ description: "Requires users:manage" })
+        .forbidden({
+            description: "Requires users:manage, and not outranked by the user",
+        })
         .build(),
     requireAuth,
     requireAccess({ permission: "users:manage" }),
     validator("json", updateUserStatusInputSchema),
     async (c) => {
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
         const userId = c.req.param("id");
         const { isActive, reason } = c.req.valid("json");
 
@@ -69,25 +73,24 @@ export const updateUserStatusRoute = route().patch(
             });
         }
 
-        await db.transaction(async (tx) => {
-            await tx
-                .update(schema.user)
-                .set({
-                    banned: !isActive,
-                    banReason: isActive ? null : (reason ?? null),
-                    // Null means "no end date" — a deactivation lasts until
-                    // someone reverses it.
-                    banExpires: null,
-                    updatedAt: new Date(),
-                })
-                .where(eq(schema.user.id, userId));
+        await assertNotAboveActor(ctx, c.get("user").id, userId);
 
-            if (!isActive) {
-                await tx
-                    .delete(schema.session)
-                    .where(eq(schema.session.userId, userId));
-            }
-        });
+        await db
+            .update(schema.user)
+            .set({
+                banned: !isActive,
+                banReason: isActive ? null : (reason ?? null),
+                // Null means "no end date" — a deactivation lasts until
+                // someone reverses it.
+                banExpires: null,
+                updatedAt: new Date(),
+            })
+            .where(eq(schema.user.id, userId));
+
+        // After the ban, so a sign-in racing this cannot leave a new session.
+        if (!isActive) {
+            await revokeUserAccess(ctx, userId);
+        }
 
         return c.json(
             {

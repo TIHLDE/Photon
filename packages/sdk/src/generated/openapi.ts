@@ -39,7 +39,7 @@ export interface paths {
         put?: never;
         /**
          * Create API key
-         * @description Create a new API key. The full key is returned only once and cannot be retrieved again. Requires 'api-keys:create' permission.
+         * @description Create a new API key. The full key is returned only once and cannot be retrieved again. Requires 'api-keys:create' permission, and every permission on the key.
          */
         post: operations["createApiKey"];
         delete?: never;
@@ -71,7 +71,7 @@ export interface paths {
         head?: never;
         /**
          * Update API key
-         * @description Update an API key's metadata (name, description, permissions, metadata). Cannot update the key itself - use regenerate for that. Requires 'api-keys:update' permission.
+         * @description Update an API key's metadata (name, description, permissions, metadata). Cannot update the key itself - use regenerate for that. Requires 'api-keys:update' permission, and to change permissions, every permission on the key before and after.
          */
         patch: operations["updateApiKey"];
         trace?: never;
@@ -87,7 +87,7 @@ export interface paths {
         put?: never;
         /**
          * Regenerate API key
-         * @description Generate a new key value for an existing API key. The old key will be invalidated. The new full key is returned only once and cannot be retrieved again. Requires 'api-keys:update' permission.
+         * @description Generate a new key value for an existing API key. The old key will be invalidated. The new full key is returned only once and cannot be retrieved again. Requires 'api-keys:update' permission, and every permission on the key.
          */
         post: operations["regenerateApiKey"];
         delete?: never;
@@ -3056,7 +3056,7 @@ export interface paths {
         head?: never;
         /**
          * Activate or deactivate a member
-         * @description Deactivating blocks sign-in and ends the member's sessions; the account and its history are kept. Requires 'users:manage'.
+         * @description Deactivating blocks sign-in and ends the member's sessions and OAuth grants; the account and its history are kept. Requires 'users:manage', and root or a higher role to act on someone holding those.
          */
         patch: operations["updateUserStatus"];
         trace?: never;
@@ -3117,7 +3117,7 @@ export interface paths {
         post?: never;
         /**
          * Delete a member permanently
-         * @description Irreversibly deletes the account along with its registrations, payments, fines, memberships and history. Prefer 'PATCH /user/{id}/status' to deactivate instead. Requires 'users:delete'.
+         * @description Irreversibly deletes the account along with its registrations, payments, fines, memberships and history. Prefer 'PATCH /user/{id}/status' to deactivate instead. Requires 'users:delete', and root or a higher role to act on someone holding those.
          */
         delete: operations["deleteUser"];
         options?: never;
