@@ -38,7 +38,7 @@ type WrappedPhotoReviewProps = {
     closeLink: ReactElement;
     deleteRef: Ref<HTMLButtonElement>;
     /** Typet som knapp, men er en lenke: bare `focus()` brukes. */
-    keepRef: Ref<HTMLButtonElement>;
+    closeRef: Ref<HTMLButtonElement>;
 };
 
 /**
@@ -55,7 +55,7 @@ export function WrappedPhotoReview({
     onDelete,
     closeLink,
     deleteRef,
-    keepRef,
+    closeRef,
 }: WrappedPhotoReviewProps) {
     const total = photos.length;
     const current = photos[index];
@@ -65,6 +65,7 @@ export function WrappedPhotoReview({
             <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col gap-3 px-3 pt-[max(env(safe-area-inset-top),0.75rem)] pb-[max(env(safe-area-inset-bottom),0.75rem)]">
                 <div className="grid grid-cols-[3.25rem_minmax(0,1fr)_3.25rem] items-center gap-2">
                     <CameraControlButton
+                        ref={closeRef}
                         render={closeLink}
                         aria-label="Lukk og gå til Mine bilder"
                     >
@@ -135,32 +136,20 @@ export function WrappedPhotoReview({
                     <CarouselDots className="pt-3" />
                 </Carousel>
 
-                <div className="mt-auto grid grid-cols-2 gap-3">
+                {/* Like høy for utkast og innsendte, så bildet ikke hopper. */}
+                <div className="mt-auto flex min-h-16 items-center justify-center">
                     {current && !current.submitted ? (
                         <Button
                             ref={deleteRef}
                             variant="destructive"
                             size="lg"
-                            className="min-h-16"
+                            className="min-h-16 w-full"
                             onClick={onDelete}
                         >
                             <Trash2 />
                             Slett
                         </Button>
                     ) : null}
-                    <Button
-                        ref={keepRef}
-                        variant="secondary"
-                        size="lg"
-                        className={
-                            current && !current.submitted
-                                ? "min-h-16"
-                                : "col-span-2 min-h-16"
-                        }
-                        render={closeLink}
-                    >
-                        Behold
-                    </Button>
                 </div>
             </div>
         </CameraScreen>

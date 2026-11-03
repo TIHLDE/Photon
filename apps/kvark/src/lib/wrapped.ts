@@ -22,18 +22,18 @@ export function isDraftWarning(
 export type CameraShortcut = {
     action: string;
     detail: string;
-    /** «Ta bilde» går til kameraet, «Send inn» til Mine bilder. */
-    target: "camera" | "mine";
+    /** «shoot» går til kameraet, «submit» og «done» til Mine bilder. */
+    kind: "shoot" | "submit" | "done";
     /** Usendte bilder slettes snart: vises i varselfarge. */
     warning: boolean;
 };
 
 /**
- * What the shortcut to an open camera offers. With shots left it is a photo;
- * with none left but drafts waiting, it is sending them in — the camera is
- * still listed as open precisely so the member can find their way back. The
- * last half hour before drafts are discarded, sending them in wins over
- * taking another photo, whatever is left.
+ * What the shortcut to an open camera offers. The camera stays listed until
+ * it closes: with shots left it is a photo; with none left but drafts waiting,
+ * it is sending them in; with a full film and nothing to send it points to
+ * Mine bilder. The last half hour before drafts are discarded, sending them
+ * in wins over taking another photo, whatever is left.
  */
 export function cameraShortcut(
     camera: { shotsLeft: number; draftCount: number; closesAt: string },
@@ -43,22 +43,30 @@ export function cameraShortcut(
         return {
             action: "Send inn",
             detail: `${camera.draftCount} ikke sendt før ${formatInOslo(camera.closesAt, "HH:mm")}`,
-            target: "mine",
+            kind: "submit",
             warning: true,
         };
     }
-    if (camera.shotsLeft === 0 && camera.draftCount > 0) {
+    if (camera.shotsLeft > 0) {
+        return {
+            action: "Ta bilde",
+            detail: `${camera.shotsLeft} ${camera.shotsLeft === 1 ? "bilde" : "bilder"} igjen`,
+            kind: "shoot",
+            warning: false,
+        };
+    }
+    if (camera.draftCount > 0) {
         return {
             action: "Send inn",
             detail: `${camera.draftCount} ikke sendt`,
-            target: "mine",
+            kind: "submit",
             warning: false,
         };
     }
     return {
-        action: "Ta bilde",
-        detail: `${camera.shotsLeft} ${camera.shotsLeft === 1 ? "bilde" : "bilder"} igjen`,
-        target: "camera",
+        action: "Mine bilder",
+        detail: "Alle bildene er tatt",
+        kind: "done",
         warning: false,
     };
 }

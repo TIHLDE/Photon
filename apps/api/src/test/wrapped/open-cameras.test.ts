@@ -13,10 +13,14 @@ const HOUR = 60 * 60 * 1000;
 
 describe("the cameras open for a member right now", () => {
     integrationTest(
-        "lists the event they are at, and nothing they cannot shoot at",
+        "lists only the cameras at events they hold a spot on, inside the window",
         async ({ ctx }) => {
             const now = Date.now();
-            const here = await createOngoingEvent(ctx, { title: "Festen" });
+            const here = await createOngoingEvent(ctx, {
+                title: "Festen",
+                imageUrl: "https://example.com/festen.jpg",
+                imageAlt: "Dansegulvet på Festen",
+            });
             const cameraOff = await createOngoingEvent(ctx);
             const notRegistered = await createOngoingEvent(ctx);
             const queued = await createOngoingEvent(ctx);
@@ -54,6 +58,8 @@ describe("the cameras open for a member right now", () => {
                 eventId: here.id,
                 slug: here.slug,
                 title: "Festen",
+                imageUrl: "https://example.com/festen.jpg",
+                imageAlt: "Dansegulvet på Festen",
                 shotsPerPerson: 3,
                 shotsLeft: 3,
                 closesAt: new Date(here.end.getTime() + 4 * HOUR).toISOString(),
@@ -63,7 +69,7 @@ describe("the cameras open for a member right now", () => {
     );
 
     integrationTest(
-        "puts the event that started last on top, and drops a camera once the photos are spent",
+        "puts the event that started last on top, and keeps a camera listed until it closes, film full or not",
         async ({ ctx }) => {
             const now = Date.now();
             // A meeting that is over but whose camera is still open, the party
@@ -107,6 +113,16 @@ describe("the cameras open for a member right now", () => {
                 "Møtet",
             ]);
 
+            // No banner on the event: the fields are there, and null.
+            const [first] = await (
+                await client.api.event.wrapped.open.$get()
+            ).json();
+            expect(first).toMatchObject({
+                title: "Festen",
+                imageUrl: null,
+                imageAlt: null,
+            });
+
             const cookie = await sessionCookie(ctx, member);
             await uploadPhoto(ctx, cookie, party.id);
             // An unsent draft keeps the camera listed: it is the way back to it.
@@ -114,7 +130,57 @@ describe("the cameras open for a member right now", () => {
 
             await submitPhotos(ctx, cookie, party.id);
 
-            expect(await titles()).toEqual(["Hele dagen", "Snart", "Møtet"]);
+            // Spent, so it drops behind the cameras that can still be used.
+            expect(await titles()).toEqual([
+                "Hele dagen",
+                "Snart",
+                "Møtet",
+                "Festen",
+            ]);
+            const festen = (
+                await (await client.api.event.wrapped.open.$get()).json()
+            ).find((camera) => camera.title === "Festen");
+            expect(festen).toMatchObject({ shotsLeft: 0, draftCount: 0 });
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "puts a camera with shots or drafts left before a spent one",
+        async ({ ctx }) => {
+            const now = Date.now();
+            // The spent camera's event started last, so it would be first
+            // by the event order alone.
+            const spent = await createOngoingEvent(ctx, {
+                title: "Brukt",
+                start: new Date(now - HOUR / 2),
+                end: new Date(now + 4 * HOUR),
+            });
+            const usable = await createOngoingEvent(ctx, {
+                title: "Ubrukt",
+                start: new Date(now + HOUR),
+                end: new Date(now + 3 * HOUR),
+            });
+
+            const member = await ctx.utils.createTestUser();
+            for (const event of [spent, usable]) {
+                await enableCamera(ctx, event.id, 1);
+                await register(ctx, event.id, member.id);
+            }
+            const cookie = await sessionCookie(ctx, member);
+            await uploadPhoto(ctx, cookie, spent.id);
+            await submitPhotos(ctx, cookie, spent.id);
+            const client = await ctx.utils.clientForUser(member);
+
+            const response = await client.api.event.wrapped.open.$get();
+
+            expect(response.status).toBe(200);
+            const cameras = await response.json();
+            expect(cameras.map((camera) => camera.title)).toEqual([
+                "Ubrukt",
+                "Brukt",
+            ]);
+            expect(cameras[1]).toMatchObject({ shotsLeft: 0, draftCount: 0 });
         },
         500_000,
     );

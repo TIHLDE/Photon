@@ -1,24 +1,29 @@
 import { Link } from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
-import { DisposableCamera } from "@tihlde/ui/ui/disposable-camera";
 import {
     LiveCard,
     LiveCardAction,
     LiveCardHeader,
+    LiveCardImage,
     LiveCardIndicator,
+    LiveCardMedia,
     LiveCardMeta,
     LiveCardTitle,
 } from "@tihlde/ui/ui/live-card";
-import { ArrowDown, Camera, Send, TriangleAlert } from "lucide-react";
+import { ArrowDown, Camera, Images, Send, TriangleAlert } from "lucide-react";
 
+import { assetImageProps } from "#/lib/assets";
 import { formatOsloDateTime } from "#/lib/date";
+import { DEFAULT_COVER_IMAGE } from "#/lib/image";
 import type { CameraShortcut } from "#/lib/wrapped";
 
 type WrappedLiveCardProps = {
     slug: string;
     title: string;
     closesAt: string;
-    shotsLeft: number;
+    /** The event's banner; without one the card shows the default cover. */
+    imageUrl: string | null;
+    imageAlt: string | null;
     shortcut: CameraShortcut;
     /** Id of the section below, for «Se resten av forsiden». */
     restId: string;
@@ -26,64 +31,72 @@ type WrappedLiveCardProps = {
 
 /**
  * The first screen of the home page while the member has an open camera: the
- * event, when the camera closes, and one tap to it — or to Mine bilder when
- * sending in is what is left. The whole card is the link.
+ * event, its banner (or the default cover when it has none) and when the
+ * camera closes, with one full-width pill below the banner that says what
+ * the tap does. The pill turns yellow near the submit deadline. The whole
+ * card is the link, to the camera or to Mine bilder when sending in is what
+ * is left.
  */
 export function WrappedLiveCard({
     slug,
     title,
     closesAt,
-    shotsLeft,
+    imageUrl,
+    imageAlt,
     shortcut,
     restId,
 }: WrappedLiveCardProps) {
-    const { action, detail, target, warning } = shortcut;
+    const { action, detail, kind, warning } = shortcut;
     const closesAtTime = formatOsloDateTime(closesAt, {
         hour: "2-digit",
         minute: "2-digit",
     });
 
     return (
-        // Fills what the first screen offers on a phone: the viewport minus
-        // the 3.5rem header and the 4rem bottom bar with its safe-area inset.
-        // The camera banner is hidden on the home page while this shows, so
-        // the bottom bar is at its short height.
-        <div className="container mx-auto flex min-h-[calc(100dvh_-_3.5rem_-_4rem_-_env(safe-area-inset-bottom))] w-full flex-col gap-2 px-4 pt-4 pb-2 lg:min-h-0 lg:py-8">
+        <div className="container mx-auto flex w-full flex-col gap-2 px-4 pt-4 pb-2 lg:py-8">
             <LiveCard
                 render={
-                    target === "mine" ? (
+                    kind === "shoot" ? (
                         <Link
-                            to="/arrangementer/$slug/kamera/mine"
+                            to="/arrangementer/$slug/kamera"
                             params={{ slug }}
                         />
                     ) : (
                         <Link
-                            to="/arrangementer/$slug/kamera"
+                            to="/arrangementer/$slug/kamera/mine"
                             params={{ slug }}
                         />
                     )
                 }
                 aria-label={`${action} på ${title}, ${detail}`}
-                className="flex-1 lg:min-h-[32rem]"
             >
                 <LiveCardHeader>
                     <LiveCardIndicator>Pågår nå</LiveCardIndicator>
                     <LiveCardMeta>Åpent til {closesAtTime}</LiveCardMeta>
                 </LiveCardHeader>
                 <LiveCardTitle>{title}</LiveCardTitle>
-                <div className="flex flex-1 items-center justify-center py-2">
-                    <DisposableCamera
-                        shotsLeft={shotsLeft}
-                        className="max-h-[40dvh] max-w-sm"
+                <LiveCardMedia>
+                    {/* Above the fold and the reason the card exists,
+                     * so loaded eagerly at high priority like DetailHero. */}
+                    <LiveCardImage
+                        {...assetImageProps(
+                            imageUrl || DEFAULT_COVER_IMAGE,
+                            "hero",
+                        )}
+                        alt={imageUrl ? (imageAlt ?? "") : ""}
+                        fetchPriority="high"
+                        decoding="async"
                     />
-                </div>
+                </LiveCardMedia>
                 <LiveCardAction variant={warning ? "warning" : "default"}>
                     {warning ? (
                         <TriangleAlert />
-                    ) : target === "mine" ? (
+                    ) : kind === "shoot" ? (
+                        <Camera />
+                    ) : kind === "submit" ? (
                         <Send />
                     ) : (
-                        <Camera />
+                        <Images />
                     )}
                     {action} · {detail}
                 </LiveCardAction>

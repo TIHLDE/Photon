@@ -121,7 +121,8 @@ function Home() {
                         slug={liveCamera.slug}
                         title={liveCamera.title}
                         closesAt={liveCamera.closesAt}
-                        shotsLeft={liveCamera.shotsLeft}
+                        imageUrl={liveCamera.imageUrl}
+                        imageAlt={liveCamera.imageAlt}
                         shortcut={cameraShortcut(liveCamera, now)}
                         restId={REST_OF_HOME_ID}
                     />

@@ -4,7 +4,13 @@ import {
     BottomBarBannerDescription,
     BottomBarBannerTitle,
 } from "@tihlde/ui/ui/bottom-bar";
-import { Camera, ChevronRight, Send, TriangleAlert } from "lucide-react";
+import {
+    Camera,
+    ChevronRight,
+    Images,
+    Send,
+    TriangleAlert,
+} from "lucide-react";
 
 import type { CameraShortcut } from "#/lib/wrapped";
 
@@ -24,29 +30,31 @@ export function WrappedCameraBanner({
     title,
     shortcut,
 }: WrappedCameraBannerProps) {
-    const { action, detail, target, warning } = shortcut;
+    const { action, detail, kind, warning } = shortcut;
 
     return (
         <BottomBarBanner
             variant={warning ? "warning" : "default"}
             render={
-                target === "mine" ? (
+                kind === "shoot" ? (
+                    <Link to="/arrangementer/$slug/kamera" params={{ slug }} />
+                ) : (
                     <Link
                         to="/arrangementer/$slug/kamera/mine"
                         params={{ slug }}
                     />
-                ) : (
-                    <Link to="/arrangementer/$slug/kamera" params={{ slug }} />
                 )
             }
             aria-label={`${action} på ${title}, ${detail}`}
         >
             {warning ? (
                 <TriangleAlert />
-            ) : target === "mine" ? (
+            ) : kind === "shoot" ? (
+                <Camera />
+            ) : kind === "submit" ? (
                 <Send />
             ) : (
-                <Camera />
+                <Images />
             )}
             <span className="flex min-w-0 flex-1 flex-col">
                 <BottomBarBannerTitle>{title}</BottomBarBannerTitle>

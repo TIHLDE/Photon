@@ -124,7 +124,7 @@ function WrappedPhotoReviewContainer({
 
     const [api, setApi] = useState<CarouselApi>();
     const deleteRef = useRef<HTMLButtonElement>(null);
-    const keepRef = useRef<HTMLButtonElement>(null);
+    const closeRef = useRef<HTMLButtonElement>(null);
 
     // Sveip og knapper flytter karusellen; den sier fra hvilket bilde som vises.
     useEffect(() => {
@@ -242,7 +242,7 @@ function WrappedPhotoReviewContainer({
         setCurrentId(next.id);
         // Slett-knappen forsvinner når neste bilde er sendt inn.
         requestAnimationFrame(() =>
-            (deleteRef.current ?? keepRef.current)?.focus(),
+            (deleteRef.current ?? closeRef.current)?.focus(),
         );
     }
 
@@ -278,7 +278,7 @@ function WrappedPhotoReviewContainer({
                 <Link to="/arrangementer/$slug/kamera/mine" params={{ slug }} />
             }
             deleteRef={deleteRef}
-            keepRef={keepRef}
+            closeRef={closeRef}
         />
     );
 }

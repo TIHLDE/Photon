@@ -159,6 +159,13 @@ export const openWrappedCamerasSchema = Schema(
                 description: "The event's slug, for linking to its camera",
             }),
             title: z.string(),
+            imageUrl: z.url().nullable().meta({
+                description:
+                    "The event's banner image, or null when it has none",
+            }),
+            imageAlt: z.string().nullable().meta({
+                description: "Alt text for the banner image (nullable)",
+            }),
             start: z.iso.datetime(),
             end: z.iso.datetime(),
             closesAt: z.iso.datetime().meta({
@@ -168,7 +175,7 @@ export const openWrappedCamerasSchema = Schema(
             shotsPerPerson: z.number().int(),
             shotsLeft: z.number().int().meta({
                 description:
-                    "Photos the caller has left. 0 only when drafts are waiting to be submitted.",
+                    "Photos the caller has left. 0 once every photo is taken; the camera stays listed until it closes.",
             }),
             draftCount: z.number().int().meta({
                 description: "The caller's photos not yet submitted",

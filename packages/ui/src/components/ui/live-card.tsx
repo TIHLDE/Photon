@@ -1,6 +1,7 @@
 import { useRender } from "@base-ui/react/use-render";
 import type * as React from "react";
 
+import { IMAGE_PRESETS } from "#/components/ui/image-preset";
 import { cn } from "#/lib/utils";
 
 type LiveCardProps = React.ComponentProps<"div"> & {
@@ -89,6 +90,44 @@ function LiveCardTitle({ className, ...props }: React.ComponentProps<"h2">) {
 }
 
 /**
+ * A picture in the card: the event's banner, or a drawing in its place.
+ * Children fill the frame (`absolute inset-0`). The frame is 21:9, the ratio
+ * of `cover-wide`, so a banner shows across its whole width.
+ */
+function LiveCardMedia({ className, ...props }: React.ComponentProps<"div">) {
+    return (
+        <div
+            data-slot="live-card-media"
+            className={cn(
+                "relative w-full overflow-hidden rounded-2xl bg-muted",
+                IMAGE_PRESETS["cover-wide"].aspectClassName,
+                className,
+            )}
+            {...props}
+        />
+    );
+}
+
+/**
+ * The banner photo, cropped to fill {@link LiveCardMedia} without distortion.
+ * `alt` is required: pass "" when the card's label already says it all.
+ */
+function LiveCardImage({
+    className,
+    alt,
+    ...props
+}: React.ComponentProps<"img"> & { alt: string }) {
+    return (
+        <img
+            data-slot="live-card-image"
+            alt={alt}
+            className={cn("absolute inset-0 size-full object-cover", className)}
+            {...props}
+        />
+    );
+}
+
+/**
  * The card's call to action, drawn as a large button across its foot.
  * `warning` when something is lost unless the member acts soon.
  */
@@ -116,7 +155,9 @@ export {
     LiveCard,
     LiveCardAction,
     LiveCardHeader,
+    LiveCardImage,
     LiveCardIndicator,
+    LiveCardMedia,
     LiveCardMeta,
     LiveCardTitle,
 };
