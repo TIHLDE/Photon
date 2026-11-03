@@ -1,9 +1,11 @@
+import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { promoteAssetUrls } from "~/lib/asset";
 import { releaseReplacedAssetUrls } from "~/lib/asset/release";
+import { isEditableGroupType } from "~/lib/group";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -18,7 +20,7 @@ export const updateRoute = route().patch(
         summary: "Partially update group",
         operationId: "updateGroup",
         description:
-            "Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' permission (globally or scoped to this group).",
+            "Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' permission (globally or scoped to this group). Changing `type` or `subtype` requires 'groups:manage' across all of TIHLDE.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -76,10 +78,43 @@ export const updateRoute = route().patch(
             }
         }
 
+        const { type, ...rest } = body;
+        const typeChanged =
+            type !== undefined &&
+            type.toUpperCase() !== previousGroup.type.toUpperCase();
+        const subtypeChanged =
+            body.subtype !== undefined &&
+            (body.subtype ?? null) !== (previousGroup.subtype ?? null);
+
+        // A group's type decides whether its leader sits in HS, so it cannot
+        // be set by anyone holding the permission for this group alone.
+        if (
+            (typeChanged || subtypeChanged) &&
+            !(await hasPermission(ctx, c.get("user").id, "groups:manage"))
+        ) {
+            throw new HTTPException(403, {
+                message:
+                    "Changing a group's type requires the 'groups:manage' permission across all of TIHLDE",
+            });
+        }
+
+        if (
+            typeChanged &&
+            !(
+                isEditableGroupType(type) &&
+                isEditableGroupType(previousGroup.type)
+            )
+        ) {
+            throw new HTTPException(400, {
+                message: `The group's type cannot be changed from "${previousGroup.type}" to "${type}"`,
+            });
+        }
+
         await db
             .update(schema.group)
             .set({
-                ...body,
+                ...rest,
+                ...(typeChanged ? { type: type.toUpperCase() } : {}),
                 updatedAt: new Date(),
             })
             .where(eq(schema.group.slug, slug));

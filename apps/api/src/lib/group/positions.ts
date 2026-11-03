@@ -9,13 +9,20 @@
 
 import {
     PERMISSIONS_SET,
+    getUserPermissions,
     hasPermission,
     hasScopedPermission,
 } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
-import { isGroupLeader } from "./index";
+import {
+    HS_GROUP_SLUG,
+    getGroup,
+    isGroupLeader,
+    isSubgroupType,
+} from "./index";
+import { readLeaderGlobalPermissions } from "./linked-leader";
 
 /**
  * Drop permission strings the registry no longer knows about.
@@ -139,6 +146,48 @@ export async function canGrantPositionPermissions(
         if (!held) return false;
     }
     return true;
+}
+
+/**
+ * Guardrail: may the user give someone this role in this group?
+ *
+ * Membership hands out the group's org-wide permissions as surely as a verv
+ * does, so the rule from {@link canAssignPosition} applies here too. Becoming
+ * leader of a subgroup also carries a seat in HS, and with it HS's list.
+ */
+export async function canGrantGroupMembership(
+    ctx: AppContext,
+    userId: string,
+    group: {
+        slug: string;
+        type: string;
+        memberGlobalPermissions: string[] | null;
+        leaderGlobalPermissions: string[] | null;
+    },
+    role: "member" | "leader",
+): Promise<boolean> {
+    const required = [...(group.memberGlobalPermissions ?? [])];
+
+    if (role === "leader") {
+        required.push(
+            ...(await readLeaderGlobalPermissions(
+                ctx,
+                group.slug,
+                group.leaderGlobalPermissions,
+            )),
+        );
+
+        if (isSubgroupType(group.type)) {
+            const hs = await getGroup(ctx, HS_GROUP_SLUG);
+            required.push(...(hs?.memberGlobalPermissions ?? []));
+        }
+    }
+
+    const needed = knownPermissions(required);
+    if (needed.length === 0) return true;
+
+    const held = new Set(await getUserPermissions(ctx, userId));
+    return held.has("root") || needed.every((p) => held.has(p));
 }
 
 /**

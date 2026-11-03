@@ -30,6 +30,7 @@ import { Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { richRegistry } from "#/components/markdown/directives/presets";
+import { usePermission } from "#/hooks/use-permission";
 import {
     MemberSingleCombobox,
     type ComboboxMember,
@@ -107,7 +108,8 @@ export function GroupEditDialog({
         );
     }, [open, group, members]);
 
-    const typeEditable = canEditGroupType(group.type ?? "");
+    const mayChangeType = usePermission("groups:manage");
+    const typeEditable = mayChangeType && canEditGroupType(group.type ?? "");
     const hasSubtype = supportsGroupSubtype(type);
 
     async function handleSubmit(event: React.FormEvent) {

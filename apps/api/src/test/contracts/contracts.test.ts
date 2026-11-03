@@ -466,7 +466,11 @@ describe("contracts", () => {
 
                 const admin = await ctx.utils.createTestUser();
                 const adminClient = await ctx.utils.clientForUser(admin);
-                await ctx.utils.giveUserPermissions(admin, ["groups:manage"]);
+                await ctx.utils.giveUserPermissions(admin, [
+                    "groups:manage",
+                    "contracts:view",
+                    "contracts:create",
+                ]);
 
                 const member = await ctx.utils.createTestUser();
 

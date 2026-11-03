@@ -4,6 +4,7 @@ import { EmptyFilter } from "drizzle-orm";
 import { HTTPAppException } from "~/lib/errors";
 import { acceptsJoinRequests, addUserToGroup } from "~/lib/group";
 import { isGroupLeader } from "~/lib/group/middleware";
+import { canGrantGroupMembership } from "~/lib/group/positions";
 import { sendNotification } from "~/lib/notification";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -96,6 +97,19 @@ export const approveJoinRequestRoute = route().post(
         if (!acceptsJoinRequests(group)) {
             throw HTTPAppException.BadRequest(
                 "Denne gruppen tar ikke imot forespørsler",
+            );
+        }
+
+        if (
+            !(await canGrantGroupMembership(
+                ctx,
+                c.get("user").id,
+                group,
+                "member",
+            ))
+        ) {
+            throw HTTPAppException.Forbidden(
+                "Du kan bare legge til medlemmer i en gruppe der du selv har de TIHLDE-omfattende rettighetene.",
             );
         }
 

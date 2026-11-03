@@ -457,6 +457,22 @@ export const DEFAULT_LEADER_PERMISSIONS = [
     "events:payments:view",
 ];
 
+/**
+ * The types a group may be switched between. The rest are generated, and
+ * changing theirs would cut the group off from the logic that maintains it.
+ */
+const EDITABLE_GROUP_TYPES = new Set([
+    "SUBGROUP",
+    "COMMITTEE",
+    "BOARD",
+    "INTERESTGROUP",
+    "SPORTSTEAM",
+]);
+
+export function isEditableGroupType(type: string): boolean {
+    return EDITABLE_GROUP_TYPES.has(type.toUpperCase());
+}
+
 /** True for groups whose leader belongs in HS. Column is freeform varchar
  *  (Lepton rows are upper case), so compare case-insensitively. */
 export function isSubgroupType(type: string): boolean {
