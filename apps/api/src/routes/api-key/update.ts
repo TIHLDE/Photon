@@ -40,10 +40,21 @@ export const updateRoute = route().patch(
             if (!existing) {
                 throw HTTPAppException.NotFound("API key not found");
             }
-            await assertHoldsApiKeyPermissions(c.get("ctx"), c.get("user").id, [
-                ...existing.permissions,
-                ...body.permissions,
-            ]);
+
+            // The admin page sends the list on every save, so a plain rename
+            // arrives looking like this too.
+            const held = new Set<string>(existing.permissions);
+            const requested = new Set(body.permissions);
+            const changed =
+                held.size !== requested.size ||
+                [...requested].some((p) => !held.has(p));
+            if (changed) {
+                await assertHoldsApiKeyPermissions(
+                    c.get("ctx"),
+                    c.get("user").id,
+                    [...held, ...requested],
+                );
+            }
         }
 
         const updatedApiKey = await service.update(id, body);

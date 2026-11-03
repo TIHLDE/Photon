@@ -1,49 +1,19 @@
+import { clearSessionCopiesAndOAuthGrants } from "@photon/auth";
 import { hasPermission } from "@photon/auth/rbac";
 import { getUserHighestRolePosition } from "@photon/auth/roles";
 import { schema } from "@photon/db";
-import { and, eq, isNull, notInArray } from "drizzle-orm";
+import { and, eq, notInArray } from "drizzle-orm";
 import type { AppContext } from "./ctx";
 import { HTTPAppException } from "./errors";
 
-/**
- * Better Auth reads a session from secondary storage first and only falls back
- * to Postgres, so deleting the row leaves the session working. Its own
- * `deleteUserSessions` finds what to clear through a list kept in that storage,
- * which a restart can lose, so the tokens Postgres knows are cleared by name.
- *
- * OAuth grants go too. Their tokens outlive the session: the foreign key only
- * nulls `session_id`, and the refresh grant then issues a token with no session
- * behind it at all.
- */
 export async function revokeUserAccess(
-    ctx: Pick<AppContext, "db" | "auth">,
+    ctx: Pick<AppContext, "db" | "auth" | "cache">,
     userId: string,
 ): Promise<void> {
-    const { db, auth } = ctx;
-    const { internalAdapter } = await auth.$context;
+    await clearSessionCopiesAndOAuthGrants(ctx, userId);
 
-    const sessions = await db
-        .select({ token: schema.session.token })
-        .from(schema.session)
-        .where(eq(schema.session.userId, userId));
-
-    if (sessions.length > 0) {
-        await internalAdapter.deleteSessions(sessions.map((s) => s.token));
-    }
+    const { internalAdapter } = await ctx.auth.$context;
     await internalAdapter.deleteUserSessions(userId);
-
-    await db
-        .update(schema.oauthRefreshToken)
-        .set({ revoked: new Date() })
-        .where(
-            and(
-                eq(schema.oauthRefreshToken.userId, userId),
-                isNull(schema.oauthRefreshToken.revoked),
-            ),
-        );
-    await db
-        .delete(schema.oauthAccessToken)
-        .where(eq(schema.oauthAccessToken.userId, userId));
 }
 
 /**

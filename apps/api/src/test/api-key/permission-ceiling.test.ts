@@ -155,6 +155,21 @@ describe("changing an existing API key", () => {
     );
 
     integrationTest(
+        "lets the caller rename when the unchanged list comes along",
+        async ({ ctx }) => {
+            const { client } = await clientWith(ctx, ["api-keys:update"]);
+            const key = await rootKey(ctx);
+
+            const res = await client.api["api-keys"][":id"].$patch({
+                param: { id: key.id },
+                json: { name: "Nytt navn", permissions: ["root"] },
+            });
+
+            expect(res.status).toBe(200);
+        },
+    );
+
+    integrationTest(
         "refuses handing the caller a fresh copy of a key above them",
         async ({ ctx }) => {
             const { client } = await clientWith(ctx, ["api-keys:update"]);

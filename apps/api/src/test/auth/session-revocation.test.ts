@@ -54,6 +54,12 @@ const deactivate = async (
     expect(res.status).toBe(200);
 };
 
+const accessTokenRows = (ctx: IntegrationTestContext, userId: string) =>
+    ctx.db
+        .select()
+        .from(schema.oauthAccessToken)
+        .where(eq(schema.oauthAccessToken.userId, userId));
+
 const deleteUser = async (ctx: IntegrationTestContext, targetId: string) => {
     const admin = await ctx.utils.createTestUser();
     await ctx.utils.giveUserPermissions(admin, ["users:delete"]);
@@ -134,7 +140,6 @@ async function oauthGrantFor(ctx: IntegrationTestContext, user: Credentials) {
         redirect_uri: redirectUri,
         code: code ?? "",
         code_verifier: pkce.verifier,
-        resource: authBaseUrl,
     });
     expect(issued.status).toBe(200);
     const { refresh_token: refreshToken } = (await issued.json()) as {
@@ -188,6 +193,7 @@ describe("deactivating a member", () => {
         async ({ ctx }) => {
             const target = await ctx.utils.createTestUser();
             const { clientId, refreshToken } = await oauthGrantFor(ctx, target);
+            expect(await accessTokenRows(ctx, target.id)).not.toHaveLength(0);
 
             await deactivate(ctx, target.id);
 
@@ -198,12 +204,27 @@ describe("deactivating a member", () => {
                 resource: authBaseUrl,
             });
             expect(renewed.status).toBe(400);
+            expect(await accessTokenRows(ctx, target.id)).toHaveLength(0);
+        },
+    );
 
-            const accessTokens = await ctx.db
-                .select()
-                .from(schema.oauthAccessToken)
-                .where(eq(schema.oauthAccessToken.userId, target.id));
-            expect(accessTokens).toHaveLength(0);
+    integrationTest(
+        "stops a copy that outlived an earlier revocation",
+        async ({ ctx }) => {
+            const target = await ctx.utils.createTestUser();
+            const cookies = sessionTokenOnly(await signIn(ctx, target));
+
+            await ctx.db
+                .delete(schema.session)
+                .where(eq(schema.session.userId, target.id));
+            expect(await isSignedIn(ctx, cookies)).toBe(true);
+
+            await ctx.db
+                .update(schema.user)
+                .set({ banned: true })
+                .where(eq(schema.user.id, target.id));
+
+            expect(await isSignedIn(ctx, cookies)).toBe(false);
         },
     );
 
@@ -242,23 +263,75 @@ describe("deleting a member", () => {
     });
 });
 
+describe("deleting a member", () => {
+    integrationTest(
+        "stops a copy that outlived an earlier deletion",
+        async ({ ctx }) => {
+            const target = await ctx.utils.createTestUser();
+            const cookies = sessionTokenOnly(await signIn(ctx, target));
+
+            await ctx.db
+                .delete(schema.user)
+                .where(eq(schema.user.id, target.id));
+
+            expect(await isSignedIn(ctx, cookies)).toBe(false);
+        },
+    );
+});
+
 describe("resetting a password", () => {
+    const resetPassword = async (
+        ctx: IntegrationTestContext,
+        email: string,
+    ) => {
+        const sendReset = vi.spyOn(ctx.email, "sendPasswordResetMail");
+        await ctx.auth.api.requestPasswordReset({
+            body: { email, redirectTo: "/reset-password" },
+        });
+        const url = new URL(sendReset.mock.calls.at(-1)?.[0].url ?? "");
+        const token = url.pathname.split("/").at(-1) ?? "";
+        await ctx.auth.api.resetPassword({
+            body: { newPassword: "et-nytt-passord-123", token },
+        });
+    };
+
+    integrationTest(
+        "stops an OAuth client from renewing its access",
+        async ({ ctx }) => {
+            const target = await ctx.utils.createTestUser();
+            const { clientId, refreshToken } = await oauthGrantFor(ctx, target);
+
+            await resetPassword(ctx, target.email);
+
+            const renewed = await tokenRequest(ctx, {
+                grant_type: "refresh_token",
+                client_id: clientId,
+                refresh_token: refreshToken,
+            });
+            expect(renewed.status).toBe(400);
+        },
+    );
+
+    integrationTest(
+        "ends a session whose entry in the active-session list is gone",
+        async ({ ctx }) => {
+            const target = await ctx.utils.createTestUser();
+            const cookies = sessionTokenOnly(await signIn(ctx, target));
+            await ctx.cache.delete(`active-sessions-${target.id}`);
+
+            await resetPassword(ctx, target.email);
+
+            expect(await isSignedIn(ctx, cookies)).toBe(false);
+        },
+    );
+
     integrationTest("ends every session on the account", async ({ ctx }) => {
         const target = await ctx.utils.createTestUser();
         const cookies = await signIn(ctx, target);
         const tokenOnly = sessionTokenOnly(cookies);
         expect(await isSignedIn(ctx, cookies)).toBe(true);
 
-        const sendReset = vi.spyOn(ctx.email, "sendPasswordResetMail");
-        await ctx.auth.api.requestPasswordReset({
-            body: { email: target.email, redirectTo: "/reset-password" },
-        });
-        const url = new URL(sendReset.mock.calls[0]?.[0].url ?? "");
-        const token = url.pathname.split("/").at(-1) ?? "";
-
-        await ctx.auth.api.resetPassword({
-            body: { newPassword: "et-nytt-passord-123", token },
-        });
+        await resetPassword(ctx, target.email);
 
         expect(await isSignedIn(ctx, cookies)).toBe(false);
         expect(await isSignedIn(ctx, tokenOnly)).toBe(false);
