@@ -1,4 +1,11 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import {
+    type ReactElement,
+    Suspense,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
@@ -11,6 +18,7 @@ import {
 import { convertHeicToJpeg, isHeicFile } from "@tihlde/ui/lib/heic";
 import { toast } from "@tihlde/ui/ui/sonner";
 import { Flashlight, FlashlightOff, Images } from "lucide-react";
+import { z } from "zod";
 
 import { authClientWithRedirect } from "#/api/auth";
 import { getEventByIdQuery } from "#/api/queries/events";
@@ -48,10 +56,14 @@ import { isDraftWarning } from "#/lib/wrapped";
  * rute ville aldri blitt vist.
  *
  * Sida eier hele skjermen (`immersive`): uten topplinje, bunnlinje og footer,
- * med en egen X tilbake til arrangementet.
+ * med en egen X til forsida, eller tilbake til Mine bilder om kameraet ble
+ * åpnet derfra.
  */
 export const Route = createFileRoute("/_app/arrangementer/$slug_/kamera")({
     component: WrappedCameraPage,
+    // `fra=mine` settes bare av lenkene fra Mine bilder, så X-en fører dit
+    // i stedet for til forsida.
+    validateSearch: z.object({ fra: z.enum(["mine"]).optional() }),
     staticData: { immersive: true },
     beforeLoad: ({ location }) => authClientWithRedirect(location.href),
     loader: async ({ context, params }) => {
@@ -71,16 +83,29 @@ export const Route = createFileRoute("/_app/arrangementer/$slug_/kamera")({
 
 function WrappedCameraPage() {
     const { slug } = Route.useParams();
+    const { fra } = Route.useSearch();
+    const closeProps =
+        fra === "mine"
+            ? {
+                  closeLink: (
+                      <Link
+                          to="/arrangementer/$slug/kamera/mine"
+                          params={{ slug }}
+                      />
+                  ),
+                  closeLabel: "Tilbake til Mine bilder",
+              }
+            : { closeLink: <Link to="/" />, closeLabel: "Lukk kameraet" };
 
     return (
         <Suspense
             fallback={
-                <WrappedCameraScreen slug={slug} title="">
+                <WrappedCameraScreen {...closeProps} title="">
                     <WrappedCameraSkeleton />
                 </WrappedCameraScreen>
             }
         >
-            <WrappedCameraContainer slug={slug} />
+            <WrappedCameraContainer slug={slug} closeProps={closeProps} />
         </Suspense>
     );
 }
@@ -103,7 +128,15 @@ type PickedPhoto = { file: File; src: string } | { file: null; src: null };
 /** `setTimeout` regner i 32 bit, og ingen venter et døgn på samme side. */
 const MAX_WAIT_MS = 24 * 60 * 60 * 1000;
 
-function WrappedCameraContainer({ slug }: { slug: string }) {
+type CloseProps = { closeLink: ReactElement; closeLabel: string };
+
+function WrappedCameraContainer({
+    slug,
+    closeProps,
+}: {
+    slug: string;
+    closeProps: CloseProps;
+}) {
     const queryClient = useQueryClient();
     const { data: event } = useSuspenseQuery(getEventByIdQuery(slug));
     const cameraQuery = getWrappedCameraQuery(event.id);
@@ -378,7 +411,7 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
 
     if (!camera.canShoot && camera.reason) {
         return (
-            <WrappedCameraScreen slug={slug} title={event.title}>
+            <WrappedCameraScreen {...closeProps} title={event.title}>
                 {waiting}
                 <WrappedCameraUnavailable
                     reason={camera.reason}
@@ -431,7 +464,7 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
         viewfinderState === "unavailable"
     ) {
         return (
-            <WrappedCameraScreen slug={slug} title={event.title}>
+            <WrappedCameraScreen {...closeProps} title={event.title}>
                 {viewfinderState === "denied" ||
                 viewfinderState === "unavailable" ? (
                     <WrappedCameraFallback reason={viewfinderState} />
@@ -471,7 +504,7 @@ function WrappedCameraContainer({ slug }: { slug: string }) {
 
     return (
         <WrappedCameraScreen
-            slug={slug}
+            {...closeProps}
             title={event.title}
             action={
                 torchSupported ? (

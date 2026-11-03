@@ -70,6 +70,7 @@ function WrappedMyPhotosPage() {
                         <Link
                             to="/arrangementer/$slug/kamera"
                             params={{ slug }}
+                            search={{ fra: "mine" }}
                         />
                     }
                 >
@@ -139,7 +140,11 @@ function WrappedMyPhotosContainer({ slug }: { slug: string }) {
             draftCount={camera.draftCount}
             closesAt={formatInOslo(camera.closesAt, "HH:mm")}
             cameraLink={
-                <Link to="/arrangementer/$slug/kamera" params={{ slug }} />
+                <Link
+                    to="/arrangementer/$slug/kamera"
+                    params={{ slug }}
+                    search={{ fra: "mine" }}
+                />
             }
             photoLink={(photoId) => (
                 <Link
