@@ -241,3 +241,52 @@ export const deleteMyWrappedPhotoResponseSchema = Schema(
         shotsLeft: z.number().int(),
     }),
 );
+
+const storyPersonSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    image: z.string().nullable().meta({ description: "Avatar URL" }),
+});
+
+export const wrappedStoryPhotoSchema = Schema(
+    "WrappedStoryPhoto",
+    z.object({
+        id: z.uuid().meta({ description: "Photo ID" }),
+        takenAt: z.iso.datetime().meta({
+            description: "When the photo was taken",
+        }),
+        photographer: storyPersonSchema,
+        imageUrl: z.string().meta({
+            description:
+                "Path on the API that serves the image. Needs the session, so fetch it with credentials rather than using it as an `<img src>` from another origin.",
+        }),
+        likeCount: z.number().int(),
+        likedByMe: z.boolean(),
+        commentCount: z.number().int(),
+    }),
+);
+
+export const wrappedStorySchema = Schema(
+    "WrappedStory",
+    PagniationResponseSchema.extend({
+        event: z
+            .object({
+                id: z.uuid(),
+                slug: z.string(),
+                title: z.string(),
+                start: z.iso.datetime(),
+                end: z.iso.datetime(),
+                imageUrl: z.string().nullable(),
+            })
+            .meta({
+                description: "The event, shown as the first item of the story",
+            }),
+        publishedAt: z.iso.datetime().nullable().meta({
+            description:
+                "When the story went live. Null only for an organizer previewing an unpublished story.",
+        }),
+        items: z
+            .array(wrappedStoryPhotoSchema)
+            .describe("The picked photos, in the order they were taken"),
+    }),
+);
