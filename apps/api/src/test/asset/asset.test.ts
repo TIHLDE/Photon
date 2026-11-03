@@ -182,7 +182,10 @@ describe("Asset Upload/Download System", () => {
             });
 
             // Create test file
-            const testFileContent = Buffer.from("test file for api key upload");
+            const testFileContent = Buffer.concat([
+                Buffer.from([0xff, 0xd8, 0xff]),
+                Buffer.from("test file for api key upload"),
+            ]);
             const formData = new FormData();
             formData.append(
                 "file",
@@ -262,18 +265,48 @@ describe("Asset Upload/Download System", () => {
 
             // ===== TEST 2: VALID FILE TYPES =====
             const validTypes = [
-                { type: "image/jpeg", ext: "jpg" },
-                { type: "image/png", ext: "png" },
-                { type: "image/gif", ext: "gif" },
-                { type: "image/webp", ext: "webp" },
-                { type: "application/pdf", ext: "pdf" },
+                {
+                    type: "image/jpeg",
+                    ext: "jpg",
+                    signature: Buffer.from([0xff, 0xd8, 0xff]),
+                },
+                {
+                    type: "image/png",
+                    ext: "png",
+                    signature: Buffer.from([
+                        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+                    ]),
+                },
+                {
+                    type: "image/gif",
+                    ext: "gif",
+                    signature: Buffer.from("GIF89a"),
+                },
+                {
+                    type: "image/webp",
+                    ext: "webp",
+                    signature: Buffer.from("RIFF\0\0\0\0WEBP"),
+                },
+                {
+                    type: "application/pdf",
+                    ext: "pdf",
+                    signature: Buffer.from("%PDF-1.7"),
+                },
             ];
 
-            for (const { type, ext } of validTypes) {
+            for (const { type, ext, signature } of validTypes) {
                 const formData = new FormData();
                 formData.append(
                     "file",
-                    new Blob([Buffer.from(`test ${type} content`)], { type }),
+                    new Blob(
+                        [
+                            Buffer.concat([
+                                signature,
+                                Buffer.from(`test ${type} content`),
+                            ]),
+                        ],
+                        { type },
+                    ),
                     `test.${ext}`,
                 );
 
@@ -311,9 +344,12 @@ describe("Asset Upload/Download System", () => {
             const underLimitFormData = new FormData();
             underLimitFormData.append(
                 "file",
-                new Blob([Buffer.alloc(toddelSizedPdf)], {
-                    type: "application/pdf",
-                }),
+                new Blob(
+                    [Buffer.from("%PDF-1.7"), Buffer.alloc(toddelSizedPdf)],
+                    {
+                        type: "application/pdf",
+                    },
+                ),
                 "toddel-large.pdf",
             );
 
@@ -480,6 +516,7 @@ describe("Asset Upload/Download System", () => {
                 contentType: "image/png",
                 uploadedById: testUser.id,
             });
+            await bucket.promoteAsset(key);
 
             const variantResponse = await app.request(
                 `/api/assets/${key}?w=320`,
@@ -745,7 +782,9 @@ describe("Asset Upload/Download System", () => {
             const formData = new FormData();
             formData.append(
                 "file",
-                new Blob([Buffer.from("promote me")], { type: "image/gif" }),
+                new Blob([Buffer.from("GIF89a promote me")], {
+                    type: "image/gif",
+                }),
                 "promote.gif",
             );
 

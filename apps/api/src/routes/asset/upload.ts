@@ -1,15 +1,98 @@
+import type { AuthUser } from "@photon/auth";
+import { createMiddleware } from "hono/factory";
 import {
     ALLOWED_MIME_TYPES,
     MAX_FILE_SIZE,
     generateAssetKey,
     isAllowedMimeType,
 } from "~/lib/asset";
-import { IMAGE_MAX_DIMENSION, optimizeImage } from "~/lib/asset/image";
+import { detectFileType } from "~/lib/asset/file-type";
+import {
+    IMAGE_MAX_DIMENSION,
+    IMAGE_MAX_INPUT_PIXELS,
+    exceedsPixelLimit,
+    isOptimizableImage,
+    optimizeImage,
+} from "~/lib/asset/image";
+import { type UsageWindow, takeFromWindow } from "~/lib/asset/limits";
+import type { AppContext } from "~/lib/ctx";
 import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuthOrApiKey } from "~/middleware/auth-or-api-key";
+import type { LoggerType } from "~/middleware/logger";
 import { uploadResponseSchema } from "./schema";
+
+const MAX_UPLOADS_IN_FLIGHT_PER_USER = 6;
+
+/**
+ * The bucket's quota counts objects, so one account must not be able to spend
+ * it. The numbers leave room for the largest legitimate case: the gallery admin
+ * sending a whole event's photos one at a time.
+ */
+function uploadWindows(userId: string): UsageWindow[] {
+    return [
+        {
+            name: `asset-upload:minute:${userId}`,
+            limit: 120,
+            seconds: 60,
+        },
+        {
+            name: `asset-upload:day:${userId}`,
+            limit: 2000,
+            seconds: 24 * 60 * 60,
+        },
+    ];
+}
+
+const uploadsInFlight = new Map<string, number>();
+
+const TOO_MANY_UPLOADS =
+    "Du har lastet opp for mange filer. Prøv igjen senere.";
+
+/**
+ * Session and OAuth uploads count per person. API keys are left out on purpose:
+ * they belong to sibling apps and are handed out by hand, one per service.
+ *
+ * The in-flight cap also keeps the window counts honest. They are read and
+ * written in two steps, so parallel requests could otherwise all pass together.
+ */
+const limitUserUploads = createMiddleware<{
+    Variables: { user?: AuthUser; ctx: AppContext; logger: LoggerType };
+}>(async (c, next) => {
+    const userId = c.get("user")?.id;
+    if (!userId) {
+        await next();
+        return;
+    }
+
+    const inFlight = uploadsInFlight.get(userId) ?? 0;
+    if (inFlight >= MAX_UPLOADS_IN_FLIGHT_PER_USER) {
+        throw new HTTPAppException({ status: 429, message: TOO_MANY_UPLOADS });
+    }
+    uploadsInFlight.set(userId, inFlight + 1);
+
+    try {
+        const { cache } = c.get("ctx");
+        for (const window of uploadWindows(userId)) {
+            if (!(await takeFromWindow(cache, window, c.get("logger")))) {
+                throw new HTTPAppException({
+                    status: 429,
+                    message: TOO_MANY_UPLOADS,
+                });
+            }
+        }
+
+        await next();
+    } finally {
+        const remaining = (uploadsInFlight.get(userId) ?? 1) - 1;
+        if (remaining > 0) {
+            uploadsInFlight.set(userId, remaining);
+        } else {
+            uploadsInFlight.delete(userId);
+        }
+    }
+});
 
 export const uploadRoute = route().post(
     "/",
@@ -23,7 +106,9 @@ Requires either session authentication or a valid API key.
 
 **Constraints:**
 - Maximum file size: ${MAX_FILE_SIZE / 1024 / 1024}MB
-- Allowed MIME types: ${ALLOWED_MIME_TYPES.join(", ")}
+- Allowed MIME types: ${ALLOWED_MIME_TYPES.join(", ")}. The file's first bytes decide, and the stored type is the one found there, not the one declared.
+- Images larger than ${IMAGE_MAX_INPUT_PIXELS / 1_000_000} megapixels are refused.
+- Signed-in users have a limit on uploads per minute and per day. API keys do not.
 
 **Image optimization:**
 JPEG, PNG and WebP uploads are re-encoded to WebP, scaled to fit within ${IMAGE_MAX_DIMENSION}x${IMAGE_MAX_DIMENSION} px and stripped of metadata. The response therefore reports the stored \`contentType\`, \`size\` and \`originalFilename\` (extension swapped to \`.webp\`), which may differ from what was sent. GIF is passed through untouched so animation survives.
@@ -41,12 +126,17 @@ Pass an optional "visibility" field set to "private" for files that must not be 
         .badRequest({ description: "Invalid file type or size exceeded" })
         .unauthorized()
         .response({
+            statusCode: 429,
+            description: "Too many uploads from this user",
+        })
+        .response({
             statusCode: 507,
             description:
                 "Insufficient Storage - the object store rejected the write because its quota is exhausted",
         })
         .build(),
     requireAuthOrApiKey,
+    limitUserUploads,
     async (c) => {
         const { bucket } = c.get("ctx");
 
@@ -98,20 +188,36 @@ Pass an optional "visibility" field set to "private" for files that must not be 
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
+        const realType = detectFileType(buffer);
+        if (!realType) {
+            throw HTTPAppException.BadRequest(
+                "Innholdet i filen er ikke JPEG, PNG, GIF, WebP eller PDF.",
+            );
+        }
+
+        if (
+            isOptimizableImage(realType) &&
+            (await exceedsPixelLimit(buffer, c.get("logger")))
+        ) {
+            throw HTTPAppException.BadRequest(
+                `Bildet er for stort. Grensen er ${IMAGE_MAX_INPUT_PIXELS / 1_000_000} megapiksler.`,
+            );
+        }
+
         // Re-encode images to WebP before they reach storage. Clients compress
         // too, but this is the only step every upload passes through — API keys
         // and migration scripts included — so it is what actually guarantees no
         // oversized original is ever served.
         const optimized = await optimizeImage(
             buffer,
-            file.type,
+            realType,
             file.name,
             c.get("logger"),
         );
 
         const storedBuffer = optimized?.buffer ?? buffer;
         const storedFilename = optimized?.filename ?? file.name;
-        const storedContentType = optimized?.contentType ?? file.type;
+        const storedContentType = optimized?.contentType ?? realType;
 
         // Generate unique key
         const key = generateAssetKey(storedFilename);

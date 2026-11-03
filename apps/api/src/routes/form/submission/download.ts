@@ -7,6 +7,20 @@ import { route } from "~/lib/route";
 import { deriveStudyFromGroups, loadStudyGroupRows } from "~/lib/user/study";
 import { requireAuth } from "~/middleware/auth";
 
+/** Spreadsheets run a cell starting with one of these, after any whitespace. */
+const FORMULA_START = /^\s*[=+\-@＝＋－＠]/;
+
+/** Phone numbers, amounts and a bare "-" start the same way, but run nothing. */
+const PLAIN_NUMBER = /^[+-]?[\d\s.,]*$/;
+
+function csvCell(value: string): string {
+    const neutralized =
+        FORMULA_START.test(value) && !PLAIN_NUMBER.test(value)
+            ? `'${value}`
+            : value;
+    return `"${neutralized.replaceAll('"', '""')}"`;
+}
+
 export const downloadSubmissionsRoute = route().get(
     "/:formId/submissions/download",
     describeRoute({
@@ -168,8 +182,8 @@ export const downloadSubmissionsRoute = route().get(
 
         // Convert to CSV format
         const csvContent = [
-            headers.map((h) => `"${h}"`).join(","),
-            ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+            headers.map(csvCell).join(","),
+            ...rows.map((row) => row.map(csvCell).join(",")),
         ].join("\n");
 
         // Return CSV

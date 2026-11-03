@@ -9,9 +9,11 @@ import { findAssetReferences } from "./references";
 const STAGING_EXPIRY_DAYS = 2;
 
 /**
- * Maximum number of assets to clean up per run
+ * Maximum number of assets to clean up per run. Has to outpace what the per-user
+ * upload limit lets in, or abandoned uploads pile up against the bucket's object
+ * quota.
  */
-const CLEANUP_BATCH_SIZE = 100;
+const CLEANUP_BATCH_SIZE = 500;
 
 export type CleanupResult = {
     deleted: number;

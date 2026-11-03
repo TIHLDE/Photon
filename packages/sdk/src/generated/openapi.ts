@@ -373,7 +373,9 @@ export interface paths {
          *
          *     **Constraints:**
          *     - Maximum file size: 50MB
-         *     - Allowed MIME types: image/jpeg, image/png, image/gif, image/webp, application/pdf
+         *     - Allowed MIME types: image/jpeg, image/png, image/gif, image/webp, application/pdf. The file's first bytes decide, and the stored type is the one found there, not the one declared.
+         *     - Images larger than 120 megapixels are refused.
+         *     - Signed-in users have a limit on uploads per minute and per day. API keys do not.
          *
          *     **Image optimization:**
          *     JPEG, PNG and WebP uploads are re-encoded to WebP, scaled to fit within 2560x2560 px and stripped of metadata. The response therefore reports the stored `contentType`, `size` and `originalFilename` (extension swapped to `.webp`), which may differ from what was sent. GIF is passed through untouched so animation survives.
@@ -466,7 +468,9 @@ export interface paths {
          *     re-encoded as WebP at that width, keeping its aspect ratio and never upscaling.
          *     Variants are generated on first request and cached, so a card never has to
          *     download a full-resolution original. Any other width is rejected, and the
-         *     parameter is ignored for non-image assets (PDF, GIF).
+         *     parameter is ignored for non-image assets (PDF, GIF). Under heavy load, or when
+         *     the image cannot be re-encoded, the original is served with `no-store` instead.
+         *     Variants of a staged asset are not cached until it is promoted.
          */
         get: operations["downloadAsset"];
         put?: never;
@@ -7701,6 +7705,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
+            };
+            /** @description Too many uploads from this user */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Insufficient Storage - the object store rejected the write because its quota is exhausted */
             507: {

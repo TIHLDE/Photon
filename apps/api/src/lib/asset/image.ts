@@ -1,6 +1,24 @@
 import type Sharp from "sharp";
 import type { LoggerType } from "~/middleware/logger";
 
+/** The libvips loaders for JPEG, PNG and WebP, the formats we re-encode. */
+const ALLOWED_DECODERS = [
+    "VipsForeignLoadJpegBuffer",
+    "VipsForeignLoadPngBuffer",
+    "VipsForeignLoadWebpBuffer",
+] as const;
+
+/**
+ * Most pixels we will decode, at worst about 360 MB of memory per job in
+ * {@link withImageSlot}. Leaves room for a 108 MP phone photo.
+ */
+export const IMAGE_MAX_INPUT_PIXELS = 120_000_000;
+
+const DECODE_OPTIONS = {
+    failOn: "none",
+    limitInputPixels: IMAGE_MAX_INPUT_PIXELS,
+} as const;
+
 /**
  * Resolved sharp module, or `null` once we know it cannot be loaded here.
  * `undefined` means we have not tried yet.
@@ -34,7 +52,12 @@ async function loadSharp(logger?: LoggerType): Promise<typeof Sharp | null> {
     }
 
     try {
-        sharpModule = (await import("sharp")).default;
+        const sharp = (await import("sharp")).default;
+        // Process-wide. Every other format libvips can read — SVG, HEIF, TIFF
+        // and more — is code we never need that parses what strangers upload.
+        sharp.block({ operation: ["VipsForeignLoad"] });
+        sharp.unblock({ operation: [...ALLOWED_DECODERS] });
+        sharpModule = sharp;
     } catch (error) {
         sharpModule = null;
         logger?.error(
@@ -74,6 +97,65 @@ export function isOptimizableImage(contentType: string | undefined): boolean {
     return contentType !== undefined && OPTIMIZABLE_MIME_TYPES.has(contentType);
 }
 
+/**
+ * Decoding is what costs memory and CPU, and the variant route lets anyone ask
+ * for it, so it runs a few jobs at a time no matter how many requests arrive.
+ */
+const MAX_CONCURRENT_IMAGE_JOBS = 4;
+const MAX_WAITING_IMAGE_JOBS = 50;
+
+let activeImageJobs = 0;
+const waitingImageJobs: (() => void)[] = [];
+
+export async function withImageSlot<T>(job: () => Promise<T>): Promise<T> {
+    if (activeImageJobs >= MAX_CONCURRENT_IMAGE_JOBS) {
+        await new Promise<void>((resolve) => waitingImageJobs.push(resolve));
+    } else {
+        activeImageJobs++;
+    }
+
+    try {
+        return await job();
+    } finally {
+        const next = waitingImageJobs.shift();
+        if (next) {
+            next();
+        } else {
+            activeImageJobs--;
+        }
+    }
+}
+
+export function isImageQueueFull(): boolean {
+    return waitingImageJobs.length >= MAX_WAITING_IMAGE_JOBS;
+}
+
+/**
+ * Whether an image's header claims more pixels than we will decode. Only the
+ * header is read, so this is cheap on a file that would be expensive to open.
+ * False when sharp is unavailable or cannot read the header: those cases fall
+ * through to storing the original, as they always have.
+ */
+export async function exceedsPixelLimit(
+    buffer: Buffer,
+    logger?: LoggerType,
+): Promise<boolean> {
+    const sharp = await loadSharp(logger);
+    if (!sharp) {
+        return false;
+    }
+
+    try {
+        const { width, height } = await sharp(buffer, {
+            failOn: "none",
+            limitInputPixels: false,
+        }).metadata();
+        return width * height > IMAGE_MAX_INPUT_PIXELS;
+    } catch {
+        return false;
+    }
+}
+
 export type OptimizedImage = {
     buffer: Buffer;
     contentType: string;
@@ -109,18 +191,20 @@ export async function optimizeImage(
     }
 
     try {
-        const optimized = await sharp(buffer, { failOn: "none" })
-            // Bake EXIF orientation into the pixels before we strip metadata,
-            // otherwise portrait phone photos come out sideways.
-            .rotate()
-            .resize({
-                width: IMAGE_MAX_DIMENSION,
-                height: IMAGE_MAX_DIMENSION,
-                fit: "inside",
-                withoutEnlargement: true,
-            })
-            .webp({ quality: IMAGE_WEBP_QUALITY })
-            .toBuffer({ resolveWithObject: true });
+        const optimized = await withImageSlot(() =>
+            sharp(buffer, DECODE_OPTIONS)
+                // Bake EXIF orientation into the pixels before we strip metadata,
+                // otherwise portrait phone photos come out sideways.
+                .rotate()
+                .resize({
+                    width: IMAGE_MAX_DIMENSION,
+                    height: IMAGE_MAX_DIMENSION,
+                    fit: "inside",
+                    withoutEnlargement: true,
+                })
+                .webp({ quality: IMAGE_WEBP_QUALITY })
+                .toBuffer({ resolveWithObject: true }),
+        );
 
         // Small, already-optimized images can grow when re-encoded. Keeping the
         // original is strictly better for those.
@@ -190,7 +274,8 @@ export function imageVariantKey(key: string, width: ImageVariantWidth): string {
  * Images narrower than `width` are returned at their own size rather than
  * upscaled, so asking for a variant is never worse than serving the original.
  * Returns `null` when sharp is unavailable or the input cannot be decoded —
- * callers then fall back to the original bytes.
+ * callers then fall back to the original bytes. Call inside
+ * {@link withImageSlot}, which should also cover loading `buffer`.
  */
 export async function resizeImage(
     buffer: Buffer,
@@ -203,7 +288,7 @@ export async function resizeImage(
     }
 
     try {
-        return await sharp(buffer, { failOn: "none" })
+        return await sharp(buffer, DECODE_OPTIONS)
             .rotate()
             .resize({ width, withoutEnlargement: true })
             .webp({ quality: IMAGE_VARIANT_WEBP_QUALITY })
