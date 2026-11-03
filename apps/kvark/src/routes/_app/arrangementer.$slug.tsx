@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 
 import { authQueryOptions } from "#/api/auth";
+import { getWrappedCameraQuery } from "#/api/queries/wrapped";
 import {
     confirmEventPaymentMutation,
     createEventPaymentMutation,
@@ -65,6 +66,7 @@ import { IconActionButton } from "#/components/icon-action-button";
 import { MapLink } from "#/components/map-link";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import { ShareButton } from "#/components/share-button";
+import { WrappedStoryEntry } from "#/components/wrapped-story/wrapped-story-entry";
 import { useEventRulesConsent } from "#/hooks/use-event-rules-consent";
 import { useNow } from "#/hooks/use-now";
 import { useCanActOnResource, usePermission } from "#/hooks/use-permission";
@@ -159,6 +161,11 @@ function EventDetailPage() {
         refetchIntervalInBackground: true,
     });
     const { data: session } = useQuery(authQueryOptions);
+    // Bare innloggede kan se storyen, så utloggede spør ikke.
+    const { data: wrappedCamera } = useQuery({
+        ...getWrappedCameraQuery(event.id),
+        enabled: Boolean(session),
+    });
 
     // Same rule as the API: the permission (a group-scoped one counts), or
     // having created the event.
@@ -649,6 +656,17 @@ function EventDetailPage() {
                                 : []),
                         ]}
                     />
+
+                    {wrappedCamera?.publishedAt ? (
+                        <WrappedStoryEntry
+                            storyLink={
+                                <Link
+                                    to="/arrangementer/$slug/story"
+                                    params={{ slug: event.slug }}
+                                />
+                            }
+                        />
+                    ) : null}
 
                     <FeideRefreshNudge
                         eventId={event.id}
