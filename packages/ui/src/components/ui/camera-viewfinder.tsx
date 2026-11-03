@@ -3,6 +3,7 @@
 import { useRender } from "@base-ui/react/use-render";
 import * as React from "react";
 
+import { createDoubleTapDetector } from "#/lib/double-tap";
 import { cn } from "#/lib/utils";
 
 export type CameraViewfinderState =
@@ -26,7 +27,15 @@ type CameraViewfinderProps = Omit<React.ComponentProps<"div">, "ref"> & {
     onStateChange?: (state: CameraViewfinderState) => void;
     /** Whether the running camera has a torch; false until it is live. */
     onTorchSupportChange?: (supported: boolean) => void;
+    /**
+     * Two quick taps on the preview itself. Only fires while the camera is
+     * live; taps on buttons and links over the preview never count.
+     */
+    onDoubleTap?: () => void;
 };
+
+/** A tap that starts on one of these belongs to the control, not the preview. */
+const INTERACTIVE_SELECTOR = "button, a, [role=button]";
 
 const JPEG_QUALITY = 0.9;
 
@@ -59,6 +68,10 @@ function CameraViewfinder({
     torch = false,
     onStateChange,
     onTorchSupportChange,
+    onDoubleTap,
+    onPointerDown,
+    onPointerUp,
+    onPointerCancel,
     className,
     children,
     ...props
@@ -70,6 +83,9 @@ function CameraViewfinder({
     const [visible, setVisible] = React.useState(true);
     const onStateRef = useLatest(onStateChange);
     const onTorchRef = useLatest(onTorchSupportChange);
+    const onDoubleTapRef = useLatest(onDoubleTap);
+    const stateRef = useLatest(state);
+    const [doubleTap] = React.useState(createDoubleTapDetector);
 
     React.useEffect(() => {
         onStateRef.current?.(state);
@@ -90,6 +106,8 @@ function CameraViewfinder({
         }
 
         let cancelled = false;
+        // A restart (flip, tab back) breaks any half-finished double tap.
+        doubleTap.reset();
         setState("requesting");
         navigator.mediaDevices
             .getUserMedia({
@@ -141,7 +159,7 @@ function CameraViewfinder({
             if (videoRef.current) videoRef.current.srcObject = null;
             onTorchRef.current?.(false);
         };
-    }, [visible, facingMode, onTorchRef]);
+    }, [visible, facingMode, onTorchRef, doubleTap]);
 
     // Applied again whenever the camera comes back live: a restarted track
     // starts with the torch off.
@@ -191,15 +209,49 @@ function CameraViewfinder({
         [],
     );
 
+    function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
+        onPointerDown?.(event);
+        const target = event.target instanceof Element ? event.target : null;
+        // A second finger or a tap on a control breaks the pair.
+        if (!event.isPrimary || target?.closest(INTERACTIVE_SELECTOR)) {
+            doubleTap.reset();
+            return;
+        }
+        doubleTap.down(event.clientX, event.clientY);
+    }
+
+    function handlePointerUp(event: React.PointerEvent<HTMLDivElement>) {
+        onPointerUp?.(event);
+        if (!event.isPrimary) return;
+        // Not live: the camera is starting or gone, so a flip would queue a
+        // second getUserMedia on top of the first.
+        if (stateRef.current !== "live") {
+            doubleTap.reset();
+            return;
+        }
+        if (doubleTap.up(event.clientX, event.clientY, event.timeStamp)) {
+            onDoubleTapRef.current?.();
+        }
+    }
+
+    function handlePointerCancel(event: React.PointerEvent<HTMLDivElement>) {
+        onPointerCancel?.(event);
+        doubleTap.reset();
+    }
+
     return (
         <div
             data-slot="camera-viewfinder"
             data-state={state}
             className={cn(
-                "relative overflow-hidden rounded-3xl bg-black text-white",
+                // `manipulation` keeps iOS from zooming on a double tap.
+                "relative touch-manipulation overflow-hidden rounded-3xl bg-black text-white",
                 className,
             )}
             {...props}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
         >
             <video
                 ref={videoRef}
