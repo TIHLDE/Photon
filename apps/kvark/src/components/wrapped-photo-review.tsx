@@ -43,7 +43,7 @@ type WrappedPhotoReviewProps = {
 
 /**
  * Egne bilder i full skjerm: sveip eller trykk deg gjennom dem, og slett de
- * du ikke vil sende inn. Ingen bekreftelse — slettingen kan angres.
+ * du ikke vil dele. Ingen bekreftelse — slettingen kan angres.
  */
 export function WrappedPhotoReview({
     photos,

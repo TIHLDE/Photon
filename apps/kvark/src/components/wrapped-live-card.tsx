@@ -10,7 +10,7 @@ import {
     LiveCardMeta,
     LiveCardTitle,
 } from "@tihlde/ui/ui/live-card";
-import { ArrowDown, Camera, Images, Send, TriangleAlert } from "lucide-react";
+import { ArrowDown, Camera, Images } from "lucide-react";
 
 import { assetImageProps } from "#/lib/assets";
 import { formatOsloDateTime } from "#/lib/date";
@@ -33,9 +33,8 @@ type WrappedLiveCardProps = {
  * The first screen of the home page while the member has an open camera: the
  * event, its banner (or the default cover when it has none) and when the
  * camera closes, with one full-width pill below the banner that says what
- * the tap does. The pill turns yellow near the submit deadline. The whole
- * card is the link, to the camera or to Mine bilder when sending in is what
- * is left.
+ * the tap does. The whole card is the link, to the camera or to Mine bilder
+ * once the film is full.
  */
 export function WrappedLiveCard({
     slug,
@@ -46,7 +45,7 @@ export function WrappedLiveCard({
     shortcut,
     restId,
 }: WrappedLiveCardProps) {
-    const { action, detail, kind, warning } = shortcut;
+    const { action, detail, kind } = shortcut;
     const closesAtTime = formatOsloDateTime(closesAt, {
         hour: "2-digit",
         minute: "2-digit",
@@ -88,16 +87,8 @@ export function WrappedLiveCard({
                         decoding="async"
                     />
                 </LiveCardMedia>
-                <LiveCardAction variant={warning ? "warning" : "default"}>
-                    {warning ? (
-                        <TriangleAlert />
-                    ) : kind === "shoot" ? (
-                        <Camera />
-                    ) : kind === "submit" ? (
-                        <Send />
-                    ) : (
-                        <Images />
-                    )}
+                <LiveCardAction>
+                    {kind === "shoot" ? <Camera /> : <Images />}
                     {action} · {detail}
                 </LiveCardAction>
             </LiveCard>
