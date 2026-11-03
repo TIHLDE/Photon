@@ -71,7 +71,7 @@ export const wrappedCameraSchema = Schema(
         }),
         draftCount: z.number().int().meta({
             description:
-                "The caller's photos not yet submitted. Always 0 once the camera has closed: unsubmitted drafts are discarded then.",
+                "The caller's photos not yet submitted. Drafts left at close are sent to the organizer automatically a minute after closing, after which this is 0.",
         }),
         publishedAt: z.iso.datetime().nullable().meta({
             description:
@@ -224,28 +224,6 @@ export const myWrappedPhotoSchema = Schema(
 export const myWrappedPhotoListSchema = Schema(
     "MyWrappedPhotoList",
     z.array(myWrappedPhotoSchema),
-);
-
-export const submitMyWrappedPhotosSchema = Schema(
-    "SubmitMyWrappedPhotos",
-    z.object({
-        photoIds: z.array(z.uuid()).max(MAX_SHOTS_PER_PERSON).optional().meta({
-            description:
-                "The drafts to submit. Omit to submit all of them. Ids that are not the caller's drafts are ignored.",
-        }),
-    }),
-);
-
-export const submitMyWrappedPhotosResponseSchema = Schema(
-    "MyWrappedPhotosSubmitted",
-    z.object({
-        submittedCount: z.number().int().meta({
-            description: "Drafts this request submitted",
-        }),
-        draftCount: z.number().int().meta({
-            description: "Drafts the caller still has",
-        }),
-    }),
 );
 
 export const deleteMyWrappedPhotoResponseSchema = Schema(

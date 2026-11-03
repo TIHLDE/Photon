@@ -4,11 +4,11 @@ import {
     integrationTest,
 } from "~/test/config/integration";
 import {
+    closeAndSubmit,
     createOngoingEvent,
     enableCamera,
     register,
     sessionCookie,
-    submitPhotos,
     uploadPhoto,
 } from "./helpers";
 
@@ -23,7 +23,7 @@ async function eventWithPhotos(ctx: IntegrationTestContext, count: number) {
     for (let i = 0; i < count; i++) {
         await uploadPhoto(ctx, cookie, event.id);
     }
-    await submitPhotos(ctx, cookie, event.id);
+    await closeAndSubmit(ctx, event.id);
 
     const organizer = await ctx.utils.createTestUser();
     await ctx.utils.giveUserPermissions(organizer, ["events:update"]);
@@ -163,7 +163,7 @@ describe("wrapped photo selection", () => {
                 name: "fest.png",
                 content,
             });
-            await submitPhotos(ctx, cookie, event.id);
+            await closeAndSubmit(ctx, event.id);
             const [photo] = await ctx.db.query.wrappedPhoto.findMany();
             const param = { eventId: event.id, photoId: photo!.id };
 

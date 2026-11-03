@@ -1194,7 +1194,7 @@ export interface paths {
          * Upload a photo taken with the event's camera
          * @description Upload one photo to the event's disposable camera. The caller must hold a spot on the event, the camera must be on and inside its window, and the caller must have photos left.
          *
-         *     The photo is stored as the caller's draft: the organizer sees it only once the caller submits it (`submitMyWrappedPhotos`), and drafts not submitted before the camera closes are discarded. The response carries the new counts and never a URL.
+         *     The photo is stored as the caller's draft: the organizer sees it only once it is submitted, and drafts still unsubmitted when the camera closes are sent in automatically. The response carries the new counts and never a URL.
          *
          *     Pass `source=camera_roll` for a photo picked from the phone's camera roll. It costs a shot like any other.
          *
@@ -1262,7 +1262,7 @@ export interface paths {
         };
         /**
          * List my photos from the event's camera
-         * @description The caller's own photos at this event, oldest first, drafts and submitted alike. Once the camera has closed, drafts are gone and only submitted photos are listed. Never carries a URL: fetch the image with `getMyWrappedPhotoImage`.
+         * @description The caller's own photos from the event, oldest first, drafts and submitted alike. Drafts left when the camera closes are sent in automatically and stay listed. Never carries a URL: fetch the image with `getMyWrappedPhotoImage`.
          */
         get: operations["getMyWrappedPhotos"];
         put?: never;
@@ -1282,31 +1282,11 @@ export interface paths {
         };
         /**
          * Get the image of one of my photos
-         * @description The image bytes of one of the caller's own photos at this event. Pass `w` for a smaller WebP variant. Answers 404 for anyone else's photo, a deleted one, or a draft left when the camera closed.
+         * @description The image bytes of one of the caller's own photos at this event. Pass `w` for a smaller WebP variant. Answers 404 for anyone else's photo or a deleted one.
          */
         get: operations["getMyWrappedPhotoImage"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/event/{eventId}/wrapped/photos/mine/submit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Submit my drafts to the organizer
-         * @description Submit the listed drafts, or all of them when `photoIds` is omitted. Submitted photos are what the organizer picks from. Safe to repeat: a photo already submitted, or an id that is not one of the caller's drafts, changes nothing. Only while the camera is open — after it closes, drafts are discarded.
-         */
-        post: operations["submitMyWrappedPhotos"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1325,7 +1305,7 @@ export interface paths {
         post?: never;
         /**
          * Delete one of my drafts
-         * @description Delete one of the caller's drafts, image and all. This gives the shot back. A submitted photo cannot be deleted, and nothing can once the camera has closed.
+         * @description Delete one of the caller's drafts, image and all. This gives the shot back. A submitted photo cannot be deleted. A draft can be deleted until a minute after the camera closes; then it is sent to the organizer automatically.
          */
         delete: operations["deleteMyWrappedPhoto"];
         options?: never;
@@ -5079,7 +5059,7 @@ export interface components {
             canShoot: boolean;
             /** @description Why the caller cannot take a photo, or null when they can. The first that applies, in the order of the enum. */
             reason: ("disabled" | "not_open_yet" | "closed" | "not_registered" | "no_shots_left") | null;
-            /** @description The caller's photos not yet submitted. Always 0 once the camera has closed: unsubmitted drafts are discarded then. */
+            /** @description The caller's photos not yet submitted. Drafts left at close are sent to the organizer automatically a minute after closing, after which this is 0. */
             draftCount: number;
             /** @description When the story went live for members, or null while it is not published */
             publishedAt: string | null;
@@ -5174,16 +5154,6 @@ export interface components {
             createdAt: string;
         };
         MyWrappedPhotoList: components["schemas"]["MyWrappedPhoto"][];
-        MyWrappedPhotosSubmitted: {
-            /** @description Drafts this request submitted */
-            submittedCount: number;
-            /** @description Drafts the caller still has */
-            draftCount: number;
-        };
-        SubmitMyWrappedPhotos: {
-            /** @description The drafts to submit. Omit to submit all of them. Ids that are not the caller's drafts are ignored. */
-            photoIds?: string[];
-        };
         MyWrappedPhotoDeleted: {
             shotsUsed: number;
             shotsLeft: number;
@@ -10719,65 +10689,6 @@ export interface operations {
             };
         };
     };
-    submitMyWrappedPhotos: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Event ID */
-                eventId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SubmitMyWrappedPhotos"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MyWrappedPhotosSubmitted"];
-                };
-            };
-            /** @description Authentication required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPAppException"];
-                };
-            };
-            /** @description Kontoen din venter på godkjenning fra en administrator. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPAppException"];
-                };
-            };
-            /** @description Not Found - Event not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Conflict - the camera has closed */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     deleteMyWrappedPhoto: {
         parameters: {
             query?: never;
@@ -10826,7 +10737,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Conflict - the photo is already submitted, or the camera has closed */
+            /** @description Conflict - the photo is already submitted, or the camera closed more than a minute ago */
             409: {
                 headers: {
                     [name: string]: unknown;

@@ -1,12 +1,7 @@
 import { Suspense, useMemo } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import {
-    useMutation,
-    useQueryClient,
-    useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
-import { toast } from "@tihlde/ui/ui/sonner";
 import { ArrowLeft } from "lucide-react";
 
 import { authClientWithRedirect } from "#/api/auth";
@@ -15,9 +10,7 @@ import {
     fetchMyWrappedPhotoThumb,
     getMyWrappedPhotosQuery,
     getWrappedCameraQuery,
-    invalidateMine,
     myWrappedPhotoImagePath,
-    submitMyWrappedPhotosMutation,
 } from "#/api/queries/wrapped";
 import {
     WrappedMyPhotos,
@@ -25,9 +18,7 @@ import {
     type WrappedMyPhotoTile,
 } from "#/components/wrapped-my-photos";
 import { useObjectUrls } from "#/hooks/use-object-urls";
-import { extractErrorMessage } from "#/lib/api-error";
 import { formatInOslo } from "#/lib/date";
-import { errorStatus } from "#/lib/utils";
 
 /**
  * Mine bilder: /arrangementer/<slug>/kamera/mine.
@@ -86,13 +77,11 @@ function WrappedMyPhotosPage() {
 }
 
 function WrappedMyPhotosContainer({ slug }: { slug: string }) {
-    const queryClient = useQueryClient();
     const { data: event } = useSuspenseQuery(getEventByIdQuery(slug));
     const { data: camera } = useSuspenseQuery(getWrappedCameraQuery(event.id));
     const { data: photos } = useSuspenseQuery(
         getMyWrappedPhotosQuery(event.id),
     );
-    const submit = useMutation(submitMyWrappedPhotosMutation);
 
     const paths = useMemo(
         () =>
@@ -110,28 +99,6 @@ function WrappedMyPhotosContainer({ slug }: { slug: string }) {
         fromCameraRoll: photo.source === "camera_roll",
         submitted: photo.submitted,
     }));
-
-    function handleSubmit() {
-        submit.mutate(
-            { eventId: event.id },
-            {
-                onSuccess: ({ submittedCount }) => {
-                    toast.success(
-                        `${submittedCount} ${submittedCount === 1 ? "bilde" : "bilder"} sendt til arrangøren`,
-                    );
-                },
-                onError: async (error) => {
-                    console.error("Innsending av kamerabilder feilet", error);
-                    // 409: kameraet har stengt. Lista og statusen hentes på
-                    // nytt, så det som vises stemmer med serveren.
-                    if (errorStatus(error) === 409) {
-                        await invalidateMine(queryClient, event.id);
-                    }
-                    toast.error(await extractErrorMessage(error));
-                },
-            },
-        );
-    }
 
     return (
         <WrappedMyPhotos
@@ -152,8 +119,6 @@ function WrappedMyPhotosContainer({ slug }: { slug: string }) {
                     params={{ slug, photoId }}
                 />
             )}
-            isSubmitting={submit.isPending}
-            onSubmit={handleSubmit}
         />
     );
 }

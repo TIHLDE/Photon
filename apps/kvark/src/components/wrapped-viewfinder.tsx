@@ -99,8 +99,8 @@ export function WrappedViewfinder({
             </CameraViewfinder>
 
             {/* Plassen over knapperaden: bilder som venter på nett, og «Mine
-             * bilder» — den eneste veien til innsending her, siden sida ikke
-             * har bunnlinje. */}
+             * bilder» — den eneste veien dit her, siden sida ikke har
+             * bunnlinje. */}
             <div className="flex flex-col gap-2">
                 {waiting}
                 {myPhotos}

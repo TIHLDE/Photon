@@ -1,3 +1,5 @@
+import { schema } from "@photon/db";
+import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 import {
@@ -5,7 +7,6 @@ import {
     enableCamera,
     register,
     sessionCookie,
-    submitPhotos,
     uploadPhoto,
 } from "./helpers";
 
@@ -125,22 +126,13 @@ describe("the cameras open for a member right now", () => {
 
             const cookie = await sessionCookie(ctx, member);
             await uploadPhoto(ctx, cookie, party.id);
-            // An unsent draft keeps the camera listed: it is the way back to it.
+            // A draft keeps the camera listed, and first: it is the way back
+            // to it, and drafts stay the member's own until the camera closes.
             expect(await titles()).toContain("Festen");
-
-            await submitPhotos(ctx, cookie, party.id);
-
-            // Spent, so it drops behind the cameras that can still be used.
-            expect(await titles()).toEqual([
-                "Hele dagen",
-                "Snart",
-                "Møtet",
-                "Festen",
-            ]);
             const festen = (
                 await (await client.api.event.wrapped.open.$get()).json()
             ).find((camera) => camera.title === "Festen");
-            expect(festen).toMatchObject({ shotsLeft: 0, draftCount: 0 });
+            expect(festen).toMatchObject({ shotsLeft: 0, draftCount: 1 });
         },
         500_000,
     );
@@ -169,7 +161,12 @@ describe("the cameras open for a member right now", () => {
             }
             const cookie = await sessionCookie(ctx, member);
             await uploadPhoto(ctx, cookie, spent.id);
-            await submitPhotos(ctx, cookie, spent.id);
+            // Submitted directly: the sweep only submits closed cameras,
+            // which are not listed here.
+            await ctx.db
+                .update(schema.wrappedPhoto)
+                .set({ submittedAt: new Date() })
+                .where(eq(schema.wrappedPhoto.eventId, spent.id));
             const client = await ctx.utils.clientForUser(member);
 
             const response = await client.api.event.wrapped.open.$get();

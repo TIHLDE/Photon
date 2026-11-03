@@ -11,8 +11,7 @@ import {
     EmptyTitle,
 } from "@tihlde/ui/ui/empty";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
-import { Spinner } from "@tihlde/ui/ui/spinner";
-import { Camera, ImageOff, Send } from "lucide-react";
+import { Camera, ImageOff } from "lucide-react";
 
 export type WrappedMyPhotoTile = {
     id: string;
@@ -28,7 +27,7 @@ type WrappedMyPhotosProps = {
     photos: WrappedMyPhotoTile[];
     shotsLeft: number;
     draftCount: number;
-    /** Når usendte bilder slettes: `HH:mm`. */
+    /** Når bildene sendes til arrangøren: `HH:mm`. */
     closesAt: string;
     /** Lenken tilbake til kameraet, som `<Link />`. */
     cameraLink: ReactElement;
@@ -36,13 +35,11 @@ type WrappedMyPhotosProps = {
     photoLink: (
         photoId: string,
     ) => ReactElement<{ className?: string; children?: ReactNode }>;
-    isSubmitting: boolean;
-    onSubmit: () => void;
 };
 
 /**
- * Mine bilder: det medlemmet selv har tatt, før noen andre ser det. Utkast
- * sendes inn med ett trykk.
+ * Mine bilder: det medlemmet selv har tatt. Bildene er medlemmets egne til
+ * kameraet stenger, og kan slettes fram til da.
  */
 export function WrappedMyPhotos({
     photos,
@@ -51,8 +48,6 @@ export function WrappedMyPhotos({
     closesAt,
     cameraLink,
     photoLink,
-    isSubmitting,
-    onSubmit,
 }: WrappedMyPhotosProps) {
     if (photos.length === 0) {
         return (
@@ -111,22 +106,12 @@ export function WrappedMyPhotos({
                 ) : null}
             </ul>
             {draftCount > 0 ? (
-                // Over bunnlinja på mobil, så knappen alltid er innen rekkevidde.
-                <Card size="sm" className="sticky bottom-20 lg:bottom-4">
-                    <CardContent className="flex flex-col gap-2">
-                        <Button
-                            size="lg"
-                            className="min-h-16 w-full"
-                            disabled={isSubmitting}
-                            onClick={onSubmit}
-                        >
-                            {isSubmitting ? <Spinner /> : <Send />}
-                            Send inn {draftCount}{" "}
-                            {draftCount === 1 ? "bilde" : "bilder"}
-                        </Button>
+                <Card size="sm">
+                    <CardContent>
                         <CardDescription>
-                            Bilder som ikke er sendt inn før kl. {closesAt},
-                            slettes.
+                            Bildene sendes automatisk til arrangøren kl.{" "}
+                            {closesAt}. Til da kan du slette dem du ikke vil
+                            dele.
                         </CardDescription>
                     </CardContent>
                 </Card>

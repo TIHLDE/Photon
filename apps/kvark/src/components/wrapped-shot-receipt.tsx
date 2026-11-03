@@ -6,7 +6,7 @@ import {
 
 /**
  * «Knips!» — the receipt for a photo just taken, with what is left. The photo
- * is a draft until it is submitted, so it says where it went.
+ * is a draft until the camera closes, so it says where it went.
  */
 export function WrappedShotReceipt({
     shotsLeft,
@@ -28,7 +28,7 @@ export function WrappedShotReceipt({
                       : `Knips! ${shotsLeft} igjen`}
             </CameraReceiptTitle>
             <CameraReceiptDescription>
-                Lagt i Mine bilder – ikke sendt ennå
+                Lagt i Mine bilder – sendes når kameraet stenger
             </CameraReceiptDescription>
         </CameraReceipt>
     );

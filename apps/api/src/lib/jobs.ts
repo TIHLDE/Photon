@@ -12,9 +12,10 @@ import {
     enqueueRegistrationResolve,
     startRegistrationResolveWorker,
 } from "./event/resolve-queue";
+import { logger } from "./logger";
 import { startPushNotificationWorker } from "./notification/push";
 import { setupWebhooks } from "./vipps";
-import { discardExpiredDrafts } from "./wrapped/drafts";
+import { submitClosedDrafts } from "./wrapped/drafts";
 
 /**
  * Start cron job to resolve pending event registrations
@@ -175,32 +176,35 @@ function startPaymentDeadlineSweepCron(ctx: AppContext): void {
 }
 
 /**
- * Start cron job that discards wrapped drafts nobody submitted before their
- * camera closed: the row and the stored file. Runs every 5 minutes — the
- * drafts are already hidden from everyone once the camera closes, so this
- * only decides how soon the files leave storage.
+ * Start cron job that sends wrapped drafts to the organizer once their camera
+ * has been closed for a minute. Runs every minute. State-based, so a missed run
+ * is caught up by the next one.
  */
-function startWrappedDraftDiscardCron(ctx: AppContext): void {
+function startWrappedDraftAutoSubmitCron(ctx: AppContext): void {
     let running = false;
 
-    cron.schedule("*/5 * * * *", async () => {
+    cron.schedule("* * * * *", async () => {
         if (running) return;
         running = true;
         try {
-            const discarded = await discardExpiredDrafts(ctx);
-            if (discarded > 0) {
-                console.log(
-                    `📷 Discarded ${discarded} unsubmitted wrapped draft(s)`,
+            const { submitted, eventIds } = await submitClosedDrafts(ctx.db);
+            if (submitted > 0) {
+                logger.info(
+                    { submitted, eventIds },
+                    "Wrapped drafts submitted automatically at closed cameras",
                 );
             }
         } catch (error) {
-            console.error("Error in wrapped draft discard cron:", error);
+            logger.error(
+                { err: error },
+                "Wrapped draft auto-submit cron failed",
+            );
         } finally {
             running = false;
         }
     });
 
-    console.log("⏰ Wrapped draft discard cron started (runs every 5 minutes)");
+    logger.info("Wrapped draft auto-submit cron started (runs every minute)");
 }
 
 /**
@@ -261,6 +265,6 @@ export function startBackgroundJobs(ctx: AppContext): void {
     // Start the sweep that enforces deadlines the queue lost
     startPaymentDeadlineSweepCron(ctx);
 
-    // Start the cron that discards wrapped drafts left when a camera closes
-    startWrappedDraftDiscardCron(ctx);
+    // Start the cron that sends wrapped drafts to the organizer when a camera closes
+    startWrappedDraftAutoSubmitCron(ctx);
 }

@@ -2,7 +2,6 @@ import { validator } from "hono-openapi";
 import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { cameraWindow, visibleToOwner } from "~/lib/wrapped";
 import { requireAuth } from "~/middleware/auth";
 import { eventIdParamSchema, myWrappedPhotoListSchema } from "./schema";
 import { serializeMyPhoto } from "./serialize";
@@ -14,7 +13,7 @@ export const getMyWrappedPhotosRoute = route().get(
         summary: "List my photos from the event's camera",
         operationId: "getMyWrappedPhotos",
         description:
-            "The caller's own photos at this event, oldest first, drafts and submitted alike. Once the camera has closed, drafts are gone and only submitted photos are listed. Never carries a URL: fetch the image with `getMyWrappedPhotoImage`.",
+            "The caller's own photos from the event, oldest first, drafts and submitted alike. Drafts left when the camera closes are sent in automatically and stay listed. Never carries a URL: fetch the image with `getMyWrappedPhotoImage`.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -32,7 +31,7 @@ export const getMyWrappedPhotosRoute = route().get(
 
         const event = await db.query.event.findFirst({
             where: { id: eventId },
-            columns: { start: true, end: true },
+            columns: { id: true },
         });
         if (!event) {
             throw HTTPAppException.NotFound("Event");
@@ -42,7 +41,6 @@ export const getMyWrappedPhotosRoute = route().get(
             where: {
                 eventId,
                 uploadedById: c.get("user").id,
-                ...visibleToOwner(cameraWindow(event).closesAt),
             },
             orderBy: { createdAt: "asc", id: "asc" },
             columns: {

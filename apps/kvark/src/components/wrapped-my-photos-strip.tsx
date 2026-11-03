@@ -11,13 +11,13 @@ type WrappedMyPhotosStripProps = {
     /** Object-URL-ene til de nyeste bildene, høyst to. */
     thumbnails: string[];
     draftCount: number;
-    /** Satt den siste halvtimen før usendte bilder slettes: `HH:mm`. */
+    /** Satt den siste halvtimen før bildene sendes til arrangøren: `HH:mm`. */
     warningUntil?: string;
 };
 
 /**
- * Snarveien fra kameraet til Mine bilder. Blir et varsel når usendte bilder
- * snart slettes.
+ * Snarveien fra kameraet til Mine bilder. Blir et varsel når bildene snart
+ * sendes til arrangøren.
  */
 export function WrappedMyPhotosStrip({
     link,
@@ -27,18 +27,18 @@ export function WrappedMyPhotosStrip({
 }: WrappedMyPhotosStripProps) {
     if (warningUntil) {
         // Hele varselet er lenken: det skal være så lett som mulig å komme
-        // seg dit bildene sendes inn.
+        // seg dit bildene kan slettes.
         return cloneElement(
             link,
             { className: "block" },
             <Alert variant="warning">
                 <TriangleAlert />
                 <AlertTitle>
-                    {draftCount} {draftCount === 1 ? "bilde" : "bilder"} ikke
-                    sendt · Send inn før {warningUntil}
+                    {draftCount} {draftCount === 1 ? "bilde" : "bilder"} sendes
+                    kl. {warningUntil}
                 </AlertTitle>
                 <AlertDescription>
-                    Trykk her for å åpne Mine bilder.
+                    Trykk her for å se over, og slett det du ikke vil dele.
                 </AlertDescription>
             </Alert>,
         );

@@ -87,9 +87,10 @@ export const wrappedCamera = pgTable(
  * private asset, never a URL, so nothing that renders URLs can leak it and the
  * open asset route never serves it.
  *
- * A photo is the member's private draft until they submit it. Only submitted
+ * A photo is the member's own draft until the camera closes; only submitted
  * photos reach the organizer. Drafts still left when the camera closes are
- * discarded, never submitted on the member's behalf.
+ * sent in automatically a minute later (submitClosedDrafts); until then the
+ * member can still delete them.
  */
 export const wrappedPhoto = pgTable(
     "photo",
