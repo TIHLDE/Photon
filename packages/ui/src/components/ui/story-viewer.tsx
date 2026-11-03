@@ -49,13 +49,16 @@ function StoryFeed({ className, ...props }: React.ComponentProps<"div">) {
     );
 }
 
-/** One screen of the story. `snap-always` stops a fast flick skipping slides. */
+/**
+ * One screen of the story. `snap-always` stops a fast flick skipping slides;
+ * `touch-manipulation` turns off double-tap zoom, so a double tap can like.
+ */
 function StorySlide({ className, ...props }: React.ComponentProps<"section">) {
     return (
         <section
             data-slot="story-slide"
             className={cn(
-                "relative flex h-dvh w-full snap-start snap-always items-center justify-center overflow-hidden",
+                "relative flex h-dvh w-full touch-manipulation snap-start snap-always items-center justify-center overflow-hidden",
                 className,
             )}
             {...props}

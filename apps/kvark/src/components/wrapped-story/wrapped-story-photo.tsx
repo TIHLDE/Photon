@@ -8,6 +8,7 @@ import {
 import { ImageOff } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { useDoubleTap } from "#/hooks/use-double-tap";
 import { formatInOslo } from "#/lib/date";
 
 export type WrappedStoryPhotoData = {
@@ -26,7 +27,8 @@ type WrappedStoryPhotoProps = WrappedStoryPhotoData & {
     actions?: ReactNode;
     /** Det som legges over bildet, f.eks. hjertet ved dobbelttrykk. */
     overlay?: ReactNode;
-    onDoubleClick?: () => void;
+    /** Dobbelttrykk på bildet, med finger eller mus. */
+    onDoubleTap?: () => void;
 };
 
 function initials(name: string): string {
@@ -48,14 +50,16 @@ export function WrappedStoryPhoto({
     index,
     actions,
     overlay,
-    onDoubleClick,
+    onDoubleTap,
 }: WrappedStoryPhotoProps) {
+    const doubleTap = useDoubleTap(() => onDoubleTap?.());
+
     return (
         <StorySlide
             aria-label={`Bilde tatt av ${photographerName}`}
             data-story-index={index}
             data-photo-id={id}
-            onDoubleClick={onDoubleClick}
+            {...(onDoubleTap ? doubleTap : {})}
         >
             {src ? (
                 <StoryImage

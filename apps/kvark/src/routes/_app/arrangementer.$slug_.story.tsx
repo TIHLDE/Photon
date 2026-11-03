@@ -8,10 +8,16 @@ import {
 } from "react";
 import type { PointerEvent, ReactNode } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
+import {
+    useInfiniteQuery,
+    useMutation,
+    useSuspenseInfiniteQuery,
+} from "@tanstack/react-query";
 import { CameraControlButton } from "@tihlde/ui/ui/camera-viewfinder";
+import { toast } from "@tihlde/ui/ui/sonner";
 import {
     StoryFeed,
+    StoryHeartBurst,
     StoryTitle,
     StoryTopBar,
     StoryViewer,
@@ -23,9 +29,15 @@ import { authClientWithRedirect } from "#/api/auth";
 import { getEventByIdQuery } from "#/api/queries/events";
 import {
     type WrappedStoryPhoto as StoryPhoto,
+    createWrappedStoryCommentMutation,
+    deleteWrappedStoryCommentMutation,
     fetchWrappedStoryImage,
+    getWrappedStoryCommentsQuery,
     getWrappedStoryQuery,
+    likeWrappedStoryPhotoMutation,
 } from "#/api/queries/wrapped-story";
+import { WrappedStoryActions } from "#/components/wrapped-story/wrapped-story-actions";
+import { WrappedStoryComments } from "#/components/wrapped-story/wrapped-story-comments";
 import { WrappedStoryCover } from "#/components/wrapped-story/wrapped-story-cover";
 import { WrappedStoryPhoto } from "#/components/wrapped-story/wrapped-story-photo";
 import {
@@ -33,6 +45,7 @@ import {
     WrappedStoryUnavailable,
 } from "#/components/wrapped-story/wrapped-story-states";
 import { useObjectUrls } from "#/hooks/use-object-urls";
+import { extractErrorMessage } from "#/lib/api-error";
 import { errorStatus } from "#/lib/utils";
 
 const searchSchema = z.object({
@@ -99,6 +112,9 @@ function belongsElsewhere(target: EventTarget | null): boolean {
 /** Neste side hentes når så mange bilder er igjen. */
 const LOAD_MORE_WHEN_LEFT = 3;
 
+/** Hvor lenge hjertet etter et dobbelttrykk står. */
+const HEART_BURST_MS = 800;
+
 function WrappedStoryPage() {
     const { slug } = Route.useParams();
     const { eventId, unavailable } = Route.useLoaderData();
@@ -164,6 +180,36 @@ function WrappedStoryFeed({
     const feedRef = useRef<HTMLDivElement>(null);
     // Sida man ser på: 0 er forsiden, 1 er første bilde.
     const [active, setActive] = useState(0);
+    const [commentsFor, setCommentsFor] = useState<string | null>(null);
+    // Ny nøkkel per dobbelttrykk, så hjertet spilles av på nytt hver gang.
+    const [burst, setBurst] = useState<{ photoId: string; key: number } | null>(
+        null,
+    );
+
+    const like = useMutation({
+        ...likeWrappedStoryPhotoMutation,
+        onError: async (error) => {
+            console.error("Lik av bilde feilet", error);
+            toast.error(await extractErrorMessage(error));
+        },
+    });
+
+    function setLiked(photo: StoryPhoto, liked: boolean) {
+        if (photo.likedByMe === liked) return;
+        like.mutate({ eventId, photoId: photo.id, liked });
+    }
+
+    function doubleTapLike(photo: StoryPhoto) {
+        // Et dobbelttrykk liker alltid, som på TikTok — det fjerner aldri.
+        setLiked(photo, true);
+        setBurst({ photoId: photo.id, key: Date.now() });
+    }
+
+    useEffect(() => {
+        if (!burst) return;
+        const timeout = setTimeout(() => setBurst(null), HEART_BURST_MS);
+        return () => clearTimeout(timeout);
+    }, [burst]);
 
     // Hver side er nøyaktig én skjermhøyde, så side `index` starter på
     // `index` skjermhøyder ned. Rett på ruta, ikke `scrollIntoView`, som også
@@ -345,10 +391,121 @@ function WrappedStoryFeed({
                         key={photo.id}
                         index={i + 1}
                         {...toPhotoData(photo, imageUrls.get(photo.imageUrl))}
+                        onDoubleTap={() => doubleTapLike(photo)}
+                        overlay={
+                            burst?.photoId === photo.id ? (
+                                <StoryHeartBurst key={burst.key} />
+                            ) : null
+                        }
+                        actions={
+                            <WrappedStoryActions
+                                likeCount={photo.likeCount}
+                                likedByMe={photo.likedByMe}
+                                commentCount={photo.commentCount}
+                                onToggleLike={() =>
+                                    setLiked(photo, !photo.likedByMe)
+                                }
+                                onOpenComments={() => setCommentsFor(photo.id)}
+                            />
+                        }
                     />
                 ))}
             </StoryFeed>
+            <StoryComments
+                eventId={eventId}
+                photoId={commentsFor}
+                totalCount={
+                    photos.find((photo) => photo.id === commentsFor)
+                        ?.commentCount ?? 0
+                }
+                onClose={() => {
+                    setCommentsFor(null);
+                    // Tilbake i storyen, så piltastene virker igjen.
+                    feedRef.current?.focus({ preventScroll: true });
+                }}
+            />
         </>
+    );
+}
+
+/**
+ * Arket med kommentarene på ett bilde. Hentes først når arket åpnes, og
+ * bare for det bildet.
+ */
+function StoryComments({
+    eventId,
+    photoId,
+    totalCount,
+    onClose,
+}: {
+    eventId: string;
+    photoId: string | null;
+    totalCount: number;
+    onClose: () => void;
+}) {
+    // Bildet henger igjen mens arket animeres ut, så innholdet ikke
+    // forsvinner før arket er borte.
+    const [shown, setShown] = useState(photoId);
+    if (photoId && photoId !== shown) setShown(photoId);
+    const ref = { eventId, photoId: shown ?? "" };
+
+    const comments = useInfiniteQuery({
+        ...getWrappedStoryCommentsQuery(ref),
+        enabled: shown !== null,
+    });
+    const [error, setError] = useState<string | null>(null);
+    const onError = async (err: Error) => {
+        console.error("Kommentaren feilet", err);
+        setError(await extractErrorMessage(err));
+    };
+    const create = useMutation({
+        ...createWrappedStoryCommentMutation,
+        onError,
+    });
+    const remove = useMutation({
+        ...deleteWrappedStoryCommentMutation,
+        onError,
+    });
+
+    return (
+        <WrappedStoryComments
+            open={photoId !== null}
+            onOpenChange={(open) => {
+                if (open) return;
+                setError(null);
+                onClose();
+            }}
+            comments={comments.data?.pages
+                .flatMap((page) => page.items)
+                .map((comment) => ({
+                    id: comment.id,
+                    body: comment.body,
+                    createdAt: comment.createdAt,
+                    authorName: comment.author.name,
+                    authorImage: comment.author.image,
+                    canDelete: comment.canDelete,
+                }))}
+            totalCount={totalCount}
+            hasMore={comments.hasNextPage}
+            isLoadingMore={comments.isFetchingNextPage}
+            isSubmitting={create.isPending}
+            error={error}
+            onLoadMore={() => void comments.fetchNextPage()}
+            onSubmit={async (body) => {
+                setError(null);
+                try {
+                    await create.mutateAsync({ ...ref, body });
+                    return true;
+                } catch {
+                    // Feilen vises av `onError` over.
+                    return false;
+                }
+            }}
+            onDelete={(commentId) => {
+                setError(null);
+                remove.mutate({ ...ref, commentId });
+            }}
+        />
     );
 }
 
