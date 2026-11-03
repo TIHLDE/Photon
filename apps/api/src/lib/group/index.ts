@@ -4,7 +4,6 @@
  * This module provides functions for:
  * - Checking group membership and leadership
  * - Managing group-scoped permissions
- * - Keeping HS in sync with subgroup leadership
  */
 
 import { syncDeEldstesRaad } from "@photon/auth/de-eldstes-raad";
@@ -13,10 +12,6 @@ import { type DbSchema, schema } from "@photon/db";
 import { type InferSelectModel, and, eq, inArray, ne } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 import { HTTPAppException } from "~/lib/errors";
-import {
-    autoVervName,
-    getLinkedLeaderPosition,
-} from "~/lib/group/linked-leader";
 
 /**
  * Group types whose membership is a projection of Feide, not an editable list.
@@ -223,20 +218,15 @@ export async function addUserToGroup(
     // from the membership itself (getPermissionsFromMembership), so joining
     // grants it and leaving revokes it with nothing to sync.
 
-    // Subgroup leaders sit in HS
-    if (membership.role === "leader") {
-        if (!allowsMultipleLeaders(group.type)) {
-            await demoteOtherLeaders(ctx, groupSlug, userId);
-        }
-        await syncSubgroupLeaderIntoHs(ctx, userId, group);
+    if (membership.role === "leader" && !allowsMultipleLeaders(group.type)) {
+        await demoteOtherLeaders(ctx, groupSlug, userId);
     }
 
     /**
      * A seat in HS — or the leadership of Forvaltningsgruppen — carries a seat
      * in De Eldstes Raad, and «med en gang» means here rather than at the
      * member's next sign-in. Called unconditionally instead of matching the
-     * slug first: this is also the path a subgroup leader takes into HS just
-     * above, and the sync is a no-op for everyone it does not concern.
+     * slug first: the sync is a no-op for everyone it does not concern.
      */
     await syncDeEldstesRaad(db, userId);
 
@@ -257,7 +247,7 @@ export async function demoteOtherLeaders(
     groupSlug: string,
     newLeaderId: string,
 ): Promise<void> {
-    const outgoing = await ctx.db
+    await ctx.db
         .update(schema.groupMembership)
         .set({ role: "member", updatedAt: new Date() })
         .where(
@@ -266,30 +256,7 @@ export async function demoteOtherLeaders(
                 eq(schema.groupMembership.role, "leader"),
                 ne(schema.groupMembership.userId, newLeaderId),
             ),
-        )
-        .returning({ userId: schema.groupMembership.userId });
-
-    if (outgoing.length === 0) return;
-
-    const group = await getGroup(ctx, groupSlug);
-    if (!group) return;
-
-    if (isSubgroupType(group.type)) {
-        for (const { userId } of outgoing) {
-            await releaseLinkedLeaderVerv(ctx, userId, groupSlug);
-        }
-        return;
-    }
-
-    // HS er AU + undergruppelederne, ikke et sted man blir sittende: en
-    // avgått president har ingenting der å gjøre med mindre noe annet gir
-    // plassen (et AU-verv eller lederskapet i en undergruppe), akkurat som
-    // for undergruppelederne over.
-    if (group.slug === HS_GROUP_SLUG) {
-        for (const { userId } of outgoing) {
-            await pruneHsMembershipIfUnwarranted(ctx, userId);
-        }
-    }
+        );
 }
 
 /**
@@ -311,11 +278,6 @@ export async function removeUserFromGroup(
     if (!group) {
         throw new Error(`Group not found: ${groupSlug}`);
     }
-
-    // Was this the subgroup's leader? (checked before the row is deleted)
-    const wasSubgroupLeader =
-        isSubgroupType(group.type) &&
-        (await isGroupLeader(ctx, userId, groupSlug));
 
     // Remove user from group
     const [removed] = await db
@@ -350,10 +312,6 @@ export async function removeUserFromGroup(
     // permissions need no cleanup — they hang off the membership row that was
     // just deleted.
     await removeUserPositionsInGroup(ctx, userId, groupSlug);
-
-    if (wasSubgroupLeader) {
-        await releaseLinkedLeaderVerv(ctx, userId, groupSlug);
-    }
 }
 
 /**
@@ -415,15 +373,6 @@ export async function updateGroupMemberRole(
         await demoteOtherLeaders(ctx, groupSlug, userId);
     }
 
-    // Keep HS in sync with subgroup leadership
-    if (group && isSubgroupType(group.type)) {
-        if (newRole === "leader") {
-            await syncSubgroupLeaderIntoHs(ctx, userId, group);
-        } else {
-            await releaseLinkedLeaderVerv(ctx, userId, groupSlug);
-        }
-    }
-
     // Being handed the leadership of Forvaltningsgruppen is the fondsforvalter
     // taking over, and that seat is granted here rather than on a later login.
     // Losing it takes nothing back: De Eldstes Raad is for those who have held
@@ -432,16 +381,13 @@ export async function updateGroupMemberRole(
 }
 
 // =============================================================================
-// HS auto-membership for subgroup leaders
+// Group types and HS
 //
-// Hovedstyret = AU + the leaders of every subgroup. When someone becomes
-// leader of a group of type "subgroup", they are automatically added to the
-// hs group and assigned the subgroup's linked leader-verv (created on the
-// fly as "Leder av <gruppe>" if none is linked yet — minister titles like
-// Teknologiminister are linked via groupPosition.linkedGroupSlug and are
-// then reused instead). When they lose the leadership, the verv is taken
-// back but the hs membership stays: an outgoing leader sits in HS for four
-// more weeks alongside the successor, and is removed from hs by hand after.
+// Hovedstyret = AU + the leaders of every subgroup, but the roster is kept by
+// hand: presidenten adds and removes the members and hands out the verv.
+// Nothing here moves anyone into or out of HS when a leadership changes —
+// that used to happen automatically, and it let anyone who could make a group
+// a subgroup and pick its leader seat people in HS.
 // =============================================================================
 
 export const HS_GROUP_SLUG = "hs";
@@ -456,12 +402,6 @@ export const DEFAULT_LEADER_PERMISSIONS = [
     "events:registrations:create",
     "events:payments:view",
 ];
-
-/** True for groups whose leader belongs in HS. Column is freeform varchar
- *  (Lepton rows are upper case), so compare case-insensitively. */
-export function isSubgroupType(type: string): boolean {
-    return type.toLowerCase() === "subgroup";
-}
 
 /**
  * Om gruppa kan ha flere ledere samtidig.
@@ -523,131 +463,6 @@ export function isArchivableGroup(group: {
  */
 export function allowsNonMemberLeader(group: { slug: string }): boolean {
     return group.slug === HS_GROUP_SLUG;
-}
-
-/**
- * Called when `userId` BECOMES leader of `group`. No-op unless the group is
- * a subgroup and the hs group exists. Adds the leader to hs and hands them
- * the linked leader-verv (replacing any previous holder — a verv has exactly
- * one holder, and leadership is the source of truth for this one).
- */
-export async function syncSubgroupLeaderIntoHs(
-    ctx: AppContext,
-    userId: string,
-    group: InferSelectModel<DbSchema["group"]>,
-): Promise<void> {
-    if (!isSubgroupType(group.type) || group.slug === HS_GROUP_SLUG) return;
-    const hsGroup = await getGroup(ctx, HS_GROUP_SLUG);
-    if (!hsGroup) return; // e.g. minimal test fixtures without an hs group
-
-    await addUserToGroup(ctx, userId, HS_GROUP_SLUG, "member");
-
-    let position = await getLinkedLeaderPosition(ctx, group.slug);
-    if (!position) {
-        const [created] = await ctx.db
-            .insert(schema.groupPosition)
-            .values({
-                groupSlug: HS_GROUP_SLUG,
-                // The group's own name for its leader when it has one —
-                // the two are one title (see lib/group/linked-leader.ts).
-                name: group.leaderTitle ?? autoVervName(group.name),
-                description: `Leder av ${group.name} — automatisk verv, følger ledervervet i gruppen`,
-                // The verv and the group's leader list are two views of one
-                // thing (see lib/group/linked-leader.ts), so a verv created
-                // now starts out agreeing with the group rather than empty.
-                permissions: group.leaderGlobalPermissions ?? [],
-                scope: "global",
-                linkedGroupSlug: group.slug,
-            })
-            .returning();
-        position = created ?? null;
-    }
-    if (!position) return;
-
-    // Hand the verv to the new leader (single holder — replace).
-    await ctx.db
-        .delete(schema.groupPositionHolder)
-        .where(eq(schema.groupPositionHolder.positionId, position.id));
-    await ctx.db.insert(schema.groupPositionHolder).values({
-        positionId: position.id,
-        userId,
-    });
-}
-
-/**
- * Called when `userId` STOPS being leader of subgroup `groupSlug`. Takes the
- * linked leader-verv back (if they hold it). The hs membership is left alone
- * on purpose — see the overlap rule above.
- */
-async function releaseLinkedLeaderVerv(
-    ctx: AppContext,
-    userId: string,
-    groupSlug: string,
-): Promise<void> {
-    const position = await getLinkedLeaderPosition(ctx, groupSlug);
-    if (position) {
-        await ctx.db
-            .delete(schema.groupPositionHolder)
-            .where(
-                and(
-                    eq(schema.groupPositionHolder.positionId, position.id),
-                    eq(schema.groupPositionHolder.userId, userId),
-                ),
-            );
-    }
-}
-
-/**
- * Remove `userId` from hs unless they still belong there: they lead hs
- * itself, they lead another subgroup, or they hold some hs verv (e.g. an AU
- * title). Safe to call for users who are not hs members at all.
- */
-export async function pruneHsMembershipIfUnwarranted(
-    ctx: AppContext,
-    userId: string,
-): Promise<void> {
-    if (!(await isGroupMember(ctx, userId, HS_GROUP_SLUG))) return;
-
-    // Still leader of hs itself, or of some subgroup?
-    const memberships = await ctx.db
-        .select({
-            slug: schema.groupMembership.groupSlug,
-            role: schema.groupMembership.role,
-            type: schema.group.type,
-        })
-        .from(schema.groupMembership)
-        .innerJoin(
-            schema.group,
-            eq(schema.groupMembership.groupSlug, schema.group.slug),
-        )
-        .where(eq(schema.groupMembership.userId, userId));
-    if (
-        memberships.some(
-            (m) =>
-                m.role === "leader" &&
-                (m.slug === HS_GROUP_SLUG || isSubgroupType(m.type)),
-        )
-    )
-        return;
-
-    // Still holds an hs verv (e.g. AU title)?
-    const [heldHsPosition] = await ctx.db
-        .select({ positionId: schema.groupPositionHolder.positionId })
-        .from(schema.groupPositionHolder)
-        .innerJoin(
-            schema.groupPosition,
-            eq(schema.groupPositionHolder.positionId, schema.groupPosition.id),
-        )
-        .where(
-            and(
-                eq(schema.groupPositionHolder.userId, userId),
-                eq(schema.groupPosition.groupSlug, HS_GROUP_SLUG),
-            ),
-        )
-        .limit(1);
-    if (heldHsPosition) return;
-
-    await removeUserFromGroup(ctx, userId, HS_GROUP_SLUG);
 }
 
 /**

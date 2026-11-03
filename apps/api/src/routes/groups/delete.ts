@@ -3,11 +3,6 @@ import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono-openapi";
 import z from "zod";
-import {
-    getGroupMembers,
-    isSubgroupType,
-    pruneHsMembershipIfUnwarranted,
-} from "~/lib/group";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -78,15 +73,6 @@ export const deleteRoute = route().delete(
             });
         }
 
-        // Deleting a subgroup: its leaders lose the HS seat that came with
-        // the leadership (the linked leder-verv is cascade-deleted with the
-        // group). Collect them BEFORE the cascade wipes the memberships.
-        const leaderIds = isSubgroupType(group.type)
-            ? (await getGroupMembers(ctx, slug))
-                  .filter((m) => m.role === "leader")
-                  .map((m) => m.userId)
-            : [];
-
         // Delete the group and all associated data (cascading handled by DB).
         // The fines go first and by hand: a cascade would take their
         // pictures' URLs with it, and nothing else frees those files.
@@ -98,10 +84,6 @@ export const deleteRoute = route().delete(
             await tx.delete(schema.group).where(eq(schema.group.slug, slug));
             return fines;
         });
-
-        for (const leaderId of leaderIds) {
-            await pruneHsMembershipIfUnwarranted(ctx, leaderId);
-        }
 
         await releaseAssetUrls(ctx, [group.imageUrl, group.logoUrl]);
         // Not awaited: a group can hold any number of fine pictures, each

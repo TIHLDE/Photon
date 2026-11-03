@@ -66,6 +66,12 @@ type GroupEditDialogProps = {
     group: Group;
     /** Gruppens medlemmer — botsjefen må være en av dem. */
     members: ComboboxMember[];
+    /**
+     * Om den innloggede får bytte gruppetype. Typen bestemmer hva gruppa er,
+     * så API-et krever `groups:update` eller `groups:manage` globalt — det er
+     * ikke nok å lede gruppa.
+     */
+    canChangeType: boolean;
     /** Returnerer om lagringen gikk gjennom; dialogen lukkes bare da. */
     onSubmit: (values: GroupEditValues) => Promise<boolean>;
     isSubmitting?: boolean;
@@ -75,6 +81,7 @@ type GroupEditDialogProps = {
 export function GroupEditDialog({
     group,
     members,
+    canChangeType,
     onSubmit,
     isSubmitting,
     error,
@@ -107,7 +114,10 @@ export function GroupEditDialog({
         );
     }, [open, group, members]);
 
+    // Automatisk genererte grupper bytter aldri type, og bare de med global
+    // tilgang får velge. Underkategorien kan lederen fortsatt sette selv.
     const typeEditable = canEditGroupType(group.type ?? "");
+    const typeSelectable = typeEditable && canChangeType;
     const hasSubtype = supportsGroupSubtype(type);
 
     async function handleSubmit(event: React.FormEvent) {
@@ -116,7 +126,7 @@ export function GroupEditDialog({
             name: name.trim(),
             description,
             contactEmail: contactEmail.trim() || null,
-            ...(typeEditable
+            ...(typeSelectable
                 ? {
                       type,
                       // Underkategorien hører til interessegrupper. Blir gruppa
@@ -124,7 +134,9 @@ export function GroupEditDialog({
                       // «IDRETTSGRUPPE» blitt liggende igjen usynlig.
                       subtype: hasSubtype ? subtype : null,
                   }
-                : {}),
+                : typeEditable && hasSubtype
+                  ? { subtype }
+                  : {}),
             finesActivated,
             finesAdminId: finesAdmin?.id ?? null,
             finesInfo,
@@ -201,7 +213,7 @@ export function GroupEditDialog({
                                     }
                                 />
                             </Field>
-                            {typeEditable ? (
+                            {typeSelectable ? (
                                 <Field>
                                     <FieldLabel htmlFor="group-type">
                                         Gruppetype

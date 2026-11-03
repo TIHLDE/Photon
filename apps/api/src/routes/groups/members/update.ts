@@ -130,16 +130,15 @@ export const updateMemberRoleRoute = route().patch(
             }
 
             // Legger inn som leder direkte: helperen setter den sittende
-            // lederen ned og holder HS-synkingen i orden, akkurat som
-            // updateGroupMemberRole gjør nedenfor.
+            // lederen ned, akkurat som updateGroupMemberRole gjør nedenfor.
             await addUserToGroup(ctx, userId, groupSlug, "leader");
 
             return c.json({ message: "Member role updated successfully" }, 200);
         }
 
         // Goes through the helper rather than a bare UPDATE: it sets the
-        // sitting leader down (a group has one leader) and keeps the HS seat
-        // for subgroup leaders in sync.
+        // sitting leader down (a group has one leader) and keeps De Eldstes
+        // Raad in sync.
         await updateGroupMemberRole(ctx, userId, groupSlug, body.role);
 
         return c.json(
