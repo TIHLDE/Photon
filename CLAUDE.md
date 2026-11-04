@@ -139,6 +139,7 @@ Key dependency chain in `turbo.json`:
 - Use **GitHub CLI (`gh`)** for all GitHub operations
 - Do NOT push directly to main
 - Create feature branches for all changes
+- Don't add Dependabot. The team has chosen another approach to dependency updates.
 
 ### Branching & Releases
 
@@ -170,6 +171,7 @@ The repo has **one long-lived branch: `main`**. There is no `dev` branch.
     - One or two sentences in plain Norwegian (bokmål) about what members notice and where on the site. No technical words (API, endpoint, migration, component). Never include names or other personal data.
     - Write `-` if members won't notice the change (refactor, chore, tests, CI, infra).
     - Keep the section even when the rest of the body would be empty.
+- Keep each PR to one topic. Don't bundle unrelated fixes, and don't add workarounds just to make a small fix work; raise it first.
 
 ## Code Style & Conventions
 
