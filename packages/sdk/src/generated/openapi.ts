@@ -1253,6 +1253,26 @@ export interface paths {
         patch: operations["updateWrappedPhoto"];
         trace?: never;
     };
+    "/api/event/{eventId}/wrapped/photos/selection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Pick every photo, or clear the selection
+         * @description Pick every photo submitted at the event, or take them all out of the selection, in one go. Drafts are never touched, and a photo that was already picked keeps the time it was picked. Requires 'events:update' or 'events:manage', globally or for the arranging group.
+         */
+        put: operations["selectAllWrappedPhotos"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/event/{eventId}/wrapped/photos/mine": {
         parameters: {
             query?: never;
@@ -5132,6 +5152,16 @@ export interface components {
         };
         UpdateWrappedPhoto: {
             /** @description Pick the photo, or take it out of the selection */
+            selected: boolean;
+        };
+        WrappedPhotoSelectionCount: {
+            /** @description How many photos the event has */
+            totalCount: number;
+            /** @description How many of them are picked now */
+            selectedCount: number;
+        };
+        SelectAllWrappedPhotos: {
+            /** @description Pick every submitted photo, or take every photo out of the selection */
             selected: boolean;
         };
         MyWrappedPhoto: {
@@ -10370,6 +10400,8 @@ export interface operations {
                 pageSize?: number;
                 /** @description Number of items to skip */
                 page?: number;
+                /** @description Only picked photos (`true`) or only photos not picked yet (`false`). The counts always cover the whole event. */
+                selected?: "true" | "false";
             };
             header?: never;
             path: {
@@ -10587,6 +10619,51 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    selectAllWrappedPhotos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event ID */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SelectAllWrappedPhotos"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrappedPhotoSelectionCount"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };

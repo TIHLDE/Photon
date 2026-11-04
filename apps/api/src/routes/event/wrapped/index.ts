@@ -6,6 +6,7 @@ export { listWrappedPhotosRoute } from "./list";
 export { listOpenWrappedCamerasRoute } from "./open";
 export { setWrappedCameraRoute } from "./set";
 export { getWrappedCameraRoute } from "./status";
+export { selectAllWrappedPhotosRoute } from "./select-all";
 export { updateWrappedPhotoRoute } from "./update";
 export { uploadWrappedPhotoRoute } from "./upload";
 export { publishWrappedStoryRoute } from "./publish";
