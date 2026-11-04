@@ -383,6 +383,9 @@ function FilteredPhotos({
                             : (lightboxPictures[index]?.id ?? null),
                     )
                 }
+                onSelectKey={(picture) =>
+                    toggle(picture.id, !(selectedById.get(picture.id) ?? false))
+                }
                 renderActions={(picture) => {
                     const selected = selectedById.get(picture.id) ?? false;
                     return (
@@ -390,6 +393,8 @@ function FilteredPhotos({
                             variant={selected ? "outline" : "default"}
                             size="sm"
                             onClick={() => toggle(picture.id, !selected)}
+                            aria-keyshortcuts="Space Enter"
+                            title="Mellomrom eller Enter"
                         >
                             {selected ? <X /> : <Check />}
                             {selected ? "Fjern fra utvalget" : "Velg"}
