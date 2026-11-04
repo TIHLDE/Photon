@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronRight, ChevronUp, Heart } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, Heart } from "lucide-react";
 
 import { cn } from "#/lib/utils";
 
@@ -218,7 +218,8 @@ function StoryCoverMeta({ className, ...props }: React.ComponentProps<"p">) {
 }
 
 /**
- * "Sveip opp" at the bottom of the cover, nudging upwards. A real button, so
+ * The hint at the bottom of the cover ("Bla ned", "Sveip til høyre"), nudging
+ * the way to the first photo. A real button, so
  * a mouse or a keyboard can take the step a finger takes by swiping.
  */
 function StorySwipeHint({
@@ -227,10 +228,19 @@ function StorySwipeHint({
     direction = "up",
     ...props
 }: React.ComponentProps<"button"> & {
-    /** Which way the swipe goes: up in the feed, right in the card stack. */
-    direction?: "up" | "right";
+    /**
+     * Which way the arrow points: right in the card stack. In the feed, `down`
+     * matches the arrow key and the scroll wheel, which go down to the next
+     * photo, while `up` matches a finger swiping the page up.
+     */
+    direction?: "up" | "down" | "right";
 }) {
-    const Arrow = direction === "right" ? ChevronRight : ChevronUp;
+    const Arrow =
+        direction === "right"
+            ? ChevronRight
+            : direction === "down"
+              ? ChevronDown
+              : ChevronUp;
     return (
         <button
             type="button"
