@@ -4,7 +4,7 @@ import { Card, CardContent } from "@tihlde/ui/ui/card";
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@tihlde/ui/ui/toggle-group";
-import { CheckCheck, Expand, ImageOff, X } from "lucide-react";
+import { CheckCheck, Expand, ImageOff, Images, X } from "lucide-react";
 import { type MouseEvent, useRef } from "react";
 
 export type WrappedPhotoGridFilter = "all" | "selected" | "unselected";
@@ -34,6 +34,8 @@ type WrappedPhotoGridProps = {
     /** Mens «Marker alle»/«Fjern alle markeringer» lagres. */
     isSelectingAll: boolean;
     onSelectAll: (selected: boolean) => void;
+    /** Åpner gjennomgangen, ett bilde om gangen. */
+    onStartReview: () => void;
     /** Ett eller flere bilder (Shift-klikk) som skal få samme tilstand. */
     onToggle: (photoIds: string[], selected: boolean) => void;
     onOpen: (photoId: string) => void;
@@ -55,6 +57,7 @@ export function WrappedPhotoGrid({
     onFilterChange,
     isSelectingAll,
     onSelectAll,
+    onStartReview,
     onToggle,
     onOpen,
     onLoadMore,
@@ -90,14 +93,23 @@ export function WrappedPhotoGrid({
                 <p>
                     {selectedCount} av {totalCount} valgt
                 </p>
-                <Button
-                    variant={allSelected ? "outline" : "default"}
-                    disabled={isSelectingAll || totalCount === 0}
-                    onClick={() => onSelectAll(!allSelected)}
-                >
-                    {allSelected ? <X /> : <CheckCheck />}
-                    {allSelected ? "Fjern alle markeringer" : "Marker alle"}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                    <Button
+                        disabled={photos.length === 0}
+                        onClick={onStartReview}
+                    >
+                        <Images />
+                        Gå gjennom bildene
+                    </Button>
+                    <Button
+                        variant="outline"
+                        disabled={isSelectingAll || totalCount === 0}
+                        onClick={() => onSelectAll(!allSelected)}
+                    >
+                        {allSelected ? <X /> : <CheckCheck />}
+                        {allSelected ? "Fjern alle markeringer" : "Marker alle"}
+                    </Button>
+                </div>
             </div>
             <ToggleGroup
                 variant="outline"

@@ -23,6 +23,11 @@ type GalleryLightboxProps = {
     onEdit?: (picture: LightboxPicture) => void;
     /** Egne handlinger for bildet som vises, ved siden av «Rediger». */
     renderActions?: (picture: LightboxPicture) => ReactNode;
+    /**
+     * Mellomrom og Enter på bildet som vises, for eksempel for å velge det.
+     * Uten denne gjør tastene det de ellers ville gjort.
+     */
+    onSelectKey?: (picture: LightboxPicture) => void;
 };
 
 /**
@@ -36,6 +41,7 @@ export function GalleryLightbox({
     canEdit = false,
     onEdit,
     renderActions,
+    onSelectKey,
 }: GalleryLightboxProps) {
     const index = openIndex ?? -1;
     const picture = pictures[index] ?? null;
@@ -71,6 +77,17 @@ export function GalleryLightbox({
             } else if (event.key === "ArrowRight") {
                 event.preventDefault();
                 go(1);
+            } else if (
+                (event.key === " " || event.key === "Enter") &&
+                onSelectKey &&
+                picture
+            ) {
+                // preventDefault også stopper knappen som har fokus (for
+                // eksempel «Velg» man nettopp klikket på) fra å trykkes i
+                // tillegg, så bildet ikke velges og fjernes i samme slag.
+                event.preventDefault();
+                event.stopPropagation();
+                if (!event.repeat) onSelectKey(picture);
             }
         }
 
@@ -80,7 +97,7 @@ export function GalleryLightbox({
         // window-lytter ville aldri sett tasten.
         window.addEventListener("keydown", onKeyDown, true);
         return () => window.removeEventListener("keydown", onKeyDown, true);
-    }, [openIndex, go]);
+    }, [openIndex, go, onSelectKey, picture]);
 
     if (!picture) return null;
 
