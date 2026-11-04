@@ -149,9 +149,6 @@ export const oauthClient = pgTable(
         jwksUri: text("jwks_uri"),
         grantTypes: text("grant_types").array(),
         responseTypes: text("response_types").array(),
-        // Better Auth 1.6 columns, kept until 1.7 is stable in production.
-        public: boolean("public"),
-        type: text("type"),
         requirePKCE: boolean("require_pkce"),
         dpopBoundAccessTokens: boolean("dpop_bound_access_tokens").default(
             false,

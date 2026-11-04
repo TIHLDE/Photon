@@ -1,0 +1,57 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "255e786c-cc5f-4f4b-81fa-c0f749df8d4d",
+  "prevIds": [
+    "09720f14-1b8d-4d2f-8a4c-96355d12b0f2"
+  ],
+  "footprints": [
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_client",
+        "public"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_client.public",
+        "n|col|public.auth_oauth_client.public",
+        "e|col|public.auth_oauth_client.public"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_client",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_client",
+        "type"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_client.type",
+        "n|col|public.auth_oauth_client.type",
+        "e|col|public.auth_oauth_client.type"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_client",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"auth_oauth_client\",\"public\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"auth_oauth_client\",\"type\"]"
+    }
+  ]
+}
