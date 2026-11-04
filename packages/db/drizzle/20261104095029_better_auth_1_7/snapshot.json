@@ -1,0 +1,1633 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "09720f14-1b8d-4d2f-8a4c-96355d12b0f2",
+  "prevIds": [
+    "98c17a06-56d7-4b71-a9fd-2a14b8441957"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_oauth_client_assertion"
+      ],
+      "writes": [
+        "s|tbl|public.auth_oauth_client_assertion",
+        "n|tbl|public.auth_oauth_client_assertion",
+        "e|tbl|public.auth_oauth_client_assertion",
+        "n|rel|public.auth_oauth_client_assertion",
+        "n|type|public.auth_oauth_client_assertion",
+        "n|rel|public.auth_oauth_client_assertion_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_oauth_client_resource"
+      ],
+      "writes": [
+        "s|tbl|public.auth_oauth_client_resource",
+        "n|tbl|public.auth_oauth_client_resource",
+        "e|tbl|public.auth_oauth_client_resource",
+        "n|rel|public.auth_oauth_client_resource",
+        "n|type|public.auth_oauth_client_resource",
+        "n|rel|public.auth_oauth_client_resource_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_oauth_resource"
+      ],
+      "writes": [
+        "s|tbl|public.auth_oauth_resource",
+        "n|tbl|public.auth_oauth_resource",
+        "e|tbl|public.auth_oauth_resource",
+        "n|rel|public.auth_oauth_resource",
+        "n|type|public.auth_oauth_resource",
+        "n|rel|public.auth_oauth_resource_pkey",
+        "n|rel|public.auth_oauth_resource_identifier_key"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_jwks",
+        "alg"
+      ],
+      "writes": [
+        "s|col|public.auth_jwks.alg",
+        "n|col|public.auth_jwks.alg",
+        "e|col|public.auth_jwks.alg"
+      ],
+      "reads": [
+        "n|tbl|public.auth_jwks",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_jwks",
+        "crv"
+      ],
+      "writes": [
+        "s|col|public.auth_jwks.crv",
+        "n|col|public.auth_jwks.crv",
+        "e|col|public.auth_jwks.crv"
+      ],
+      "reads": [
+        "n|tbl|public.auth_jwks",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_access_token",
+        "authorization_code_id"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_access_token.authorization_code_id",
+        "n|col|public.auth_oauth_access_token.authorization_code_id",
+        "e|col|public.auth_oauth_access_token.authorization_code_id"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_access_token",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_access_token",
+        "resources"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_access_token.resources",
+        "n|col|public.auth_oauth_access_token.resources",
+        "e|col|public.auth_oauth_access_token.resources"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_access_token",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_access_token",
+        "requested_user_info_claims"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_access_token.requested_user_info_claims",
+        "n|col|public.auth_oauth_access_token.requested_user_info_claims",
+        "e|col|public.auth_oauth_access_token.requested_user_info_claims"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_access_token",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_access_token",
+        "revoked"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_access_token.revoked",
+        "n|col|public.auth_oauth_access_token.revoked",
+        "e|col|public.auth_oauth_access_token.revoked"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_access_token",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_access_token",
+        "confirmation"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_access_token.confirmation",
+        "n|col|public.auth_oauth_access_token.confirmation",
+        "e|col|public.auth_oauth_access_token.confirmation"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_access_token",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_client",
+        "client_discovery_id"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_client.client_discovery_id",
+        "n|col|public.auth_oauth_client.client_discovery_id",
+        "e|col|public.auth_oauth_client.client_discovery_id"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_client",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_client",
+        "client_credentials_scopes"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_client.client_credentials_scopes",
+        "n|col|public.auth_oauth_client.client_credentials_scopes",
+        "e|col|public.auth_oauth_client.client_credentials_scopes"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_client",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_client",
+        "backchannel_logout_uri"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_client.backchannel_logout_uri",
+        "n|col|public.auth_oauth_client.backchannel_logout_uri",
+        "e|col|public.auth_oauth_client.backchannel_logout_uri"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_client",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_client",
+        "backchannel_logout_session_required"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_client.backchannel_logout_session_required",
+        "n|col|public.auth_oauth_client.backchannel_logout_session_required",
+        "e|col|public.auth_oauth_client.backchannel_logout_session_required"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_client",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_client",
+        "application_type"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_client.application_type",
+        "n|col|public.auth_oauth_client.application_type",
+        "e|col|public.auth_oauth_client.application_type"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_client",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_client",
+        "jwks"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_client.jwks",
+        "n|col|public.auth_oauth_client.jwks",
+        "e|col|public.auth_oauth_client.jwks"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_client",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_client",
+        "jwks_uri"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_client.jwks_uri",
+        "n|col|public.auth_oauth_client.jwks_uri",
+        "e|col|public.auth_oauth_client.jwks_uri"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_client",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_client",
+        "dpop_bound_access_tokens"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_client.dpop_bound_access_tokens",
+        "n|col|public.auth_oauth_client.dpop_bound_access_tokens",
+        "e|col|public.auth_oauth_client.dpop_bound_access_tokens"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_client",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_consent",
+        "resources"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_consent.resources",
+        "n|col|public.auth_oauth_consent.resources",
+        "e|col|public.auth_oauth_consent.resources"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_consent",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_consent",
+        "requested_user_info_claims"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_consent.requested_user_info_claims",
+        "n|col|public.auth_oauth_consent.requested_user_info_claims",
+        "e|col|public.auth_oauth_consent.requested_user_info_claims"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_consent",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_refresh_token",
+        "authorization_code_id"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_refresh_token.authorization_code_id",
+        "n|col|public.auth_oauth_refresh_token.authorization_code_id",
+        "e|col|public.auth_oauth_refresh_token.authorization_code_id"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_refresh_token",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_refresh_token",
+        "resources"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_refresh_token.resources",
+        "n|col|public.auth_oauth_refresh_token.resources",
+        "e|col|public.auth_oauth_refresh_token.resources"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_refresh_token",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_refresh_token",
+        "requested_user_info_claims"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_refresh_token.requested_user_info_claims",
+        "n|col|public.auth_oauth_refresh_token.requested_user_info_claims",
+        "e|col|public.auth_oauth_refresh_token.requested_user_info_claims"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_refresh_token",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_refresh_token",
+        "rotated_at"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_refresh_token.rotated_at",
+        "n|col|public.auth_oauth_refresh_token.rotated_at",
+        "e|col|public.auth_oauth_refresh_token.rotated_at"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_refresh_token",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_refresh_token",
+        "rotation_replay_response"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_refresh_token.rotation_replay_response",
+        "n|col|public.auth_oauth_refresh_token.rotation_replay_response",
+        "e|col|public.auth_oauth_refresh_token.rotation_replay_response"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_refresh_token",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_refresh_token",
+        "rotation_replay_expires_at"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_refresh_token.rotation_replay_expires_at",
+        "n|col|public.auth_oauth_refresh_token.rotation_replay_expires_at",
+        "e|col|public.auth_oauth_refresh_token.rotation_replay_expires_at"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_refresh_token",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "auth_oauth_refresh_token",
+        "confirmation"
+      ],
+      "writes": [
+        "s|col|public.auth_oauth_refresh_token.confirmation",
+        "n|col|public.auth_oauth_refresh_token.confirmation",
+        "e|col|public.auth_oauth_refresh_token.confirmation"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_refresh_token",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "auth_oauth_access_token",
+        "oauthAccessToken_authorizationCodeId_idx"
+      ],
+      "writes": [
+        "s|idx|public.oauthAccessToken_authorizationCodeId_idx",
+        "n|idx|public.oauthAccessToken_authorizationCodeId_idx",
+        "e|idx|public.oauthAccessToken_authorizationCodeId_idx",
+        "n|rel|public.oauthAccessToken_authorizationCodeId_idx"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_access_token",
+        "n|sch|public",
+        "n|col|public.auth_oauth_access_token.authorization_code_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "auth_oauth_client_resource",
+        "oauthClientResource_clientId_resourceId_uidx"
+      ],
+      "writes": [
+        "s|idx|public.oauthClientResource_clientId_resourceId_uidx",
+        "n|idx|public.oauthClientResource_clientId_resourceId_uidx",
+        "e|idx|public.oauthClientResource_clientId_resourceId_uidx",
+        "n|rel|public.oauthClientResource_clientId_resourceId_uidx"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_client_resource",
+        "n|sch|public",
+        "n|col|public.auth_oauth_client_resource.client_id",
+        "n|col|public.auth_oauth_client_resource.resource_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "auth_oauth_client_resource",
+        "oauthClientResource_clientId_idx"
+      ],
+      "writes": [
+        "s|idx|public.oauthClientResource_clientId_idx",
+        "n|idx|public.oauthClientResource_clientId_idx",
+        "e|idx|public.oauthClientResource_clientId_idx",
+        "n|rel|public.oauthClientResource_clientId_idx"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_client_resource",
+        "n|sch|public",
+        "n|col|public.auth_oauth_client_resource.client_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "auth_oauth_client_resource",
+        "oauthClientResource_resourceId_idx"
+      ],
+      "writes": [
+        "s|idx|public.oauthClientResource_resourceId_idx",
+        "n|idx|public.oauthClientResource_resourceId_idx",
+        "e|idx|public.oauthClientResource_resourceId_idx",
+        "n|rel|public.oauthClientResource_resourceId_idx"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_client_resource",
+        "n|sch|public",
+        "n|col|public.auth_oauth_client_resource.resource_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "auth_oauth_refresh_token",
+        "oauthRefreshToken_authorizationCodeId_idx"
+      ],
+      "writes": [
+        "s|idx|public.oauthRefreshToken_authorizationCodeId_idx",
+        "n|idx|public.oauthRefreshToken_authorizationCodeId_idx",
+        "e|idx|public.oauthRefreshToken_authorizationCodeId_idx",
+        "n|rel|public.oauthRefreshToken_authorizationCodeId_idx"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_refresh_token",
+        "n|sch|public",
+        "n|col|public.auth_oauth_refresh_token.authorization_code_id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_oauth_client_resource"
+      ],
+      "writes": [
+        "s|fk|public.auth_oauth_client_resource.auth_oauth_client_resource_V3cS6twcRIpS_fkey",
+        "n|fk|public.auth_oauth_client_resource.auth_oauth_client_resource_V3cS6twcRIpS_fkey",
+        "e|fk|public.auth_oauth_client_resource.auth_oauth_client_resource_V3cS6twcRIpS_fkey",
+        "n|con|public.auth_oauth_client_resource.auth_oauth_client_resource_V3cS6twcRIpS_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_client_resource",
+        "n|sch|public",
+        "n|tbl|public.auth_oauth_client",
+        "n|sch|public",
+        "n|col|public.auth_oauth_client_resource.client_id",
+        "n|col|public.auth_oauth_client.client_id",
+        "e|uniqueness|public.auth_oauth_client.client_id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "auth_oauth_client_resource"
+      ],
+      "writes": [
+        "s|fk|public.auth_oauth_client_resource.auth_oauth_client_resource_fHMpUNxGXloK_fkey",
+        "n|fk|public.auth_oauth_client_resource.auth_oauth_client_resource_fHMpUNxGXloK_fkey",
+        "e|fk|public.auth_oauth_client_resource.auth_oauth_client_resource_fHMpUNxGXloK_fkey",
+        "n|con|public.auth_oauth_client_resource.auth_oauth_client_resource_fHMpUNxGXloK_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.auth_oauth_client_resource",
+        "n|sch|public",
+        "n|tbl|public.auth_oauth_resource",
+        "n|sch|public",
+        "n|col|public.auth_oauth_client_resource.resource_id",
+        "n|col|public.auth_oauth_resource.identifier",
+        "e|uniqueness|public.auth_oauth_resource.identifier"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "auth_oauth_client_assertion",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "auth_oauth_client_resource",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "auth_oauth_resource",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_jwks",
+        "name": "alg",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_jwks",
+        "name": "crv",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_access_token",
+        "name": "authorization_code_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_access_token",
+        "name": "resources",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 1,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_access_token",
+        "name": "requested_user_info_claims",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 1,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_access_token",
+        "name": "revoked",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_access_token",
+        "name": "confirmation",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client",
+        "name": "client_discovery_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client",
+        "name": "client_credentials_scopes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 1,
+        "default": "'{}'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client",
+        "name": "backchannel_logout_uri",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client",
+        "name": "backchannel_logout_session_required",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client",
+        "name": "application_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client",
+        "name": "jwks",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client",
+        "name": "jwks_uri",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client",
+        "name": "dpop_bound_access_tokens",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client_assertion",
+        "name": "id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client_assertion",
+        "name": "expires_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client_resource",
+        "name": "id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client_resource",
+        "name": "client_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client_resource",
+        "name": "resource_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client_resource",
+        "name": "metadata",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client_resource",
+        "name": "created_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_consent",
+        "name": "resources",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 1,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_consent",
+        "name": "requested_user_info_claims",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 1,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_refresh_token",
+        "name": "authorization_code_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_refresh_token",
+        "name": "resources",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 1,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_refresh_token",
+        "name": "requested_user_info_claims",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 1,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_refresh_token",
+        "name": "rotated_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_refresh_token",
+        "name": "rotation_replay_response",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_refresh_token",
+        "name": "rotation_replay_expires_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_refresh_token",
+        "name": "confirmation",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_resource",
+        "name": "id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_resource",
+        "name": "identifier",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_resource",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_resource",
+        "name": "access_token_ttl",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_resource",
+        "name": "refresh_token_ttl",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_resource",
+        "name": "signing_algorithm",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_resource",
+        "name": "signing_key_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_resource",
+        "name": "allowed_scopes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 1,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_resource",
+        "name": "custom_claims",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_resource",
+        "name": "dpop_bound_access_tokens_required",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_resource",
+        "name": "disabled",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_resource",
+        "name": "created_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_resource",
+        "name": "updated_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_resource",
+        "name": "policy_version",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": "1",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_resource",
+        "name": "metadata",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_access_token",
+        "name": "oauthAccessToken_authorizationCodeId_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "authorization_code_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client_resource",
+        "name": "oauthClientResource_clientId_resourceId_uidx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "client_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "resource_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client_resource",
+        "name": "oauthClientResource_clientId_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "client_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client_resource",
+        "name": "oauthClientResource_resourceId_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "resource_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_refresh_token",
+        "name": "oauthRefreshToken_authorizationCodeId_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "authorization_code_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client_resource",
+        "name": "auth_oauth_client_resource_V3cS6twcRIpS_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "client_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "auth_oauth_client",
+        "columnsTo": [
+          "client_id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client_resource",
+        "name": "auth_oauth_client_resource_fHMpUNxGXloK_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "resource_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "auth_oauth_resource",
+        "columnsTo": [
+          "identifier"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client_assertion",
+        "name": "auth_oauth_client_assertion_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_client_resource",
+        "name": "auth_oauth_client_resource_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_resource",
+        "name": "auth_oauth_resource_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_oauth_resource",
+        "name": "auth_oauth_resource_identifier_key",
+        "nameExplicit": false,
+        "columns": [
+          "identifier"
+        ],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    }
+  ]
+}

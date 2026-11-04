@@ -87,7 +87,7 @@ async function createOAuthClient(
             client_name: "requireAuth integration test",
             redirect_uris: [redirectUri],
             token_endpoint_auth_method: "none",
-            type: "native",
+            application_type: "native",
             grant_types: ["authorization_code"],
             response_types: ["code"],
             scope: scopes,

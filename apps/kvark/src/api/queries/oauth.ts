@@ -100,7 +100,7 @@ export type CreateOAuthClientInput = {
         | "none"
         | "client_secret_basic"
         | "client_secret_post";
-    type?: "web" | "native" | "user-agent-based";
+    application_type?: "web" | "native";
     grant_types?: Array<
         "authorization_code" | "client_credentials" | "refresh_token"
     >;
@@ -125,9 +125,7 @@ export const createOAuthClientMutation = mutationOptions({
     },
 });
 
-export type UpdateOAuthClientInput = Omit<CreateOAuthClientInput, "type"> & {
-    type?: CreateOAuthClientInput["type"];
-};
+export type UpdateOAuthClientInput = CreateOAuthClientInput;
 
 export const updateOAuthClientMutation = mutationOptions({
     mutationFn: async ({

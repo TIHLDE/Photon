@@ -21,6 +21,16 @@ export interface CacheService {
     set(key: string, value: unknown, ttl?: number): Promise<void>;
     delete(key: string): Promise<void>;
 
+    /** Read a key and remove it in one step, so two callers cannot both get it. */
+    getAndDelete(key: string): Promise<unknown>;
+
+    /**
+     * Add one to the counter at `key` and return the new value. A missing key
+     * starts at 1 and expires `ttl` seconds later; later increments leave
+     * that expiry alone. Better Auth's rate limiter relies on both halves.
+     */
+    increment(key: string, ttl: number): Promise<number>;
+
     getTTL(key: string): Promise<number | undefined>;
 
     getString(key: string): Promise<string | undefined>;
@@ -38,6 +48,8 @@ export abstract class BaseCache implements CacheService {
     abstract get(key: string): Promise<unknown>;
     abstract set(key: string, value: unknown, ttl?: number): Promise<void>;
     abstract delete(key: string): Promise<void>;
+    abstract getAndDelete(key: string): Promise<unknown>;
+    abstract increment(key: string, ttl: number): Promise<number>;
     abstract getTTL(key: string): Promise<number | undefined>;
 
     async getString(key: string) {

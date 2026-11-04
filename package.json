@@ -32,9 +32,9 @@
                 "drizzle-orm": "1.0.0-rc.5",
                 "drizzle-seed": "1.0.0-rc.5",
                 "drizzle-kit": "1.0.0-rc.5",
-                "better-auth": "^1.6.9",
+                "better-auth": "^1.7.16",
                 "jose": "^6.2.12",
-                "@better-auth/oauth-provider": "^1.6.9"
+                "@better-auth/oauth-provider": "^1.7.16"
             },
             "frontend": {
                 "react": "^19.3.0",

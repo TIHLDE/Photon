@@ -99,6 +99,28 @@ export const relations = {
                 from: r.oauthClient.clientId,
                 to: r.oauthConsent.clientId,
             }),
+            oauthClientResources: r.many.oauthClientResource({
+                from: r.oauthClient.clientId,
+                to: r.oauthClientResource.clientId,
+            }),
+        },
+        oauthResource: {
+            oauthClientResources: r.many.oauthClientResource({
+                from: r.oauthResource.identifier,
+                to: r.oauthClientResource.resourceId,
+            }),
+        },
+        oauthClientResource: {
+            oauthClient: r.one.oauthClient({
+                from: r.oauthClientResource.clientId,
+                to: r.oauthClient.clientId,
+                optional: false,
+            }),
+            oauthResource: r.one.oauthResource({
+                from: r.oauthClientResource.resourceId,
+                to: r.oauthResource.identifier,
+                optional: false,
+            }),
         },
         oauthRefreshToken: {
             oauthClient: r.one.oauthClient({

@@ -42,7 +42,7 @@ function createClient(ctx: IntegrationTestContext, cookie: string) {
             client_name: "oauth client admin integration test",
             redirect_uris: ["http://127.0.0.1:3000/oauth/callback"],
             token_endpoint_auth_method: "none",
-            type: "native",
+            application_type: "native",
             grant_types: ["authorization_code"],
             response_types: ["code"],
         },
