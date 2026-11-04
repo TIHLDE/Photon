@@ -35,6 +35,10 @@ import {
 import { WrappedCameraSettings } from "#/components/wrapped-camera-settings";
 import { WrappedStoryPublish } from "#/components/wrapped-story/wrapped-story-publish";
 import {
+    type WrappedReviewPhoto,
+    WrappedSelectionReview,
+} from "#/components/wrapped-selection-review";
+import {
     WrappedPhotoGrid,
     type WrappedPhotoGridFilter,
     type WrappedPhotoTileData,
@@ -195,6 +199,10 @@ function FilteredPhotos({
     );
     const [error, setError] = useState<string | null>(null);
     const [openId, setOpenId] = useState<string | null>(null);
+    // `undefined`: gjennomgangen er lukket. `null`: ferdig med alle bildene.
+    const [reviewId, setReviewId] = useState<string | null | undefined>(
+        undefined,
+    );
 
     // Feilen settes i `useMutation`-opsjonene, ikke i `mutate`: med flere
     // trykk underveis kaller TanStack bare `mutate`-callbacken til det siste.
@@ -235,10 +243,18 @@ function FilteredPhotos({
 
     // Den store versjonen hentes bare for bildet som faktisk åpnes, ikke for
     // hver flis i rutenettet.
+    // I gjennomgangen også det neste, så det står klart når man går videre.
     const openImageUrl = photos.find((photo) => photo.id === openId)?.imageUrl;
+    const reviewIndex = photos.findIndex((photo) => photo.id === reviewId);
+    const reviewImageUrl = photos[reviewIndex]?.imageUrl;
+    const reviewNextUrl =
+        reviewIndex === -1 ? undefined : photos[reviewIndex + 1]?.imageUrl;
     const openPaths = useMemo(
-        () => (openImageUrl ? [openImageUrl] : []),
-        [openImageUrl],
+        () =>
+            [openImageUrl, reviewImageUrl, reviewNextUrl].filter(
+                (url): url is string => url !== undefined,
+            ),
+        [openImageUrl, reviewImageUrl, reviewNextUrl],
     );
     const largeUrls = useObjectUrls(openPaths, fetchWrappedPhotoLarge);
 
@@ -308,6 +324,14 @@ function FilteredPhotos({
             },
         ];
     });
+    const reviewPhotos: WrappedReviewPhoto[] = photos.map((photo, i) => ({
+        id: photo.id,
+        thumbSrc: imageUrls.get(photo.imageUrl),
+        largeSrc: largeUrls.get(photo.imageUrl),
+        uploaderName: photo.uploadedBy.name,
+        takenAt: `Tatt ${formatInOslo(photo.createdAt, "d. MMM 'kl.' HH:mm")}`,
+        selected: tiles[i]?.selected ?? photo.selected,
+    }));
     const openIndex = lightboxPictures.findIndex((p) => p.id === openId);
     const selectedById = new Map(tiles.map((t) => [t.id, t.selected]));
 
@@ -327,6 +351,7 @@ function FilteredPhotos({
                 filter={filter}
                 onFilterChange={onFilterChange}
                 isSelectingAll={selectAll.isPending}
+                onStartReview={() => setReviewId(photos[0]?.id ?? null)}
                 onSelectAll={(selected) => {
                     setError(null);
                     selectAll.mutate({ eventId, selected });
@@ -335,6 +360,19 @@ function FilteredPhotos({
                 onOpen={setOpenId}
                 onLoadMore={() => void photosQuery.fetchNextPage()}
             />
+            {reviewId !== undefined ? (
+                <WrappedSelectionReview
+                    photos={reviewPhotos}
+                    currentId={reviewId}
+                    onCurrentChange={setReviewId}
+                    onDecide={toggle}
+                    onClose={() => setReviewId(undefined)}
+                    selectedCount={selectedCount}
+                    hasMore={photosQuery.hasNextPage}
+                    isLoadingMore={photosQuery.isFetchingNextPage}
+                    onLoadMore={() => void photosQuery.fetchNextPage()}
+                />
+            ) : null}
             <GalleryLightbox
                 pictures={lightboxPictures}
                 openIndex={openIndex === -1 ? null : openIndex}
