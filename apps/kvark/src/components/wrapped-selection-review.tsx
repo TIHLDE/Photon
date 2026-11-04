@@ -8,8 +8,17 @@ import {
     DialogTitle,
 } from "@tihlde/ui/ui/dialog";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
-import { Check, ChevronLeft, ImageOff, PartyPopper, X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@tihlde/ui/ui/tooltip";
+import {
+    Check,
+    ChevronLeft,
+    ChevronRight,
+    ImageOff,
+    type LucideIcon,
+    PartyPopper,
+    X,
+} from "lucide-react";
+import { type ComponentProps, useEffect, useRef } from "react";
 
 export type WrappedReviewPhoto = {
     id: string;
@@ -40,11 +49,11 @@ type WrappedSelectionReviewProps = {
 const SWIPE_PX = 50;
 
 /**
- * Gjennomgang av bildene ett og ett i stort format. «Ta med» og «Hopp over»
- * lagrer valget og går rett videre, så arrangøren slipper å åpne og lukke
- * hvert bilde. Tastatur: → / J tar med, ← / K hopper over, Backspace går
- * tilbake. På mobil: sveip til høyre for å ta med, til venstre for å hoppe
- * over.
+ * Gjennomgang av bildene ett og ett i stort format, så arrangøren slipper å
+ * åpne og lukke hvert bilde. Samme taster som når et bilde er åpnet stort:
+ * ← / → blar uten å endre noe, Mellomrom eller Enter velger bildet (eller
+ * fjerner det fra utvalget), og X hopper over: tar det ut og går videre.
+ * På mobil blar man med sveip.
  */
 export function WrappedSelectionReview({
     photos,
@@ -98,37 +107,52 @@ export function WrappedSelectionReview({
         }
     }
 
-    function decide(selected: boolean) {
-        if (!photo || waitingAfter.current !== null) return;
-        if (photo.selected !== selected) onDecide(photo.id, selected);
-        advance();
-    }
-
     function back() {
         const previous = photos[(photo ? index : photos.length) - 1];
         if (previous) onCurrentChange(previous.id);
     }
 
+    function next() {
+        if (!photo || waitingAfter.current !== null) return;
+        advance();
+    }
+
+    /** Velger bildet, eller tar det ut av utvalget. Blir stående. */
+    function toggle() {
+        if (!photo) return;
+        onDecide(photo.id, !photo.selected);
+    }
+
+    /** Tar bildet ut av utvalget (om det var med) og går videre. */
+    function skip() {
+        if (!photo || waitingAfter.current !== null) return;
+        if (photo.selected) onDecide(photo.id, false);
+        advance();
+    }
+
     // Lytteren byttes hver render, så den ser alltid gjeldende bilde.
-    const decideRef = useRef(decide);
-    const backRef = useRef(back);
-    decideRef.current = decide;
-    backRef.current = back;
+    const actions = useRef({ back, next, toggle, skip });
+    actions.current = { back, next, toggle, skip };
 
     useEffect(() => {
         function onKeyDown(event: KeyboardEvent) {
             if (event.metaKey || event.ctrlKey || event.altKey) return;
-            const key = event.key.toLowerCase();
-            if (key === "arrowright" || key === "j") {
-                event.preventDefault();
-                decideRef.current(true);
-            } else if (key === "arrowleft" || key === "k") {
-                event.preventDefault();
-                decideRef.current(false);
-            } else if (key === "backspace") {
-                event.preventDefault();
-                backRef.current();
-            }
+            const action =
+                event.key === "ArrowLeft"
+                    ? actions.current.back
+                    : event.key === "ArrowRight"
+                      ? actions.current.next
+                      : event.key === " " || event.key === "Enter"
+                        ? actions.current.toggle
+                        : event.key.toLowerCase() === "x"
+                          ? actions.current.skip
+                          : null;
+            if (!action) return;
+            // Også knappen som har fokus skal la være å trykkes av samme
+            // tast, ellers velges og fjernes bildet i samme slag.
+            event.preventDefault();
+            event.stopPropagation();
+            if (!event.repeat || action !== actions.current.toggle) action();
         }
         // Capture-fasen: knappene fra Base UI stopper piltastene på vei opp.
         window.addEventListener("keydown", onKeyDown, true);
@@ -169,7 +193,9 @@ export function WrappedSelectionReview({
                                 if (start === null || end === undefined) return;
                                 const distance = end - start;
                                 if (Math.abs(distance) < SWIPE_PX) return;
-                                decide(distance > 0);
+                                // Som i lysboksen: dra mot venstre for neste.
+                                if (distance < 0) next();
+                                else back();
                             }}
                         >
                             <ReviewImage photo={photo} />
@@ -191,38 +217,49 @@ export function WrappedSelectionReview({
                             )}
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2">
-                            <Button
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                            <ReviewAction
+                                icon={ChevronLeft}
+                                label="Forrige"
+                                shortcut="←"
+                                aria-keyshortcuts="ArrowLeft"
                                 variant="outline"
-                                size="lg"
                                 disabled={index === 0}
                                 onClick={back}
-                                aria-keyshortcuts="Backspace"
-                            >
-                                <ChevronLeft />
-                                Forrige
-                            </Button>
-                            <Button
+                            />
+                            <ReviewAction
+                                icon={X}
+                                label="Hopp over"
+                                shortcut="X"
+                                aria-keyshortcuts="X"
                                 variant="outline"
-                                size="lg"
-                                onClick={() => decide(false)}
-                                aria-keyshortcuts="ArrowLeft K"
-                            >
-                                <X />
-                                Hopp over
-                            </Button>
-                            <Button
-                                size="lg"
-                                onClick={() => decide(true)}
-                                aria-keyshortcuts="ArrowRight J"
-                            >
-                                <Check />
-                                Ta med
-                            </Button>
+                                onClick={skip}
+                            />
+                            <ReviewAction
+                                icon={photo.selected ? X : Check}
+                                label={
+                                    photo.selected
+                                        ? "Fjern fra utvalget"
+                                        : "Ta med"
+                                }
+                                shortcut="Mellomrom / Enter"
+                                aria-keyshortcuts="Space Enter"
+                                variant={photo.selected ? "outline" : "default"}
+                                onClick={toggle}
+                            />
+                            <ReviewAction
+                                icon={ChevronRight}
+                                label="Neste"
+                                shortcut="→"
+                                aria-keyshortcuts="ArrowRight"
+                                variant="outline"
+                                iconAfter
+                                onClick={next}
+                            />
                         </div>
                         <p className="hidden text-sm text-muted-foreground sm:block">
-                            Hurtigtaster: → eller J tar med, ← eller K hopper
-                            over, Backspace går tilbake.
+                            ← / → blar, Mellomrom eller Enter velger bildet
+                            eller fjerner det, X hopper over.
                         </p>
                     </>
                 ) : (
@@ -305,4 +342,35 @@ function ReviewImage({ photo }: { photo: WrappedReviewPhoto }) {
         return <ImageOff />;
     }
     return <Skeleton className="size-full" />;
+}
+
+/** En knapp i gjennomgangen, med navnet og hurtigtasten i en tooltip. */
+function ReviewAction({
+    icon: Icon,
+    label,
+    shortcut,
+    iconAfter = false,
+    ...props
+}: Omit<ComponentProps<typeof Button>, "children"> & {
+    icon: LucideIcon;
+    label: string;
+    shortcut: string;
+    iconAfter?: boolean;
+}) {
+    return (
+        <Tooltip>
+            <TooltipTrigger
+                render={
+                    <Button size="lg" {...props}>
+                        {iconAfter ? null : <Icon />}
+                        {label}
+                        {iconAfter ? <Icon /> : null}
+                    </Button>
+                }
+            />
+            <TooltipContent>
+                {label} ({shortcut})
+            </TooltipContent>
+        </Tooltip>
+    );
 }
