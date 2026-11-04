@@ -9,9 +9,10 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+    color-scheme: light;
     /* TIHLDE brand blue — the logo colour in light mode, and the CTA colour it
        drives via --primary / --sidebar-primary / --ring. Dark mode overrides
-       all of these with the lighter navy-palette blue. */
+       all of these with lighter steps of the same hue. */
     --logo: #1c458a;
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
@@ -28,7 +29,8 @@
     --secondary: oklch(0.97 0 0);
     --secondary-foreground: oklch(0.205 0 0);
     --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
+    /* 5.04:1 mot --muted og 5.49:1 mot --background. */
+    --muted-foreground: oklch(0.52 0 0);
     --accent: oklch(0.97 0 0);
     --accent-foreground: oklch(0.205 0 0);
     --destructive: oklch(0.577 0.245 27.325);
@@ -61,55 +63,65 @@
 }
 
 .dark {
-    /* Navy palette generated from A (#030B1A) — hsl(219°) scale */
-    --background: #030b1a;
-    --foreground: #f5f7f9;
-    --card: #061532;
-    --card-foreground: #f5f7f9;
-    --popover: #091f49;
-    --popover-foreground: #f5f7f9;
-    --primary: #1b61e4;
+    color-scheme: dark;
+    /* Mørk palett bygget fra logoblåen #1c458a (OKLCH-hue 260). Alle trinn holder
+       samme hue, så flater, tekst og knapper hører til samme familie.
+
+       Flatene er nesten nøytrale (chroma 0.03-0.05): fargen ligger i fyllene og
+       lenkene, ikke i hele grensesnittet. Lysheten øker jevnt oppover i høyde:
+       --background 0.175, --sidebar 0.20, --card 0.225, --popover 0.26,
+       --muted 0.285, --accent 0.32, --border 0.33, --input 0.365.
+
+       Kontrast under er målt (WCAG 2) for de faktiske parene. Mål på nytt ved
+       endringer. */
+    --background: #09101e;
+    --foreground: #f1f4f8;
+    --card: #111c2d;
+    --card-foreground: #f1f4f8;
+    --popover: #182437;
+    --popover-foreground: #f1f4f8;
+    /* Logoblåen selv blir for mørk som fyll her (2.05:1 mot --background), så
+       fyllet er samme hue med høyere lyshet og lavere chroma enn gamle #1b61e4,
+       som virket neon mot mørk bakgrunn. Hvit tekst 5.57:1, fyllkant 3.41:1
+       mot --background og 3.07:1 mot --card. */
+    --primary: #3767b5;
     --primary-foreground: #ffffff;
-    /* Her kan ikke lenker følge --primary: som tekst gir #1b61e4 bare 3.34:1 mot
-       --card (#061532), under WCAG AA. Dessuten leses en stor fylt flate lysere
-       enn tynne 14px-bokstaver i samme hex, så CTA-fyllet og lenketeksten ser
-       ulike ut. Neste trinn i navy-skalaen (hsl(219°, 75%, 60%)) løser begge:
-       5.30:1 mot --background og 4.87:1 mot --card. (Mot --popover, #091f49,
-       blir det 4.34:1 — så vidt under AA, men lenker i popovers er sjeldne.) */
-    --link: #4d82e6;
-    --secondary: #0d3172;
-    --secondary-foreground: #f5f7f9;
-    --muted: #0d3172;
-    --muted-foreground: #5d8bdf;
-    --accent: #0d3172;
-    --accent-foreground: #f5f7f9;
-    --destructive: oklch(0.704 0.191 22.216);
+    /* Egen token fordi --primary er for mørk som tynn tekst. 10.16:1 mot
+       --background, 9.14:1 mot --card og 8.33:1 mot --popover. */
+    --link: #9abffb;
+    --secondary: #1e2a3f;
+    --secondary-foreground: #f1f4f8;
+    --muted: #1e2a3f;
+    /* Nesten nøytral: blå brødtekst på blå flate er det som gjorde mørk modus
+       slitsom å lese. 9.81:1 mot --background, 8.83:1 mot --card
+       og 7.43:1 mot --muted. */
+    --muted-foreground: #b0bbcd;
+    --accent: #25334a;
+    --accent-foreground: #f1f4f8;
+    --destructive: oklch(0.74 0.155 22.2);
     --destructive-foreground: oklch(0.637 0.237 25.331);
     --warning: oklch(0.83 0.15 85);
     --info: oklch(0.75 0.13 245);
-    --border: #0d3172;
-    /* Nytt trinn i navy-skalaen (L 11%), midt mellom --background (L 5.7%) og
-       #091f49 (L 16.1%). Så vidt synlig mot bakgrunnen. Merk: samme verdi som
-       --card, så en subtle separator inni et card blir usynlig. */
-    --border-subtle: #061532;
-    /* Ett trinn over --card i navy-skalaen, så omrisset skiller kortet fra
-       bakgrunnen uten den lyse ring-foreground/10-kanten. */
-    --card-border: #091f49;
-    --input: #0d3172;
-    --ring: #1b61e4;
-    --chart-1: #5d8bdf;
-    --chart-2: #1b61e4;
-    --chart-3: #1652c0;
-    --chart-4: #124097;
-    --chart-5: #0d3172;
-    --sidebar: #091f49;
-    --sidebar-foreground: #f5f7f9;
-    --sidebar-primary: #1b61e4;
+    --border: #28364c;
+    /* Så vidt synlig mot både --background og --card. */
+    --border-subtle: #172234;
+    /* Omrisset rundt card-flater, ett trinn over --muted. */
+    --card-border: #202d42;
+    --input: #2f3f58;
+    --ring: #7099dc;
+    --chart-1: #a6c6f9;
+    --chart-2: #6c98e2;
+    --chart-3: #4373c3;
+    --chart-4: #2f5697;
+    --chart-5: #213c69;
+    --sidebar: #0d1625;
+    --sidebar-foreground: #f1f4f8;
+    --sidebar-primary: #3767b5;
     --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #0d3172;
-    --sidebar-accent-foreground: #f5f7f9;
-    --sidebar-border: #0d3172;
-    --sidebar-ring: #1b61e4;
+    --sidebar-accent: #1e2a3f;
+    --sidebar-accent-foreground: #f1f4f8;
+    --sidebar-border: #202d42;
+    --sidebar-ring: #7099dc;
     /* On the dark navy background the logo stays light for contrast */
     --logo: var(--foreground);
     /* Speiler `dark:bg-input/30` lagt over --card. */
@@ -356,7 +368,7 @@
         overflow-wrap: anywhere;
     }
     html {
-        @apply font-sans;
+        @apply font-sans antialiased;
         /* Reserve space for the vertical scrollbar so centered layouts
          * don't shift horizontally when content height changes (e.g.
          * switching between short and tall tabs). */
