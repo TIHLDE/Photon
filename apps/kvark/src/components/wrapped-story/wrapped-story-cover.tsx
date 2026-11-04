@@ -16,7 +16,7 @@ type WrappedStoryCoverProps = {
     start: string;
     imageUrl: string | null;
     photoCount: number;
-    /** Til første bilde, fra «Sveip»-knappen. */
+    /** Til første bilde, fra «Bla ned»/«Sveip til høyre»-knappen. */
     onNext: () => void;
     /** `slide` fyller skjermen i storyen som rulles, `card` ligger i kortbunken. */
     variant?: "slide" | "card";
@@ -54,9 +54,12 @@ export function WrappedStoryCover({
             {photoCount > 0 ? (
                 <StorySwipeHint
                     onClick={onNext}
-                    direction={variant === "card" ? "right" : "up"}
+                    // «Bla ned», ikke «Sveip opp»: på PC går pil ned og
+                    // musehjulet til neste bilde, og «opp» fikk folk til å
+                    // trykke pil opp.
+                    direction={variant === "card" ? "right" : "down"}
                 >
-                    {variant === "card" ? "Sveip til høyre" : "Sveip opp"}
+                    {variant === "card" ? "Sveip til høyre" : "Bla ned"}
                 </StorySwipeHint>
             ) : null}
         </Frame>
