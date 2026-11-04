@@ -22,9 +22,13 @@ export type UpdateWrappedPhotoVariables = {
     selected: boolean;
 };
 
+/** Hvilke bilder rutenettet viser: alle, bare de valgte eller bare de andre. */
+export type WrappedPhotoFilter = "all" | "selected" | "unselected";
+
 const WrappedAdminQueryKeys = {
     photos: ["wrapped", "photos"] as const,
     updatePhoto: ["wrapped", "photos", "update"] as const,
+    selectAll: ["wrapped", "photos", "select-all"] as const,
 } as const;
 
 const PHOTO_PAGE_SIZE = 24;
@@ -35,14 +39,24 @@ const PHOTO_PAGE_SIZE = 24;
  */
 export const listWrappedPhotosQuery = (
     eventId: string,
+    filter: WrappedPhotoFilter = "all",
     pageSize: number = PHOTO_PAGE_SIZE,
 ) =>
     infiniteQueryOptions({
-        queryKey: [...WrappedAdminQueryKeys.photos, eventId, pageSize],
+        queryKey: [...WrappedAdminQueryKeys.photos, eventId, filter, pageSize],
         queryFn: ({ pageParam }) =>
             apiClient.get("/api/event/{eventId}/wrapped/photos", {
                 params: { eventId },
-                searchParams: { page: pageParam, pageSize },
+                searchParams: {
+                    page: pageParam,
+                    pageSize,
+                    ...(filter === "all"
+                        ? {}
+                        : {
+                              selected:
+                                  filter === "selected" ? "true" : "false",
+                          }),
+                },
             }),
         initialPageParam: 0,
         getNextPageParam: (lastPage) => lastPage.nextPage,
@@ -85,22 +99,28 @@ export const updateWrappedPhotoMutation = mutationOptions({
             json: { selected },
         }),
     onSuccess(updated, vars, __, ctx) {
+        const filter = {
+            queryKey: [...WrappedAdminQueryKeys.photos, vars.eventId],
+        };
+
+        // Tilstanden før svaret, fra den lista som har bildet. Telleren
+        // justeres i alle listene, også de som ikke har lastet bildet ennå.
+        const before = ctx.client
+            .getQueriesData<InfiniteData<WrappedPhotoList>>(filter)
+            .flatMap(([, list]) => list?.pages ?? [])
+            .flatMap((page) => page.items)
+            .find((photo) => photo.id === updated.id);
+        const delta =
+            before && before.selected !== updated.selected
+                ? updated.selected
+                    ? 1
+                    : -1
+                : 0;
+
         ctx.client.setQueriesData<InfiniteData<WrappedPhotoList>>(
-            { queryKey: [...WrappedAdminQueryKeys.photos, vars.eventId] },
-            (list) => {
-                if (!list) return list;
-
-                const before = list.pages
-                    .flatMap((page) => page.items)
-                    .find((photo) => photo.id === updated.id);
-                const delta =
-                    before && before.selected !== updated.selected
-                        ? updated.selected
-                            ? 1
-                            : -1
-                        : 0;
-
-                return {
+            filter,
+            (list) =>
+                list && {
                     ...list,
                     pages: list.pages.map((page) => ({
                         ...page,
@@ -109,9 +129,37 @@ export const updateWrappedPhotoMutation = mutationOptions({
                             photo.id === updated.id ? updated : photo,
                         ),
                     })),
-                };
-            },
+                },
         );
+
+        // De filtrerte listene er nå utdaterte (et nyvalgt bilde mangler i
+        // «Valgt»), men hentes først når de vises igjen: et bilde som
+        // forsvinner fra rutenettet idet man trykker på det, er forvirrende.
+        void ctx.client.invalidateQueries({ ...filter, refetchType: "none" });
+    },
+});
+
+/**
+ * Velger alle innsendte bilder på arrangementet, eller fjerner alle
+ * markeringene, også bildene som ikke er lastet inn ennå.
+ */
+export const selectAllWrappedPhotosMutation = mutationOptions({
+    mutationKey: WrappedAdminQueryKeys.selectAll,
+    mutationFn: ({
+        eventId,
+        selected,
+    }: {
+        eventId: string;
+        selected: boolean;
+    }) =>
+        apiClient.put("/api/event/{eventId}/wrapped/photos/selection", {
+            params: { eventId },
+            json: { selected },
+        }),
+    onSuccess(_, { eventId }, __, ctx) {
+        return ctx.client.invalidateQueries({
+            queryKey: [...WrappedAdminQueryKeys.photos, eventId],
+        });
     },
 });
 
