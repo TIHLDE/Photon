@@ -47,6 +47,7 @@ import {
     listWrappedPhotosRoute,
     listWrappedStoryPhotoCommentsRoute,
     publishWrappedStoryRoute,
+    selectAllWrappedPhotosRoute,
     setWrappedCameraRoute,
     unlikeWrappedStoryPhotoRoute,
     unpublishWrappedStoryRoute,
@@ -117,6 +118,7 @@ export const eventRoutes = route()
     .route("/", listWrappedPhotosRoute)
     .route("/", getWrappedPhotoImageRoute)
     .route("/", updateWrappedPhotoRoute)
+    .route("/", selectAllWrappedPhotosRoute)
     // Wrapped: medlemmets egne bilder (utkast og sletting)
     .route("/", getMyWrappedPhotosRoute)
     .route("/", getMyWrappedPhotoImageRoute)

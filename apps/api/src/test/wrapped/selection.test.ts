@@ -1,3 +1,5 @@
+import { schema } from "@photon/db";
+import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import {
     type IntegrationTestContext,
@@ -258,6 +260,124 @@ describe("wrapped photo selection", () => {
 
             expect(image.status).toBe(404);
             expect(pick.status).toBe(404);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "the organizer picks every photo at once, and clears them again",
+        async ({ ctx }) => {
+            const { event, photographer, organizer } = await eventWithPhotos(
+                ctx,
+                3,
+            );
+            // One photo was picked earlier, by hand.
+            const [first] = await ctx.db.query.wrappedPhoto.findMany({
+                orderBy: { createdAt: "asc", id: "asc" },
+            });
+            const firstPickedAt = new Date("2026-01-01T12:00:00Z");
+            await ctx.db
+                .update(schema.wrappedPhoto)
+                .set({ selectedAt: firstPickedAt })
+                .where(eq(schema.wrappedPhoto.id, first!.id));
+            // And a draft at the same event, which must stay out of it.
+            const [draft] = await ctx.db
+                .insert(schema.wrappedPhoto)
+                .values({
+                    eventId: event.id,
+                    uploadedById: photographer.id,
+                    assetKey: "wrapped-test/draft.png",
+                    source: "camera",
+                })
+                .returning();
+
+            const client = await ctx.utils.clientForUser(organizer);
+            const selection =
+                client.api.event[":eventId"].wrapped.photos.selection;
+
+            const all = await selection.$put({
+                param: { eventId: event.id },
+                json: { selected: true },
+            });
+            expect(all.status).toBe(200);
+            expect(await all.json()).toEqual({
+                totalCount: 3,
+                selectedCount: 3,
+            });
+
+            const afterAll = await ctx.db.query.wrappedPhoto.findMany();
+            const byId = new Map(afterAll.map((p) => [p.id, p]));
+            // The photo that was already picked keeps when it was picked.
+            expect(byId.get(first!.id)!.selectedAt).toEqual(firstPickedAt);
+            expect(byId.get(draft!.id)!.selectedAt).toBeNull();
+
+            const none = await selection.$put({
+                param: { eventId: event.id },
+                json: { selected: false },
+            });
+            expect(none.status).toBe(200);
+            expect(await none.json()).toEqual({
+                totalCount: 3,
+                selectedCount: 0,
+            });
+            const afterNone = await ctx.db.query.wrappedPhoto.findMany();
+            expect(afterNone.every((p) => p.selectedAt === null)).toBe(true);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "only the organizer can pick every photo",
+        async ({ ctx }) => {
+            const { event, photographer } = await eventWithPhotos(ctx, 2);
+            const client = await ctx.utils.clientForUser(photographer);
+
+            const response = await client.api.event[
+                ":eventId"
+            ].wrapped.photos.selection.$put({
+                param: { eventId: event.id },
+                json: { selected: true },
+            });
+
+            expect(response.status).toBe(403);
+            const photos = await ctx.db.query.wrappedPhoto.findMany();
+            expect(photos.every((p) => p.selectedAt === null)).toBe(true);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "the list can show only picked or only unpicked photos, with counts for the whole event",
+        async ({ ctx }) => {
+            const { event, organizer } = await eventWithPhotos(ctx, 3);
+            const [first] = await ctx.db.query.wrappedPhoto.findMany({
+                orderBy: { createdAt: "asc", id: "asc" },
+            });
+            await ctx.db
+                .update(schema.wrappedPhoto)
+                .set({ selectedAt: new Date() })
+                .where(eq(schema.wrappedPhoto.id, first!.id));
+            const client = await ctx.utils.clientForUser(organizer);
+            const list = client.api.event[":eventId"].wrapped.photos;
+
+            const picked = await list
+                .$get({
+                    param: { eventId: event.id },
+                    query: { selected: "true" },
+                })
+                .then((r) => r.json());
+            const unpicked = await list
+                .$get({
+                    param: { eventId: event.id },
+                    query: { selected: "false" },
+                })
+                .then((r) => r.json());
+
+            expect(picked.items.map((p) => p.id)).toEqual([first!.id]);
+            expect(picked).toMatchObject({ totalCount: 3, selectedCount: 1 });
+            expect(unpicked.items).toHaveLength(2);
+            expect(unpicked.items.every((p) => !p.selected)).toBe(true);
+            expect(unpicked).toMatchObject({ totalCount: 3, selectedCount: 1 });
         },
         500_000,
     );

@@ -172,6 +172,41 @@ export const updateWrappedPhotoSchema = Schema(
     }),
 );
 
+export const listWrappedPhotosQuerySchema = z.object({
+    selected: z
+        .enum(["true", "false"])
+        .optional()
+        .transform((value) =>
+            value === undefined ? undefined : value === "true",
+        )
+        .meta({
+            description:
+                "Only picked photos (`true`) or only photos not picked yet (`false`). The counts always cover the whole event.",
+        }),
+});
+
+export const selectAllWrappedPhotosSchema = Schema(
+    "SelectAllWrappedPhotos",
+    z.object({
+        selected: z.boolean().meta({
+            description:
+                "Pick every submitted photo, or take every photo out of the selection",
+        }),
+    }),
+);
+
+export const selectAllWrappedPhotosResponseSchema = Schema(
+    "WrappedPhotoSelectionCount",
+    z.object({
+        totalCount: z.number().int().meta({
+            description: "How many photos the event has",
+        }),
+        selectedCount: z.number().int().meta({
+            description: "How many of them are picked now",
+        }),
+    }),
+);
+
 export const openWrappedCamerasSchema = Schema(
     "OpenWrappedCameras",
     z.array(

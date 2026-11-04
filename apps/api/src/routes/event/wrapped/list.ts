@@ -13,7 +13,11 @@ import {
     getPageOffset,
     getTotalPages,
 } from "~/middleware/pagination";
-import { eventIdParamSchema, wrappedPhotoListResponseSchema } from "./schema";
+import {
+    eventIdParamSchema,
+    listWrappedPhotosQuerySchema,
+    wrappedPhotoListResponseSchema,
+} from "./schema";
 import { serializePhoto } from "./serialize";
 
 export const listWrappedPhotosRoute = route().get(
@@ -39,11 +43,14 @@ export const listWrappedPhotosRoute = route().get(
     // that is not a uuid.
     validator("param", eventIdParamSchema),
     requireEventAccess({ permission: WRAPPED_ARRANGER_PERMISSIONS }),
-    validator("query", PaginationSchema),
+    validator(
+        "query",
+        PaginationSchema.extend(listWrappedPhotosQuerySchema.shape),
+    ),
     async (c) => {
         const { db } = c.get("ctx");
         const { eventId } = c.req.valid("param");
-        const { page, pageSize } = c.req.valid("query");
+        const { page, pageSize, selected } = c.req.valid("query");
 
         // Submitted only, counts included: a draft is the member's alone.
         const where = and(
@@ -57,7 +64,14 @@ export const listWrappedPhotosRoute = route().get(
                 and(where, isNotNull(schema.wrappedPhoto.selectedAt)),
             ),
         ]);
-        const totalPages = getTotalPages(totalCount, pageSize);
+        // The counts cover the whole event; the filter only narrows the page.
+        const matching =
+            selected === undefined
+                ? totalCount
+                : selected
+                  ? selectedCount
+                  : totalCount - selectedCount;
+        const totalPages = getTotalPages(matching, pageSize);
 
         /**
          * Oldest first, like the gallery: photos keep arriving while the
@@ -65,7 +79,17 @@ export const listWrappedPhotosRoute = route().get(
          * reshuffling the grid under their thumb.
          */
         const photos = await db.query.wrappedPhoto.findMany({
-            where: { eventId, submittedAt: { isNotNull: true } },
+            where: {
+                eventId,
+                submittedAt: { isNotNull: true },
+                ...(selected === undefined
+                    ? {}
+                    : {
+                          selectedAt: selected
+                              ? { isNotNull: true }
+                              : { isNull: true },
+                      }),
+            },
             orderBy: { createdAt: "asc", id: "asc" },
             limit: pageSize,
             offset: getPageOffset(page, pageSize),
