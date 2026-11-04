@@ -205,6 +205,8 @@ export const feidePlugin = (db: NodePgDatabase<DbRelations>) =>
                           clientSecret: env.FEIDE_CLIENT_SECRET,
                           discoveryUrl:
                               "https://auth.dataporten.no/.well-known/openid-configuration",
+                          // Logging out of TIHLDE must not log the member out of Feide.
+                          disableProviderLogout: true,
                           /**
                            * Never create an account behind the member's back.
                            *
