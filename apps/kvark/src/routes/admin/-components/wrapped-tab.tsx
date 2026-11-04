@@ -194,15 +194,19 @@ function FilteredPhotos({
     onFilterChange: (filter: WrappedPhotoGridFilter) => void;
 }) {
     const { data: camera } = useSuspenseQuery(getWrappedCameraQuery(eventId));
-    const photosQuery = useSuspenseInfiniteQuery(
-        listWrappedPhotosQuery(eventId, filter),
-    );
-    const [error, setError] = useState<string | null>(null);
-    const [openId, setOpenId] = useState<string | null>(null);
     // `undefined`: gjennomgangen er lukket. `null`: ferdig med alle bildene.
     const [reviewId, setReviewId] = useState<string | null | undefined>(
         undefined,
     );
+    const photosQuery = useSuspenseInfiniteQuery({
+        ...listWrappedPhotosQuery(eventId, filter),
+        // Ikke mens gjennomgangen er åpen: med «Ikke valgt» ville bildet man
+        // nettopp valgte, forsvunnet fra lista idet man kom tilbake til
+        // fanen, og gjennomgangen mistet plassen sin.
+        refetchOnWindowFocus: reviewId === undefined,
+    });
+    const [error, setError] = useState<string | null>(null);
+    const [openId, setOpenId] = useState<string | null>(null);
 
     // Feilen settes i `useMutation`-opsjonene, ikke i `mutate`: med flere
     // trykk underveis kaller TanStack bare `mutate`-callbacken til det siste.
