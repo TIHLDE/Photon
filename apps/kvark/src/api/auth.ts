@@ -387,8 +387,10 @@ export async function signInWithFeide(
     const toFrontendUrl = (path: string) =>
         new URL(sanitizeRedirectTo(path), window.location.origin).toString();
 
-    const result = await clientAuthInstance.signIn.oauth2({
-        providerId: "feide",
+    // Feide is a generic OAuth provider, which since Better Auth 1.7 runs on
+    // the same sign-in route as the built-in social ones.
+    const result = await clientAuthInstance.signIn.social({
+        provider: "feide",
         callbackURL: toFrontendUrl(callbackURL),
         errorCallbackURL: toFrontendUrl("/login"),
         /**
@@ -604,8 +606,8 @@ export const linkFeideMutationOptions = mutationOptions({
                 window.location.origin,
             ).toString();
 
-        const result = await clientAuthInstance.oauth2.link({
-            providerId: "feide",
+        const result = await clientAuthInstance.linkSocial({
+            provider: "feide",
             callbackURL: toFrontendUrl(callbackURL),
             errorCallbackURL: toFrontendUrl("/koble-feide"),
         });

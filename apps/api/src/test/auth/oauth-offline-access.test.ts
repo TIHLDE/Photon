@@ -64,7 +64,7 @@ async function createOAuthClient(ctx: IntegrationTestContext, cookie: string) {
             client_name: "offline_access integration test",
             redirect_uris: [redirectUri],
             token_endpoint_auth_method: "none",
-            type: "native",
+            application_type: "native",
             grant_types: ["authorization_code", "refresh_token"],
             response_types: ["code"],
             skip_consent: true,

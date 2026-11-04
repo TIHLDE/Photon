@@ -3,9 +3,8 @@ import type {
     MiddlewareContext,
     MiddlewareOptions,
     OAuth2Tokens,
-    OAuth2UserInfo,
 } from "better-auth";
-import { genericOAuth } from "better-auth/plugins";
+import { genericOAuth, type GenericOAuthUserInfo } from "better-auth/plugins";
 import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import type { AnyColumn, SQL } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -191,7 +190,7 @@ interface FeideGroup {
  * The plugin is always registered so Better Auth's tuple-based `$Infer` (and
  * therefore the session/user type consumed across the API) stays stable. The
  * Feide *provider* is gated instead: without credentials the config list is
- * empty, so `/sign-in/oauth2` for `feide` simply resolves no provider and the
+ * empty, so `/sign-in/social` for `feide` simply resolves no provider and the
  * flow cannot start. A conditional spread in the plugins array would instead
  * widen the tuple and silently drop inferred fields like `banned`.
  */
@@ -257,6 +256,24 @@ export const feidePlugin = (db: NodePgDatabase<DbRelations>) =>
     });
 
 /**
+ * Whether this request is Feide's OAuth callback.
+ *
+ * Since 1.7 generic OAuth providers share the social callback, so the route is
+ * `/callback/:id` — the old `/oauth2/callback/:providerId` no longer exists,
+ * and a check for it would silently never match. `path` is the route template,
+ * not the URL, which is why the provider is read from `params`.
+ */
+export function isFeideCallback(middlewareContext: {
+    path?: string;
+    params?: Record<string, unknown>;
+}): boolean {
+    return (
+        middlewareContext.path === "/callback/:id" &&
+        middlewareContext.params?.id === FEIDE_PROVIDER_ID
+    );
+}
+
+/**
  * Runs Feide tasks AFTER each auth request, to ensure synced info
  *
  * Important to note that this should run in the BetterAuth "after" hook
@@ -272,10 +289,7 @@ export const syncFeideHook: (
     >,
     ctx: AuthCreateContext,
 ) => Promise<void> = async (middlewareContext, ctx) => {
-    if (
-        middlewareContext.path.startsWith("/oauth2/callback") &&
-        middlewareContext.params.providerId === FEIDE_PROVIDER_ID
-    ) {
+    if (isFeideCallback(middlewareContext)) {
         const session = middlewareContext.context.newSession;
         if (!session) {
             /**
@@ -287,7 +301,8 @@ export const syncFeideHook: (
              * produced its own error response (and redirects to the sign-in's
              * errorCallbackURL when one was given); throwing here replaced
              * that with a bare 500 and an empty body, which is exactly what
-             * users hit on photon.tihlde.org/api/auth/oauth2/callback/feide.
+             * users hit on photon.tihlde.org/api/auth/oauth2/callback/feide (the
+             * callback has since moved to /api/auth/callback/feide).
              *
              * Or this was an account *link*, where the member was already
              * signed in. Better Auth's link branch writes the account row and
@@ -2362,10 +2377,7 @@ export const redirectToPasswordSetupAfterRevoke: (
     >,
     frontendUrl: string,
 ) => void = (middlewareContext, frontendUrl) => {
-    if (
-        !middlewareContext.path.startsWith("/oauth2/callback") ||
-        middlewareContext.params.providerId !== FEIDE_PROVIDER_ID
-    ) {
+    if (!isFeideCallback(middlewareContext)) {
         return;
     }
 
@@ -2480,7 +2492,7 @@ async function backfillUsername(
  */
 const createGetUserInfo =
     (db: NodePgDatabase<DbRelations>) =>
-    async (tokens: OAuth2Tokens): Promise<OAuth2UserInfo> => {
+    async (tokens: OAuth2Tokens): Promise<GenericOAuthUserInfo> => {
         if (!tokens.accessToken) {
             throw new Error("No access token provided");
         }
@@ -2506,8 +2518,15 @@ const createGetUserInfo =
 
         const migratedEmail = await resolveMigratedEmail(db, profile);
 
+        /**
+         * `sub`, not `id`: since 1.7 Better Auth keys the Feide account on the
+         * verified ID token's `sub` and no longer reads an id from here.
+         * Returning it anyway is what makes Better Auth compare the two and
+         * refuse the login when they differ — so a userinfo response for some
+         * other person can never be attached to this login (GHSA-9hm7).
+         */
         return {
-            id: profile.sub,
+            sub: profile.sub,
             name: profile.name,
             email: migratedEmail ?? profile.email,
             emailVerified: true,

@@ -45,7 +45,13 @@ const OAUTH_CLIENT_REFERENCE = "tihlde";
 
 /** Hva plugin-ens klienthandlinger krever av tilganger. */
 const OAUTH_CLIENT_ACTION_PERMISSIONS: Record<
-    "create" | "read" | "list" | "update" | "rotate" | "delete",
+    | "create"
+    | "read"
+    | "list"
+    | "update"
+    | "rotate"
+    | "delete"
+    | "configure-client-credentials-scopes",
     string[]
 > = {
     create: ["oauth-clients:create", "oauth-clients:manage"],
@@ -55,6 +61,10 @@ const OAUTH_CLIENT_ACTION_PERMISSIONS: Record<
     // Å rullere hemmeligheten endrer klienten, ikke hvem som finnes.
     rotate: ["oauth-clients:update", "oauth-clients:manage"],
     delete: ["oauth-clients:delete", "oauth-clients:manage"],
+    // Bestemmer hvilke scopes en maskinklient kan gi seg selv uten at noen
+    // logger inn. Det er mer enn å redigere navn og redirect-URI-er, så det
+    // krever full klientadministrasjon.
+    "configure-client-credentials-scopes": ["oauth-clients:manage"],
 };
 
 /**
@@ -437,6 +447,28 @@ function turnstilePlugin(turnstile: CreateAuthOptions["turnstile"]) {
     };
 }
 
+/**
+ * Our cache as Better Auth's secondary storage, with every method closed over
+ * the cache instead of passed as-is.
+ *
+ * Better Auth does not always call these as methods: the 1.7 rate limiter
+ * reads `secondaryStorage.increment` into a variable and calls it bare. A
+ * class method called that way has no `this`, so `RedisCache` could not reach
+ * its client and every rate-limited request in production — where Better Auth
+ * turns rate limiting on — became a 500.
+ */
+function secondaryStorageFrom(
+    cache: CacheService,
+): NonNullable<BetterAuthOptions["secondaryStorage"]> {
+    return {
+        get: (key) => cache.get(key),
+        getAndDelete: (key) => cache.getAndDelete(key),
+        increment: (key, ttl) => cache.increment(key, ttl),
+        set: (key, value, ttl) => cache.set(key, value, ttl),
+        delete: (key) => cache.delete(key),
+    };
+}
+
 export function createAuth(options: CreateAuthOptions) {
     const isProd = options.isDevMode !== true;
 
@@ -495,7 +527,13 @@ export function createAuth(options: CreateAuthOptions) {
             fallback: options.urls.backend,
         },
 
-        secondaryStorage: options.services.cache,
+        // Only when there is a cache: the schema generator's config has none,
+        // and an always-present object would make Better Auth believe
+        // verifications live in secondary storage and leave the `verification`
+        // table out of the generated schema.
+        secondaryStorage: options.services.cache
+            ? secondaryStorageFrom(options.services.cache)
+            : undefined,
 
         basePath: options.urls.basePath,
         trustedOrigins: [
@@ -583,7 +621,7 @@ export function createAuth(options: CreateAuthOptions) {
                  * accounts migrated from Lepton hold a private one. Two
                  * different addresses is therefore the normal case here, not
                  * the suspicious one, and without this Better Auth rejects the
-                 * link with `email_doesn't_match` — precisely for the members
+                 * link with `email_does_not_match` — precisely for the members
                  * who have no other way back to their history, since a
                  * matching username would have linked them automatically.
                  *
@@ -962,6 +1000,39 @@ export function createAuth(options: CreateAuthOptions) {
                  * manage it and every client here is a TIHLDE app.
                  */
                 scopes: ["openid", "profile", "email", "offline_access"],
+
+                /**
+                 * The API itself, as the one resource a JWT access token can
+                 * be issued for.
+                 *
+                 * Better Auth 1.6 accepted its own base URL as an audience
+                 * implicitly; 1.7 only issues for resources it was told about
+                 * and answers anything else with `invalid_target`. That is
+                 * what a client sends to get a JWT rather than an opaque
+                 * token, and what `verifyJWTAccessToken` checks `aud` against,
+                 * so leaving it out breaks bearer auth for every client.
+                 *
+                 * The backend URL only: that is the issuer external clients
+                 * are configured with.
+                 */
+                resources: [
+                    {
+                        identifier: `${options.urls.backend.replace(/\/+$/, "")}${options.urls.basePath}`,
+                        name: "Photon API",
+                    },
+                ],
+
+                /**
+                 * Every client may ask for that resource without being linked
+                 * to it first.
+                 *
+                 * 1.7 defaults to requiring an `oauthClientResource` row per
+                 * client and resource. There is one resource and every client
+                 * is a TIHLDE app that needs it, so the links would carry no
+                 * information — and the clients that already exist have none,
+                 * so they would all start failing with `invalid_target`.
+                 */
+                enforcePerClientResources: false,
 
                 // Q9 decision: roles + groups embedded in JWT access tokens.
                 // 15-minute staleness window is accepted; document it for admins.

@@ -63,6 +63,8 @@ export const NON_ASSET_COLUMNS: Record<string, string> = {
     "auth_oauth_client.uri": "OAuth client metadata",
     "auth_oauth_client.redirect_uris": "OAuth redirects",
     "auth_oauth_client.post_logout_redirect_uris": "OAuth redirects",
+    "auth_oauth_client.backchannel_logout_uri": "OAuth logout endpoint",
+    "auth_oauth_client.jwks_uri": "OAuth client signing keys",
     "org_contract_signature.signed_pdf_hash": "checksum of the PDF",
 };
 

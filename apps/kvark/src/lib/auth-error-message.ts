@@ -186,7 +186,7 @@ const FEIDE_CALLBACK_MESSAGES: Record<string, string> = {
     invalid_code: "Innloggingen ble avbrutt. Prøv igjen.",
     email_not_found:
         "Feide sendte oss ingen e-postadresse. Ta kontakt med Index.",
-    "email_doesn't_match": "E-posten fra Feide passer ikke med brukeren din.",
+    email_does_not_match: "E-posten fra Feide passer ikke med brukeren din.",
     account_already_linked_to_different_user:
         "Denne Feide-brukeren er allerede koblet til en annen bruker.",
     unable_to_link_account: "Vi fikk ikke koblet Feide til brukeren din.",
