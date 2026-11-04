@@ -3,7 +3,17 @@ import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
-import { Expand, ImageOff } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@tihlde/ui/ui/toggle-group";
+import { CheckCheck, Expand, ImageOff, X } from "lucide-react";
+import { type MouseEvent, useRef } from "react";
+
+export type WrappedPhotoGridFilter = "all" | "selected" | "unselected";
+
+const FILTERS: { value: WrappedPhotoGridFilter; label: string }[] = [
+    { value: "all", label: "Alle" },
+    { value: "selected", label: "Valgt" },
+    { value: "unselected", label: "Ikke valgt" },
+];
 
 export type WrappedPhotoTileData = {
     id: string;
@@ -19,14 +29,21 @@ type WrappedPhotoGridProps = {
     totalCount: number;
     hasMore: boolean;
     isLoadingMore: boolean;
-    onToggle: (photoId: string, selected: boolean) => void;
+    filter: WrappedPhotoGridFilter;
+    onFilterChange: (filter: WrappedPhotoGridFilter) => void;
+    /** Mens «Marker alle»/«Fjern alle markeringer» lagres. */
+    isSelectingAll: boolean;
+    onSelectAll: (selected: boolean) => void;
+    /** Ett eller flere bilder (Shift-klikk) som skal få samme tilstand. */
+    onToggle: (photoIds: string[], selected: boolean) => void;
     onOpen: (photoId: string) => void;
     onLoadMore: () => void;
 };
 
 /**
  * Organisatorens utvalg: et trykk på bildet velger det eller tar det ut, og
- * knappen i hjørnet åpner det stort.
+ * knappen i hjørnet åpner det stort. Shift-klikk gir hele området mellom
+ * forrige og dette bildet samme tilstand som bildet man klikket på får.
  */
 export function WrappedPhotoGrid({
     photos,
@@ -34,21 +51,87 @@ export function WrappedPhotoGrid({
     totalCount,
     hasMore,
     isLoadingMore,
+    filter,
+    onFilterChange,
+    isSelectingAll,
+    onSelectAll,
     onToggle,
     onOpen,
     onLoadMore,
 }: WrappedPhotoGridProps) {
+    // Bildet forrige klikk gjaldt, startpunktet for et Shift-klikk.
+    const anchorId = useRef<string | null>(null);
+    const allSelected = totalCount > 0 && selectedCount === totalCount;
+
+    function handleClick(index: number, event: MouseEvent) {
+        const photo = photos[index];
+        if (!photo) return;
+        const selected = !photo.selected;
+        const anchor = event.shiftKey
+            ? photos.findIndex((p) => p.id === anchorId.current)
+            : -1;
+        anchorId.current = photo.id;
+
+        if (anchor === -1) {
+            onToggle([photo.id], selected);
+            return;
+        }
+        const [from, to] = anchor < index ? [anchor, index] : [index, anchor];
+        const ids = photos
+            .slice(from, to + 1)
+            .filter((p) => p.selected !== selected)
+            .map((p) => p.id);
+        onToggle(ids, selected);
+    }
+
     return (
         <div className="flex flex-col gap-4">
-            <p>
-                {selectedCount} av {totalCount} valgt
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <p>
+                    {selectedCount} av {totalCount} valgt
+                </p>
+                <Button
+                    variant={allSelected ? "outline" : "default"}
+                    disabled={isSelectingAll || totalCount === 0}
+                    onClick={() => onSelectAll(!allSelected)}
+                >
+                    {allSelected ? <X /> : <CheckCheck />}
+                    {allSelected ? "Fjern alle markeringer" : "Marker alle"}
+                </Button>
+            </div>
+            <ToggleGroup
+                variant="outline"
+                size="sm"
+                value={[filter]}
+                onValueChange={(next) => {
+                    const picked = FILTERS.find((f) => f.value === next[0]);
+                    if (picked) onFilterChange(picked.value);
+                }}
+                aria-label="Vis bilder"
+            >
+                {FILTERS.map(({ value, label }) => (
+                    <ToggleGroupItem key={value} value={value}>
+                        {label}
+                    </ToggleGroupItem>
+                ))}
+            </ToggleGroup>
+            <p className="text-sm text-muted-foreground">
+                Trykk på et bilde for å velge det. Hold Shift for å velge alle
+                bildene mellom to klikk.
             </p>
+            {photos.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                    {filter === "selected"
+                        ? "Ingen bilder er valgt ennå."
+                        : "Alle bildene er valgt."}
+                </p>
+            ) : null}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {photos.map((photo) => (
+                {photos.map((photo, index) => (
                     <WrappedPhotoTile
                         key={photo.id}
                         photo={photo}
-                        onToggle={onToggle}
+                        onClick={(event) => handleClick(index, event)}
                         onOpen={onOpen}
                     />
                 ))}
@@ -70,11 +153,11 @@ export function WrappedPhotoGrid({
 
 function WrappedPhotoTile({
     photo,
-    onToggle,
+    onClick,
     onOpen,
 }: {
     photo: WrappedPhotoTileData;
-    onToggle: (photoId: string, selected: boolean) => void;
+    onClick: (event: MouseEvent) => void;
     onOpen: (photoId: string) => void;
 }) {
     const label = `Bilde fra ${photo.uploaderName}`;
@@ -89,7 +172,11 @@ function WrappedPhotoTile({
                         ? `${label}, valgt. Trykk for å fjerne fra utvalget`
                         : `${label}. Trykk for å velge`
                 }
-                onClick={() => onToggle(photo.id, !photo.selected)}
+                // Shift-klikk skal velge bilder, ikke tekst på siden.
+                onMouseDown={(event) => {
+                    if (event.shiftKey) event.preventDefault();
+                }}
+                onClick={onClick}
                 className="block aspect-[3/4] w-full overflow-hidden"
             >
                 {photo.src ? (

@@ -18,6 +18,7 @@ import {
     fetchWrappedPhotoTile,
     listWrappedPhotosQuery,
     publishWrappedStoryMutation,
+    selectAllWrappedPhotosMutation,
     setWrappedCameraMutation,
     unpublishWrappedStoryMutation,
     updateWrappedPhotoMutation,
@@ -35,6 +36,7 @@ import { WrappedCameraSettings } from "#/components/wrapped-camera-settings";
 import { WrappedStoryPublish } from "#/components/wrapped-story/wrapped-story-publish";
 import {
     WrappedPhotoGrid,
+    type WrappedPhotoGridFilter,
     type WrappedPhotoTileData,
 } from "#/components/wrapped-photo-grid";
 import { useObjectUrls } from "#/hooks/use-object-urls";
@@ -166,9 +168,30 @@ function StoryPublishSection({
 }
 
 function PhotosSection({ eventId }: { eventId: string }) {
+    const [filter, setFilter] = useState<WrappedPhotoGridFilter>("all");
+    return (
+        <Suspense key={filter} fallback={<WrappedPhotoGridSkeleton />}>
+            <FilteredPhotos
+                eventId={eventId}
+                filter={filter}
+                onFilterChange={setFilter}
+            />
+        </Suspense>
+    );
+}
+
+function FilteredPhotos({
+    eventId,
+    filter,
+    onFilterChange,
+}: {
+    eventId: string;
+    filter: WrappedPhotoGridFilter;
+    onFilterChange: (filter: WrappedPhotoGridFilter) => void;
+}) {
     const { data: camera } = useSuspenseQuery(getWrappedCameraQuery(eventId));
     const photosQuery = useSuspenseInfiniteQuery(
-        listWrappedPhotosQuery(eventId),
+        listWrappedPhotosQuery(eventId, filter),
     );
     const [error, setError] = useState<string | null>(null);
     const [openId, setOpenId] = useState<string | null>(null);
@@ -179,6 +202,14 @@ function PhotosSection({ eventId }: { eventId: string }) {
         ...updateWrappedPhotoMutation,
         onError: async (err) => {
             console.error("Valg av bilde feilet", err);
+            setError(await extractErrorMessage(err));
+        },
+    });
+
+    const selectAll = useMutation({
+        ...selectAllWrappedPhotosMutation,
+        onError: async (err) => {
+            console.error("Marker alle feilet", err);
             setError(await extractErrorMessage(err));
         },
     });
@@ -256,6 +287,12 @@ function PhotosSection({ eventId }: { eventId: string }) {
         updatePhoto.mutate({ eventId, photoId, selected });
     }
 
+    function toggleMany(photoIds: string[], selected: boolean) {
+        for (const photoId of photoIds) {
+            toggle(photoId, selected);
+        }
+    }
+
     // Lightboxen får bare bildene som er hentet; resten har ingen URL ennå.
     // Flisa står inne til den store versjonen er kommet.
     const lightboxPictures: LightboxPicture[] = photos.flatMap((photo) => {
@@ -287,7 +324,14 @@ function PhotosSection({ eventId }: { eventId: string }) {
                 totalCount={totalCount}
                 hasMore={photosQuery.hasNextPage}
                 isLoadingMore={photosQuery.isFetchingNextPage}
-                onToggle={toggle}
+                filter={filter}
+                onFilterChange={onFilterChange}
+                isSelectingAll={selectAll.isPending}
+                onSelectAll={(selected) => {
+                    setError(null);
+                    selectAll.mutate({ eventId, selected });
+                }}
+                onToggle={toggleMany}
                 onOpen={setOpenId}
                 onLoadMore={() => void photosQuery.fetchNextPage()}
             />
