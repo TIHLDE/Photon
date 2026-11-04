@@ -11,7 +11,6 @@ import seedOrg, {
 } from "./org";
 import seedRbac, { backfillRolePermissions } from "./rbac";
 import seedUser from "./user";
-import { seedWrappedDemo } from "./wrapped";
 
 /**
  * Idempotent steps that must run on EVERY boot, not just the first.
@@ -27,8 +26,6 @@ async function runBackfills(ctx: AppContext) {
     await backfillGroupData(ctx);
     await backfillInstitutes(ctx);
     await syncHsPositions(ctx);
-    // Dev only: a wrapped event with photos ready to pick from.
-    await seedWrappedDemo(ctx);
 }
 
 /**
