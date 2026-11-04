@@ -614,7 +614,44 @@ export function createAuth(options: CreateAuthOptions) {
             },
         },
 
+        // Photon's own columns. Declared here so `auth:generate-schema` emits
+        // them; `input: false` keeps them out of sign-up and update-user.
+        user: {
+            additionalFields: {
+                // `null`: no approval needed. `pending`: self sign-up waiting
+                // for an admin. `approved`: an admin or Feide confirmed them.
+                approvalStatus: {
+                    type: ["pending", "approved"],
+                    required: false,
+                    input: false,
+                    index: true,
+                },
+                approvedAt: {
+                    type: "date",
+                    required: false,
+                    input: false,
+                    returned: false,
+                },
+                approvedBy: {
+                    type: "string",
+                    required: false,
+                    input: false,
+                    returned: false,
+                },
+            },
+        },
+
         account: {
+            additionalFields: {
+                // `migrated`: a random password the Lepton migration set and
+                // nobody knows. `null`: the member chose it.
+                passwordSource: {
+                    type: ["migrated"],
+                    required: false,
+                    input: false,
+                    returned: false,
+                },
+            },
             accountLinking: {
                 /**
                  * Feide hands out `@ntnu.no` addresses, while 986 of the 1685
