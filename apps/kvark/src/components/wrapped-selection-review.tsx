@@ -52,8 +52,7 @@ const SWIPE_PX = 50;
  * Gjennomgang av bildene ett og ett i stort format, så arrangøren slipper å
  * åpne og lukke hvert bilde. Samme taster som når et bilde er åpnet stort:
  * ← / → blar uten å endre noe, Mellomrom eller Enter velger bildet (eller
- * fjerner det fra utvalget), og X hopper over et bilde som ikke er valgt.
- * På mobil blar man med sveip.
+ * fjerner det fra utvalget). På mobil blar man med sveip.
  */
 export function WrappedSelectionReview({
     photos,
@@ -123,18 +122,9 @@ export function WrappedSelectionReview({
         onDecide(photo.id, !photo.selected);
     }
 
-    /**
-     * Går videre uten å ta med bildet. Bare for bilder som ikke er valgt; et
-     * valgt bilde tas ut med «Fjern fra utvalget».
-     */
-    function skip() {
-        if (!photo || photo.selected || waitingAfter.current !== null) return;
-        advance();
-    }
-
     // Lytteren byttes hver render, så den ser alltid gjeldende bilde.
-    const actions = useRef({ back, next, toggle, skip });
-    actions.current = { back, next, toggle, skip };
+    const actions = useRef({ back, next, toggle });
+    actions.current = { back, next, toggle };
 
     useEffect(() => {
         function onKeyDown(event: KeyboardEvent) {
@@ -146,9 +136,7 @@ export function WrappedSelectionReview({
                       ? actions.current.next
                       : event.key === " " || event.key === "Enter"
                         ? actions.current.toggle
-                        : event.key.toLowerCase() === "x"
-                          ? actions.current.skip
-                          : null;
+                        : null;
             if (!action) return;
             // Også knappen som har fokus skal la være å trykkes av samme
             // tast, ellers velges og fjernes bildet i samme slag.
@@ -219,13 +207,7 @@ export function WrappedSelectionReview({
                             )}
                         </div>
 
-                        <div
-                            className={
-                                photo.selected
-                                    ? "grid grid-cols-2 gap-2 sm:grid-cols-3"
-                                    : "grid grid-cols-2 gap-2 sm:grid-cols-4"
-                            }
-                        >
+                        <div className="grid grid-cols-3 gap-2">
                             <ReviewAction
                                 icon={ChevronLeft}
                                 label="Forrige"
@@ -235,16 +217,6 @@ export function WrappedSelectionReview({
                                 disabled={index === 0}
                                 onClick={back}
                             />
-                            {photo.selected ? null : (
-                                <ReviewAction
-                                    icon={X}
-                                    label="Hopp over"
-                                    shortcut="X"
-                                    aria-keyshortcuts="X"
-                                    variant="outline"
-                                    onClick={skip}
-                                />
-                            )}
                             <ReviewAction
                                 icon={photo.selected ? X : Check}
                                 label={
@@ -269,8 +241,7 @@ export function WrappedSelectionReview({
                         </div>
                         <p className="hidden text-sm text-muted-foreground sm:block">
                             ← / → blar, Mellomrom eller Enter velger bildet
-                            eller fjerner det, X hopper over et bilde som ikke
-                            er valgt.
+                            eller fjerner det.
                         </p>
                     </>
                 ) : (
