@@ -258,6 +258,7 @@ export type Version = Schemas["Version"];
 export type VisibleBanner = Schemas["VisibleBanner"];
 export type VisibleBannerList = Schemas["VisibleBannerList"];
 export type VoteFeedback = Schemas["VoteFeedback"];
+export type WrappedArchive = Schemas["WrappedArchive"];
 export type WrappedCamera = Schemas["WrappedCamera"];
 export type WrappedPhoto = Schemas["WrappedPhoto"];
 export type WrappedPhotoComment = Schemas["WrappedPhotoComment"];

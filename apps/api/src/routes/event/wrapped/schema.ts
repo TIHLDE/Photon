@@ -1,12 +1,16 @@
 import z from "zod";
 import { Schema } from "~/lib/openapi";
-import { PagniationResponseSchema } from "~/middleware/pagination";
+import {
+    PaginationSchema,
+    PagniationResponseSchema,
+} from "~/middleware/pagination";
 import {
     WRAPPED_COMMENT_MAX_LENGTH,
     wrappedPhotoSources,
     wrappedStoryLayouts,
 } from "@photon/db/schema";
 import { MAX_SHOTS_PER_PERSON, cameraBlockedReasons } from "~/lib/wrapped";
+import { SEMESTER_PATTERN, type Semester } from "~/lib/wrapped/archive";
 
 const storyLayoutSchema = z.enum(wrappedStoryLayouts).meta({
     description:
@@ -363,5 +367,56 @@ export const createWrappedPhotoCommentSchema = Schema(
             .min(1)
             .max(WRAPPED_COMMENT_MAX_LENGTH)
             .meta({ description: "Plain text, 1–500 characters" }),
+    }),
+);
+
+const semesterSchema = z.string().regex(SEMESTER_PATTERN).meta({
+    description:
+        "A semester by the Norwegian calendar: `V2026` is January–June 2026, `H2026` is July–December 2026",
+    example: "H2026",
+});
+
+export const wrappedArchiveQuerySchema = PaginationSchema.extend({
+    semester: semesterSchema
+        .transform((value) => value as Semester)
+        .optional()
+        .meta({ description: "Only stories from events in this semester" }),
+});
+
+export const wrappedArchiveSchema = Schema(
+    "WrappedArchive",
+    PagniationResponseSchema.extend({
+        semesters: z.array(semesterSchema).meta({
+            description:
+                "Every semester the caller has a story in, newest first. Covers the whole archive whichever semester is asked for, so a filter can list them all.",
+        }),
+        items: z
+            .array(
+                z.object({
+                    event: z.object({
+                        id: z.uuid(),
+                        slug: z.string(),
+                        title: z.string(),
+                        start: z.iso.datetime(),
+                        end: z.iso.datetime(),
+                        imageUrl: z.string().nullable(),
+                    }),
+                    semester: semesterSchema,
+                    publishedAt: z.iso.datetime(),
+                    layout: storyLayoutSchema,
+                    photoCount: z.number().int().meta({
+                        description: "Photos in the story",
+                    }),
+                    myPhotoCount: z.number().int().meta({
+                        description:
+                            "How many of the story's photos the caller took",
+                    }),
+                    coverImageUrl: z.string().nullable().meta({
+                        description:
+                            "Path on the API that serves the story's first photo, or null when no photo is picked any more. Needs the session, like the story's own images.",
+                    }),
+                }),
+            )
+            .describe("The stories, newest event first"),
     }),
 );

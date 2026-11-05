@@ -769,6 +769,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/event/wrapped/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List my Wrapped archive
+         * @description The published stories of every event the caller took part in: held a spot on (registered or attended), or sent in a photo. A story shows up whether or not any of the caller's photos was picked. Newest event first, optionally limited to one semester by the event's start in Norwegian time. Unpublished stories are left out, and come back when published again. Only ever the caller's own archive.
+         */
+        get: operations["listWrappedArchive"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/event/favorite/{id}": {
         parameters: {
             query?: never;
@@ -4283,6 +4303,48 @@ export interface components {
             /** @description The caller's photos not yet submitted */
             draftCount: number;
         }[];
+        WrappedArchive: {
+            /** @description Total number of items available */
+            totalCount: number;
+            /** @description Total number of pages available */
+            pages: number;
+            /** @description The next page number that can be fetched */
+            nextPage: number | null;
+            /** @description Every semester the caller has a story in, newest first. Covers the whole archive whichever semester is asked for, so a filter can list them all. */
+            semesters: string[];
+            /** @description The stories, newest event first */
+            items: {
+                event: {
+                    /** Format: uuid */
+                    id: string;
+                    slug: string;
+                    title: string;
+                    /** Format: date-time */
+                    start: string;
+                    /** Format: date-time */
+                    end: string;
+                    imageUrl: string | null;
+                };
+                /**
+                 * @description A semester by the Norwegian calendar: `V2026` is January–June 2026, `H2026` is July–December 2026
+                 * @example H2026
+                 */
+                semester: string;
+                /** Format: date-time */
+                publishedAt: string;
+                /**
+                 * @description How the story is watched: `feed` scrolls up and down, `cards` is a stack swiped to the side
+                 * @enum {string}
+                 */
+                layout: "feed" | "cards";
+                /** @description Photos in the story */
+                photoCount: number;
+                /** @description How many of the story's photos the caller took */
+                myPhotoCount: number;
+                /** @description Path on the API that serves the story's first photo, or null when no photo is picked any more. Needs the session, like the story's own images. */
+                coverImageUrl: string | null;
+            }[];
+        };
         UpdateFavoriteResponse: {
             success: boolean;
         };
@@ -9090,6 +9152,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OpenWrappedCameras"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    listWrappedArchive: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+                /** @description Only stories from events in this semester */
+                semester?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrappedArchive"];
                 };
             };
             /** @description Authentication required */

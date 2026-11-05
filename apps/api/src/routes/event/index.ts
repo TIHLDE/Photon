@@ -44,6 +44,7 @@ import {
     getWrappedStoryRoute,
     likeWrappedStoryPhotoRoute,
     listOpenWrappedCamerasRoute,
+    listWrappedArchiveRoute,
     listWrappedPhotosRoute,
     listWrappedStoryPhotoCommentsRoute,
     publishWrappedStoryRoute,
@@ -68,8 +69,9 @@ export const eventRoutes = route()
     // Kalender-abonnement (statisk /calendar-sti, må slå "/:eventId")
     .route("/", getCalendarFeedRoute)
 
-    // Wrapped: åpne kameraer (statisk /wrapped/open-sti, må slå "/:eventId")
+    // Wrapped: åpne kameraer og arkivet (statiske /wrapped-stier, må slå "/:eventId")
     .route("/", listOpenWrappedCamerasRoute)
+    .route("/", listWrappedArchiveRoute)
 
     // Favorites (registered before "/:eventId" so the static /favorite path wins)
     .route("/favorite", updateFavoriteEventsRoute)
