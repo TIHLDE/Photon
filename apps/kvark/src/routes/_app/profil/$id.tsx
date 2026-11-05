@@ -15,6 +15,7 @@ import { Separator } from "@tihlde/ui/ui/separator";
 import {
     CalendarDays,
     HelpCircle,
+    Images,
     LayoutGrid,
     LogOut,
     Settings,
@@ -51,6 +52,7 @@ const PROFILE_SUBROUTES = [
     "/profil/$id/medlemskap",
     "/profil/$id/prikker",
     "/profil/$id/sporreskjemaer",
+    "/profil/$id/wrapped",
 ] as const;
 
 function subrouteFor(
@@ -144,7 +146,7 @@ function RouteComponent() {
         await navigate({ to: "/" });
     }
 
-    // Prikker, spørreskjemaer og admin er den innloggede brukerens egne ting og
+    // Prikker, Wrapped, spørreskjemaer og admin er den innloggede brukerens egne ting og
     // gir ingen mening på en annens profil.
     const navGroups: ProfileNavGroup[] = [
         {
@@ -183,6 +185,14 @@ function RouteComponent() {
                               icon: Ticket,
                               link: linkOptions({
                                   to: "/profil/$id/prikker",
+                                  params: { id },
+                              }),
+                          },
+                          {
+                              label: "Wrapped",
+                              icon: Images,
+                              link: linkOptions({
+                                  to: "/profil/$id/wrapped",
                                   params: { id },
                               }),
                           },

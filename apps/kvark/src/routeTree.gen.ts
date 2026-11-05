@@ -81,6 +81,7 @@ import { Route as AppProfilIdInnstillingerRouteImport } from './routes/_app/prof
 import { Route as AppProfilIdMedlemskapRouteImport } from './routes/_app/profil/$id/medlemskap'
 import { Route as AppProfilIdPrikkerRouteImport } from './routes/_app/profil/$id/prikker'
 import { Route as AppProfilIdSporreskjemaerRouteImport } from './routes/_app/profil/$id/sporreskjemaer'
+import { Route as AppProfilIdWrappedRouteImport } from './routes/_app/profil/$id/wrapped'
 import { Route as AppSporreskjemaIdSvarRouteImport } from './routes/_app/sporreskjema.$id_.svar'
 import { Route as AppArrangementerSlugKameraMineRouteImport } from './routes/_app/arrangementer.$slug_.kamera_.mine'
 import { Route as AppArrangementerSlugKameraMinePhotoIdRouteImport } from './routes/_app/arrangementer.$slug_.kamera_.mine_.$photoId'
@@ -449,6 +450,11 @@ const AppProfilIdSporreskjemaerRoute =
     path: '/sporreskjemaer',
     getParentRoute: () => AppProfilIdRoute,
   } as any)
+const AppProfilIdWrappedRoute = AppProfilIdWrappedRouteImport.update({
+  id: '/wrapped',
+  path: '/wrapped',
+  getParentRoute: () => AppProfilIdRoute,
+} as any)
 const AppSporreskjemaIdSvarRoute = AppSporreskjemaIdSvarRouteImport.update({
   id: '/sporreskjema/$id_/svar',
   path: '/sporreskjema/$id/svar',
@@ -535,6 +541,7 @@ export interface FileRoutesByFullPath {
   '/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
   '/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
   '/profil/$id/sporreskjemaer': typeof AppProfilIdSporreskjemaerRoute
+  '/profil/$id/wrapped': typeof AppProfilIdWrappedRoute
   '/sporreskjema/$id/svar': typeof AppSporreskjemaIdSvarRoute
   '/profil/$id/': typeof AppProfilIdIndexRoute
   '/arrangementer/$slug/kamera/mine': typeof AppArrangementerSlugKameraMineRoute
@@ -606,6 +613,7 @@ export interface FileRoutesByTo {
   '/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
   '/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
   '/profil/$id/sporreskjemaer': typeof AppProfilIdSporreskjemaerRoute
+  '/profil/$id/wrapped': typeof AppProfilIdWrappedRoute
   '/sporreskjema/$id/svar': typeof AppSporreskjemaIdSvarRoute
   '/profil/$id': typeof AppProfilIdIndexRoute
   '/arrangementer/$slug/kamera/mine': typeof AppArrangementerSlugKameraMineRoute
@@ -684,6 +692,7 @@ export interface FileRoutesById {
   '/_app/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
   '/_app/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
   '/_app/profil/$id/sporreskjemaer': typeof AppProfilIdSporreskjemaerRoute
+  '/_app/profil/$id/wrapped': typeof AppProfilIdWrappedRoute
   '/_app/sporreskjema/$id_/svar': typeof AppSporreskjemaIdSvarRoute
   '/_app/profil/$id/': typeof AppProfilIdIndexRoute
   '/_app/arrangementer/$slug_/kamera_/mine': typeof AppArrangementerSlugKameraMineRoute
@@ -759,6 +768,7 @@ export interface FileRouteTypes {
     | '/profil/$id/medlemskap'
     | '/profil/$id/prikker'
     | '/profil/$id/sporreskjemaer'
+    | '/profil/$id/wrapped'
     | '/sporreskjema/$id/svar'
     | '/profil/$id/'
     | '/arrangementer/$slug/kamera/mine'
@@ -830,6 +840,7 @@ export interface FileRouteTypes {
     | '/profil/$id/medlemskap'
     | '/profil/$id/prikker'
     | '/profil/$id/sporreskjemaer'
+    | '/profil/$id/wrapped'
     | '/sporreskjema/$id/svar'
     | '/profil/$id'
     | '/arrangementer/$slug/kamera/mine'
@@ -907,6 +918,7 @@ export interface FileRouteTypes {
     | '/_app/profil/$id/medlemskap'
     | '/_app/profil/$id/prikker'
     | '/_app/profil/$id/sporreskjemaer'
+    | '/_app/profil/$id/wrapped'
     | '/_app/sporreskjema/$id_/svar'
     | '/_app/profil/$id/'
     | '/_app/arrangementer/$slug_/kamera_/mine'
@@ -1426,6 +1438,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProfilIdSporreskjemaerRouteImport
       parentRoute: typeof AppProfilIdRoute
     }
+    '/_app/profil/$id/wrapped': {
+      id: '/_app/profil/$id/wrapped'
+      path: '/wrapped'
+      fullPath: '/profil/$id/wrapped'
+      preLoaderRoute: typeof AppProfilIdWrappedRouteImport
+      parentRoute: typeof AppProfilIdRoute
+    }
     '/_app/sporreskjema/$id_/svar': {
       id: '/_app/sporreskjema/$id_/svar'
       path: '/sporreskjema/$id/svar'
@@ -1503,6 +1522,7 @@ interface AppProfilIdRouteChildren {
   AppProfilIdMedlemskapRoute: typeof AppProfilIdMedlemskapRoute
   AppProfilIdPrikkerRoute: typeof AppProfilIdPrikkerRoute
   AppProfilIdSporreskjemaerRoute: typeof AppProfilIdSporreskjemaerRoute
+  AppProfilIdWrappedRoute: typeof AppProfilIdWrappedRoute
   AppProfilIdIndexRoute: typeof AppProfilIdIndexRoute
 }
 
@@ -1512,6 +1532,7 @@ const AppProfilIdRouteChildren: AppProfilIdRouteChildren = {
   AppProfilIdMedlemskapRoute: AppProfilIdMedlemskapRoute,
   AppProfilIdPrikkerRoute: AppProfilIdPrikkerRoute,
   AppProfilIdSporreskjemaerRoute: AppProfilIdSporreskjemaerRoute,
+  AppProfilIdWrappedRoute: AppProfilIdWrappedRoute,
   AppProfilIdIndexRoute: AppProfilIdIndexRoute,
 }
 
