@@ -27,7 +27,6 @@ export type OAuthClientFull = OAuthClientPublic & {
     grant_types?: string[] | null;
     response_types?: string[] | null;
     token_endpoint_auth_method?: string | null;
-    type?: string | null;
     skip_consent?: boolean | null;
     enable_end_session?: boolean | null;
     require_pkce?: boolean | null;

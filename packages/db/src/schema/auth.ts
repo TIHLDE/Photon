@@ -11,30 +11,6 @@ import {
 
 const pgTable = pgTableCreator((name) => `auth_${name}`);
 
-/**
- * Where an account stands with a human approver.
- *
- * - `null`: nobody has to approve it. Feide logins, the Lepton migration, the
- *   Fadderuka route and seeds all land here — the account's right to exist is
- *   already established by the system that made it.
- * - `pending`: someone signed themselves up on the website. They can log in and
- *   see what any visitor sees, and nothing more, until an admin approves them.
- * - `approved`: an admin (or a later Feide login) confirmed them, and the
- *   `member` role was granted.
- *
- * Kept as a column rather than "has no roles yet", because roles come and go
- * for other reasons and only this says *why* someone has none.
- */
-export const APPROVAL_STATUSES = ["pending", "approved"] as const;
-export type ApprovalStatus = (typeof APPROVAL_STATUSES)[number];
-
-/**
- * Origin of a stored password. Only `migrated` is ever written — a NULL means
- * the member chose the password themselves. See `account.passwordSource`.
- */
-export const PASSWORD_SOURCES = ["migrated"] as const;
-export type PasswordSource = (typeof PASSWORD_SOURCES)[number];
-
 export const user = pgTable(
     "user",
     {
@@ -53,7 +29,9 @@ export const user = pgTable(
         banExpires: timestamp("ban_expires"),
         username: text("username").unique(),
         displayUsername: text("display_username"),
-        approvalStatus: text("approval_status").$type<ApprovalStatus>(),
+        approvalStatus: text("approval_status", {
+            enum: ["pending", "approved"],
+        }),
         approvedAt: timestamp("approved_at"),
         approvedBy: text("approved_by"),
     },
@@ -74,9 +52,7 @@ export const session = pgTable(
         userAgent: text("user_agent"),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, {
-                onDelete: "cascade",
-            }),
+            .references(() => user.id, { onDelete: "cascade" }),
         impersonatedBy: text("impersonated_by"),
     },
     (table) => [index("session_userId_idx").on(table.userId)],
@@ -90,9 +66,7 @@ export const account = pgTable(
         providerId: text("provider_id").notNull(),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, {
-                onDelete: "cascade",
-            }),
+            .references(() => user.id, { onDelete: "cascade" }),
         accessToken: text("access_token"),
         refreshToken: text("refresh_token"),
         idToken: text("id_token"),
@@ -104,23 +78,7 @@ export const account = pgTable(
         updatedAt: timestamp("updated_at")
             .$onUpdate(() => new Date())
             .notNull(),
-        /**
-         * Where `password` came from — only ever set on `credential` rows.
-         *
-         * `migrated` marks the 1634 accounts the Lepton migration created with
-         * a `crypto.randomUUID()` password it never stored anywhere. Those rows
-         * grant nobody access: the member cannot know the value, so "this account
-         * has a password" is true in the schema and false in practice.
-         *
-         * Without this the two states are indistinguishable, and the prompt to
-         * choose a TIHLDE password would skip exactly the people who need it —
-         * 215 of them also have Feide and would otherwise never be asked.
-         *
-         * NULL means the password was chosen by the member. Deliberately not
-         * `notNull` with a default: a backfilled marker is a statement about
-         * the past, and every row written from here on is a real password.
-         */
-        passwordSource: text("password_source").$type<PasswordSource>(),
+        passwordSource: text("password_source", { enum: ["migrated"] }),
     },
     (table) => [index("account_userId_idx").on(table.userId)],
 );
@@ -191,17 +149,6 @@ export const oauthClient = pgTable(
         jwksUri: text("jwks_uri"),
         grantTypes: text("grant_types").array(),
         responseTypes: text("response_types").array(),
-        /**
-         * Better Auth 1.6 columns that 1.7 no longer reads or writes; it uses
-         * `applicationType` and `tokenEndpointAuthMethod` instead.
-         *
-         * The 1.7 migration (`20261104095029_better_auth_1_7`) copies them
-         * into the new columns. They are kept for one release anyway, so that
-         * rolling back to a 1.6 image still finds the columns it writes.
-         * Drop them in the next release once 1.7 has stuck.
-         */
-        public: boolean("public"),
-        type: text("type"),
         requirePKCE: boolean("require_pkce"),
         dpopBoundAccessTokens: boolean("dpop_bound_access_tokens").default(
             false,
@@ -238,9 +185,7 @@ export const oauthClientResource = pgTable(
         id: text("id").primaryKey(),
         clientId: text("client_id")
             .notNull()
-            .references(() => oauthClient.clientId, {
-                onDelete: "cascade",
-            }),
+            .references(() => oauthClient.clientId, { onDelete: "cascade" }),
         resourceId: text("resource_id")
             .notNull()
             .references(() => oauthResource.identifier, {
@@ -266,17 +211,13 @@ export const oauthRefreshToken = pgTable(
         token: text("token").notNull().unique(),
         clientId: text("client_id")
             .notNull()
-            .references(() => oauthClient.clientId, {
-                onDelete: "cascade",
-            }),
+            .references(() => oauthClient.clientId, { onDelete: "cascade" }),
         sessionId: text("session_id").references(() => session.id, {
             onDelete: "set null",
         }),
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, {
-                onDelete: "cascade",
-            }),
+            .references(() => user.id, { onDelete: "cascade" }),
         referenceId: text("reference_id"),
         authorizationCodeId: text("authorization_code_id"),
         resources: text("resources").array(),
@@ -308,9 +249,7 @@ export const oauthAccessToken = pgTable(
         token: text("token").notNull().unique(),
         clientId: text("client_id")
             .notNull()
-            .references(() => oauthClient.clientId, {
-                onDelete: "cascade",
-            }),
+            .references(() => oauthClient.clientId, { onDelete: "cascade" }),
         sessionId: text("session_id").references(() => session.id, {
             onDelete: "set null",
         }),
@@ -347,9 +286,7 @@ export const oauthConsent = pgTable(
         id: text("id").primaryKey(),
         clientId: text("client_id")
             .notNull()
-            .references(() => oauthClient.clientId, {
-                onDelete: "cascade",
-            }),
+            .references(() => oauthClient.clientId, { onDelete: "cascade" }),
         userId: text("user_id").references(() => user.id, {
             onDelete: "cascade",
         }),

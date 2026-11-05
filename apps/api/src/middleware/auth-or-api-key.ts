@@ -1,7 +1,7 @@
 import type { AuthUser } from "@photon/auth";
 import { verifyJWTAccessToken } from "@photon/auth/oauth-verify";
 import { createMiddleware } from "hono/factory";
-import { getBearerTokenFromHeader } from "~/lib/auth";
+import { getBearerTokenFromHeader, userFromClaims } from "~/lib/auth";
 import type { AppContext, AppServices } from "~/lib/ctx";
 import { HTTPAppException } from "~/lib/errors";
 import { describeMiddleware, describeMiddlewareRoute } from "~/lib/openapi";
@@ -14,30 +14,6 @@ type AuthOrApiKeyVariables = {
     oauthClient?: { clientId: string; scopes: string[] };
     ctx: AppContext;
     service: AppServices;
-};
-
-const userFromClaims = (
-    sub: string,
-    payload: Record<string, unknown>,
-): AuthUser => {
-    const now = new Date(0);
-    return {
-        id: sub,
-        email: typeof payload.email === "string" ? payload.email : "",
-        name: typeof payload.name === "string" ? payload.name : "",
-        emailVerified: false,
-        role: null,
-        image: null,
-        username: null,
-        displayUsername: null,
-        legacyToken: null,
-        banned: null,
-        banReason: null,
-        banExpires: null,
-        settings: null,
-        createdAt: now,
-        updatedAt: now,
-    } as unknown as AuthUser;
 };
 
 /**

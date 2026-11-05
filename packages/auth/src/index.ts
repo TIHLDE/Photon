@@ -18,7 +18,7 @@ import {
     oauthProviderAuthServerMetadata,
     oauthProviderOpenIdConfigMetadata,
 } from "@better-auth/oauth-provider";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DbRelations } from "@photon/db";
 import { account, user } from "@photon/db/schema";
@@ -28,13 +28,13 @@ import { env } from "@photon/core/env";
 import { getUserPermissions, hasPermission } from "./rbac/permissions";
 import {
     feidePlugin,
-    isFeideCheckCurrent,
     recoverMissingBaselineRole,
     redirectToPasswordSetupAfterRevoke,
     revokeUnprovenCredentials,
     syncFeideHook,
 } from "./feide";
 import { syncDeEldstesRaad } from "./de-eldstes-raad";
+import { sessionUserFields } from "./session-user";
 
 /**
  * Eieren av alle OAuth-klienter. Verdien i seg selv betyr ingenting utover å
@@ -67,14 +67,7 @@ const OAUTH_CLIENT_ACTION_PERMISSIONS: Record<
     "configure-client-credentials-scopes": ["oauth-clients:manage"],
 };
 
-/**
- * Feide is a genuine third-party identity provider: it only works once a Feide
- * client is registered in the Feide Kundeportal and its credentials land in the
- * environment. Until then the plugin is left out entirely rather than mounted
- * with an empty client id (which would send users to Dataporten with a broken
- * `client_id=` and fail confusingly). The frontend hides its Feide button
- * behind its own flag, so the two sides are enabled independently.
- */
+/** Whether Feide credentials are set; without them the Feide hooks are skipped. */
 const isFeideConfigured = Boolean(
     env.FEIDE_CLIENT_ID && env.FEIDE_CLIENT_SECRET,
 );
@@ -614,7 +607,48 @@ export function createAuth(options: CreateAuthOptions) {
             },
         },
 
+        // Photon's own columns. Declared here so `auth:generate-schema` emits
+        // them; `input: false` keeps them out of sign-up and update-user.
+        user: {
+            additionalFields: {
+                // `null`: no approval needed. `pending`: self sign-up waiting
+                // for an admin. `approved`: an admin or Feide confirmed them.
+                // Not returned: sign-up would answer `pending` for a new
+                // address and `null` for a taken one, revealing which is
+                // which. The session gets it from `sessionUserFields`.
+                approvalStatus: {
+                    type: ["pending", "approved"],
+                    required: false,
+                    input: false,
+                    returned: false,
+                    index: true,
+                },
+                approvedAt: {
+                    type: "date",
+                    required: false,
+                    input: false,
+                    returned: false,
+                },
+                approvedBy: {
+                    type: "string",
+                    required: false,
+                    input: false,
+                    returned: false,
+                },
+            },
+        },
+
         account: {
+            additionalFields: {
+                // `migrated`: a random password the Lepton migration set and
+                // nobody knows. `null`: the member chose it.
+                passwordSource: {
+                    type: ["migrated"],
+                    required: false,
+                    input: false,
+                    returned: false,
+                },
+            },
             accountLinking: {
                 /**
                  * Feide hands out `@ntnu.no` addresses, while 986 of the 1685
@@ -661,17 +695,52 @@ export function createAuth(options: CreateAuthOptions) {
             },
         },
 
-        /**
-         * Runs on the row Better Auth is about to write for a Feide link.
-         *
-         * Deliberately `before` and not `after`: `create.after` hooks are queued
-         * until the transaction settles, by which point the linking code has
-         * already flipped `emailVerified` to true — and the revocation, which
-         * keys off exactly that flag, would find nothing to do and silently
-         * no-op. Running before the insert means the flag still reflects what
-         * was proven *prior* to this login, which is the question being asked.
-         */
         databaseHooks: {
+            /**
+             * An account someone made for themselves on the website waits for
+             * an admin before it counts as a member. Trusted server-side
+             * sign-ups (see `runTrustedSignUp`) and every other creation path
+             * leave the status empty.
+             */
+            user: {
+                create: {
+                    before: async (data, ctx) => {
+                        if (
+                            ctx?.path !== "/sign-up/email" ||
+                            trustedSignUpStore.getStore()
+                        ) {
+                            return;
+                        }
+                        return { data: { ...data, approvalStatus: "pending" } };
+                    },
+                    after: async (created) => {
+                        if (created.approvalStatus !== "pending") return;
+                        await notifyApprovalQueue(
+                            options.services.email,
+                            options.urls.frontend,
+                            {
+                                name: created.name,
+                                email: created.email,
+                                username:
+                                    typeof created.username === "string"
+                                        ? created.username
+                                        : null,
+                            },
+                        );
+                    },
+                },
+            },
+
+            /**
+             * Runs on the row Better Auth is about to write for a Feide link.
+             *
+             * Deliberately `before` and not `after`: `create.after` hooks are queued
+             * until the transaction settles, by which point the linking code has
+             * already flipped `emailVerified` to true — and the revocation, which
+             * keys off exactly that flag, would find nothing to do and silently
+             * no-op. Running before the insert means the flag still reflects what
+             * was proven *prior* to this login, which is the question being asked.
+             */
             account: {
                 create: {
                     before: async (data) => {
@@ -861,68 +930,6 @@ export function createAuth(options: CreateAuthOptions) {
                 };
             }),
             after: createAuthMiddleware(async (ctx) => {
-                /**
-                 * An account someone made for themselves on the website waits
-                 * for an admin before it counts as a member.
-                 *
-                 * Written here rather than at creation time because the value
-                 * depends on *how* the endpoint was called, and the sign-up
-                 * body has no room for something the caller must not control.
-                 * The row is found by the id in the response, not the e-mail:
-                 * signing up with a taken address answers 200 with a made-up
-                 * user, and matching on the address would put an existing
-                 * member in the approval queue.
-                 *
-                 * Only ever fills in a status that is missing, so re-running it
-                 * can never demote an approved member back to pending.
-                 */
-                if (
-                    ctx.path === "/sign-up/email" &&
-                    !trustedSignUpStore.getStore()
-                ) {
-                    const returned = ctx.context.returned as
-                        | { user?: { id?: unknown } }
-                        | undefined;
-                    const createdId = returned?.user?.id;
-                    if (typeof createdId === "string") {
-                        try {
-                            const queued = await options.services.db
-                                .update(user)
-                                .set({ approvalStatus: "pending" })
-                                .where(
-                                    and(
-                                        eq(user.id, createdId),
-                                        isNull(user.approvalStatus),
-                                    ),
-                                )
-                                .returning({
-                                    name: user.name,
-                                    email: user.email,
-                                    username: user.username,
-                                });
-
-                            /**
-                             * Only on a real transition — `returning()` is
-                             * empty when the status was already set, so a
-                             * repeated sign-up cannot mail the queue twice for
-                             * the same person.
-                             */
-                            if (queued[0]) {
-                                await notifyApprovalQueue(
-                                    options.services.email,
-                                    options.urls.frontend,
-                                    queued[0],
-                                );
-                            }
-                        } catch (error) {
-                            console.error(
-                                "Failed to mark a self-registered account as awaiting approval:",
-                                error,
-                            );
-                        }
-                    }
-                }
-
                 if (!isFeideConfigured) return;
 
                 // Sends a member whose password was just revoked on to set a
@@ -1122,108 +1129,20 @@ export function createAuth(options: CreateAuthOptions) {
             customSession(async ({ user, session }) => {
                 const db = options.services.db;
 
-                /**
-                 * Three round-trips, and they were seven until we measured
-                 * what this costs: every `get-session` runs this callback,
-                 * cookie cache or not, because `customSession` only caches the
-                 * session Better Auth itself reads. All of it stays live —
-                 * caching the result would open exactly the stale-permission
-                 * window the RBAC rollout depends on not existing (#354).
-                 *
-                 * `approvalStatus` rides along with the settings because it is
-                 * ours, not part of Better Auth's user model: the session
-                 * `user` handed to this callback carries only the columns it
-                 * knows. The frontend needs it to tell a member from someone
-                 * still waiting for an admin. Rooted at `user` rather than at
-                 * the settings row, since not every account has settings.
-                 */
-                const [row, permissions, groups, accounts] = await Promise.all([
-                    db.query.user.findFirst({
-                        where: { id: user.id },
-                        columns: { approvalStatus: true },
-                        with: {
-                            settings: {
-                                with: {
-                                    allergies: {
-                                        columns: { allergySlug: true },
-                                    },
-                                },
-                            },
-                            studyProgramMemberships: {
-                                columns: { feideCheckedAt: true },
-                            },
-                        },
-                    }),
+                // Every `get-session` runs this, cookie cache or not, and it
+                // stays live on purpose: a cached result would reopen the
+                // stale-permission window the RBAC rollout depends on (#354).
+                const [fields, permissions, groups] = await Promise.all([
+                    sessionUserFields(db, user.id),
                     getUserPermissions({ db }, user.id),
                     db.query.groupMembership.findMany({
                         where: { userId: user.id },
                         with: { group: true },
                     }),
-                    /**
-                     * Which accounts back this login, so the frontend can tell
-                     * "no TIHLDE password" from "a password nobody knows".
-                     * They need different repairs — one sets a password, the
-                     * other has to reset one — and the difference is invisible
-                     * from the user table alone.
-                     */
-                    db.query.account.findMany({
-                        where: { userId: user.id },
-                        columns: { providerId: true, passwordSource: true },
-                    }),
                 ]);
 
-                const settings = row?.settings;
-                const credential = accounts.find(
-                    (a) => a.providerId === "credential",
-                );
-
-                // Uten Feide-konto er det ingenting å be om, og uten en
-                // programrad ville en ny innlogging gitt samme tomme svar —
-                // 13 i prod studerer noe annet ved NTNU.
-                const programmes = row?.studyProgramMemberships ?? [];
-                const feideCheckedAt = programmes
-                    .map((m) => m.feideCheckedAt)
-                    .filter((at): at is Date => at != null)
-                    .reduce<Date | null>(
-                        (newest, at) =>
-                            newest === null || at > newest ? at : newest,
-                        null,
-                    );
-                const hasFeideAccount = accounts.some(
-                    (a) => a.providerId === "feide",
-                );
-
                 return {
-                    user: {
-                        ...user,
-                        approvalStatus: row?.approvalStatus ?? null,
-                        isPendingApproval: row?.approvalStatus === "pending",
-                        /**
-                         * Three states, not two, and the prompt differs:
-                         * `none` has never had a password, `placeholder`
-                         * carries the value the Lepton migration left that
-                         * nobody knows, `chosen` needs nothing. Both of the
-                         * first two get one through Better Auth's reset flow.
-                         */
-                        passwordState: !credential
-                            ? ("none" as const)
-                            : credential.passwordSource === "migrated"
-                              ? ("placeholder" as const)
-                              : ("chosen" as const),
-                        settings: settings
-                            ? {
-                                  ...settings,
-                                  allergies: settings.allergies.map(
-                                      (a) => a.allergySlug,
-                                  ),
-                              }
-                            : null,
-                        feideCheckedAt: feideCheckedAt?.toISOString() ?? null,
-                        needsFeideRefresh:
-                            hasFeideAccount &&
-                            programmes.length > 0 &&
-                            !isFeideCheckCurrent(feideCheckedAt),
-                    },
+                    user: { ...user, ...fields },
                     session,
                     permissions: uniq(permissions),
                     groups: groups.map((g) => ({
@@ -1268,3 +1187,4 @@ export function createOAuthOpenIDConfigMetadata(auth: AuthInstance) {
 }
 
 export { drizzleAdapter } from "better-auth/adapters/drizzle";
+export { sessionUserFields } from "./session-user";

@@ -1,5 +1,8 @@
-import type { AuthSession, AuthUser } from "@photon/auth";
-import { isFeideCheckCurrent } from "@photon/auth/feide";
+import {
+    type AuthSession,
+    type AuthUser,
+    sessionUserFields,
+} from "@photon/auth";
 import {
     type VerifiedAccessToken,
     verifyJWTAccessToken,
@@ -32,66 +35,19 @@ async function sessionFromVerifiedToken(
     if (!session || session.userId !== verified.sub) return null;
     if (session.expiresAt <= new Date()) return null;
 
-    const [user, settings, accounts] = await Promise.all([
+    // `approvedAt`/`approvedBy` are an admin's audit trail, which Better Auth
+    // leaves out of cookie sessions too (`returned: false`).
+    const [user, fields] = await Promise.all([
         ctx.db.query.user.findFirst({
             where: { id: verified.sub },
-            with: {
-                studyProgramMemberships: { columns: { feideCheckedAt: true } },
-            },
+            columns: { approvedAt: false, approvedBy: false },
         }),
-        ctx.db.query.userSettings.findFirst({
-            where: { userId: verified.sub },
-            with: { allergies: { columns: { allergySlug: true } } },
-        }),
-        ctx.db.query.account.findMany({
-            where: { userId: verified.sub },
-            columns: { providerId: true, passwordSource: true },
-        }),
+        sessionUserFields(ctx.db, verified.sub),
     ]);
     if (!user) return null;
 
-    const credential = accounts.find((a) => a.providerId === "credential");
-    const feideCheckedAt = user.studyProgramMemberships
-        .map((p) => p.feideCheckedAt)
-        .filter((at): at is Date => at != null)
-        .reduce<Date | null>(
-            (newest, at) => (newest === null || at > newest ? at : newest),
-            null,
-        );
-
-    // Mirror the shape `customSession` builds, so bearer- and cookie-authenticated
-    // requests see the same user object. `approvedAt`/`approvedBy` are left out
-    // for that reason: they are an admin's audit trail, not something a session
-    // has any use for, and the cookie path does not carry them.
-    const {
-        approvedAt: _approvedAt,
-        approvedBy: _approvedBy,
-        studyProgramMemberships: programmes,
-        ...rest
-    } = user;
     return {
-        user: {
-            ...rest,
-            settings: settings
-                ? {
-                      ...settings,
-                      allergies: settings.allergies.map((a) => a.allergySlug),
-                  }
-                : null,
-            // `customSession` computes these rather than storing them, so a
-            // bearer-authenticated request has to compute them too.
-            isPendingApproval: user.approvalStatus === "pending",
-            passwordState: !credential
-                ? "none"
-                : credential.passwordSource === "migrated"
-                  ? "placeholder"
-                  : "chosen",
-            feideCheckedAt: feideCheckedAt?.toISOString() ?? null,
-            needsFeideRefresh:
-                accounts.some((a) => a.providerId === "feide") &&
-                programmes.length > 0 &&
-                !isFeideCheckCurrent(feideCheckedAt),
-        } as unknown as AuthUser,
+        user: { ...user, ...fields },
         session: session as AuthSession,
     };
 }
@@ -126,8 +82,7 @@ function setVerifiedOAuthClient(
  * Public pages are unaffected: they use `captureAuth`, which never calls this.
  */
 function assertApproved(user: AuthUser): void {
-    const status = (user as { approvalStatus?: string | null }).approvalStatus;
-    if (status === "pending") {
+    if (user.approvalStatus === "pending") {
         throw HTTPAppException.Forbidden(
             "Kontoen din venter på godkjenning fra en administrator.",
         );
@@ -211,7 +166,7 @@ const authMiddleware = (options: { allowPendingApproval: boolean }) =>
             });
             if (!session) throw HTTPAppException.Unauthorized();
 
-            guard(session.user as AuthUser);
+            guard(session.user);
             c.set("user", session.user);
             c.set("session", session.session);
             c.set("logger", c.get("logger").child({ userId: session.user.id }));

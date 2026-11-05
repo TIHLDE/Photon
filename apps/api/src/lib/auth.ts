@@ -31,7 +31,6 @@ export function userFromClaims(sub: string, payload: Record<string, unknown>) {
         image: null,
         username: null,
         displayUsername: null,
-        legacyToken: null,
         banned: null,
         banReason: null,
         banExpires: null,
