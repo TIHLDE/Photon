@@ -40,7 +40,7 @@ export function isExternalNotificationHref(href: string | undefined): boolean {
 
 /**
  * TanStack Router-ens `to` tar bare en sti: en spørring i den blir en del av
- * stien, så `/grupper/x?tab=boter` landet på feil fane. Del lenken opp i
+ * stien, så `/grupper/x/boter?botStatus=paid` mistet filteret. Del lenken opp i
  * stien og søkeparameterne den skal navigere med.
  */
 export function splitInternalHref(href: string): {

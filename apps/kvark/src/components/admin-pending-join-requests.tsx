@@ -76,9 +76,8 @@ export function AdminPendingJoinRequests({
                                         </Link>{" "}
                                         vil bli med i{" "}
                                         <Link
-                                            to="/grupper/$slug"
+                                            to="/grupper/$slug/medlemmer"
                                             params={{ slug: request.groupSlug }}
-                                            search={{ tab: "medlemmer" }}
                                             className="underline underline-offset-4"
                                         >
                                             {request.groupName}

@@ -61,7 +61,7 @@ describe("asking to join an interest group", () => {
                 leaders.map((l) => l.id).sort(),
             );
             expect(notifications[0]?.link).toBe(
-                `/grupper/${group.slug}?tab=medlemmer`,
+                `/grupper/${group.slug}/medlemmer`,
             );
         },
         500_000,

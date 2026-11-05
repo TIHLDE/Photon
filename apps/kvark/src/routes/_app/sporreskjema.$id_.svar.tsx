@@ -165,9 +165,8 @@ function FormSubmissionsPage() {
                             <>
                                 Spørreskjema fra{" "}
                                 <Link
-                                    to="/grupper/$slug"
+                                    to="/grupper/$slug/sporreskjema"
                                     params={{ slug: form.group.slug }}
-                                    search={{ tab: "sporreskjema" }}
                                 >
                                     {form.group.name}
                                 </Link>
