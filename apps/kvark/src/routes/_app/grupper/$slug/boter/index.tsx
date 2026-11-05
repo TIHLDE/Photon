@@ -24,6 +24,7 @@ import {
     GroupEditFineDialog,
     type EditFineValues,
 } from "#/components/group-edit-fine-dialog";
+import { SectionError } from "#/components/section-error";
 import { GroupFinesTab } from "#/components/group-fines-tab";
 import { useIsGroupLeaderOf, usePermission } from "#/hooks/use-permission";
 import { extractErrorMessage } from "#/lib/api-error";
@@ -101,6 +102,7 @@ function GroupFinesPage() {
     const laws = useMemo(() => (apiLaws ?? []).map(mapLaw), [apiLaws]);
 
     const { botStatus, botVisning, botBruker } = Route.useSearch();
+    const listGrouping = canSeeOwnFines ? "alle" : botVisning;
 
     const navigate = Route.useNavigate();
 
@@ -130,6 +132,7 @@ function GroupFinesPage() {
 
     const {
         data: apiFinePages,
+        isError: finesFailed,
         hasNextPage: hasMoreFines,
         isFetchingNextPage: isLoadingMoreFines,
         fetchNextPage: fetchMoreFines,
@@ -142,6 +145,7 @@ function GroupFinesPage() {
 
     const {
         data: apiFineUserPages,
+        isError: fineUsersFailed,
         hasNextPage: hasMoreFineUsers,
         isFetchingNextPage: isLoadingMoreFineUsers,
         fetchNextPage: fetchMoreFineUsers,
@@ -153,7 +157,7 @@ function GroupFinesPage() {
         enabled: canViewFines && botVisning === "per-medlem",
     });
 
-    const { data: apiFineStatistics } = useQuery({
+    const { data: apiFineStatistics, isError: statisticsFailed } = useQuery({
         ...getGroupFineStatisticsQuery(slug),
         enabled: canViewFines,
     });
@@ -208,6 +212,18 @@ function GroupFinesPage() {
 
     if (!finesTabVisible && !isSessionPending)
         return <Navigate to="/grupper/$slug" params={{ slug }} replace />;
+    const listFailed =
+        listGrouping === "alle"
+            ? finesFailed && !apiFinePages
+            : fineUsersFailed && !apiFineUserPages;
+    if (
+        listFailed ||
+        (canViewFines && statisticsFailed && !apiFineStatistics)
+    ) {
+        return (
+            <SectionError message="Vi fikk ikke lastet bøtene. Prøv igjen senere." />
+        );
+    }
     return (
         <>
             <GroupFinesTab
@@ -217,7 +233,7 @@ function GroupFinesPage() {
                 statistics={apiFineStatistics}
                 memberCount={members.length}
                 finesInfo={apiGroup.finesInfo}
-                grouping={canSeeOwnFines ? "alle" : botVisning}
+                grouping={listGrouping}
                 onGroupingChange={(botVisning) =>
                     navigate({
                         search: (prev) => ({
@@ -255,15 +271,15 @@ function GroupFinesPage() {
                     })
                 }
                 hasMore={
-                    botVisning === "alle" ? hasMoreFines : hasMoreFineUsers
+                    listGrouping === "alle" ? hasMoreFines : hasMoreFineUsers
                 }
                 isLoadingMore={
-                    botVisning === "alle"
+                    listGrouping === "alle"
                         ? isLoadingMoreFines
                         : isLoadingMoreFineUsers
                 }
                 onLoadMore={() => {
-                    if (botVisning === "alle") {
+                    if (listGrouping === "alle") {
                         void fetchMoreFines();
                     } else {
                         void fetchMoreFineUsers();

@@ -47,6 +47,7 @@ import {
 import { GROUP_NAV_ITEMS, type GroupNavKey } from "#/components/group-nav";
 import {
     useIsGroupLeaderOf,
+    useIsGroupMemberOf,
     usePermission,
     useScopedPermission,
 } from "#/hooks/use-permission";
@@ -136,6 +137,11 @@ function GroupDetail() {
     const canArchive = hasGroupsManage || isLeader;
 
     const isRoot = usePermission("root");
+    const isMember = useIsGroupMemberOf(slug);
+    const canViewLaws =
+        isMember ||
+        Boolean(session && apiGroup.finesAdminId === session.user.id) ||
+        isRoot;
 
     const canViewFines = Boolean(apiGroup.viewerCanUseFines) || isRoot;
     const finesTabVisible =
@@ -257,14 +263,14 @@ function GroupDetail() {
                 if (item.key === "boter") return finesTabVisible;
                 // Lovverket er gruppens regelverk, ikke en del av ens egen
                 // botlogg: det følger medlemskapet.
-                if (item.key === "lovverk") return canViewFines;
+                if (item.key === "lovverk") return canViewLaws;
                 // Spørreskjemaene ligger bak innlogging i API-et, så en
                 // utlogget besøkende skal ikke se fanen i det hele tatt — den
                 // ville uansett bare stått tom.
                 if (item.key === "sporreskjema") return isLoggedIn;
                 return true;
             }),
-        [canViewFines, finesTabVisible, isLoggedIn],
+        [canViewLaws, finesTabVisible, isLoggedIn],
     );
 
     const activeTab =
@@ -313,6 +319,7 @@ function GroupDetail() {
      * én gang og deles av alle botene.
      */
     async function handleGiveFine(values: GiveFineValues) {
+        const completedUserIds: string[] = [];
         setFineError(null);
         try {
             // Privat fordi bildet viser hvem som ble bøtelagt for hva.
@@ -332,6 +339,7 @@ function GroupDetail() {
                         ...(imageUrl ? { image: imageUrl } : {}),
                     },
                 });
+                completedUserIds.push(userId);
             }
 
             setFineDialogOpen(false);
@@ -342,6 +350,7 @@ function GroupDetail() {
                     : "Ukjent feil da boten skulle opprettes",
             );
         }
+        return completedUserIds;
     }
 
     async function changeOwnMembership(

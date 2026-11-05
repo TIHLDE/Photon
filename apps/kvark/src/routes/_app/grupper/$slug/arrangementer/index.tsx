@@ -8,6 +8,7 @@ import { useState } from "react";
 
 import { getEventsInfiniteQuery } from "#/api/queries/events";
 import { getGroupBySlugQuery } from "#/api/queries/groups";
+import { SectionError } from "#/components/section-error";
 import { EventCard } from "#/components/event-card";
 import { LoadMoreButton } from "#/components/load-more-button";
 import { useScopedPermission } from "#/hooks/use-permission";
@@ -41,13 +42,19 @@ function GroupEventsPage() {
 
     const [period, setPeriod] = useState<EventPeriod>("kommende");
 
-    const { data, isPending, hasNextPage, fetchNextPage, isFetchingNextPage } =
-        useInfiniteQuery(
-            getEventsInfiniteQuery({
-                organizerGroupSlug: slug,
-                expired: period === "tidligere",
-            }),
-        );
+    const {
+        data,
+        isPending,
+        isError,
+        hasNextPage,
+        fetchNextPage,
+        isFetchingNextPage,
+    } = useInfiniteQuery(
+        getEventsInfiniteQuery({
+            organizerGroupSlug: slug,
+            expired: period === "tidligere",
+        }),
+    );
 
     const events = data?.pages.flatMap((page) => page.items) ?? [];
 
@@ -91,6 +98,8 @@ function GroupEventsPage() {
                         <Skeleton key={row} className="h-24 w-full" />
                     ))}
                 </div>
+            ) : isError && !data ? (
+                <SectionError message="Vi fikk ikke lastet arrangementene. Prøv igjen senere." />
             ) : events.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                     {period === "kommende"

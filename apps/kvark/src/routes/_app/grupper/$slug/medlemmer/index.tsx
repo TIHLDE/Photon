@@ -5,6 +5,7 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@tihlde/ui/ui/collapsible";
+import { Alert, AlertDescription } from "@tihlde/ui/ui/alert";
 import { ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -158,17 +159,32 @@ function GroupMembersPage() {
             ),
         [leaderSearchResults, leaders],
     );
-    const onPromote = (member: Member) =>
-        updateMemberRole.mutate({
-            groupSlug: slug,
-            userId: member.id,
-            data: { role: "leader" },
-        });
-    const onRemove = (member: Member) =>
-        removeMember.mutate({
-            groupSlug: slug,
-            userId: member.id,
-        });
+    const [memberActionError, setMemberActionError] = useState<string | null>(
+        null,
+    );
+    async function onPromote(member: Member) {
+        setMemberActionError(null);
+        try {
+            await updateMemberRole.mutateAsync({
+                groupSlug: slug,
+                userId: member.id,
+                data: { role: "leader" },
+            });
+        } catch (error) {
+            setMemberActionError(await extractErrorMessage(error));
+        }
+    }
+    async function onRemove(member: Member) {
+        setMemberActionError(null);
+        try {
+            await removeMember.mutateAsync({
+                groupSlug: slug,
+                userId: member.id,
+            });
+        } catch (error) {
+            setMemberActionError(await extractErrorMessage(error));
+        }
+    }
 
     const [showFormer, setShowFormer] = useState(false);
 
@@ -253,6 +269,11 @@ function GroupMembersPage() {
                 <GroupJoinRequestsPanel groupSlug={slug} />
             ) : null}
 
+            {memberActionError ? (
+                <Alert variant="destructive">
+                    <AlertDescription>{memberActionError}</AlertDescription>
+                </Alert>
+            ) : null}
             {/* Lederen ligger øverst i samme liste som resten — badgen skiller den ut. */}
             <ul className="flex flex-col gap-2">
                 {leaders.map((m) => (

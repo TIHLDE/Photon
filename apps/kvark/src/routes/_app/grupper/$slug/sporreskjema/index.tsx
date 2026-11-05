@@ -101,15 +101,16 @@ function GroupFormsPage() {
     // Spørsmålene ligger bare i detaljsvaret, og svarene avgjør om de kan
     // endres i det hele tatt. Begge hentes først når et skjema faktisk åpnes
     // for redigering.
-    const { data: apiEditingForm } = useQuery({
+    const { data: apiEditingForm, isError: editingFormFailed } = useQuery({
         ...getFormByIdQuery(editingForm?.id ?? ""),
         enabled: editingForm !== null,
     });
 
-    const { data: apiEditingSubmissions } = useQuery({
-        ...getFormSubmissionsQuery(editingForm?.id ?? "", 0),
-        enabled: editingForm !== null,
-    });
+    const { data: apiEditingSubmissions, isError: editingSubmissionsFailed } =
+        useQuery({
+            ...getFormSubmissionsQuery(editingForm?.id ?? "", 0),
+            enabled: editingForm !== null,
+        });
 
     const forms = useMemo(() => (apiForms ?? []).map(mapForm), [apiForms]);
 
@@ -294,6 +295,12 @@ function GroupFormsPage() {
                 open={editingForm !== null}
                 form={editingForm}
                 questions={editingQuestions}
+                loadError={
+                    (editingFormFailed && !apiEditingForm) ||
+                    (editingSubmissionsFailed && !apiEditingSubmissions)
+                        ? "Vi fikk ikke lastet skjemaet. Lukk dialogen og prøv igjen."
+                        : null
+                }
                 answerCount={apiEditingSubmissions?.length ?? 0}
                 onClose={() => handleEditForm(null)}
                 onSubmit={handleSaveForm}

@@ -16,7 +16,11 @@ import {
 import type { LawFormValues } from "#/components/group-law-form-dialog";
 import { GroupLawFormDialog } from "#/components/group-law-form-dialog";
 import { GroupLawItem } from "#/components/group-law-item";
-import { useIsGroupLeaderOf, usePermission } from "#/hooks/use-permission";
+import {
+    useIsGroupLeaderOf,
+    useIsGroupMemberOf,
+    usePermission,
+} from "#/hooks/use-permission";
 import { extractErrorMessage } from "#/lib/api-error";
 import type { Law } from "#/lib/group";
 import { mapLaw } from "#/lib/group";
@@ -39,20 +43,16 @@ function GroupLawsPage() {
 
     const isRoot = usePermission("root");
 
-    // Bøter følger medlemskap, ikke tilganger: er du med i gruppen ser du alt
-    // gruppen har gitt hverandre.
-    //
-    // Selve avgjørelsen tas på serveren og kommer som `viewerCanUseFines`. Den
-    // dekker både at gruppen faktisk bruker botsystemet og at et medlemskap i
-    // en studiegruppe ikke er nok i seg selv — der er medlemslista en
-    // Feide-projeksjon som aldri krymper, så alumni står oppført sammen med
-    // dagens studenter. Root er ikke med i serverens svar (den gjelder én
-    // gruppe, ikke tilgang på tvers), så den legges på her.
-    const canViewFines = Boolean(apiGroup.viewerCanUseFines) || isRoot;
+    // Lovverk er tilgjengelig for medlemmer og botsjef selv når bøter er slått av.
+    const isMember = useIsGroupMemberOf(slug);
+    const canViewLaws =
+        isMember ||
+        Boolean(session && apiGroup.finesAdminId === session.user.id) ||
+        isRoot;
 
     const { data: apiLaws } = useQuery({
         ...getGroupLawsQuery(slug),
-        enabled: canViewFines,
+        enabled: canViewLaws,
     });
 
     const laws = useMemo(() => (apiLaws ?? []).map(mapLaw), [apiLaws]);
@@ -114,7 +114,7 @@ function GroupLawsPage() {
         }
     }
 
-    if (!canViewFines && !isSessionPending)
+    if (!canViewLaws && !isSessionPending)
         return <Navigate to="/grupper/$slug" params={{ slug }} replace />;
     return (
         <div className="flex flex-col gap-6">
