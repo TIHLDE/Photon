@@ -1,7 +1,10 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { Button } from "@tihlde/ui/ui/button";
+import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { authQueryOptions } from "#/api/auth";
 import {
     deleteFormMutation,
     getFormByIdQuery,
@@ -10,29 +13,41 @@ import {
 } from "#/api/queries/forms";
 import {
     createGroupFormMutation,
+    getGroupBySlugQuery,
     getGroupFormsQuery,
 } from "#/api/queries/groups";
 import {
     FormEditDialog,
     type FormEditValues,
 } from "#/components/form-edit-dialog";
-import { GroupFormsTab } from "#/components/group-forms-tab";
+import { GroupFormRow } from "#/components/group-form-row";
 import {
     NewFormDialog,
     type NewFormValues,
 } from "#/components/new-form-dialog";
-import { useScopedPermission } from "#/hooks/use-permission";
+import {
+    useIsGroupLeaderOf,
+    useScopedPermission,
+} from "#/hooks/use-permission";
 import { mapFormQuestions, toFormFieldsPayload } from "#/lib/form";
 import { mapForm, type Form } from "#/lib/group";
-
-import { useGroupDetail } from "../-context";
 
 export const Route = createFileRoute("/_app/grupper/$slug/sporreskjema/")({
     component: GroupFormsPage,
 });
 
 function GroupFormsPage() {
-    const { slug, isLoggedIn, isLeader, isArchived } = useGroupDetail();
+    const { slug } = Route.useParams();
+
+    const { data: apiGroup } = useSuspenseQuery(getGroupBySlugQuery(slug));
+
+    const { data: session } = useSuspenseQuery(authQueryOptions);
+
+    const isLeader = useIsGroupLeaderOf(slug);
+
+    const isArchived = Boolean(apiGroup.archivedAt);
+
+    const isLoggedIn = Boolean(session);
 
     const [formDialogOpen, setFormDialogOpen] = useState(false);
 
@@ -238,13 +253,34 @@ function GroupFormsPage() {
     if (!isLoggedIn) return <Navigate to="/grupper/$slug" params={{ slug }} />;
     return (
         <>
-            <GroupFormsTab
-                forms={forms}
-                canCreate={canCreateForms}
-                canManage={canManageForms}
-                onNewForm={openNewForm}
-                onEditForm={handleEditForm}
-            />
+            <div className="flex flex-col gap-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="text-2xl">Spørreskjema</h2>
+                    {canCreateForms ? (
+                        <Button onClick={openNewForm}>
+                            <Plus />
+                            Nytt spørreskjema
+                        </Button>
+                    ) : null}
+                </div>
+                {forms.length > 0 ? (
+                    <ul className="flex flex-col gap-3">
+                        {forms.map((form) => (
+                            <li key={form.id}>
+                                <GroupFormRow
+                                    form={form}
+                                    canManage={canManageForms}
+                                    onEdit={() => handleEditForm(form)}
+                                />
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p className="text-sm text-muted-foreground">
+                        Ingen spørreskjema tilgjengelig ennå.
+                    </p>
+                )}
+            </div>
             <NewFormDialog
                 open={formDialogOpen}
                 onOpenChange={setFormDialogOpen}

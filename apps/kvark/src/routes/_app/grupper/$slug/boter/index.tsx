@@ -1,14 +1,23 @@
-import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
+import {
+    useInfiniteQuery,
+    useMutation,
+    useQuery,
+    useSuspenseQuery,
+} from "@tanstack/react-query";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 
+import { authQueryOptions } from "#/api/auth";
 import {
     batchUpdateUserFinesMutation,
     deleteFineMutation,
+    getGroupBySlugQuery,
+    getGroupFinesInfiniteQuery,
     getGroupFineStatisticsQuery,
     getGroupFineUsersInfiniteQuery,
-    getGroupFinesInfiniteQuery,
+    getGroupLawsQuery,
+    getGroupMembersQuery,
     updateFineMutation,
 } from "#/api/queries/groups";
 import {
@@ -16,10 +25,16 @@ import {
     type EditFineValues,
 } from "#/components/group-edit-fine-dialog";
 import { GroupFinesTab } from "#/components/group-fines-tab";
+import { useIsGroupLeaderOf, usePermission } from "#/hooks/use-permission";
 import { extractErrorMessage } from "#/lib/api-error";
-import { mapFine, mapFineUser, type Fine } from "#/lib/group";
-
-import { useGroupDetail } from "../-context";
+import {
+    mapFine,
+    mapFineUser,
+    mapLaw,
+    mapMember,
+    sortMembersByName,
+    type Fine,
+} from "#/lib/group";
 
 const searchSchema = z.object({
     // Botfiltrene ligger i URL-en, ikke i komponenttilstand: da overlever de
@@ -38,20 +53,51 @@ export const Route = createFileRoute("/_app/grupper/$slug/boter/")({
 });
 
 function GroupFinesPage() {
-    const {
-        slug,
-        canSeeOwnFines,
-        canViewFines,
-        members,
-        group,
-        session,
-        apiGroup,
-        isLeader,
-        isRoot,
-        isArchived,
-        laws,
-        finesTabVisible,
-    } = useGroupDetail();
+    const { slug } = Route.useParams();
+
+    const { data: apiGroup } = useSuspenseQuery(getGroupBySlugQuery(slug));
+
+    const { data: session } = useSuspenseQuery(authQueryOptions);
+
+    const { data: apiMembers } = useQuery(getGroupMembersQuery(slug, 0));
+
+    const isLeader = useIsGroupLeaderOf(slug);
+
+    const isArchived = Boolean(apiGroup.archivedAt);
+
+    const isRoot = usePermission("root");
+
+    // Bøter følger medlemskap, ikke tilganger: er du med i gruppen ser du alt
+    // gruppen har gitt hverandre.
+    //
+    // Selve avgjørelsen tas på serveren og kommer som `viewerCanUseFines`. Den
+    // dekker både at gruppen faktisk bruker botsystemet og at et medlemskap i
+    // en studiegruppe ikke er nok i seg selv — der er medlemslista en
+    // Feide-projeksjon som aldri krymper, så alumni står oppført sammen med
+    // dagens studenter. Root er ikke med i serverens svar (den gjelder én
+    // gruppe, ikke tilgang på tvers), så den legges på her.
+    const canViewFines = Boolean(apiGroup.viewerCanUseFines) || isRoot;
+
+    // Den som har gått ut av gruppen tar ikke lenger del i botsystemet, men
+    // bøtene i eget navn — gitt og mottatt — er fortsatt deres å slå opp.
+    // Serveren snevrer botlista til dem av seg selv; her styrer flagget bare
+    // hva som vises, og at ingenting kan endres.
+    const canSeeOwnFines =
+        !canViewFines && Boolean(apiGroup.viewerCanSeeOwnFines);
+
+    const finesTabVisible = canViewFines || canSeeOwnFines;
+
+    const { data: apiLaws } = useQuery({
+        ...getGroupLawsQuery(slug),
+        enabled: canViewFines,
+    });
+
+    const members = useMemo(
+        () => sortMembersByName((apiMembers ?? []).map(mapMember)),
+        [apiMembers],
+    );
+
+    const laws = useMemo(() => (apiLaws ?? []).map(mapLaw), [apiLaws]);
 
     const { botStatus, botVisning, botBruker } = Route.useSearch();
 
@@ -169,7 +215,7 @@ function GroupFinesPage() {
                 fineUsers={fineUsers}
                 statistics={apiFineStatistics}
                 memberCount={members.length}
-                finesInfo={group.finesInfo}
+                finesInfo={apiGroup.finesInfo}
                 grouping={canSeeOwnFines ? "alle" : botVisning}
                 onGroupingChange={(botVisning) =>
                     navigate({

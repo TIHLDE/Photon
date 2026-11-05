@@ -1,30 +1,60 @@
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { Button } from "@tihlde/ui/ui/button";
+import { useState } from "react";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 
+import { authQueryOptions } from "#/api/auth";
 import {
     createLawMutation,
     deleteLawMutation,
+    getGroupBySlugQuery,
+    getGroupLawsQuery,
     updateLawMutation,
 } from "#/api/queries/groups";
-import { GroupLawsTab } from "#/components/group-laws-tab";
-
-import { useGroupDetail } from "../-context";
+import type { LawFormValues } from "#/components/group-law-form-dialog";
+import { GroupLawFormDialog } from "#/components/group-law-form-dialog";
+import { GroupLawItem } from "#/components/group-law-item";
+import { useIsGroupLeaderOf, usePermission } from "#/hooks/use-permission";
+import { extractErrorMessage } from "#/lib/api-error";
+import type { Law } from "#/lib/group";
+import { mapLaw } from "#/lib/group";
 
 export const Route = createFileRoute("/_app/grupper/$slug/lovverk/")({
     component: GroupLawsPage,
 });
 
 function GroupLawsPage() {
-    const {
-        laws,
-        isLeader,
-        session,
-        apiGroup,
-        isRoot,
-        isArchived,
-        slug,
-        canViewFines,
-    } = useGroupDetail();
+    const { slug } = Route.useParams();
+
+    const { data: apiGroup } = useSuspenseQuery(getGroupBySlugQuery(slug));
+
+    const { data: session } = useSuspenseQuery(authQueryOptions);
+
+    const isLeader = useIsGroupLeaderOf(slug);
+
+    const isArchived = Boolean(apiGroup.archivedAt);
+
+    const isRoot = usePermission("root");
+
+    // Bøter følger medlemskap, ikke tilganger: er du med i gruppen ser du alt
+    // gruppen har gitt hverandre.
+    //
+    // Selve avgjørelsen tas på serveren og kommer som `viewerCanUseFines`. Den
+    // dekker både at gruppen faktisk bruker botsystemet og at et medlemskap i
+    // en studiegruppe ikke er nok i seg selv — der er medlemslista en
+    // Feide-projeksjon som aldri krymper, så alumni står oppført sammen med
+    // dagens studenter. Root er ikke med i serverens svar (den gjelder én
+    // gruppe, ikke tilgang på tvers), så den legges på her.
+    const canViewFines = Boolean(apiGroup.viewerCanUseFines) || isRoot;
+
+    const { data: apiLaws } = useQuery({
+        ...getGroupLawsQuery(slug),
+        enabled: canViewFines,
+    });
+
+    const laws = useMemo(() => (apiLaws ?? []).map(mapLaw), [apiLaws]);
 
     const createLaw = useMutation(createLawMutation);
 
@@ -40,32 +70,87 @@ function GroupLawsPage() {
     // `canManageLaws` server-side.
     const canManageLaws = (isLeader || isFinesAdmin || isRoot) && !isArchived;
 
+    const onSave = (values: LawFormValues, lawId?: string) =>
+        lawId
+            ? updateLaw.mutateAsync({
+                  groupSlug: slug,
+                  lawId,
+                  data: values,
+              })
+            : createLaw.mutateAsync({
+                  groupSlug: slug,
+                  data: values,
+              });
+    const onDelete = (lawId: string) =>
+        deleteLaw.mutateAsync({
+            groupSlug: slug,
+            lawId,
+        });
+
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [editing, setEditing] = useState<Law | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    function openCreate() {
+        setEditing(null);
+        setError(null);
+        setDialogOpen(true);
+    }
+
+    function openEdit(law: Law) {
+        setEditing(law);
+        setError(null);
+        setDialogOpen(true);
+    }
+
+    async function run(action: Promise<unknown>) {
+        setError(null);
+        try {
+            await action;
+            setDialogOpen(false);
+        } catch (err) {
+            setError(await extractErrorMessage(err));
+        }
+    }
+
     if (!canViewFines)
         return <Navigate to="/grupper/$slug" params={{ slug }} />;
     return (
-        <GroupLawsTab
-            laws={laws}
-            canManage={canManageLaws}
-            isSaving={createLaw.isPending || updateLaw.isPending}
-            isDeleting={deleteLaw.isPending}
-            onSave={(values, lawId) =>
-                lawId
-                    ? updateLaw.mutateAsync({
-                          groupSlug: slug,
-                          lawId,
-                          data: values,
-                      })
-                    : createLaw.mutateAsync({
-                          groupSlug: slug,
-                          data: values,
-                      })
-            }
-            onDelete={(lawId) =>
-                deleteLaw.mutateAsync({
-                    groupSlug: slug,
-                    lawId,
-                })
-            }
-        />
+        <div className="flex flex-col gap-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-2xl">Lovverk</h2>
+                {canManageLaws ? (
+                    <Button onClick={openCreate}>Ny paragraf</Button>
+                ) : undefined}
+            </div>
+            {laws.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                    Gruppen har ingen lovparagrafer ennå.
+                </p>
+            ) : (
+                <div className="flex flex-col gap-2">
+                    {laws.map((law) => (
+                        <GroupLawItem
+                            key={law.id}
+                            law={law}
+                            onEdit={
+                                canManageLaws ? () => openEdit(law) : undefined
+                            }
+                        />
+                    ))}
+                </div>
+            )}
+
+            <GroupLawFormDialog
+                open={dialogOpen}
+                law={editing}
+                isSaving={createLaw.isPending || updateLaw.isPending}
+                isDeleting={deleteLaw.isPending}
+                error={error}
+                onClose={() => setDialogOpen(false)}
+                onSubmit={(values) => run(onSave(values, editing?.id))}
+                onDelete={editing ? () => run(onDelete(editing.id)) : undefined}
+            />
+        </div>
     );
 }

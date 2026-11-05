@@ -72,7 +72,6 @@ import { Route as AdminArrangementerNyRouteImport } from './routes/admin/arrange
 import { Route as AppArrangementerSlugTitleRouteImport } from './routes/_app/arrangementer.$slug.$title'
 import { Route as AppGalleriSlugTitleRouteImport } from './routes/_app/galleri.$slug.$title'
 import { Route as AppGrupperSlugIndexRouteImport } from './routes/_app/grupper/$slug/index'
-import { Route as AppGrupperSlugSectionRouteImport } from './routes/_app/grupper/$slug/$section'
 import { Route as AppNyheterSlugTitleRouteImport } from './routes/_app/nyheter.$slug.$title'
 import { Route as AppProfilIdIndexRouteImport } from './routes/_app/profil/$id/index'
 import { Route as AppProfilIdArrangementerRouteImport } from './routes/_app/profil/$id/arrangementer'
@@ -401,11 +400,6 @@ const AppGrupperSlugIndexRoute = AppGrupperSlugIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppGrupperSlugRouteRoute,
 } as any)
-const AppGrupperSlugSectionRoute = AppGrupperSlugSectionRouteImport.update({
-  id: '/$section',
-  path: '/$section',
-  getParentRoute: () => AppGrupperSlugRouteRoute,
-} as any)
 const AppNyheterSlugTitleRoute = AppNyheterSlugTitleRouteImport.update({
   id: '/$title',
   path: '/$title',
@@ -539,7 +533,6 @@ export interface FileRoutesByFullPath {
   '/admin/arrangementer/': typeof AdminArrangementerIndexRoute
   '/arrangementer/$slug/$title': typeof AppArrangementerSlugTitleRoute
   '/galleri/$slug/$title': typeof AppGalleriSlugTitleRoute
-  '/grupper/$slug/$section': typeof AppGrupperSlugSectionRoute
   '/nyheter/$slug/$title': typeof AppNyheterSlugTitleRoute
   '/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
   '/profil/$id/innstillinger': typeof AppProfilIdInnstillingerRoute
@@ -611,7 +604,6 @@ export interface FileRoutesByTo {
   '/admin/arrangementer': typeof AdminArrangementerIndexRoute
   '/arrangementer/$slug/$title': typeof AppArrangementerSlugTitleRoute
   '/galleri/$slug/$title': typeof AppGalleriSlugTitleRoute
-  '/grupper/$slug/$section': typeof AppGrupperSlugSectionRoute
   '/nyheter/$slug/$title': typeof AppNyheterSlugTitleRoute
   '/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
   '/profil/$id/innstillinger': typeof AppProfilIdInnstillingerRoute
@@ -691,7 +683,6 @@ export interface FileRoutesById {
   '/admin/arrangementer/': typeof AdminArrangementerIndexRoute
   '/_app/arrangementer/$slug/$title': typeof AppArrangementerSlugTitleRoute
   '/_app/galleri/$slug/$title': typeof AppGalleriSlugTitleRoute
-  '/_app/grupper/$slug/$section': typeof AppGrupperSlugSectionRoute
   '/_app/nyheter/$slug/$title': typeof AppNyheterSlugTitleRoute
   '/_app/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
   '/_app/profil/$id/innstillinger': typeof AppProfilIdInnstillingerRoute
@@ -768,7 +759,6 @@ export interface FileRouteTypes {
     | '/admin/arrangementer/'
     | '/arrangementer/$slug/$title'
     | '/galleri/$slug/$title'
-    | '/grupper/$slug/$section'
     | '/nyheter/$slug/$title'
     | '/profil/$id/arrangementer'
     | '/profil/$id/innstillinger'
@@ -840,7 +830,6 @@ export interface FileRouteTypes {
     | '/admin/arrangementer'
     | '/arrangementer/$slug/$title'
     | '/galleri/$slug/$title'
-    | '/grupper/$slug/$section'
     | '/nyheter/$slug/$title'
     | '/profil/$id/arrangementer'
     | '/profil/$id/innstillinger'
@@ -919,7 +908,6 @@ export interface FileRouteTypes {
     | '/admin/arrangementer/'
     | '/_app/arrangementer/$slug/$title'
     | '/_app/galleri/$slug/$title'
-    | '/_app/grupper/$slug/$section'
     | '/_app/nyheter/$slug/$title'
     | '/_app/profil/$id/arrangementer'
     | '/_app/profil/$id/innstillinger'
@@ -1386,13 +1374,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGrupperSlugIndexRouteImport
       parentRoute: typeof AppGrupperSlugRouteRoute
     }
-    '/_app/grupper/$slug/$section': {
-      id: '/_app/grupper/$slug/$section'
-      path: '/$section'
-      fullPath: '/grupper/$slug/$section'
-      preLoaderRoute: typeof AppGrupperSlugSectionRouteImport
-      parentRoute: typeof AppGrupperSlugRouteRoute
-    }
     '/_app/nyheter/$slug/$title': {
       id: '/_app/nyheter/$slug/$title'
       path: '/$title'
@@ -1488,7 +1469,6 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppGrupperSlugRouteRouteChildren {
-  AppGrupperSlugSectionRoute: typeof AppGrupperSlugSectionRoute
   AppGrupperSlugIndexRoute: typeof AppGrupperSlugIndexRoute
   AppGrupperSlugArrangementerIndexRoute: typeof AppGrupperSlugArrangementerIndexRoute
   AppGrupperSlugBoterIndexRoute: typeof AppGrupperSlugBoterIndexRoute
@@ -1498,7 +1478,6 @@ interface AppGrupperSlugRouteRouteChildren {
 }
 
 const AppGrupperSlugRouteRouteChildren: AppGrupperSlugRouteRouteChildren = {
-  AppGrupperSlugSectionRoute: AppGrupperSlugSectionRoute,
   AppGrupperSlugIndexRoute: AppGrupperSlugIndexRoute,
   AppGrupperSlugArrangementerIndexRoute: AppGrupperSlugArrangementerIndexRoute,
   AppGrupperSlugBoterIndexRoute: AppGrupperSlugBoterIndexRoute,

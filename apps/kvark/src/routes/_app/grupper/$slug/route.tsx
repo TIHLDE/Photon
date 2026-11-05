@@ -16,13 +16,17 @@ import {
 } from "@tihlde/ui/ui/empty";
 import { LockIcon } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 
+import { authQueryOptions } from "#/api/auth";
 import { useImageUploader } from "#/api/queries/assets";
 import {
     GroupQueryKeys,
     archiveGroupMutation,
     createFineMutation,
     getGroupBySlugQuery,
+    getGroupLawsQuery,
+    getGroupMembersQuery,
     leaveGroupMutation,
     requestToJoinGroupMutation,
     unarchiveGroupMutation,
@@ -41,13 +45,29 @@ import {
     type GiveFineValues,
 } from "#/components/group-give-fine-dialog";
 import { GROUP_NAV_ITEMS, type GroupNavKey } from "#/components/group-nav";
-import { usePermission, useScopedPermission } from "#/hooks/use-permission";
+import {
+    useIsGroupLeaderOf,
+    usePermission,
+    useScopedPermission,
+} from "#/hooks/use-permission";
 import { extractErrorMessage } from "#/lib/api-error";
-import { isPrivateGroupType } from "#/lib/group";
+import {
+    isPrivateGroupType,
+    mapGroup,
+    mapLaw,
+    mapMember,
+    sortMembersByName,
+} from "#/lib/group";
 import { errorStatus } from "#/lib/utils";
 
-import { GroupDetailContext, useGroupData } from "./-context";
-import { GROUP_TAB_ROUTES } from "./-navigation";
+const GROUP_TAB_ROUTES = {
+    om: "/grupper/$slug",
+    medlemmer: "/grupper/$slug/medlemmer",
+    arrangementer: "/grupper/$slug/arrangementer",
+    boter: "/grupper/$slug/boter",
+    lovverk: "/grupper/$slug/lovverk",
+    sporreskjema: "/grupper/$slug/sporreskjema",
+} as const;
 
 export const Route = createFileRoute("/_app/grupper/$slug")({
     component: GroupDetailPage,
@@ -93,24 +113,52 @@ function GroupDetailPage() {
 }
 
 function GroupDetail() {
-    const context = useGroupData();
-    const {
-        apiMembers,
-        group,
-        leaders,
-        members,
-        slug,
-        canArchive,
-        isArchived,
-        isInterestGroup,
-        canViewFines,
-        session,
-        apiGroup,
-        isLeader,
-        laws,
-        finesTabVisible,
-        isLoggedIn,
-    } = context;
+    const { slug } = Route.useParams();
+
+    const { data: apiGroup } = useSuspenseQuery(getGroupBySlugQuery(slug));
+
+    const { data: session } = useSuspenseQuery(authQueryOptions);
+
+    const { data: apiMembers } = useQuery(getGroupMembersQuery(slug, 0));
+
+    const isLeader = useIsGroupLeaderOf(slug);
+
+    const isArchived = Boolean(apiGroup.archivedAt);
+
+    // Roster changes: `groups:manage` for this group, or being its leader.
+    // Det samme gjelder å gi ledervervet videre — men «Legg til medlem»-veien
+    // legger fortsatt bare til vanlige medlemmer, slik API-et krever.
+    const hasGroupsManage = useScopedPermission(
+        "groups:manage",
+        `group:${slug}`,
+    );
+
+    const canArchive = hasGroupsManage || isLeader;
+
+    const isRoot = usePermission("root");
+
+    const canViewFines = Boolean(apiGroup.viewerCanUseFines) || isRoot;
+    const finesTabVisible =
+        canViewFines || Boolean(apiGroup.viewerCanSeeOwnFines);
+
+    const isLoggedIn = Boolean(session);
+
+    const members = useMemo(
+        () => sortMembersByName((apiMembers ?? []).map(mapMember)),
+        [apiMembers],
+    );
+
+    const isInterestGroup = apiGroup.type.toUpperCase() === "INTERESTGROUP";
+
+    const leaders = useMemo(
+        () => members.filter((m) => m.role === "leader"),
+        [members],
+    );
+
+    const group = useMemo(
+        () => mapGroup(apiGroup, leaders[0]?.name),
+        [apiGroup, leaders],
+    );
 
     const active = useLocation({
         select: (location) => location.pathname.split("/")[3] || "om",
@@ -121,6 +169,13 @@ function GroupDetail() {
     const queryClient = useQueryClient();
 
     const [fineDialogOpen, setFineDialogOpen] = useState(false);
+
+    const { data: apiLaws } = useQuery({
+        ...getGroupLawsQuery(slug),
+        enabled: canViewFines && fineDialogOpen,
+    });
+
+    const laws = useMemo(() => (apiLaws ?? []).map(mapLaw), [apiLaws]);
 
     const [fineError, setFineError] = useState<string | null>(null);
 
@@ -345,70 +400,65 @@ function GroupDetail() {
         }
     }
     return (
-        <GroupDetailContext value={context}>
-            <>
-                <DetailLayout
-                    header={
-                        <GroupDetailHeader
-                            group={group}
-                            isAdmin={canManage}
-                            canChangeType={canChangeType}
-                            canArchive={canArchive}
-                            onArchive={() => changeArchived(archiveGroup)}
-                            onUnarchive={() => changeArchived(unarchiveGroup)}
-                            isArchivePending={
-                                archiveGroup.isPending ||
-                                unarchiveGroup.isPending
-                            }
-                            canGiveFine={canGiveFine}
-                            onGiveFine={openGiveFine}
-                            members={members}
-                            onSaveGroup={handleSaveGroup}
-                            isSavingGroup={updateGroup.isPending}
-                            saveGroupError={groupError}
-                            membershipAction={membershipAction}
-                            leaderCount={leaders.length}
-                            onRequest={() => changeOwnMembership(requestToJoin)}
-                            onWithdraw={() =>
-                                changeOwnMembership(withdrawJoinRequest)
-                            }
-                            onLeave={() => changeOwnMembership(leaveGroup)}
-                            isMembershipPending={
-                                requestToJoin.isPending ||
-                                withdrawJoinRequest.isPending ||
-                                leaveGroup.isPending
-                            }
-                        />
-                    }
-                >
-                    <DetailLayoutNav
-                        sections={[navItems]}
-                        active={activeTab}
-                        onSelect={setActive}
+        <>
+            <DetailLayout
+                header={
+                    <GroupDetailHeader
+                        group={group}
+                        isAdmin={canManage}
+                        canChangeType={canChangeType}
+                        canArchive={canArchive}
+                        onArchive={() => changeArchived(archiveGroup)}
+                        onUnarchive={() => changeArchived(unarchiveGroup)}
+                        isArchivePending={
+                            archiveGroup.isPending || unarchiveGroup.isPending
+                        }
+                        canGiveFine={canGiveFine}
+                        onGiveFine={openGiveFine}
+                        members={members}
+                        onSaveGroup={handleSaveGroup}
+                        isSavingGroup={updateGroup.isPending}
+                        saveGroupError={groupError}
+                        membershipAction={membershipAction}
+                        leaderCount={leaders.length}
+                        onRequest={() => changeOwnMembership(requestToJoin)}
+                        onWithdraw={() =>
+                            changeOwnMembership(withdrawJoinRequest)
+                        }
+                        onLeave={() => changeOwnMembership(leaveGroup)}
+                        isMembershipPending={
+                            requestToJoin.isPending ||
+                            withdrawJoinRequest.isPending ||
+                            leaveGroup.isPending
+                        }
                     />
-
-                    <DetailLayoutContent>
-                        {headerError ? (
-                            <Alert variant="destructive">
-                                <AlertDescription>
-                                    {headerError}
-                                </AlertDescription>
-                            </Alert>
-                        ) : null}
-                        <Outlet />
-                    </DetailLayoutContent>
-                </DetailLayout>
-
-                <GroupGiveFineDialog
-                    open={fineDialogOpen}
-                    onOpenChange={setFineDialogOpen}
-                    members={members}
-                    laws={laws}
-                    onSubmit={handleGiveFine}
-                    isSubmitting={createFine.isPending || isUploading}
-                    error={fineError}
+                }
+            >
+                <DetailLayoutNav
+                    sections={[navItems]}
+                    active={activeTab}
+                    onSelect={setActive}
                 />
-            </>
-        </GroupDetailContext>
+
+                <DetailLayoutContent>
+                    {headerError ? (
+                        <Alert variant="destructive">
+                            <AlertDescription>{headerError}</AlertDescription>
+                        </Alert>
+                    ) : null}
+                    <Outlet />
+                </DetailLayoutContent>
+            </DetailLayout>
+
+            <GroupGiveFineDialog
+                open={fineDialogOpen}
+                onOpenChange={setFineDialogOpen}
+                members={members}
+                laws={laws}
+                onSubmit={handleGiveFine}
+                isSubmitting={createFine.isPending || isUploading}
+                error={fineError}
+            />
+        </>
     );
 }

@@ -1,21 +1,39 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@tihlde/ui/ui/collapsible";
+import { ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import {
     addGroupMemberMutation,
+    getGroupBySlugQuery,
     getGroupFormerMembersQuery,
+    getGroupMembersQuery,
     removeGroupMemberMutation,
     updateGroupMemberRoleMutation,
 } from "#/api/queries/groups";
 import { searchUsersQuery } from "#/api/queries/roles";
+import { GroupAddMemberDialog } from "#/components/group-add-member-dialog";
 import { GroupJoinRequestsPanel } from "#/components/group-join-requests-panel";
-import { GroupMembersTab } from "#/components/group-members-tab";
+import { GroupMemberRow } from "#/components/group-member-row";
+import {
+    useIsGroupLeaderOf,
+    useScopedPermission,
+} from "#/hooks/use-permission";
 import { extractErrorMessage } from "#/lib/api-error";
-import { allowsNonMemberLeader, mapFormerMember } from "#/lib/group";
+import type { Member } from "#/lib/group";
+import {
+    allowsNonMemberLeader,
+    mapFormerMember,
+    mapMember,
+    sortMembersByName,
+} from "#/lib/group";
 import { useDebounced } from "#/lib/use-debounced";
-
-import { useGroupDetail } from "../-context";
+import { cn } from "#/lib/utils";
 
 /**
  * Et feilet søk skal ikke se ut som at ingen matcher — da leter man videre
@@ -28,8 +46,37 @@ export const Route = createFileRoute("/_app/grupper/$slug/medlemmer/")({
 });
 
 function GroupMembersPage() {
-    const { leaders, members, slug, canArchive, isArchived, isInterestGroup } =
-        useGroupDetail();
+    const { slug } = Route.useParams();
+
+    const { data: apiGroup } = useSuspenseQuery(getGroupBySlugQuery(slug));
+
+    const { data: apiMembers } = useQuery(getGroupMembersQuery(slug, 0));
+
+    const isLeader = useIsGroupLeaderOf(slug);
+
+    const isArchived = Boolean(apiGroup.archivedAt);
+
+    // Roster changes: `groups:manage` for this group, or being its leader.
+    // Det samme gjelder å gi ledervervet videre — men «Legg til medlem»-veien
+    // legger fortsatt bare til vanlige medlemmer, slik API-et krever.
+    const hasGroupsManage = useScopedPermission(
+        "groups:manage",
+        `group:${slug}`,
+    );
+
+    const canArchive = hasGroupsManage || isLeader;
+
+    const members = useMemo(
+        () => sortMembersByName((apiMembers ?? []).map(mapMember)),
+        [apiMembers],
+    );
+
+    const isInterestGroup = apiGroup.type.toUpperCase() === "INTERESTGROUP";
+
+    const leaders = useMemo(
+        () => members.filter((m) => m.role === "leader"),
+        [members],
+    );
 
     const { data: apiFormerMembers } = useQuery(
         getGroupFormerMembersQuery(slug),
@@ -111,95 +158,154 @@ function GroupMembersPage() {
             ),
         [leaderSearchResults, leaders],
     );
+    const onPromote = (member: Member) =>
+        updateMemberRole.mutate({
+            groupSlug: slug,
+            userId: member.id,
+            data: { role: "leader" },
+        });
+    const onRemove = (member: Member) =>
+        removeMember.mutate({
+            groupSlug: slug,
+            userId: member.id,
+        });
+
+    const [showFormer, setShowFormer] = useState(false);
 
     return (
-        <GroupMembersTab
-            leaders={leaders}
-            members={regularMembers}
-            formerMembers={formerMembers}
-            isAdmin={canManageMembers}
-            canPromote={canManageMembers}
-            joinRequests={
-                canManageMembers && isInterestGroup ? (
-                    <GroupJoinRequestsPanel groupSlug={slug} />
-                ) : null
-            }
-            leaderTransfer={
-                canManageMembers && canPickLeaderOutsideGroup
-                    ? {
-                          copy: {
-                              trigger: "Overfør",
-                              title: "Overfør lederverv",
-                              description:
-                                  "Den nye lederen legges til i gruppen om hen ikke er medlem. Avtroppende leder mister plassen med mindre et verv gir den.",
-                              submit: "Overfør lederverv",
-                              submitting: "Overfører …",
-                          },
-                          query: leaderQuery,
-                          onQueryChange: setLeaderQuery,
-                          results: leaderCandidates,
-                          isSearching: isSearchingLeader,
-                          isAdding: updateMemberRole.isPending,
-                          error:
-                              leaderError ??
-                              (leaderSearchFailure
-                                  ? SEARCH_FAILED_MESSAGE
-                                  : null),
-                          onAdd: async (userId) => {
-                              setLeaderError(null);
-                              try {
-                                  await updateMemberRole.mutateAsync({
-                                      groupSlug: slug,
-                                      userId,
-                                      data: {
-                                          role: "leader",
-                                      },
-                                  });
-                              } catch (error) {
-                                  setLeaderError(
-                                      await extractErrorMessage(error),
-                                  );
-                                  throw error;
-                              }
-                          },
-                      }
-                    : undefined
-            }
-            memberSearch={{
-                query: memberQuery,
-                onQueryChange: setMemberQuery,
-                results: addableUsers,
-                isSearching: isSearchingMembers,
-                isAdding: addMember.isPending,
-                error:
-                    addMemberError ??
-                    (memberSearchFailure ? SEARCH_FAILED_MESSAGE : null),
-                onAdd: async (userId) => {
-                    setAddMemberError(null);
-                    try {
-                        await addMember.mutateAsync({
-                            groupSlug: slug,
-                            data: { userId, role: "member" },
-                        });
-                    } catch (error) {
-                        setAddMemberError(await extractErrorMessage(error));
-                        throw error;
-                    }
-                },
-            }}
-            onPromote={(member) =>
-                updateMemberRole.mutate({
-                    groupSlug: slug,
-                    userId: member.id,
-                    data: { role: "leader" },
-                })
-            }
-            onRemove={(member) =>
-                removeMember.mutate({
-                    groupSlug: slug,
-                    userId: member.id,
-                })
-            }
-        />
+        <div className="flex flex-col gap-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-2xl">{`Medlemmer (${leaders.length + regularMembers.length})`}</h2>
+                <div className="flex flex-wrap items-center gap-2">
+                    {canManageMembers && canPickLeaderOutsideGroup ? (
+                        <GroupAddMemberDialog
+                            copy={{
+                                trigger: "Overfør",
+                                title: "Overfør lederverv",
+                                description:
+                                    "Den nye lederen legges til i gruppen om hen ikke er medlem. Avtroppende leder mister plassen med mindre et verv gir den.",
+                                submit: "Overfør lederverv",
+                                submitting: "Overfører …",
+                            }}
+                            query={leaderQuery}
+                            onQueryChange={setLeaderQuery}
+                            results={leaderCandidates}
+                            isSearching={isSearchingLeader}
+                            isAdding={updateMemberRole.isPending}
+                            error={
+                                leaderError ??
+                                (leaderSearchFailure
+                                    ? SEARCH_FAILED_MESSAGE
+                                    : null)
+                            }
+                            onAdd={async (userId) => {
+                                setLeaderError(null);
+                                try {
+                                    await updateMemberRole.mutateAsync({
+                                        groupSlug: slug,
+                                        userId,
+                                        data: {
+                                            role: "leader",
+                                        },
+                                    });
+                                } catch (error) {
+                                    setLeaderError(
+                                        await extractErrorMessage(error),
+                                    );
+                                    throw error;
+                                }
+                            }}
+                        />
+                    ) : null}
+                    {canManageMembers ? (
+                        <GroupAddMemberDialog
+                            query={memberQuery}
+                            onQueryChange={setMemberQuery}
+                            results={addableUsers}
+                            isSearching={isSearchingMembers}
+                            isAdding={addMember.isPending}
+                            error={
+                                addMemberError ??
+                                (memberSearchFailure
+                                    ? SEARCH_FAILED_MESSAGE
+                                    : null)
+                            }
+                            onAdd={async (userId) => {
+                                setAddMemberError(null);
+                                try {
+                                    await addMember.mutateAsync({
+                                        groupSlug: slug,
+                                        data: { userId, role: "member" },
+                                    });
+                                } catch (error) {
+                                    setAddMemberError(
+                                        await extractErrorMessage(error),
+                                    );
+                                    throw error;
+                                }
+                            }}
+                        />
+                    ) : null}
+                </div>
+            </div>
+
+            {canManageMembers && isInterestGroup ? (
+                <GroupJoinRequestsPanel groupSlug={slug} />
+            ) : null}
+
+            {/* Lederen ligger øverst i samme liste som resten — badgen skiller den ut. */}
+            <ul className="flex flex-col gap-2">
+                {leaders.map((m) => (
+                    <li key={m.id}>
+                        <GroupMemberRow
+                            member={m}
+                            isLeader
+                            onRemove={canManageMembers ? onRemove : undefined}
+                        />
+                    </li>
+                ))}
+                {regularMembers.map((m) => (
+                    <li key={m.id}>
+                        <GroupMemberRow
+                            member={m}
+                            onPromote={canManageMembers ? onPromote : undefined}
+                            onRemove={canManageMembers ? onRemove : undefined}
+                        />
+                    </li>
+                ))}
+            </ul>
+
+            {formerMembers.length > 0 ? (
+                <Collapsible open={showFormer} onOpenChange={setShowFormer}>
+                    <CollapsibleTrigger
+                        render={
+                            <button
+                                type="button"
+                                className="flex w-full cursor-pointer items-center gap-2 text-left"
+                            />
+                        }
+                    >
+                        <h3 className="text-lg">
+                            Tidligere medlemmer ({formerMembers.length})
+                        </h3>
+                        <ChevronDown
+                            className={cn(
+                                "size-4 shrink-0 transition-transform",
+                                showFormer && "rotate-180",
+                            )}
+                        />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                        <ul className="flex flex-col gap-2 pt-2">
+                            {formerMembers.map((m) => (
+                                <li key={m.id}>
+                                    <GroupMemberRow member={m} historic />
+                                </li>
+                            ))}
+                        </ul>
+                    </CollapsibleContent>
+                </Collapsible>
+            ) : null}
+        </div>
     );
 }
