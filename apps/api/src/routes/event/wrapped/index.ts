@@ -1,3 +1,4 @@
+export { listWrappedArchiveRoute } from "./archive";
 export { deleteMyWrappedPhotoRoute } from "./mine-delete";
 export { getMyWrappedPhotoImageRoute } from "./mine-image";
 export { getMyWrappedPhotosRoute } from "./mine-list";
