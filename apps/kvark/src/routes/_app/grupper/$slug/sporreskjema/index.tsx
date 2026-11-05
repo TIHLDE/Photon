@@ -41,7 +41,8 @@ function GroupFormsPage() {
 
     const { data: apiGroup } = useSuspenseQuery(getGroupBySlugQuery(slug));
 
-    const { data: session } = useSuspenseQuery(authQueryOptions);
+    const { data: session, isPending: isSessionPending } =
+        useQuery(authQueryOptions);
 
     const isLeader = useIsGroupLeaderOf(slug);
 
@@ -250,7 +251,8 @@ function GroupFormsPage() {
         }
     }
 
-    if (!isLoggedIn) return <Navigate to="/grupper/$slug" params={{ slug }} />;
+    if (!isLoggedIn && !isSessionPending)
+        return <Navigate to="/grupper/$slug" params={{ slug }} replace />;
     return (
         <>
             <div className="flex flex-col gap-6">

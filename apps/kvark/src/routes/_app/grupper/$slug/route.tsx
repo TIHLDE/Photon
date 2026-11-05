@@ -117,7 +117,7 @@ function GroupDetail() {
 
     const { data: apiGroup } = useSuspenseQuery(getGroupBySlugQuery(slug));
 
-    const { data: session } = useSuspenseQuery(authQueryOptions);
+    const { data: session } = useQuery(authQueryOptions);
 
     const { data: apiMembers } = useQuery(getGroupMembersQuery(slug, 0));
 

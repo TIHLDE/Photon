@@ -30,7 +30,8 @@ function GroupLawsPage() {
 
     const { data: apiGroup } = useSuspenseQuery(getGroupBySlugQuery(slug));
 
-    const { data: session } = useSuspenseQuery(authQueryOptions);
+    const { data: session, isPending: isSessionPending } =
+        useQuery(authQueryOptions);
 
     const isLeader = useIsGroupLeaderOf(slug);
 
@@ -113,8 +114,8 @@ function GroupLawsPage() {
         }
     }
 
-    if (!canViewFines)
-        return <Navigate to="/grupper/$slug" params={{ slug }} />;
+    if (!canViewFines && !isSessionPending)
+        return <Navigate to="/grupper/$slug" params={{ slug }} replace />;
     return (
         <div className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center justify-between gap-3">

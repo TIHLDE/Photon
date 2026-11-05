@@ -57,7 +57,8 @@ function GroupFinesPage() {
 
     const { data: apiGroup } = useSuspenseQuery(getGroupBySlugQuery(slug));
 
-    const { data: session } = useSuspenseQuery(authQueryOptions);
+    const { data: session, isPending: isSessionPending } =
+        useQuery(authQueryOptions);
 
     const { data: apiMembers } = useQuery(getGroupMembersQuery(slug, 0));
 
@@ -205,8 +206,8 @@ function GroupFinesPage() {
         }
     }
 
-    if (!finesTabVisible)
-        return <Navigate to="/grupper/$slug" params={{ slug }} />;
+    if (!finesTabVisible && !isSessionPending)
+        return <Navigate to="/grupper/$slug" params={{ slug }} replace />;
     return (
         <>
             <GroupFinesTab
