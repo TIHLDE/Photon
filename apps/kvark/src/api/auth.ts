@@ -432,8 +432,19 @@ export async function signInWithFeide(
 }
 
 export async function logoutUser() {
-    await clientAuthInstance.signOut();
-    await invalidateAuth();
+    const result = await clientAuthInstance.signOut();
+    if (result.error) {
+        throw new AuthError(
+            authErrorMessage(result.error, "Kunne ikke logge ut."),
+        );
+    }
+    const queryClient = getQueryClient();
+    // Notify mounted auth observers before discarding all account-specific data.
+    queryClient.setQueryData<Awaited<ReturnType<typeof getAuthSession>> | null>(
+        [...authQueryOptions.queryKey],
+        null,
+    );
+    queryClient.clear();
 }
 
 export const changePasswordMutationOptions = mutationOptions({

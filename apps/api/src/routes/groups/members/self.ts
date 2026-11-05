@@ -51,7 +51,7 @@ async function notifyLeadersOfJoinRequest(
 
     const title = `Ny forespørsel i ${group.name}`;
     const description = `${requester?.name ?? "Noen"} vil bli med i ${group.name}.`;
-    const link = `/grupper/${group.slug}?tab=medlemmer`;
+    const link = `/grupper/${group.slug}/medlemmer`;
 
     const results = await Promise.allSettled(
         leaders.map((leader) =>

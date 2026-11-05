@@ -103,6 +103,7 @@ type FormEditDialogProps = {
     form: Form | null;
     /** Spørsmålene slik de er lagret. Null mens de lastes. */
     questions: FormQuestionValues[] | null;
+    loadError?: string | null;
     /** Antall svar. Over 0 låser spørsmålene. */
     answerCount: number;
     onClose: () => void;
@@ -126,6 +127,7 @@ type FormEditDialogProps = {
 
 export function FormEditDialog({
     open,
+    loadError = null,
     form,
     questions,
     answerCount,
@@ -156,7 +158,11 @@ export function FormEditDialog({
                         Endringene gjelder med én gang du lagrer.
                     </DialogDescription>
                 </DialogHeader>
-                {form && questions ? (
+                {loadError ? (
+                    <Alert variant="destructive">
+                        <AlertDescription>{loadError}</AlertDescription>
+                    </Alert>
+                ) : form && questions ? (
                     // Nøkkelen remonterer skjemaet når et annet spørreskjema
                     // åpnes: TanStack Form leser defaultValues bare én gang.
                     <EditForm

@@ -37,7 +37,7 @@ type GroupGiveFineDialogProps = {
     onOpenChange: (open: boolean) => void;
     members: ComboboxMember[];
     laws: Law[];
-    onSubmit: (values: GiveFineValues) => void;
+    onSubmit: (values: GiveFineValues) => Promise<string[]>;
     isSubmitting?: boolean;
     /** Feilmelding fra opprettelsen, vist i dialogen så skjemaet beholdes. */
     error?: string | null;
@@ -94,16 +94,19 @@ export function GroupGiveFineDialog({
         (!lawRequired || law !== null) &&
         !isSubmitting;
 
-    function handleSubmit(event: React.FormEvent) {
+    async function handleSubmit(event: React.FormEvent) {
         event.preventDefault();
         if (!canSubmit) return;
-        onSubmit({
+        const completedUserIds = await onSubmit({
             userIds: recipients.map((member) => member.id),
             lawId: law?.id ?? null,
             amount: parsedAmount,
             reason: reason.trim(),
             image,
         });
+        setRecipients((current) =>
+            current.filter((member) => !completedUserIds.includes(member.id)),
+        );
     }
 
     return (

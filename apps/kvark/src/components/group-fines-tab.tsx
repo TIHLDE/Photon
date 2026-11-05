@@ -20,7 +20,6 @@ import { useState } from "react";
 
 import { GroupFineAccordion } from "#/components/group-fine-accordion";
 import { GroupFineStatCard } from "#/components/group-fine-stat-card";
-import { GroupPageHeader } from "#/components/group-page-header";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import type { Fine, FineStatistics, FineStatus, FineUser } from "#/lib/group";
@@ -145,7 +144,11 @@ export function GroupFinesTab({
 
     return (
         <div className="flex flex-col gap-6">
-            <GroupPageHeader title={ownFinesOnly ? "Mine bøter" : "Bøter"} />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-2xl">
+                    {ownFinesOnly ? "Mine bøter" : "Bøter"}
+                </h2>
+            </div>
 
             {ownFinesOnly ? (
                 <p className="text-sm text-muted-foreground">

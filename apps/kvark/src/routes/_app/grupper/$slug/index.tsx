@@ -1,19 +1,26 @@
-import { Card } from "@tihlde/ui/ui/card";
+import { createFileRoute } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
+import { Card } from "@tihlde/ui/ui/card";
 
-import { GroupPageHeader } from "#/components/group-page-header";
+import { getGroupBySlugQuery } from "#/api/queries/groups";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import { assetImageProps } from "#/lib/assets";
-import type { Group } from "#/lib/group";
+import { mapGroup } from "#/lib/group";
 
-type GroupOmTabProps = {
-    group: Group;
-};
+export const Route = createFileRoute("/_app/grupper/$slug/")({
+    component: GroupOverviewPage,
+});
 
-export function GroupOmTab({ group }: GroupOmTabProps) {
+function GroupOverviewPage() {
+    const { slug } = Route.useParams();
+    const { data: apiGroup } = useSuspenseQuery(getGroupBySlugQuery(slug));
+    const group = mapGroup(apiGroup);
     return (
         <div className="flex flex-col gap-6">
-            <GroupPageHeader title="Om" />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-2xl">Om</h2>
+            </div>
 
             <div
                 className={
