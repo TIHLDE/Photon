@@ -17,7 +17,10 @@ const PIXEL = Buffer.from("bilde");
 
 let counter = 0;
 
-async function uploadImage(ctx: IntegrationTestContext): Promise<{
+async function uploadImage(
+    ctx: IntegrationTestContext,
+    uploadedById: string,
+): Promise<{
     key: string;
     url: string;
 }> {
@@ -25,6 +28,7 @@ async function uploadImage(ctx: IntegrationTestContext): Promise<{
     await ctx.bucket.upload(key, PIXEL, {
         originalFilename: "bilde.webp",
         contentType: "image/webp",
+        uploadedById,
     });
 
     return { key, url: `https://photon.tihlde.org/api/assets/${key}` };
@@ -46,9 +50,9 @@ describe("replacing a picture releases the old one", () => {
                 slug: "replaced-group",
             });
 
-            const image = await uploadImage(ctx);
-            const logo = await uploadImage(ctx);
-            const newImage = await uploadImage(ctx);
+            const image = await uploadImage(ctx, user.id);
+            const logo = await uploadImage(ctx, user.id);
+            const newImage = await uploadImage(ctx, user.id);
 
             const first = await client.api.groups[":slug"].$patch({
                 param: { slug: group.slug },
@@ -78,8 +82,8 @@ describe("replacing a picture releases the old one", () => {
             const client = await ctx.utils.clientForUser(user);
             await ctx.utils.giveUserPermissions(user, ["galleries:manage"]);
 
-            const first = await uploadImage(ctx);
-            const second = await uploadImage(ctx);
+            const first = await uploadImage(ctx, user.id);
+            const second = await uploadImage(ctx, user.id);
 
             const created = await client.api.galleries.$post({
                 json: {
@@ -111,8 +115,8 @@ describe("replacing a picture releases the old one", () => {
             const user = await ctx.utils.createTestUser();
             const client = await ctx.utils.clientForUser(user);
 
-            const first = await uploadImage(ctx);
-            const second = await uploadImage(ctx);
+            const first = await uploadImage(ctx, user.id);
+            const second = await uploadImage(ctx, user.id);
 
             const set = await client.api.user.me.settings.$patch({
                 json: { imageUrl: first.url },
