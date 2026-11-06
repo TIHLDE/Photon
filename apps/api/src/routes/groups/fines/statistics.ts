@@ -1,6 +1,8 @@
 import { schema } from "@photon/db";
 import { and, eq, sql } from "drizzle-orm";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -14,7 +16,7 @@ export const fineStatisticsRoute = route().get(
         summary: "Fine totals for a group",
         operationId: "getFineStatistics",
         description:
-            "Sum of fine amounts per settlement stage for a group: awaiting approval, approved but unpaid, and paid. Rejected fines are excluded. The unpaid totals only count the group's current members — a fine follows the person out of the group, but the debt does not. 'paid' is history and counts everyone. Same audience as the fine list.",
+            "Sum of fine amounts per settlement stage for a group: awaiting approval, approved but unpaid, and paid. Rejected fines are excluded. The unpaid totals only count the group's current members — a fine follows the person out of the group, but the debt does not. 'paid' is history and counts everyone. Same audience as the fine list. Pass 'userId' to get the same three totals for one member; the membership rule still applies, so a former member's unpaid totals are 0.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -29,11 +31,21 @@ export const fineStatisticsRoute = route().get(
         })
         .build(),
     requireAuth,
+    validator(
+        "query",
+        z.object({
+            userId: z
+                .string()
+                .optional()
+                .describe("Only sum fines given to this user"),
+        }),
+    ),
     async (c) => {
         const ctx = c.get("ctx");
         const { db } = ctx;
         const groupSlug = c.req.param("groupSlug");
         const user = c.get("user");
+        const { userId } = c.req.valid("query");
 
         const group = await requireFinesGroup(ctx, groupSlug);
 
@@ -72,7 +84,15 @@ export const fineStatisticsRoute = route().get(
                     eq(schema.groupMembership.groupSlug, schema.fine.groupSlug),
                 ),
             )
-            .where(eq(schema.fine.groupSlug, groupSlug));
+            .where(
+                and(
+                    eq(schema.fine.groupSlug, groupSlug),
+                    // The membership rule above still applies here, so a
+                    // former member's unpaid totals are 0, matching
+                    // /fines/users.
+                    userId ? eq(schema.fine.userId, userId) : undefined,
+                ),
+            );
 
         return c.json({
             notApproved: totals?.notApproved ?? 0,

@@ -1872,6 +1872,7 @@ describe("fines", () => {
                     ":groupSlug"
                 ].fines.statistics.$get({
                     param: { groupSlug: group.slug },
+                    query: {},
                 });
 
                 expect(response.status).toBe(200);
@@ -1940,6 +1941,363 @@ describe("fines", () => {
                     ":groupSlug"
                 ].fines.statistics.$get({
                     param: { groupSlug: group.slug },
+                    query: {},
+                });
+
+                expect(response.status).toBe(200);
+                const json = await response.json();
+                expect(json.notApproved).toBe(0);
+                expect(json.approvedNotPaid).toBe(0);
+                expect(json.paid).toBe(13);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "sums only the given user's fines when userId is passed",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "fine-stats-user",
+                    finesActivated: true,
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                });
+                const target = await ctx.auth.api.createUser({
+                    body: {
+                        email: "stats-user-target@test.com",
+                        name: "Stats User Target",
+                        password: "test123!",
+                    },
+                });
+                const other = await ctx.auth.api.createUser({
+                    body: {
+                        email: "stats-user-other@test.com",
+                        name: "Stats User Other",
+                        password: "test123!",
+                    },
+                });
+                await ctx.db.insert(schema.groupMembership).values([
+                    { userId: target.user.id, groupSlug: group.slug },
+                    { userId: other.user.id, groupSlug: group.slug },
+                ]);
+
+                await ctx.db.insert(schema.fine).values([
+                    {
+                        userId: target.user.id,
+                        groupSlug: group.slug,
+                        reason: "a",
+                        amount: 3,
+                        status: "pending",
+                    },
+                    {
+                        userId: target.user.id,
+                        groupSlug: group.slug,
+                        reason: "b",
+                        amount: 4,
+                        status: "approved",
+                    },
+                    {
+                        userId: target.user.id,
+                        groupSlug: group.slug,
+                        reason: "c",
+                        amount: 5,
+                        status: "paid",
+                    },
+                    {
+                        userId: target.user.id,
+                        groupSlug: group.slug,
+                        reason: "d",
+                        amount: 99,
+                        status: "rejected",
+                    },
+                    {
+                        userId: other.user.id,
+                        groupSlug: group.slug,
+                        reason: "e",
+                        amount: 20,
+                        status: "pending",
+                    },
+                    {
+                        userId: other.user.id,
+                        groupSlug: group.slug,
+                        reason: "f",
+                        amount: 30,
+                        status: "approved",
+                    },
+                    {
+                        userId: other.user.id,
+                        groupSlug: group.slug,
+                        reason: "g",
+                        amount: 40,
+                        status: "paid",
+                    },
+                    {
+                        userId: other.user.id,
+                        groupSlug: group.slug,
+                        reason: "h",
+                        amount: 50,
+                        status: "rejected",
+                    },
+                ]);
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.statistics.$get({
+                    param: { groupSlug: group.slug },
+                    query: { userId: target.user.id },
+                });
+
+                expect(response.status).toBe(200);
+                const json = await response.json();
+                expect(json.notApproved).toBe(3);
+                expect(json.approvedNotPaid).toBe(4);
+                expect(json.paid).toBe(5);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "returns zero totals for a user without fines",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "fine-stats-user-clean",
+                    finesActivated: true,
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                });
+                const fined = await ctx.auth.api.createUser({
+                    body: {
+                        email: "stats-clean-fined@test.com",
+                        name: "Stats Clean Fined",
+                        password: "test123!",
+                    },
+                });
+                const clean = await ctx.auth.api.createUser({
+                    body: {
+                        email: "stats-clean-clean@test.com",
+                        name: "Stats Clean Clean",
+                        password: "test123!",
+                    },
+                });
+                await ctx.db.insert(schema.groupMembership).values([
+                    { userId: fined.user.id, groupSlug: group.slug },
+                    { userId: clean.user.id, groupSlug: group.slug },
+                ]);
+
+                await ctx.db.insert(schema.fine).values([
+                    {
+                        userId: fined.user.id,
+                        groupSlug: group.slug,
+                        reason: "a",
+                        amount: 3,
+                        status: "pending",
+                    },
+                    {
+                        userId: fined.user.id,
+                        groupSlug: group.slug,
+                        reason: "b",
+                        amount: 4,
+                        status: "approved",
+                    },
+                    {
+                        userId: fined.user.id,
+                        groupSlug: group.slug,
+                        reason: "c",
+                        amount: 5,
+                        status: "paid",
+                    },
+                ]);
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.statistics.$get({
+                    param: { groupSlug: group.slug },
+                    query: { userId: clean.user.id },
+                });
+
+                expect(response.status).toBe(200);
+                const json = await response.json();
+                expect(json.notApproved).toBe(0);
+                expect(json.approvedNotPaid).toBe(0);
+                expect(json.paid).toBe(0);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "still sums the whole group when userId is left out",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "fine-stats-user-all",
+                    finesActivated: true,
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                });
+                const target = await ctx.auth.api.createUser({
+                    body: {
+                        email: "stats-all-target@test.com",
+                        name: "Stats All Target",
+                        password: "test123!",
+                    },
+                });
+                const other = await ctx.auth.api.createUser({
+                    body: {
+                        email: "stats-all-other@test.com",
+                        name: "Stats All Other",
+                        password: "test123!",
+                    },
+                });
+                await ctx.db.insert(schema.groupMembership).values([
+                    { userId: target.user.id, groupSlug: group.slug },
+                    { userId: other.user.id, groupSlug: group.slug },
+                ]);
+
+                await ctx.db.insert(schema.fine).values([
+                    {
+                        userId: target.user.id,
+                        groupSlug: group.slug,
+                        reason: "a",
+                        amount: 3,
+                        status: "pending",
+                    },
+                    {
+                        userId: target.user.id,
+                        groupSlug: group.slug,
+                        reason: "b",
+                        amount: 4,
+                        status: "approved",
+                    },
+                    {
+                        userId: target.user.id,
+                        groupSlug: group.slug,
+                        reason: "c",
+                        amount: 5,
+                        status: "paid",
+                    },
+                    {
+                        userId: target.user.id,
+                        groupSlug: group.slug,
+                        reason: "d",
+                        amount: 99,
+                        status: "rejected",
+                    },
+                    {
+                        userId: other.user.id,
+                        groupSlug: group.slug,
+                        reason: "e",
+                        amount: 20,
+                        status: "pending",
+                    },
+                    {
+                        userId: other.user.id,
+                        groupSlug: group.slug,
+                        reason: "f",
+                        amount: 30,
+                        status: "approved",
+                    },
+                    {
+                        userId: other.user.id,
+                        groupSlug: group.slug,
+                        reason: "g",
+                        amount: 40,
+                        status: "paid",
+                    },
+                    {
+                        userId: other.user.id,
+                        groupSlug: group.slug,
+                        reason: "h",
+                        amount: 50,
+                        status: "rejected",
+                    },
+                ]);
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.statistics.$get({
+                    param: { groupSlug: group.slug },
+                    query: {},
+                });
+
+                expect(response.status).toBe(200);
+                const json = await response.json();
+                expect(json.notApproved).toBe(23);
+                expect(json.approvedNotPaid).toBe(34);
+                expect(json.paid).toBe(45);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "keeps only the paid total for a removed member when userId is passed",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "fine-stats-user-removed",
+                    finesActivated: true,
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                });
+
+                const former = await ctx.auth.api.createUser({
+                    body: {
+                        email: "stats-user-former@test.com",
+                        name: "Stats User Former",
+                        password: "test123!",
+                    },
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: former.user.id,
+                    groupSlug: group.slug,
+                });
+                await ctx.db.insert(schema.fine).values([
+                    {
+                        userId: former.user.id,
+                        groupSlug: group.slug,
+                        reason: "ubetalt ved exit",
+                        amount: 7,
+                        status: "pending",
+                    },
+                    {
+                        userId: former.user.id,
+                        groupSlug: group.slug,
+                        reason: "godkjent, men ubetalt",
+                        amount: 11,
+                        status: "approved",
+                    },
+                    {
+                        userId: former.user.id,
+                        groupSlug: group.slug,
+                        reason: "gjort opp for",
+                        amount: 13,
+                        status: "paid",
+                    },
+                ]);
+                await removeUserFromGroup(ctx, former.user.id, group.slug);
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.statistics.$get({
+                    param: { groupSlug: group.slug },
+                    query: { userId: former.user.id },
                 });
 
                 expect(response.status).toBe(200);
