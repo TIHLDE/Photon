@@ -46,6 +46,7 @@ export async function notifyApplicationSubmitted(
     ctx: AppContext,
     logger: LoggerType,
     application: ApplicationWithDetails,
+    submitterId: string,
 ): Promise<void> {
     const typeLabel = applicationTypeLabels[application.type];
     const details = buildEmailDetails(application);
@@ -78,11 +79,19 @@ export async function notifyApplicationSubmitted(
         );
     }
 
+    // contactEmail is free text, and the receipt repeats the submitted text under
+    // TIHLDE's name, so it must not reach anyone but the account that sent it.
     try {
+        const account = await ctx.db.query.user.findFirst({
+            where: { id: submitterId },
+            columns: { email: true },
+        });
+        if (!account) return;
+
         await ctx.email.sendEmailTemplate(
             {
                 from: env.MAIL_FROM,
-                to: application.contactEmail,
+                to: account.email,
                 subject: `Kvittering: ${typeLabel}`,
             },
             "ApplicationReceiptEmail",
