@@ -49,7 +49,7 @@ export const groupSignaturesRoute = route().get(
 
         const memberships = await db.query.groupMembership.findMany({
             where: { groupSlug },
-            with: { user: true },
+            with: { user: { columns: { name: true } } },
         });
 
         const memberIds = memberships.map((m) => m.userId);
@@ -71,7 +71,6 @@ export const groupSignaturesRoute = route().get(
             return {
                 userId: m.userId,
                 userName: m.user.name,
-                userEmail: m.user.email,
                 hasSigned: !!sig,
                 signedAt: sig?.signedAt?.toISOString() ?? null,
             };
