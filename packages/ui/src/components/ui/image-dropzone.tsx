@@ -5,9 +5,20 @@ import { FileTextIcon, ImagePlusIcon, UploadIcon, XIcon } from "lucide-react";
 import { type Accept, useDropzone } from "react-dropzone";
 
 import { cn } from "#/lib/utils";
+import { convertHeicToJpeg } from "#/lib/heic";
 import { compressImageFiles } from "#/lib/image-compression";
 import { Button } from "#/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "#/components/ui/dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "#/components/ui/dialog";
+import {
+    ImageCropper,
+    type ImageCropperHandle,
+} from "#/components/ui/image-cropper";
 import {
     IMAGE_PRESETS,
     type ImagePresetName,
@@ -35,7 +46,8 @@ export interface ImageDropzoneProps {
     /**
      * Which surface the image ends up on. When set, the preview is rendered in
      * that surface's exact crop instead of a generic thumbnail, so the editor
-     * sees the published result before saving.
+     * sees the published result before saving. A single image is also cropped
+     * to that surface's shape before it is accepted.
      */
     preset?: ImagePresetName;
     /**
@@ -61,6 +73,11 @@ export interface DropzoneLabels {
     removeLabel: string;
     compressing: string;
     replaceImage: string;
+    cropTitle: string;
+    cropConfirm: string;
+    cropCancel: string;
+    cropWorking: string;
+    cropAdjust: string;
 }
 
 const defaultLabels: DropzoneLabels = {
@@ -75,6 +92,11 @@ const defaultLabels: DropzoneLabels = {
     removeLabel: "Remove image",
     compressing: "Preparing image…",
     replaceImage: "Click to replace image",
+    cropTitle: "Crop image",
+    cropConfirm: "Use image",
+    cropCancel: "Cancel",
+    cropWorking: "Cropping…",
+    cropAdjust: "Adjust crop",
 };
 
 type Preview = { file: File; url: string };
@@ -179,6 +201,12 @@ export function ImageDropzone({
     const [previews, setPreviews] = React.useState<Preview[]>([]);
     const [previewIndex, setPreviewIndex] = React.useState<number | null>(null);
     const [isCompressing, setIsCompressing] = React.useState(false);
+    const [cropSource, setCropSource] = React.useState<File | null>(null);
+    const [uncroppedOriginal, setUncroppedOriginal] =
+        React.useState<File | null>(null);
+
+    const cropAspect =
+        preset && !multiple ? IMAGE_PRESETS[preset].aspectRatio : null;
 
     React.useEffect(() => {
         const next = value.map((file) => ({
@@ -209,11 +237,26 @@ export function ImageDropzone({
                     rejected.flatMap((r) => r.errors.map((e) => e.message)),
                 );
 
+                // Going through a canvas would flatten an animated GIF to a
+                // single frame.
+                const shouldCrop =
+                    cropAspect !== null &&
+                    accepted[0] !== undefined &&
+                    accepted[0].type !== "image/gif";
+
                 let files: File[] = accepted;
-                if (!disableCompression && accepted.length > 0) {
+                if (
+                    (shouldCrop || !disableCompression) &&
+                    accepted.length > 0
+                ) {
                     setIsCompressing(true);
                     try {
-                        files = await compressImageFiles(accepted);
+                        // Cropping re-encodes anyway, so it starts from the
+                        // original pixels. Only HEIC needs converting first,
+                        // since no `<img>` outside Safari can show it.
+                        files = shouldCrop
+                            ? [await convertHeicToJpeg(accepted[0]!)]
+                            : await compressImageFiles(accepted);
                     } catch (error) {
                         // Et HEIC-bilde som ikke lot seg konvertere ender her.
                         // Uten dette ble feilen en ubehandlet rejection og
@@ -229,6 +272,12 @@ export function ImageDropzone({
                     }
                 }
 
+                if (shouldCrop) {
+                    setCropSource(files[0] ?? null);
+                    return;
+                }
+
+                setUncroppedOriginal(null);
                 if (!multiple) {
                     onValueChange(files.slice(0, 1));
                 } else {
@@ -245,6 +294,7 @@ export function ImageDropzone({
         const next = value.filter((_, i) => i !== index);
         onValueChange(next);
         onError?.([]);
+        setUncroppedOriginal(null);
         if (previewIndex !== null && index <= previewIndex) {
             setPreviewIndex(
                 previewIndex === index || next.length === 0
@@ -397,16 +447,30 @@ export function ImageDropzone({
                                 </span>
                             ) : null}
                         </span>
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => removeAt(0)}
-                            disabled={disabled}
-                            className="shrink-0"
-                        >
-                            {labels.removeLabel}
-                        </Button>
+                        <div className="flex shrink-0 gap-1">
+                            {uncroppedOriginal ? (
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                        setCropSource(uncroppedOriginal)
+                                    }
+                                    disabled={disabled}
+                                >
+                                    {labels.cropAdjust}
+                                </Button>
+                            ) : null}
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => removeAt(0)}
+                                disabled={disabled}
+                            >
+                                {labels.removeLabel}
+                            </Button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -417,6 +481,23 @@ export function ImageDropzone({
                         : null
                 }
                 onClose={() => setPreviewIndex(null)}
+            />
+            <ImageCropDialog
+                file={cropSource}
+                aspect={cropAspect ?? 1}
+                outputWidth={
+                    preset
+                        ? IMAGE_PRESETS[preset].recommended?.width
+                        : undefined
+                }
+                labels={labels}
+                onCancel={() => setCropSource(null)}
+                onDone={(cropped) => {
+                    setUncroppedOriginal(cropSource);
+                    setCropSource(null);
+                    onValueChange([cropped]);
+                    onBlur?.();
+                }}
             />
         </>
     );
@@ -534,6 +615,81 @@ function DropzonePreviewItem({
                 <XIcon />
             </Button>
         </li>
+    );
+}
+
+interface ImageCropDialogProps {
+    file: File | null;
+    aspect: number;
+    outputWidth?: number;
+    labels: DropzoneLabels;
+    onCancel: () => void;
+    onDone: (file: File) => void;
+}
+
+/** A modal, so a form behind it cannot be submitted with the crop unfinished. */
+function ImageCropDialog({
+    file,
+    aspect,
+    outputWidth,
+    labels,
+    onCancel,
+    onDone,
+}: ImageCropDialogProps) {
+    const cropperRef = React.useRef<ImageCropperHandle>(null);
+    const [isReady, setIsReady] = React.useState(false);
+    const [isCropping, setIsCropping] = React.useState(false);
+
+    async function confirm() {
+        setIsCropping(true);
+        try {
+            const cropped = await cropperRef.current?.getCroppedFile();
+            if (cropped) onDone(cropped);
+        } finally {
+            setIsCropping(false);
+        }
+    }
+
+    return (
+        <Dialog
+            open={file !== null}
+            onOpenChange={(open) => {
+                if (!open) onCancel();
+            }}
+        >
+            {file && (
+                <DialogContent className="sm:max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>{labels.cropTitle}</DialogTitle>
+                    </DialogHeader>
+                    <ImageCropper
+                        controlRef={cropperRef}
+                        file={file}
+                        aspect={aspect}
+                        outputWidth={outputWidth}
+                        onReadyChange={setIsReady}
+                    />
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onCancel}
+                        >
+                            {labels.cropCancel}
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={confirm}
+                            disabled={!isReady || isCropping}
+                        >
+                            {isCropping
+                                ? labels.cropWorking
+                                : labels.cropConfirm}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            )}
+        </Dialog>
     );
 }
 
