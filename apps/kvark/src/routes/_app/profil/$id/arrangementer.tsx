@@ -39,7 +39,7 @@ function CalendarSubscriptionSection() {
     const regenerate = useMutation(regenerateCalendarSubscriptionMutation);
 
     if (isPending || !data) {
-        return <Skeleton className="h-48 w-full" />;
+        return <Skeleton className="h-24 w-full sm:h-20" />;
     }
 
     return (
