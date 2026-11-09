@@ -59,7 +59,7 @@ export function EventRegistrantsDialog({
                 {/* DialogBody scroller for seg selv, så tittel og lukkeknapp
                     blir stående når lista er lengre enn skjermen. */}
                 <DialogBody className="gap-1">
-                    <ScrollArea className="max-h-96">
+                    <ScrollArea className="flex max-h-96 min-h-0 flex-col">
                         <div className="flex flex-col gap-1">
                             {registered.map((r) => (
                                 <RegistrantRow key={r.id} registrant={r} />
