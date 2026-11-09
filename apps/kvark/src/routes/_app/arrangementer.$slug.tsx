@@ -835,8 +835,6 @@ function EventDetailPage() {
     );
 }
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 /**
  * Navnet til kontaktpersonen, med kontaktinfoen under. Arrangørens egen
  * kontaktinfo går foran e-posten. Begge er null for utloggede, som bare får
@@ -862,16 +860,7 @@ function ContactValue({
                     {person.name}
                 </Link>
             ) : null}
-            {EMAIL_PATTERN.test(contact) ? (
-                <a
-                    href={`mailto:${contact}`}
-                    className="text-muted-foreground underline underline-offset-4"
-                >
-                    {contact}
-                </a>
-            ) : (
-                <span className="text-muted-foreground">{contact}</span>
-            )}
+            <span className="text-muted-foreground">{contact}</span>
         </span>
     );
 }
