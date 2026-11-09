@@ -64,3 +64,55 @@ describe("flere ledere i interessegrupper", () => {
         500_000,
     );
 });
+
+describe("fjerne lederrollen i interessegrupper", () => {
+    integrationTest(
+        "en leder kan sette en medleder ned til vanlig medlem",
+        async ({ ctx }) => {
+            const leader = await ctx.utils.createTestUser();
+            const coLeader = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(leader);
+            const group = await ctx.utils.createTestGroup({
+                type: "interestgroup",
+            });
+
+            await addUserToGroup(ctx, leader.id, group.slug, "leader");
+            await addUserToGroup(ctx, coLeader.id, group.slug, "leader");
+
+            const response = await client.api.groups[":groupSlug"].members[
+                ":userId"
+            ].$patch({
+                param: { groupSlug: group.slug, userId: coLeader.id },
+                json: { role: "member" },
+            });
+
+            expect(response.status).toBe(200);
+            expect(await leadersOf(ctx, group.slug)).toEqual([leader.id]);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "den siste lederen kan ikke fjerne sin egen lederrolle",
+        async ({ ctx }) => {
+            const leader = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(leader);
+            const group = await ctx.utils.createTestGroup({
+                type: "interestgroup",
+            });
+
+            await addUserToGroup(ctx, leader.id, group.slug, "leader");
+
+            const response = await client.api.groups[":groupSlug"].members[
+                ":userId"
+            ].$patch({
+                param: { groupSlug: group.slug, userId: leader.id },
+                json: { role: "member" },
+            });
+
+            expect(response.status).toBe(400);
+            expect(await leadersOf(ctx, group.slug)).toEqual([leader.id]);
+        },
+        500_000,
+    );
+});

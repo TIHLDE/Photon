@@ -4,6 +4,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import {
     addUserToGroup,
+    allowsMultipleLeaders,
     allowsNonMemberLeader,
     isDerivedGroupType,
     updateGroupMemberRole,
@@ -26,7 +27,7 @@ export const updateMemberRoleRoute = route().patch(
         summary: "Update member role",
         operationId: "updateGroupMemberRole",
         description:
-            "Update a member's role in a group. Requires 'groups:manage' (globally or scoped to the group), or being the group's leader — a sitting leader may only hand the leadership over to someone else.",
+            "Update a member's role in a group. Requires 'groups:manage' (globally or scoped to the group), or being the group's leader — a sitting leader may only hand the leadership over to someone else, or, in an interest group, set a leader back to member while another leader remains.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -56,16 +57,7 @@ export const updateMemberRoleRoute = route().patch(
         // holding "groups:manage" for the group lands here with `false`.
         const asSittingLeader = c.get("isResourceOwner") === true;
 
-        if (asSittingLeader) {
-            // Overføring, ikke rosettdeling: lederen kan peke ut sin
-            // etterfølger, men ikke sette medlemmer opp og ned ellers — og
-            // ikke legge ned ledervervet uten å gi det videre.
-            if (body.role !== "leader") {
-                throw new HTTPException(403, {
-                    message:
-                        "Changing a member's role requires the 'groups:manage' permission",
-                });
-            }
+        if (asSittingLeader && body.role === "leader") {
             if (userId === c.get("user")?.id) {
                 throw new HTTPException(400, {
                     message: "You are already the leader of this group",
@@ -91,6 +83,29 @@ export const updateMemberRoleRoute = route().patch(
             throw new HTTPException(400, {
                 message: `Membership of "${groupSlug}" follows the member's Feide study programme and cannot be edited directly`,
             });
+        }
+
+        // Lederen gir vervet videre, men setter ikke folk ned — bortsett fra
+        // en medleder i interessegrupper, så lenge gruppa beholder en leder.
+        if (asSittingLeader && body.role === "member") {
+            if (!allowsMultipleLeaders(group.type)) {
+                throw new HTTPException(403, {
+                    message:
+                        "Changing a member's role requires the 'groups:manage' permission",
+                });
+            }
+            const otherLeader = await db.query.groupMembership.findFirst({
+                where: {
+                    groupSlug,
+                    role: "leader",
+                    userId: { ne: userId },
+                },
+            });
+            if (!otherLeader) {
+                throw new HTTPException(400, {
+                    message: "A group cannot be left without a leader",
+                });
+            }
         }
 
         if (

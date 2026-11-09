@@ -21,6 +21,7 @@ import {
     DropdownMenuTrigger,
 } from "@tihlde/ui/ui/dropdown-menu";
 import {
+    ArrowDownCircle,
     ArrowUpCircle,
     Crown,
     MoreHorizontal,
@@ -43,6 +44,8 @@ type GroupMemberRowProps = {
      * du er lederen som gir vervet fra deg.
      */
     onPromote?: (member: Member) => void;
+    /** Setter en leder tilbake til vanlig medlem. */
+    onDemote?: (member: Member) => void;
     onRemove?: (member: Member) => void;
 };
 
@@ -51,11 +54,13 @@ export function GroupMemberRow({
     historic = false,
     isLeader = false,
     onPromote,
+    onDemote,
     onRemove,
 }: GroupMemberRowProps) {
     // The whole row already links to the profile, so a menu with nothing but
     // "Se profil" is noise — drop it entirely when the viewer has no actions.
-    const hasActions = Boolean(onPromote) || Boolean(onRemove);
+    const hasActions =
+        Boolean(onPromote) || Boolean(onDemote) || Boolean(onRemove);
 
     return (
         <Card size="sm" className="flex-row items-center gap-1 py-2 pr-2 pl-3">
@@ -96,6 +101,7 @@ export function GroupMemberRow({
                     member={member}
                     isLeader={isLeader}
                     onPromote={onPromote}
+                    onDemote={onDemote}
                     onRemove={onRemove}
                 />
             ) : null}
@@ -107,11 +113,13 @@ function MemberRowMenu({
     member,
     isLeader,
     onPromote,
+    onDemote,
     onRemove,
 }: {
     member: Member;
     isLeader: boolean;
     onPromote?: (member: Member) => void;
+    onDemote?: (member: Member) => void;
     onRemove?: (member: Member) => void;
 }) {
     const [confirmRemove, setConfirmRemove] = useState(false);
@@ -152,6 +160,12 @@ function MemberRowMenu({
                         >
                             <ArrowUpCircle />
                             Gjør til leder
+                        </DropdownMenuItem>
+                    ) : null}
+                    {onDemote && isLeader ? (
+                        <DropdownMenuItem onClick={() => onDemote(member)}>
+                            <ArrowDownCircle />
+                            Fjern lederrolle
                         </DropdownMenuItem>
                     ) : null}
                     {onRemove ? (
