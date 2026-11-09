@@ -85,6 +85,7 @@ const emptyValues: EventFormValues = {
     categorySlug: "",
     organizerGroupSlug: "",
     contactPersonUserId: "",
+    contactInfo: "",
     location: "",
     locationCoords: null,
     start: null,
@@ -293,6 +294,7 @@ function NewEventPage() {
                             ? Number(values.price)
                             : null,
                     contactPersonUserId: values.contactPersonUserId || null,
+                    contactInfo: values.contactInfo.trim() || null,
                     reactionsAllowed: values.reactionsAllowed,
                 },
             },

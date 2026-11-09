@@ -322,6 +322,11 @@ export const updateRoute = route().put(
                 allowWaitlist: body.allowWaitlist,
                 categorySlug: body.categorySlug,
                 contactPersonId: body.contactPersonUserId,
+                // undefined lar feltet stå; tom tekst lagres som null.
+                contactInfo:
+                    body.contactInfo === undefined
+                        ? undefined
+                        : body.contactInfo?.trim() || null,
                 description: body.description,
                 location: body.location,
                 // undefined lar Drizzle stå over feltet; eksplisitt null

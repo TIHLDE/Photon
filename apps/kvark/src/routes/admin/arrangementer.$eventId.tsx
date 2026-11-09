@@ -365,6 +365,7 @@ function valuesFromEvent(
         categorySlug: event.category.slug,
         organizerGroupSlug: event.organizer?.slug ?? "",
         contactPersonUserId: event.contactPerson?.id ?? "",
+        contactInfo: event.contactInfo ?? "",
         location,
         locationCoords:
             hasCoords && location
@@ -583,6 +584,7 @@ function DetailsTab({ eventId }: { eventId: string }) {
                     ? Number(values.price)
                     : null,
             contactPersonUserId: values.contactPersonUserId || null,
+            contactInfo: values.contactInfo.trim() || null,
             reactionsAllowed: values.reactionsAllowed,
         };
 

@@ -294,6 +294,8 @@ export const getRoute = route().get(
                 event.cancellationDeadline?.toISOString() ?? null,
             organizer,
             contactPerson,
+            // Deles etter samme regel som e-posten den erstatter.
+            contactInfo: user ? event.contactInfo : null,
             category,
             closed: event.isRegistrationClosed,
             requiresSigningUp: event.requiresSigningUp,

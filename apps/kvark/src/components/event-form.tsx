@@ -58,6 +58,8 @@ export type EventFormValues = {
     locationCoords: { label: string; lat: number; lng: number } | null;
     /** Bruker-ID til den som skal svare på spørsmål. Tom streng = ingen valgt. */
     contactPersonUserId: string;
+    /** Vises i stedet for kontaktpersonens e-post. Tom streng = bruk e-posten. */
+    contactInfo: string;
     start: Date | null;
     end: Date | null;
     /** Om arrangementet har påmelding i det hele tatt. */
@@ -441,6 +443,26 @@ export function EventForm({
                                     </Select>
                                     <FieldDescription>
                                         Velg blant medlemmene i arrangørgruppen.
+                                    </FieldDescription>
+                                </Field>
+                                <Field className="lg:col-start-2">
+                                    <FieldLabel htmlFor="event-contact-info">
+                                        Kontaktinfo (valgfritt)
+                                    </FieldLabel>
+                                    <Input
+                                        id="event-contact-info"
+                                        type="text"
+                                        maxLength={255}
+                                        value={values.contactInfo}
+                                        onChange={(event) =>
+                                            onChange({
+                                                contactInfo: event.target.value,
+                                            })
+                                        }
+                                    />
+                                    <FieldDescription>
+                                        Erstatter e-posten, f.eks. et
+                                        telefonnummer.
                                     </FieldDescription>
                                 </Field>
                             </div>

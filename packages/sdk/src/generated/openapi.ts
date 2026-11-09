@@ -4012,6 +4012,8 @@ export interface components {
             price: number | null;
             /** @description User ID of the primary contact person for the event */
             contactPersonUserId: string | null;
+            /** @description Free-text contact info shown instead of the contact person's e-mail, e.g. a phone number */
+            contactInfo?: string | null;
             /** @description Should users be able to react to this event with emojis? */
             reactionsAllowed: boolean;
             /**
@@ -4167,6 +4169,8 @@ export interface components {
             price?: number | null;
             /** @description User ID of the primary contact person for the event */
             contactPersonUserId?: string | null;
+            /** @description Free-text contact info shown instead of the contact person's e-mail, e.g. a phone number */
+            contactInfo?: string | null;
             /** @description Should users be able to react to this event with emojis? */
             reactionsAllowed?: boolean;
             /**
@@ -4233,6 +4237,8 @@ export interface components {
                 /** @description Contact person e-mail. Null for unauthenticated callers, so members' addresses are not exposed to the open internet. */
                 email: string | null;
             } | null;
+            /** @description Free-text contact info, shown instead of the contact person's e-mail. Null for unauthenticated callers, like the e-mail. */
+            contactInfo: string | null;
             /** @description Is registration closed */
             closed: boolean;
             /** @description Do users need to sign up to attend the event? */

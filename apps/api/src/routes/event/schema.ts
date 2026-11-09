@@ -145,6 +145,10 @@ const eventMutationSchema = z.object({
     contactPersonUserId: z.string().nullable().meta({
         description: "User ID of the primary contact person for the event",
     }),
+    contactInfo: z.string().max(255).nullable().optional().meta({
+        description:
+            "Free-text contact info shown instead of the contact person's e-mail, e.g. a phone number",
+    }),
     reactionsAllowed: z.boolean().meta({
         description: "Should users be able to react to this event with emojis?",
     }),
@@ -656,6 +660,10 @@ export const eventDetailSchema = Schema(
                 description:
                     "Who to ask about the event (nullable). Set with contactPersonUserId.",
             }),
+        contactInfo: z.string().nullable().meta({
+            description:
+                "Free-text contact info, shown instead of the contact person's e-mail. Null for unauthenticated callers, like the e-mail.",
+        }),
         closed: z.boolean().meta({ description: "Is registration closed" }),
         requiresSigningUp: z.boolean().meta({
             description: "Do users need to sign up to attend the event?",
