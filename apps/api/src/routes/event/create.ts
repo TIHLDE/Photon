@@ -172,6 +172,7 @@ export const createRoute = route().post(
                     : undefined,
                 isRegistrationClosed: body.isRegistrationClosed,
                 contactPersonId: body.contactPersonUserId,
+                contactInfo: body.contactInfo?.trim() || null,
                 reactionsAllowed: body.reactionsAllowed,
                 categorySlug: body.categorySlug,
                 imageUrl: body.imageUrl,

@@ -619,30 +619,16 @@ function EventDetailPage() {
                                       />,
                                   ]
                                 : []),
-                            ...(event.contactPerson
+                            ...(event.contactPerson || event.contactInfo
                                 ? [
                                       <DetailField
                                           icon={UserRound}
                                           label="Kontaktperson"
                                           value={
-                                              // Profilsiden krever innlogging,
-                                              // så utloggede får navnet som ren
-                                              // tekst. E-posten deles etter
-                                              // samme regel og røper hvem som
-                                              // er innlogget.
-                                              event.contactPerson.email ? (
-                                                  <Link
-                                                      to="/profil/$id"
-                                                      params={{
-                                                          id: event
-                                                              .contactPerson.id,
-                                                      }}
-                                                  >
-                                                      {event.contactPerson.name}
-                                                  </Link>
-                                              ) : (
-                                                  event.contactPerson.name
-                                              )
+                                              <ContactValue
+                                                  person={event.contactPerson}
+                                                  info={event.contactInfo}
+                                              />
                                           }
                                       />,
                                   ]
@@ -846,5 +832,35 @@ function EventDetailPage() {
                 </>
             }
         />
+    );
+}
+
+/**
+ * Navnet til kontaktpersonen, med kontaktinfoen under. Arrangørens egen
+ * kontaktinfo går foran e-posten. Begge er null for utloggede, som bare får
+ * navnet — profilsiden krever dessuten innlogging, så da blir det ren tekst.
+ */
+function ContactValue({
+    person,
+    info,
+}: {
+    person: { id: string; name: string; email: string | null } | null;
+    info: string | null;
+}) {
+    const contact = info ?? person?.email ?? null;
+
+    if (!contact) {
+        return person?.name ?? null;
+    }
+
+    return (
+        <span className="flex flex-col items-start">
+            {person ? (
+                <Link to="/profil/$id" params={{ id: person.id }}>
+                    {person.name}
+                </Link>
+            ) : null}
+            <span className="text-muted-foreground">{contact}</span>
+        </span>
     );
 }

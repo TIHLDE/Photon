@@ -1,0 +1,1 @@
+ALTER TABLE "event_event" ADD COLUMN "contact_info" varchar(255);

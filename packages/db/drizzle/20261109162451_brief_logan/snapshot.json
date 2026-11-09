@@ -1,0 +1,47 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "3146c008-8533-4b02-bf13-e61ee99cfb6d",
+  "prevIds": [
+    "cb29b8cb-5e97-4431-a9b1-804502719390"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "event_event",
+        "contact_info"
+      ],
+      "writes": [
+        "s|col|public.event_event.contact_info",
+        "n|col|public.event_event.contact_info",
+        "e|col|public.event_event.contact_info"
+      ],
+      "reads": [
+        "n|tbl|public.event_event",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "event_event",
+        "name": "contact_info",
+        "type": "varchar(255)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

@@ -201,6 +201,11 @@ export const event = pgTable("event", {
      * registration only: it changes nothing about who can see the event.
      */
     openToAlumni: boolean("open_to_alumni").default(false).notNull(),
+    /**
+     * Fritekst som vises i stedet for e-posten til kontaktpersonen, f.eks. et
+     * telefonnummer eller en annen adresse. Null betyr at e-posten vises.
+     */
+    contactInfo: varchar("contact_info", { length: 255 }),
 });
 export const eventRegistration = pgTable(
     "registration",
