@@ -20,6 +20,8 @@ export type OAuthClientPublic = {
     scopes?: string[] | null;
 };
 
+export type OAuthApplicationType = "web" | "native";
+
 // TODO: Found out if this is needed here, or can be moved to the Auth Package
 export type OAuthClientFull = OAuthClientPublic & {
     redirect_uris: string[];
@@ -27,6 +29,7 @@ export type OAuthClientFull = OAuthClientPublic & {
     grant_types?: string[] | null;
     response_types?: string[] | null;
     token_endpoint_auth_method?: string | null;
+    application_type?: OAuthApplicationType | null;
     skip_consent?: boolean | null;
     enable_end_session?: boolean | null;
     require_pkce?: boolean | null;
@@ -34,11 +37,21 @@ export type OAuthClientFull = OAuthClientPublic & {
 };
 
 async function unwrap<T>(
-    result: { data: unknown; error: { message?: string } | null },
+    result: {
+        data: unknown;
+        error: { message?: string; error_description?: string } | null;
+    },
     label: string,
 ): Promise<T> {
     if (result.error) {
-        throw new Error(`${label}: ${result.error.message ?? "ukjent feil"}`);
+        // The OAuth endpoints answer in RFC 6749 form — `error` and
+        // `error_description`, no `message` — so without the fallback every
+        // rejected client read "ukjent feil" and the admin never saw why.
+        const reason =
+            result.error.message ??
+            result.error.error_description ??
+            "ukjent feil";
+        throw new Error(`${label}: ${reason}`);
     }
     return result.data as T;
 }
@@ -99,7 +112,7 @@ export type CreateOAuthClientInput = {
         | "none"
         | "client_secret_basic"
         | "client_secret_post";
-    application_type?: "web" | "native";
+    application_type?: OAuthApplicationType;
     grant_types?: Array<
         "authorization_code" | "client_credentials" | "refresh_token"
     >;

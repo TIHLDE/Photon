@@ -21,8 +21,21 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@tihlde/ui/ui/dialog";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
+import {
+    Field,
+    FieldDescription,
+    FieldError,
+    FieldGroup,
+    FieldLabel,
+} from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@tihlde/ui/ui/select";
 import {
     Table,
     TableBody,
@@ -42,6 +55,7 @@ import {
     updateOAuthClientMutation,
     rotateOAuthClientSecretMutation,
     type CreatedOAuthClient,
+    type OAuthApplicationType,
     type OAuthClientFull,
 } from "#/api/queries/oauth";
 import {
@@ -52,8 +66,72 @@ import { requireAdminSection } from "#/lib/admin-access";
 
 type RevealedSecret = { clientId: string; clientSecret: string };
 
+const APPLICATION_TYPES: {
+    value: OAuthApplicationType;
+    label: string;
+    description: string;
+}[] = [
+    {
+        value: "web",
+        label: "Webapp",
+        description: "Kun https-adresser på et ekte domene.",
+    },
+    {
+        value: "native",
+        label: "Mobil-/skrivebordsapp eller lokal utvikling",
+        description:
+            "Tillater også http://localhost og egne skjemaer som no.tihlde.app:/callback.",
+    },
+];
+
+/**
+ * Better Auth checks every redirect URI against this: a webapp may not use
+ * localhost or custom schemes. Public vs. confidential is the separate
+ * «Offentlig klient» choice.
+ */
+function ApplicationTypeField({
+    id,
+    value,
+    onChange,
+}: {
+    id: string;
+    value: OAuthApplicationType;
+    onChange: (value: OAuthApplicationType) => void;
+}) {
+    return (
+        <Field>
+            <FieldLabel htmlFor={id}>Klienttype</FieldLabel>
+            <Select
+                items={APPLICATION_TYPES}
+                value={value}
+                onValueChange={(next) =>
+                    onChange((next as OAuthApplicationType | null) ?? value)
+                }
+            >
+                <SelectTrigger id={id} className="w-full">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    {APPLICATION_TYPES.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <FieldDescription>
+                {
+                    APPLICATION_TYPES.find((option) => option.value === value)
+                        ?.description
+                }
+            </FieldDescription>
+        </Field>
+    );
+}
+
 const editOAuthClientSchema = z.object({
     clientName: z.string(),
+    applicationType: z.enum(["web", "native"]),
     redirectUrisRaw: z
         .string()
         .refine(
@@ -322,20 +400,23 @@ function EditOAuthClientDialog({
     const form = useForm({
         defaultValues: {
             clientName: "",
+            applicationType: "web" as OAuthApplicationType,
             redirectUrisRaw: "",
         },
         validators: { onChange: editOAuthClientSchema },
         onSubmit: async ({ value }) => {
             if (!client) return;
+            const redirectUris = value.redirectUrisRaw
+                .split(/\r?\n/)
+                .map((uri) => uri.trim())
+                .filter(Boolean);
             try {
                 await update.mutateAsync({
                     clientId: client.client_id,
                     update: {
                         client_name: value.clientName.trim(),
-                        redirect_uris: value.redirectUrisRaw
-                            .split(/\r?\n/)
-                            .map((uri) => uri.trim())
-                            .filter(Boolean),
+                        redirect_uris: redirectUris,
+                        application_type: value.applicationType,
                     },
                 });
                 onClose();
@@ -353,6 +434,7 @@ function EditOAuthClientDialog({
     useEffect(() => {
         form.reset({
             clientName: client?.client_name ?? "",
+            applicationType: client?.application_type ?? "web",
             redirectUrisRaw: client?.redirect_uris.join("\n") ?? "",
         });
     }, [client, form]);
@@ -405,6 +487,15 @@ function EditOAuthClientDialog({
                                         errors={field.state.meta.errors}
                                     />
                                 </Field>
+                            )}
+                        </form.Field>
+                        <form.Field name="applicationType">
+                            {(field) => (
+                                <ApplicationTypeField
+                                    id={field.name}
+                                    value={field.state.value}
+                                    onChange={field.handleChange}
+                                />
                             )}
                         </form.Field>
                         <form.Field name="redirectUrisRaw">
@@ -491,6 +582,8 @@ function CreateClientDialog({
     onCreated: (client: CreatedOAuthClient) => void;
 }) {
     const [clientName, setClientName] = useState("");
+    const [applicationType, setApplicationType] =
+        useState<OAuthApplicationType>("web");
     const [redirectUrisRaw, setRedirectUrisRaw] = useState("");
     const [isPublic, setIsPublic] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -499,6 +592,7 @@ function CreateClientDialog({
 
     function reset() {
         setClientName("");
+        setApplicationType("web");
         setRedirectUrisRaw("");
         setIsPublic(false);
         setError(null);
@@ -523,7 +617,7 @@ function CreateClientDialog({
                     token_endpoint_auth_method: isPublic
                         ? "none"
                         : "client_secret_basic",
-                    application_type: isPublic ? "native" : "web",
+                    application_type: applicationType,
                 },
             });
             onCreated(data);
@@ -564,6 +658,11 @@ function CreateClientDialog({
                                 placeholder="f.eks. TIHLDE Wiki"
                             />
                         </Field>
+                        <ApplicationTypeField
+                            id="oauth-client-type"
+                            value={applicationType}
+                            onChange={setApplicationType}
+                        />
                         <Field>
                             <FieldLabel htmlFor="oauth-redirect-uris">
                                 Redirect URIs (én per linje)
