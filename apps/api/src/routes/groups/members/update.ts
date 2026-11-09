@@ -1,3 +1,4 @@
+import { hasScopedPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
@@ -39,8 +40,7 @@ export const updateMemberRoleRoute = route().patch(
     requireAuth,
     // Scoped like add/remove: a `groups:manage` grant for this group counts,
     // and the sitting leader owns the handover of their own verv. What the
-    // leader may do through that ownership is narrowed in the handler: only
-    // appointing someone else as leader, never setting members down.
+    // leader may do through that ownership is narrowed in the handler.
     requireAccess({
         permission: "groups:manage",
         scope: (c) => `group:${c.req.param("groupSlug")}`,
@@ -53,9 +53,16 @@ export const updateMemberRoleRoute = route().patch(
         const userId = c.req.param("userId");
         const ctx = c.get("ctx");
         const { db } = ctx;
-        // True only when the request got through on leadership alone; anyone
-        // holding "groups:manage" for the group lands here with `false`.
-        const asSittingLeader = c.get("isResourceOwner") === true;
+        // requireAccess checks ownership first, so a leader who also holds
+        // "groups:manage" must not be narrowed to the leader-only rules.
+        const asSittingLeader =
+            c.get("isResourceOwner") === true &&
+            !(await hasScopedPermission(
+                ctx,
+                c.get("user").id,
+                "groups:manage",
+                `group:${groupSlug}`,
+            ));
 
         if (asSittingLeader && body.role === "leader") {
             if (userId === c.get("user")?.id) {

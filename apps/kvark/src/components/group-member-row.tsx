@@ -126,6 +126,8 @@ function MemberRowMenu({
     // Overføringen setter den sittende lederen ned, og gjør du det på deg
     // selv får du den ikke tilbake. Verdt et bekreftelsessteg.
     const [confirmPromote, setConfirmPromote] = useState(false);
+    // Fjerner du din egen lederrolle, trengs en admin for å få den tilbake.
+    const [confirmDemote, setConfirmDemote] = useState(false);
 
     return (
         <>
@@ -163,7 +165,9 @@ function MemberRowMenu({
                         </DropdownMenuItem>
                     ) : null}
                     {onDemote && isLeader ? (
-                        <DropdownMenuItem onClick={() => onDemote(member)}>
+                        <DropdownMenuItem
+                            onClick={() => setConfirmDemote(true)}
+                        >
                             <ArrowDownCircle />
                             Fjern lederrolle
                         </DropdownMenuItem>
@@ -197,6 +201,27 @@ function MemberRowMenu({
                         </AlertDialogCancel>
                         <AlertDialogAction onClick={() => onPromote?.(member)}>
                             Gjør til leder
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={confirmDemote} onOpenChange={setConfirmDemote}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Fjerne lederrollen til {member.name}?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {member.name} blir vanlig medlem i gruppen.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel variant="outline" size="default">
+                            Avbryt
+                        </AlertDialogCancel>
+                        <AlertDialogAction onClick={() => onDemote?.(member)}>
+                            Fjern lederrolle
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
