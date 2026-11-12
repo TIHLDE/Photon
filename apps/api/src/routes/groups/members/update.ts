@@ -1,9 +1,11 @@
+import { hasScopedPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import {
     addUserToGroup,
+    allowsMultipleLeaders,
     allowsNonMemberLeader,
     isDerivedGroupType,
     updateGroupMemberRole,
@@ -26,7 +28,7 @@ export const updateMemberRoleRoute = route().patch(
         summary: "Update member role",
         operationId: "updateGroupMemberRole",
         description:
-            "Update a member's role in a group. Requires 'groups:manage' (globally or scoped to the group), or being the group's leader — a sitting leader may only hand the leadership over to someone else.",
+            "Update a member's role in a group. Requires 'groups:manage' (globally or scoped to the group), or being the group's leader — a sitting leader may only hand the leadership over to someone else, or, in an interest group, set a leader back to member while another leader remains.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -38,8 +40,7 @@ export const updateMemberRoleRoute = route().patch(
     requireAuth,
     // Scoped like add/remove: a `groups:manage` grant for this group counts,
     // and the sitting leader owns the handover of their own verv. What the
-    // leader may do through that ownership is narrowed in the handler: only
-    // appointing someone else as leader, never setting members down.
+    // leader may do through that ownership is narrowed in the handler.
     requireAccess({
         permission: "groups:manage",
         scope: (c) => `group:${c.req.param("groupSlug")}`,
@@ -52,20 +53,18 @@ export const updateMemberRoleRoute = route().patch(
         const userId = c.req.param("userId");
         const ctx = c.get("ctx");
         const { db } = ctx;
-        // True only when the request got through on leadership alone; anyone
-        // holding "groups:manage" for the group lands here with `false`.
-        const asSittingLeader = c.get("isResourceOwner") === true;
+        // requireAccess checks ownership first, so a leader who also holds
+        // "groups:manage" must not be narrowed to the leader-only rules.
+        const asSittingLeader =
+            c.get("isResourceOwner") === true &&
+            !(await hasScopedPermission(
+                ctx,
+                c.get("user").id,
+                "groups:manage",
+                `group:${groupSlug}`,
+            ));
 
-        if (asSittingLeader) {
-            // Overføring, ikke rosettdeling: lederen kan peke ut sin
-            // etterfølger, men ikke sette medlemmer opp og ned ellers — og
-            // ikke legge ned ledervervet uten å gi det videre.
-            if (body.role !== "leader") {
-                throw new HTTPException(403, {
-                    message:
-                        "Changing a member's role requires the 'groups:manage' permission",
-                });
-            }
+        if (asSittingLeader && body.role === "leader") {
             if (userId === c.get("user")?.id) {
                 throw new HTTPException(400, {
                     message: "You are already the leader of this group",
@@ -91,6 +90,29 @@ export const updateMemberRoleRoute = route().patch(
             throw new HTTPException(400, {
                 message: `Membership of "${groupSlug}" follows the member's Feide study programme and cannot be edited directly`,
             });
+        }
+
+        // Lederen gir vervet videre, men setter ikke folk ned — bortsett fra
+        // en medleder i interessegrupper, så lenge gruppa beholder en leder.
+        if (asSittingLeader && body.role === "member") {
+            if (!allowsMultipleLeaders(group.type)) {
+                throw new HTTPException(403, {
+                    message:
+                        "Changing a member's role requires the 'groups:manage' permission",
+                });
+            }
+            const otherLeader = await db.query.groupMembership.findFirst({
+                where: {
+                    groupSlug,
+                    role: "leader",
+                    userId: { ne: userId },
+                },
+            });
+            if (!otherLeader) {
+                throw new HTTPException(400, {
+                    message: "A group cannot be left without a leader",
+                });
+            }
         }
 
         if (

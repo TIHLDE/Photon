@@ -174,6 +174,23 @@ function GroupMembersPage() {
             setMemberActionError(await extractErrorMessage(error));
         }
     }
+    async function onDemote(member: Member) {
+        setMemberActionError(null);
+        try {
+            await updateMemberRole.mutateAsync({
+                groupSlug: slug,
+                userId: member.id,
+                data: { role: "member" },
+            });
+        } catch (error) {
+            setMemberActionError(await extractErrorMessage(error));
+        }
+    }
+    // Speiler API-et: lederen kan bare sette ned en medleder i interessegrupper,
+    // og ikke den siste lederen.
+    const canDemoteLeaders =
+        canManageMembers &&
+        (hasGroupsManage || (isInterestGroup && leaders.length > 1));
     async function onRemove(member: Member) {
         setMemberActionError(null);
         try {
@@ -281,6 +298,7 @@ function GroupMembersPage() {
                         <GroupMemberRow
                             member={m}
                             isLeader
+                            onDemote={canDemoteLeaders ? onDemote : undefined}
                             onRemove={canManageMembers ? onRemove : undefined}
                         />
                     </li>

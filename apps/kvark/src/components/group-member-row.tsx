@@ -21,6 +21,7 @@ import {
     DropdownMenuTrigger,
 } from "@tihlde/ui/ui/dropdown-menu";
 import {
+    ArrowDownCircle,
     ArrowUpCircle,
     Crown,
     MoreHorizontal,
@@ -43,6 +44,8 @@ type GroupMemberRowProps = {
      * du er lederen som gir vervet fra deg.
      */
     onPromote?: (member: Member) => void;
+    /** Setter en leder tilbake til vanlig medlem. */
+    onDemote?: (member: Member) => void;
     onRemove?: (member: Member) => void;
 };
 
@@ -51,11 +54,13 @@ export function GroupMemberRow({
     historic = false,
     isLeader = false,
     onPromote,
+    onDemote,
     onRemove,
 }: GroupMemberRowProps) {
     // The whole row already links to the profile, so a menu with nothing but
     // "Se profil" is noise — drop it entirely when the viewer has no actions.
-    const hasActions = Boolean(onPromote) || Boolean(onRemove);
+    const hasActions =
+        Boolean(onPromote) || Boolean(onDemote) || Boolean(onRemove);
 
     return (
         <Card size="sm" className="flex-row items-center gap-1 py-2 pr-2 pl-3">
@@ -96,6 +101,7 @@ export function GroupMemberRow({
                     member={member}
                     isLeader={isLeader}
                     onPromote={onPromote}
+                    onDemote={onDemote}
                     onRemove={onRemove}
                 />
             ) : null}
@@ -107,17 +113,21 @@ function MemberRowMenu({
     member,
     isLeader,
     onPromote,
+    onDemote,
     onRemove,
 }: {
     member: Member;
     isLeader: boolean;
     onPromote?: (member: Member) => void;
+    onDemote?: (member: Member) => void;
     onRemove?: (member: Member) => void;
 }) {
     const [confirmRemove, setConfirmRemove] = useState(false);
     // Overføringen setter den sittende lederen ned, og gjør du det på deg
     // selv får du den ikke tilbake. Verdt et bekreftelsessteg.
     const [confirmPromote, setConfirmPromote] = useState(false);
+    // Fjerner du din egen lederrolle, trengs en admin for å få den tilbake.
+    const [confirmDemote, setConfirmDemote] = useState(false);
 
     return (
         <>
@@ -154,6 +164,14 @@ function MemberRowMenu({
                             Gjør til leder
                         </DropdownMenuItem>
                     ) : null}
+                    {onDemote && isLeader ? (
+                        <DropdownMenuItem
+                            onClick={() => setConfirmDemote(true)}
+                        >
+                            <ArrowDownCircle />
+                            Fjern lederrolle
+                        </DropdownMenuItem>
+                    ) : null}
                     {onRemove ? (
                         <DropdownMenuItem
                             variant="destructive"
@@ -183,6 +201,27 @@ function MemberRowMenu({
                         </AlertDialogCancel>
                         <AlertDialogAction onClick={() => onPromote?.(member)}>
                             Gjør til leder
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={confirmDemote} onOpenChange={setConfirmDemote}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Fjerne lederrollen til {member.name}?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {member.name} blir vanlig medlem i gruppen.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel variant="outline" size="default">
+                            Avbryt
+                        </AlertDialogCancel>
+                        <AlertDialogAction onClick={() => onDemote?.(member)}>
+                            Fjern lederrolle
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
