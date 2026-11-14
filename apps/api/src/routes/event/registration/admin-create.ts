@@ -21,7 +21,7 @@ export const adminCreateRegistrationRoute = route().post(
         summary: "Add a user to an event (admin)",
         operationId: "adminCreateEventRegistration",
         description:
-            "Add a confirmed participant and include them in the event's priority-user list, including before registration opens or after it closes. Requires events:update or events:manage globally or for the arranging group. Bypasses self-registration eligibility and strike delays, but requires available capacity; pending registrations reserve capacity too. Payment obligations still apply. Events without sign-up, full events and existing active registrations are rejected. Cancelled registrations are reused.",
+            "Add a confirmed participant and include them in the event's priority-user list, including before registration opens or after it closes. Requires events:update or events:manage globally or for the arranging group. Bypasses self-registration eligibility and strike delays, but requires available capacity; pending registrations reserve capacity too. Payment obligations still apply. Events without sign-up, full events and existing active registrations are rejected. Cancelled registrations are reused. Because the member did not sign up themselves, the registration does not reveal their allergies per person and does not make them eligible for a manual strike from the arranger.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -109,6 +109,7 @@ export const adminCreateRegistrationRoute = route().post(
                     userId,
                     status: "registered",
                     allowPhoto,
+                    addedByOrganizer: true,
                 })
                 .onConflictDoUpdate({
                     target: [
@@ -118,6 +119,7 @@ export const adminCreateRegistrationRoute = route().post(
                     set: {
                         status: "registered",
                         allowPhoto,
+                        addedByOrganizer: true,
                         waitlistPosition: null,
                         attendedAt: null,
                         promotedFromWaitlistAt: null,

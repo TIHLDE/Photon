@@ -2373,6 +2373,8 @@ function AllergiesTab({ eventId }: { eventId: string }) {
     const [search, setSearch] = useState("");
     const [hasCopied, setHasCopied] = useState(false);
 
+    const hiddenAllergiesNotice = `Lagt til av arrangør: ${data.organizerAddedNames?.join(", ")}. ${data.organizerAddedWithAllergies} av dem har oppgitt allergier. Spør dem direkte.`;
+
     const query = search.trim().toLowerCase();
     const visibleParticipants = useMemo(
         () =>
@@ -2396,6 +2398,9 @@ function AllergiesTab({ eventId }: { eventId: string }) {
                 ];
                 return `${participant.name}: ${all.join(", ")}`;
             }),
+            ...(data.organizerAddedWithAllergies > 0
+                ? ["", hiddenAllergiesNotice]
+                : []),
         ];
 
         await navigator.clipboard.writeText(lines.join("\n"));
@@ -2428,6 +2433,13 @@ function AllergiesTab({ eventId }: { eventId: string }) {
                 />
             </div>
 
+            {data.organizerAddedWithAllergies > 0 ? (
+                <Alert>
+                    <AlertTitle>Noen allergier vises ikke</AlertTitle>
+                    <AlertDescription>{hiddenAllergiesNotice}</AlertDescription>
+                </Alert>
+            ) : null}
+
             {data.participants.length > 0 ? (
                 <SearchField
                     id="allergies-search"
@@ -2441,11 +2453,17 @@ function AllergiesTab({ eventId }: { eventId: string }) {
                     <CardContent>
                         <AdminEmptyState
                             icon={UsersIcon}
-                            title="Ingen registrerte allergier"
+                            title={
+                                data.organizerAddedWithAllergies > 0
+                                    ? "Ingen allergier å vise"
+                                    : "Ingen registrerte allergier"
+                            }
                             description={
-                                data.notAnswered > 0
-                                    ? `Ingen av de ${data.totalParticipants} påmeldte har oppgitt allergier, men ${data.notAnswered} har ikke svart på spørsmålet.`
-                                    : "Alle påmeldte har bekreftet at de ikke har allergier."
+                                data.organizerAddedWithAllergies > 0
+                                    ? "De som har oppgitt allergier er lagt til av arrangør."
+                                    : data.notAnswered > 0
+                                      ? `Ingen av de ${data.totalParticipants} påmeldte har oppgitt allergier, men ${data.notAnswered} har ikke svart på spørsmålet.`
+                                      : "Alle påmeldte har bekreftet at de ikke har allergier."
                             }
                         />
                     </CardContent>

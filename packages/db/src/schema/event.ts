@@ -240,6 +240,10 @@ export const eventRegistration = pgTable(
          */
         evaluationReminderSentAt: timestamp("evaluation_reminder_sent_at"),
         promotedFromWaitlistAt: timestamp("promoted_from_waitlist_at"),
+        /** Adding needs no consent, so such a row opens neither allergies nor prikker. */
+        addedByOrganizer: boolean("added_by_organizer")
+            .default(false)
+            .notNull(),
     },
     (t) => [
         primaryKey({
