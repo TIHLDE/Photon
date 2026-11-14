@@ -106,7 +106,7 @@ async function finalizeApplication(
         );
     }
 
-    await notifyApplicationSubmitted(ctx, logger, application);
+    await notifyApplicationSubmitted(ctx, logger, application, userId);
 
     return { pdfGenerated };
 }

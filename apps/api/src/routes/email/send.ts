@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import type { MiddlewareHandler } from "hono";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
@@ -6,6 +7,10 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { sendCustomEmailInputSchema, sendEmailResponseSchema } from "./schema";
 import { getBearerTokenFromHeader } from "~/lib/auth";
+
+function sha256(value: string) {
+    return createHash("sha256").update(value).digest();
+}
 
 /**
  * Middleware to validate API key from Bearer token
@@ -26,7 +31,7 @@ const requireEmailApiKey: MiddlewareHandler = async (c, next) => {
         });
     }
 
-    if (result !== apiKey) {
+    if (!timingSafeEqual(sha256(result), sha256(apiKey))) {
         throw new HTTPException(403, {
             message: "Invalid API key",
         });
