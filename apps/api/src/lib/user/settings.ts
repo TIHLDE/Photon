@@ -2,7 +2,11 @@ import { genderVariants, userAllergy, userSettings } from "@photon/db/schema";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
-import { claimPrivateAssetUrls } from "../asset";
+import {
+    assertMayUseAssetUrls,
+    assetKeyFromUrl,
+    claimPrivateAssetUrls,
+} from "../asset";
 import { releaseReplacedAssetUrls } from "../asset/release";
 import type { AppContext } from "../ctx";
 
@@ -181,6 +185,18 @@ export async function createUserSettings(
 ): Promise<StoredUserSettings> {
     const { db } = ctx;
 
+    // Onboarding overskriver raden under, så et bilde den alt har er ikke nytt.
+    const previous = await db.query.userSettings.findFirst({
+        where: { userId },
+        columns: { imageUrl: true },
+    });
+    await assertMayUseAssetUrls(
+        ctx,
+        userId,
+        [settings.imageUrl],
+        [previous?.imageUrl],
+    );
+
     // The profile picture is staged until a row claims it; without this the
     // cleanup cron deletes the file after two days.
     await claimPrivateAssetUrls(ctx.bucket, [settings.imageUrl]);
@@ -244,6 +260,13 @@ export async function updateUserSettings(
         where: { userId },
         columns: { imageUrl: true },
     });
+
+    await assertMayUseAssetUrls(
+        ctx,
+        userId,
+        [updates.imageUrl],
+        [previous?.imageUrl],
+    );
 
     await claimPrivateAssetUrls(ctx.bucket, [updates.imageUrl]);
 
@@ -343,10 +366,28 @@ export async function updateUserSettings(
     });
 
     await releaseReplacedAssetUrls(ctx, [
-        [previous?.imageUrl ?? null, updates.imageUrl],
+        [await ownAvatarUrl(ctx, userId, previous?.imageUrl), updates.imageUrl],
     ]);
 
     return result;
+}
+
+/**
+ * Rader fra før opplaster ble sjekket kan peke på andres filer, og de skal ikke
+ * slettes av at medlemmet bytter bilde. Uten opplaster er importerte avatarer.
+ */
+async function ownAvatarUrl(
+    ctx: AppContext,
+    userId: string,
+    url: string | null | undefined,
+): Promise<string | null> {
+    const key = url ? assetKeyFromUrl(url) : null;
+    if (!url || !key) return null;
+
+    const asset = await ctx.bucket.getAsset(key);
+    const isOwn =
+        asset?.uploadedById === null || asset?.uploadedById === userId;
+    return isOwn ? url : null;
 }
 
 /**

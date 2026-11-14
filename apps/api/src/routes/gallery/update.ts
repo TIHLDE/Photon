@@ -8,7 +8,7 @@ import {
     isAlbumCreator,
     serializeAlbum,
 } from "~/lib/gallery";
-import { claimPrivateAssetUrls } from "~/lib/asset";
+import { assertMayUseAssetUrls, claimPrivateAssetUrls } from "~/lib/asset";
 import { releaseReplacedAssetUrls } from "~/lib/asset/release";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -48,6 +48,13 @@ export const updateRoute = route().patch(
         if (!existing) {
             throw new HTTPException(404, { message: "Fant ikke galleriet" });
         }
+
+        await assertMayUseAssetUrls(
+            ctx,
+            c.get("user").id,
+            [body.imageUrl],
+            [existing.imageUrl],
+        );
 
         // The cover is staged until a row claims it; without this the cleanup
         // cron deletes the file after two days.
