@@ -269,9 +269,9 @@ const styles = {
     header: {
         padding: "0 4px 20px",
     },
-    // The gap is padding, not leftover column width: Apple Mail ignores the
-    // <img> width attribute on inline (cid:) images and grew the logo to fill
-    // the whole column, leaving no space before the wordmark.
+    // The gap is padding, not leftover column width, and the logo size is set
+    // in CSS too: Apple Mail can ignore the <img> width attribute and grow the
+    // logo to fill the whole column, leaving no space before the wordmark.
     logoCell: {
         paddingRight: "12px",
         verticalAlign: "middle",
