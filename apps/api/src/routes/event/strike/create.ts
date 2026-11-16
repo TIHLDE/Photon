@@ -3,7 +3,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import type z from "zod";
 import { canActOnEvent, strikePermissions } from "~/lib/event/access";
-import { wasPromotedAfterStart } from "~/lib/event/strikes";
+import { notifyStrike, wasPromotedAfterStart } from "~/lib/event/strikes";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { userImageExtra } from "~/lib/user/avatar";
@@ -118,6 +118,8 @@ export const createStrikeRoute = route().post(
                 message: "Failed to create strike",
             });
         }
+
+        await notifyStrike(c.get("ctx"), body);
 
         return c.json(
             {

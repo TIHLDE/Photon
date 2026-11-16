@@ -3,6 +3,8 @@ import type { DbRelations } from "@photon/db";
 import { schema } from "@photon/db";
 import { and, eq, gte, inArray, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { AppContext } from "../ctx";
+import { sendNotification } from "../notification";
 
 /**
  * Number of days a strike remains active after it was given.
@@ -177,6 +179,39 @@ export async function issueStrike(
     });
 
     return true;
+}
+
+/** Tells the member about a strike they were given. Never throws. */
+export async function notifyStrike(
+    ctx: AppContext,
+    strike: { eventId: string; userId: string; count: number; reason?: string },
+): Promise<void> {
+    try {
+        const event = await ctx.db.query.event.findFirst({
+            columns: { title: true },
+            where: { id: strike.eventId },
+        });
+        const settings = await ctx.db.query.userSettings.findFirst({
+            columns: { receiveMailCommunication: true },
+            where: { userId: strike.userId },
+        });
+        await sendNotification(
+            {
+                userId: strike.userId,
+                title: `Du har fått ${strike.count} ${strike.count === 1 ? "prikk" : "prikker"}`,
+                description: strike.reason
+                    ? `«${event?.title}»: ${strike.reason}`
+                    : `«${event?.title}»`,
+                link: `/profil/${strike.userId}/prikker`,
+                sendTo: {
+                    email: settings?.receiveMailCommunication ?? true,
+                },
+            },
+            ctx,
+        );
+    } catch (error) {
+        console.error(`Failed to notify ${strike.userId} of strike:`, error);
+    }
 }
 
 /**

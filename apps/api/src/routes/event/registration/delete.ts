@@ -4,7 +4,11 @@ import { HTTPException } from "hono/http-exception";
 import { DEFAULT_STATUSES as SEAT_HOLDING_STATUSES } from "~/lib/event/access";
 import { promoteFromWaitlist } from "~/lib/event/payment";
 import { cancelPayment, getPaymentDetails } from "~/lib/vipps";
-import { issueStrike, wasPromotedAfterStart } from "~/lib/event/strikes";
+import {
+    issueStrike,
+    notifyStrike,
+    wasPromotedAfterStart,
+} from "~/lib/event/strikes";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "../../../lib/route";
 import { requireAuth } from "../../../middleware/auth";
@@ -208,12 +212,15 @@ export const deleteEventRegistrationRoute = route().delete(
             !wasPromotedAfterStart(deleted.promotedFromWaitlistAt, event.start);
 
         if (isLateCancellation) {
-            await issueStrike(db, {
+            const strike = {
                 eventId,
                 userId,
                 count: 1,
                 reason: "Avmelding etter avmeldingsfristen",
-            });
+            };
+            if (await issueStrike(db, strike)) {
+                await notifyStrike(ctx, strike);
+            }
         }
 
         /**

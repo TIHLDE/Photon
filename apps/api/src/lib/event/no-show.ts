@@ -1,7 +1,7 @@
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import type { AppContext } from "../ctx";
-import { issueStrike, wasPromotedAfterStart } from "./strikes";
+import { issueStrike, notifyStrike, wasPromotedAfterStart } from "./strikes";
 
 /** Strikes given to a user who did not show up to an event. */
 export const NO_SHOW_STRIKE_COUNT = 2;
@@ -30,7 +30,9 @@ export async function processEventNoShows(
     eventId: string,
     ctx: AppContext,
 ): Promise<{ processed: boolean; struck: number }> {
-    return ctx.db.transaction(async (tx) => {
+    const struckUserIds: string[] = [];
+
+    const result = await ctx.db.transaction(async (tx) => {
         // Betalte arrangementer gir aldri prikker. Skjemaet avviser
         // kombinasjonen, men arrangementer opprettet før regelen kan fortsatt
         // ha begge deler satt i databasen.
@@ -95,6 +97,7 @@ export async function processEventNoShows(
             });
             if (created) {
                 struck += 1;
+                struckUserIds.push(reg.userId);
             }
         }
 
@@ -105,6 +108,18 @@ export async function processEventNoShows(
 
         return { processed: true, struck };
     });
+
+    // Only after commit, so a rolled-back strike is never announced.
+    for (const userId of struckUserIds) {
+        await notifyStrike(ctx, {
+            eventId,
+            userId,
+            count: NO_SHOW_STRIKE_COUNT,
+            reason: NO_SHOW_REASON,
+        });
+    }
+
+    return result;
 }
 
 /**
