@@ -1,15 +1,11 @@
-import {
-    Body,
-    Button,
-    Container,
-    Head,
-    Heading,
-    Html,
-    Img,
-    Text,
-} from "@react-email/components";
 import React from "react";
-import { emailStyles } from "./styles";
+import {
+    Callout,
+    CtaButton,
+    EmailLayout,
+    Paragraph,
+    Title,
+} from "../components/layout";
 
 export interface ApplicationDecidedEmailProps {
     /** "Utlegg", "Søknad om støtte", … */
@@ -36,37 +32,34 @@ export const ApplicationDecidedEmail = ({
     applicationsUrl,
     logoUrl,
 }: ApplicationDecidedEmailProps) => (
-    <Html>
-        <Head />
-        <Body style={emailStyles.main}>
-            <Container style={emailStyles.container}>
-                <Img
-                    src={logoUrl}
-                    width="100"
-                    height="100"
-                    alt="TIHLDE Logomark"
-                    style={emailStyles.logo}
-                />
-                <Heading style={emailStyles.heading}>
-                    {typeLabel} er {statusLabel.toLowerCase()}
-                </Heading>
-                <Text style={emailStyles.paragraph}>
-                    {approved
-                        ? "Søknaden din er godkjent."
-                        : "Søknaden din ble dessverre ikke innvilget."}
-                </Text>
-                {message && (
-                    <Text style={emailStyles.paragraph}>
-                        Melding fra behandler: <strong>{message}</strong>
-                    </Text>
-                )}
-                <Button style={emailStyles.button} href={applicationsUrl}>
-                    Se mine søknader
-                </Button>
-            </Container>
-            <Text style={emailStyles.footer}>Levert av INDEX</Text>
-        </Body>
-    </Html>
+    <EmailLayout
+        preview={
+            approved
+                ? "Søknaden din er godkjent."
+                : "Søknaden din ble dessverre ikke innvilget."
+        }
+        logoUrl={logoUrl}
+    >
+        <Title>
+            {typeLabel} er {statusLabel.toLowerCase()}
+        </Title>
+        <Paragraph>
+            {approved
+                ? "Søknaden din er godkjent."
+                : "Søknaden din ble dessverre ikke innvilget."}
+        </Paragraph>
+        {message && <Callout label="Melding fra behandler">{message}</Callout>}
+        <CtaButton href={applicationsUrl}>Se mine søknader</CtaButton>
+    </EmailLayout>
 );
+
+ApplicationDecidedEmail.PreviewProps = {
+    typeLabel: "Utlegg",
+    statusLabel: "Godkjent",
+    approved: true,
+    message: "Pengene blir overført innen fem virkedager.",
+    applicationsUrl: "https://tihlde.org/profil/soknader",
+    logoUrl: "https://tihlde.org/logo512.png",
+} satisfies ApplicationDecidedEmailProps;
 
 export default ApplicationDecidedEmail;

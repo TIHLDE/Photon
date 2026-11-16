@@ -1,15 +1,5 @@
-import {
-    Body,
-    Button,
-    Container,
-    Head,
-    Heading,
-    Html,
-    Img,
-    Text,
-} from "@react-email/components";
 import React from "react";
-import { emailStyles } from "./styles";
+import { CtaButton, EmailLayout, Paragraph, Title } from "../components/layout";
 
 export interface AccountApprovedEmailProps {
     /** The member's name, so the mail does not open with "Hei,". */
@@ -30,35 +20,27 @@ export const AccountApprovedEmail = ({
     loginUrl,
     logoUrl,
 }: AccountApprovedEmailProps) => (
-    <Html>
-        <Head />
-        <Body style={emailStyles.main}>
-            <Container style={emailStyles.container}>
-                <Img
-                    src={logoUrl}
-                    width="100"
-                    height="100"
-                    alt="TIHLDE Logomark"
-                    style={emailStyles.logo}
-                />
-                <Heading style={emailStyles.heading}>
-                    Brukeren din er godkjent
-                </Heading>
-                <Text style={emailStyles.paragraph}>
-                    Hei {name}! En administrator har godkjent brukeren din på
-                    tihlde.org.
-                </Text>
-                <Text style={emailStyles.paragraph}>
-                    Nå kan du melde deg på arrangementer og se sidene som er
-                    forbeholdt medlemmer.
-                </Text>
-                <Button style={emailStyles.button} href={loginUrl}>
-                    Logg inn
-                </Button>
-            </Container>
-            <Text style={emailStyles.footer}>Levert av INDEX</Text>
-        </Body>
-    </Html>
+    <EmailLayout
+        preview="Nå kan du melde deg på arrangementer på tihlde.org."
+        logoUrl={logoUrl}
+    >
+        <Title>Brukeren din er godkjent</Title>
+        <Paragraph>
+            Hei {name}! En administrator har godkjent brukeren din på
+            tihlde.org.
+        </Paragraph>
+        <Paragraph>
+            Nå kan du melde deg på arrangementer og se sidene som er forbeholdt
+            medlemmer.
+        </Paragraph>
+        <CtaButton href={loginUrl}>Logg inn</CtaButton>
+    </EmailLayout>
 );
+
+AccountApprovedEmail.PreviewProps = {
+    name: "Ola Nordmann",
+    loginUrl: "https://tihlde.org/logg-inn",
+    logoUrl: "https://tihlde.org/logo512.png",
+} satisfies AccountApprovedEmailProps;
 
 export default AccountApprovedEmail;

@@ -1,16 +1,11 @@
-import {
-    Body,
-    Button,
-    Container,
-    Head,
-    Heading,
-    Html,
-    Img,
-    Section,
-    Text,
-} from "@react-email/components";
 import React from "react";
-import { emailStyles } from "./styles";
+import {
+    CtaButton,
+    EmailLayout,
+    Highlight,
+    Paragraph,
+    Title,
+} from "../components/layout";
 
 export interface SwappedToWaitlistEmailProps {
     eventName: string;
@@ -24,49 +19,31 @@ export const SwappedToWaitlistEmail = ({
     eventUrl = "https://tihlde.org/arrangementer/eksempel",
     position = 3,
     logoUrl,
-}: SwappedToWaitlistEmailProps) => {
-    return (
-        <Html>
-            <Head />
-            <Body style={emailStyles.main}>
-                <Container style={emailStyles.container}>
-                    <Img
-                        src={logoUrl}
-                        width="100"
-                        height="100"
-                        alt="TIHLDE Logomark"
-                        style={emailStyles.logo}
-                    />
-                    <Heading style={emailStyles.heading}>
-                        Endring i din påmelding til {eventName}
-                    </Heading>
-                    <Text style={emailStyles.paragraph}>
-                        En bruker med prioritet har meldt seg på{" "}
-                        <strong>{eventName}</strong>, og du har derfor blitt
-                        flyttet til ventelisten.
-                    </Text>
-                    <Section style={emailStyles.positionContainer}>
-                        <Text style={emailStyles.positionLabel}>
-                            Din plass på ventelisten:
-                        </Text>
-                        <Text style={emailStyles.positionNumber}>
-                            {position}
-                        </Text>
-                    </Section>
-                    <Text style={emailStyles.paragraph}>
-                        Du vil få beskjed på e-post hvis det blir ledig plass.
-                    </Text>
-                    <Button href={eventUrl} style={emailStyles.button}>
-                        Se arrangement
-                    </Button>
-                    <Text style={emailStyles.paragraph}>
-                        Vi beklager ulempen og håper du får plass!
-                    </Text>
-                </Container>
-                <Text style={emailStyles.footer}>Levert av INDEX</Text>
-            </Body>
-        </Html>
-    );
-};
+}: SwappedToWaitlistEmailProps) => (
+    <EmailLayout
+        preview={`Du er flyttet til ventelisten for ${eventName}.`}
+        logoUrl={logoUrl}
+    >
+        <Title>Endring i din påmelding til {eventName}</Title>
+        <Paragraph>
+            En bruker med prioritet har meldt seg på{" "}
+            <strong>{eventName}</strong>, og du har derfor blitt flyttet til
+            ventelisten.
+        </Paragraph>
+        <Highlight label="Din plass på ventelisten" value={position} />
+        <Paragraph>
+            Du vil få beskjed på e-post hvis det blir ledig plass.
+        </Paragraph>
+        <CtaButton href={eventUrl}>Se arrangement</CtaButton>
+        <Paragraph muted>Vi beklager ulempen og håper du får plass!</Paragraph>
+    </EmailLayout>
+);
+
+SwappedToWaitlistEmail.PreviewProps = {
+    eventName: "Julebord",
+    eventUrl: "https://tihlde.org/arrangementer/1",
+    position: 3,
+    logoUrl: "https://tihlde.org/logo512.png",
+} satisfies SwappedToWaitlistEmailProps;
 
 export default SwappedToWaitlistEmail;

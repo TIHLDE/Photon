@@ -1,15 +1,11 @@
-import {
-    Body,
-    Button,
-    Container,
-    Head,
-    Heading,
-    Html,
-    Img,
-    Text,
-} from "@react-email/components";
 import React from "react";
-import { emailStyles } from "./styles";
+import {
+    CtaButton,
+    Divider,
+    EmailLayout,
+    Paragraph,
+    Title,
+} from "../components/layout";
 
 export interface ResetPasswordEmailProps {
     url: string;
@@ -19,38 +15,27 @@ export interface ResetPasswordEmailProps {
 export const ResetPasswordEmail = ({
     url,
     logoUrl,
-}: ResetPasswordEmailProps) => {
-    return (
-        <Html>
-            <Head />
-            <Body style={emailStyles.main}>
-                <Container style={emailStyles.container}>
-                    <Img
-                        src={logoUrl}
-                        width="100"
-                        height="100"
-                        alt="TIHLDE Logomark"
-                        style={emailStyles.logo}
-                    />
-                    <Heading style={emailStyles.secondary}>
-                        Tilbakestill passordet ditt
-                    </Heading>
-                    <Text style={emailStyles.paragraph}>
-                        Klikk på knappen under for å tilbakestille passordet
-                        ditt.
-                    </Text>
-                    <Button href={url} style={emailStyles.button}>
-                        Tilbakestill passord
-                    </Button>
-                    <Text style={emailStyles.paragraph}>
-                        Hvis du ikke ba om å tilbakestille passordet, kan du
-                        trygt ignorere denne e-posten.
-                    </Text>
-                </Container>
-                <Text style={emailStyles.footer}>Levert av INDEX</Text>
-            </Body>
-        </Html>
-    );
-};
+}: ResetPasswordEmailProps) => (
+    <EmailLayout
+        preview="Tilbakestill passordet ditt på TIHLDE."
+        logoUrl={logoUrl}
+    >
+        <Title>Tilbakestill passordet ditt</Title>
+        <Paragraph>
+            Klikk på knappen under for å tilbakestille passordet ditt.
+        </Paragraph>
+        <CtaButton href={url}>Tilbakestill passord</CtaButton>
+        <Divider />
+        <Paragraph muted>
+            Hvis du ikke ba om å tilbakestille passordet, kan du trygt ignorere
+            denne e-posten.
+        </Paragraph>
+    </EmailLayout>
+);
+
+ResetPasswordEmail.PreviewProps = {
+    url: "https://tihlde.org/tilbakestill?token=abc",
+    logoUrl: "https://tihlde.org/logo512.png",
+} satisfies ResetPasswordEmailProps;
 
 export default ResetPasswordEmail;
