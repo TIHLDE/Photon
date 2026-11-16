@@ -148,10 +148,15 @@ export function wasPromotedAfterStart(
  * when a strike was created, false when one already existed.
  */
 export async function issueStrike(
-    ctx: AppContext,
-    input: StrikeInput,
+    db: NodePgDatabase<DbRelations>,
+    input: {
+        eventId: string;
+        userId: string;
+        count: number;
+        reason: string;
+    },
 ): Promise<boolean> {
-    const existing = await ctx.db
+    const existing = await db
         .select({ id: schema.eventStrike.id })
         .from(schema.eventStrike)
         .where(
@@ -166,47 +171,47 @@ export async function issueStrike(
         return false;
     }
 
-    await insertStrike(ctx, input);
+    await db.insert(schema.eventStrike).values({
+        eventId: input.eventId,
+        userId: input.userId,
+        count: input.count,
+        reason: input.reason,
+    });
 
     return true;
 }
 
-type StrikeInput = {
-    eventId: string;
-    userId: string;
-    count: number;
-    reason?: string;
-};
-
-/** Every strike is written here, so the member is always notified. */
-export async function insertStrike(ctx: AppContext, input: StrikeInput) {
-    const [strike] = await ctx.db
-        .insert(schema.eventStrike)
-        .values(input)
-        .returning();
-
-    const event = await ctx.db.query.event.findFirst({
-        columns: { title: true },
-        where: { id: input.eventId },
-    });
-
+/** Tells the member about a strike they were given. Never throws. */
+export async function notifyStrike(
+    ctx: AppContext,
+    strike: { eventId: string; userId: string; count: number; reason?: string },
+): Promise<void> {
     try {
+        const event = await ctx.db.query.event.findFirst({
+            columns: { title: true },
+            where: { id: strike.eventId },
+        });
+        const settings = await ctx.db.query.userSettings.findFirst({
+            columns: { receiveMailCommunication: true },
+            where: { userId: strike.userId },
+        });
         await sendNotification(
             {
-                userId: input.userId,
-                title: `Du har fått ${input.count} ${input.count === 1 ? "prikk" : "prikker"}`,
-                description: input.reason
-                    ? `«${event?.title}»: ${input.reason}`
+                userId: strike.userId,
+                title: `Du har fått ${strike.count} ${strike.count === 1 ? "prikk" : "prikker"}`,
+                description: strike.reason
+                    ? `«${event?.title}»: ${strike.reason}`
                     : `«${event?.title}»`,
-                link: `/profil/${input.userId}/prikker`,
+                link: `/profil/${strike.userId}/prikker`,
+                sendTo: {
+                    email: settings?.receiveMailCommunication ?? true,
+                },
             },
             ctx,
         );
     } catch (error) {
-        console.error(`Failed to notify ${input.userId} of strike:`, error);
+        console.error(`Failed to notify ${strike.userId} of strike:`, error);
     }
-
-    return strike;
 }
 
 /**

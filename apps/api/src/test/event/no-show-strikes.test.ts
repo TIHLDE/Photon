@@ -1,3 +1,5 @@
+import type { EmailQueueJobData } from "@photon/core/services/email";
+import { EMAIL_QUEUE_NAME } from "@photon/core/services/queue";
 import { schema } from "@photon/db";
 import { sumBy } from "es-toolkit";
 import { describe, expect } from "vitest";
@@ -86,6 +88,42 @@ describe("No-show strikes", () => {
                 where: { id: event.id },
             });
             expect(updated?.noShowProcessedAt).not.toBeNull();
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "strike email respects the member's mail setting",
+        async ({ ctx }) => {
+            await ctx.utils.setupEventCategories();
+            const event = await endedEvent(ctx, true);
+            const attendee = await ctx.utils.createTestUser();
+            const optedOut = await ctx.utils.createTestUser();
+            const optedIn = await ctx.utils.createTestUser();
+            await ctx.db.insert(schema.userSettings).values({
+                userId: optedOut.id,
+                gender: "other",
+                allowsPhotosByDefault: true,
+                acceptsEventRules: true,
+                receiveMailCommunication: false,
+            });
+            await register(ctx, event.id, attendee.id, "attended");
+            await register(ctx, event.id, optedOut.id, "registered");
+            await register(ctx, event.id, optedIn.id, "registered");
+
+            await processEventNoShows(event.id, ctx);
+
+            const notified = await ctx.db.query.notification.findMany({
+                where: { userId: optedOut.id },
+            });
+            expect(notified).toHaveLength(1);
+
+            const emails = await ctx.queue
+                .getQueue<EmailQueueJobData>(EMAIL_QUEUE_NAME)
+                .getJobs();
+            expect(emails.map((e) => e.data.options.to)).toEqual([
+                optedIn.email,
+            ]);
         },
         500_000,
     );
