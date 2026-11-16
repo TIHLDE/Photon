@@ -3,6 +3,8 @@ import type { DbRelations } from "@photon/db";
 import { schema } from "@photon/db";
 import { and, eq, gte, inArray, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { AppContext } from "../ctx";
+import { sendNotification } from "../notification";
 
 /**
  * Number of days a strike remains active after it was given.
@@ -146,15 +148,10 @@ export function wasPromotedAfterStart(
  * when a strike was created, false when one already existed.
  */
 export async function issueStrike(
-    db: NodePgDatabase<DbRelations>,
-    input: {
-        eventId: string;
-        userId: string;
-        count: number;
-        reason: string;
-    },
+    ctx: AppContext,
+    input: StrikeInput,
 ): Promise<boolean> {
-    const existing = await db
+    const existing = await ctx.db
         .select({ id: schema.eventStrike.id })
         .from(schema.eventStrike)
         .where(
@@ -169,14 +166,47 @@ export async function issueStrike(
         return false;
     }
 
-    await db.insert(schema.eventStrike).values({
-        eventId: input.eventId,
-        userId: input.userId,
-        count: input.count,
-        reason: input.reason,
-    });
+    await insertStrike(ctx, input);
 
     return true;
+}
+
+type StrikeInput = {
+    eventId: string;
+    userId: string;
+    count: number;
+    reason?: string;
+};
+
+/** Every strike is written here, so the member is always notified. */
+export async function insertStrike(ctx: AppContext, input: StrikeInput) {
+    const [strike] = await ctx.db
+        .insert(schema.eventStrike)
+        .values(input)
+        .returning();
+
+    const event = await ctx.db.query.event.findFirst({
+        columns: { title: true },
+        where: { id: input.eventId },
+    });
+
+    try {
+        await sendNotification(
+            {
+                userId: input.userId,
+                title: `Du har fått ${input.count} ${input.count === 1 ? "prikk" : "prikker"}`,
+                description: input.reason
+                    ? `«${event?.title}»: ${input.reason}`
+                    : `«${event?.title}»`,
+                link: `/profil/${input.userId}/prikker`,
+            },
+            ctx,
+        );
+    } catch (error) {
+        console.error(`Failed to notify ${input.userId} of strike:`, error);
+    }
+
+    return strike;
 }
 
 /**

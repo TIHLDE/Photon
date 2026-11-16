@@ -51,6 +51,14 @@ describe("prikker follow the event's arrangør", () => {
             expect(created.status).toBe(201);
             const strike = await created.json();
 
+            const notification = await ctx.db.query.notification.findFirst({
+                where: { userId: target.id },
+            });
+            expect(notification?.title).toBe("Du har fått 1 prikk");
+            expect(notification?.description).toBe(
+                `«${event.title}»: Møtte ikke opp`,
+            );
+
             const removed = await client.api.event.strikes[":strikeId"].$delete(
                 { param: { strikeId: strike.id } },
             );

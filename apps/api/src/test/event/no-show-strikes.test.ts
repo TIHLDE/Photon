@@ -73,6 +73,11 @@ describe("No-show strikes", () => {
             expect(result.struck).toBe(1);
             expect(await statusOf(ctx, event.id, noShow.id)).toBe("no_show");
             expect(await strikeTotal(ctx, event.id, noShow.id)).toBe(2);
+            const notification = await ctx.db.query.notification.findFirst({
+                where: { userId: noShow.id },
+            });
+            expect(notification?.title).toBe("Du har fått 2 prikker");
+            expect(notification?.link).toBe(`/profil/${noShow.id}/prikker`);
             // The attendee is untouched.
             expect(await statusOf(ctx, event.id, attendee.id)).toBe("attended");
             expect(await strikeTotal(ctx, event.id, attendee.id)).toBe(0);

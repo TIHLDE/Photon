@@ -208,7 +208,7 @@ export const deleteEventRegistrationRoute = route().delete(
             !wasPromotedAfterStart(deleted.promotedFromWaitlistAt, event.start);
 
         if (isLateCancellation) {
-            await issueStrike(db, {
+            await issueStrike(ctx, {
                 eventId,
                 userId,
                 count: 1,

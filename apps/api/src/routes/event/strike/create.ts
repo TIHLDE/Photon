@@ -1,9 +1,8 @@
-import { schema } from "@photon/db";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import type z from "zod";
 import { canActOnEvent, strikePermissions } from "~/lib/event/access";
-import { wasPromotedAfterStart } from "~/lib/event/strikes";
+import { insertStrike, wasPromotedAfterStart } from "~/lib/event/strikes";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { userImageExtra } from "~/lib/user/avatar";
@@ -103,15 +102,12 @@ export const createStrikeRoute = route().post(
             });
         }
 
-        const [newStrike] = await db
-            .insert(schema.eventStrike)
-            .values({
-                userId: body.userId,
-                eventId: body.eventId,
-                count: body.count,
-                reason: body.reason,
-            })
-            .returning();
+        const newStrike = await insertStrike(c.get("ctx"), {
+            userId: body.userId,
+            eventId: body.eventId,
+            count: body.count,
+            reason: body.reason,
+        });
 
         if (!newStrike) {
             throw new HTTPException(500, {

@@ -87,12 +87,15 @@ export async function processEventNoShows(
                 continue;
             }
 
-            const created = await issueStrike(tx, {
-                eventId,
-                userId: reg.userId,
-                count: NO_SHOW_STRIKE_COUNT,
-                reason: NO_SHOW_REASON,
-            });
+            const created = await issueStrike(
+                { ...ctx, db: tx },
+                {
+                    eventId,
+                    userId: reg.userId,
+                    count: NO_SHOW_STRIKE_COUNT,
+                    reason: NO_SHOW_REASON,
+                },
+            );
             if (created) {
                 struck += 1;
             }
