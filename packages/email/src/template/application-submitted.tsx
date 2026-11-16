@@ -1,15 +1,11 @@
-import {
-    Body,
-    Button,
-    Container,
-    Head,
-    Heading,
-    Html,
-    Img,
-    Text,
-} from "@react-email/components";
 import React from "react";
-import { emailStyles } from "./styles";
+import {
+    CtaButton,
+    DetailList,
+    EmailLayout,
+    Paragraph,
+    Title,
+} from "../components/layout";
 
 export interface ApplicationSubmittedEmailProps {
     /** "Nytt utlegg til godkjenning", "Ny sak til HS", … */
@@ -39,37 +35,34 @@ export const ApplicationSubmittedEmail = ({
     dashboardUrl,
     logoUrl,
 }: ApplicationSubmittedEmailProps) => (
-    <Html>
-        <Head />
-        <Body style={emailStyles.main}>
-            <Container style={emailStyles.container}>
-                <Img
-                    src={logoUrl}
-                    width="100"
-                    height="100"
-                    alt="TIHLDE Logomark"
-                    style={emailStyles.logo}
-                />
-                <Heading style={emailStyles.heading}>{headline}</Heading>
-                <Text style={emailStyles.paragraph}>
-                    <strong>{submitterName}</strong> har sendt inn{" "}
-                    {typeLabel.toLowerCase()}.
-                </Text>
-                {details.map((detail) => (
-                    <Text key={detail.label} style={emailStyles.paragraph}>
-                        {detail.label}: <strong>{detail.value}</strong>
-                    </Text>
-                ))}
-                <Button style={emailStyles.button} href={dashboardUrl}>
-                    Se søknaden
-                </Button>
-                <Text style={emailStyles.paragraph}>
-                    Alle detaljer og vedlegg ligger på nettsiden.
-                </Text>
-            </Container>
-            <Text style={emailStyles.footer}>Levert av INDEX</Text>
-        </Body>
-    </Html>
+    <EmailLayout
+        preview={`${submitterName} har sendt inn ${typeLabel.toLowerCase()}.`}
+        logoUrl={logoUrl}
+    >
+        <Title>{headline}</Title>
+        <Paragraph>
+            <strong>{submitterName}</strong> har sendt inn{" "}
+            {typeLabel.toLowerCase()}.
+        </Paragraph>
+        {details.length > 0 && <DetailList rows={details} />}
+        <CtaButton href={dashboardUrl}>Se søknaden</CtaButton>
+        <Paragraph muted>
+            Alle detaljer og vedlegg ligger på nettsiden.
+        </Paragraph>
+    </EmailLayout>
 );
+
+ApplicationSubmittedEmail.PreviewProps = {
+    headline: "Nytt utlegg til godkjenning",
+    typeLabel: "Utlegg",
+    submitterName: "Ola Nordmann",
+    details: [
+        { label: "Gruppe", value: "Index" },
+        { label: "Beløp", value: "1 249,00 kr" },
+        { label: "Dato", value: "12. november 2026" },
+    ],
+    dashboardUrl: "https://tihlde.org/admin/soknader/1",
+    logoUrl: "https://tihlde.org/logo512.png",
+} satisfies ApplicationSubmittedEmailProps;
 
 export default ApplicationSubmittedEmail;

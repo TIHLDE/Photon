@@ -1,17 +1,10 @@
-import {
-    Body,
-    Container,
-    Head,
-    Heading,
-    Hr,
-    Html,
-    Img,
-    Preview,
-    Section,
-    Text,
-} from "@react-email/components";
 import React from "react";
-import { emailStyles } from "./styles";
+import {
+    DetailList,
+    EmailLayout,
+    Paragraph,
+    Title,
+} from "../components/layout";
 
 export interface CompanyContactEmailProps {
     company: string;
@@ -90,84 +83,44 @@ export const CompanyContactEmail = ({
     ];
 
     return (
-        <Html>
-            <Head />
-            <Preview>{`${company} har meldt interesse for et samarbeid`}</Preview>
-            <Body style={emailStyles.main}>
-                <Container style={styles.container}>
-                    <Img
-                        src={logoUrl}
-                        width="64"
-                        height="64"
-                        alt="TIHLDE Logomark"
-                        style={emailStyles.logo}
-                    />
-                    <Heading style={emailStyles.heading}>
-                        Ny henvendelse fra {company}
-                    </Heading>
-                    <Text style={emailStyles.paragraph}>
-                        Svar på denne e-posten for å svare {contactName}{" "}
-                        direkte.
-                    </Text>
-                    {sections.map(([title, rows]) => (
-                        <Section key={title} style={styles.section}>
-                            <Hr style={styles.hr} />
-                            <Text style={styles.sectionTitle}>{title}</Text>
-                            {rows.map(([label, value]) => (
-                                <Section key={label} style={styles.row}>
-                                    <Text style={styles.label}>{label}</Text>
-                                    <Text style={styles.value}>
-                                        {value || "–"}
-                                    </Text>
-                                </Section>
-                            ))}
-                        </Section>
-                    ))}
-                </Container>
-                <Text style={emailStyles.footer}>Levert av INDEX</Text>
-            </Body>
-        </Html>
+        <EmailLayout
+            preview={`${company} har meldt interesse for et samarbeid`}
+            logoUrl={logoUrl}
+        >
+            <Title>Ny henvendelse fra {company}</Title>
+            <Paragraph>
+                Svar på denne e-posten for å svare {contactName} direkte.
+            </Paragraph>
+            {sections.map(([title, rows]) => (
+                <DetailList
+                    key={title}
+                    title={title}
+                    rows={rows.map(([label, value]) => ({
+                        label,
+                        value: value || "–",
+                    }))}
+                />
+            ))}
+        </EmailLayout>
     );
 };
 
-const styles = {
-    container: {
-        ...emailStyles.container,
-        maxWidth: "560px",
-        padding: "48px 0 40px",
-    },
-    section: {
-        padding: "0 40px",
-    },
-    hr: {
-        borderColor: "#eee",
-        margin: "28px 0 20px",
-    },
-    sectionTitle: {
-        color: "#000",
-        fontSize: "17px",
-        fontWeight: 700,
-        margin: "0 0 12px",
-    },
-    row: {
-        marginBottom: "12px",
-    },
-    label: {
-        color: "#5f5f5f",
-        fontSize: "12px",
-        fontWeight: 600,
-        letterSpacing: "0.4px",
-        lineHeight: "16px",
-        margin: "0",
-        textTransform: "uppercase" as const,
-    },
-    value: {
-        color: "#222",
-        fontSize: "15px",
-        lineHeight: "22px",
-        margin: "2px 0 0",
-        whiteSpace: "pre-wrap" as const,
-    },
-};
+CompanyContactEmail.PreviewProps = {
+    company: "Bedrift AS",
+    contactName: "Kari Nordmann",
+    contactEmail: "kari@bedrift.no",
+    phone: "+47 900 00 000",
+    eventTypes: ["Bedriftspresentasjon", "Kurs/Workshop"],
+    semesters: ["Høst 2026", "Vår 2027"],
+    companyType: "Start-up",
+    hasTrondheimOffice: true,
+    about: "Vi lager programvare for norske kommuner.",
+    themes: ["Webutvikling", "Sky"],
+    classLevels: ["3. klasse", "4. klasse"],
+    participants: "30–50",
+    extras: ["Stillingsannonse"],
+    comment: "Vi er fleksible på dato.",
+    logoUrl: "https://tihlde.org/logo512.png",
+} satisfies CompanyContactEmailProps;
 
 export default CompanyContactEmail;

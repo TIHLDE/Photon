@@ -1,15 +1,11 @@
-import {
-    Body,
-    Button,
-    Container,
-    Head,
-    Heading,
-    Html,
-    Img,
-    Text,
-} from "@react-email/components";
 import React from "react";
-import { emailStyles } from "./styles";
+import {
+    CtaButton,
+    Divider,
+    EmailLayout,
+    Paragraph,
+    Title,
+} from "../components/layout";
 
 export interface ChangeEmailVerificationProps {
     url: string;
@@ -19,38 +15,27 @@ export interface ChangeEmailVerificationProps {
 export const ChangeEmailVerificationEmail = ({
     url,
     logoUrl,
-}: ChangeEmailVerificationProps) => {
-    return (
-        <Html>
-            <Head />
-            <Body style={emailStyles.main}>
-                <Container style={emailStyles.container}>
-                    <Img
-                        src={logoUrl}
-                        width="100"
-                        height="100"
-                        alt="TIHLDE Logomark"
-                        style={emailStyles.logo}
-                    />
-                    <Heading style={emailStyles.secondary}>
-                        Trykk på knappen nedenfor for å bekrefte din nye
-                        e-postadresse
-                    </Heading>
-                    <Button href={url} style={emailStyles.button}>
-                        Bekreft e-post
-                    </Button>
-                    <Text style={emailStyles.paragraph}>
-                        Forventet du ikke denne e-posten?
-                    </Text>
-                    <Text style={emailStyles.paragraph}>
-                        Du kan trygt ignorere denne e-posten hvis du ikke prøvde
-                        å logge inn
-                    </Text>
-                </Container>
-                <Text style={emailStyles.footer}>Levert av INDEX</Text>
-            </Body>
-        </Html>
-    );
-};
+}: ChangeEmailVerificationProps) => (
+    <EmailLayout
+        preview="Bekreft din nye e-postadresse på TIHLDE."
+        logoUrl={logoUrl}
+    >
+        <Title>Bekreft din nye e-postadresse</Title>
+        <Paragraph>
+            Trykk på knappen nedenfor for å bekrefte din nye e-postadresse.
+        </Paragraph>
+        <CtaButton href={url}>Bekreft e-post</CtaButton>
+        <Divider />
+        <Paragraph muted>
+            <strong>Forventet du ikke denne e-posten?</strong> Du kan trygt
+            ignorere den hvis du ikke prøvde å endre e-postadressen din.
+        </Paragraph>
+    </EmailLayout>
+);
+
+ChangeEmailVerificationEmail.PreviewProps = {
+    url: "https://tihlde.org/bekreft-epost?token=abc",
+    logoUrl: "https://tihlde.org/logo512.png",
+} satisfies ChangeEmailVerificationProps;
 
 export default ChangeEmailVerificationEmail;

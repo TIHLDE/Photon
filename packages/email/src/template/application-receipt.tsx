@@ -1,15 +1,11 @@
-import {
-    Body,
-    Button,
-    Container,
-    Head,
-    Heading,
-    Html,
-    Img,
-    Text,
-} from "@react-email/components";
 import React from "react";
-import { emailStyles } from "./styles";
+import {
+    CtaButton,
+    DetailList,
+    EmailLayout,
+    Paragraph,
+    Title,
+} from "../components/layout";
 
 export interface ApplicationReceiptEmailProps {
     /** "Utlegg", "Søknad om støtte", … */
@@ -30,38 +26,30 @@ export const ApplicationReceiptEmail = ({
     applicationsUrl,
     logoUrl,
 }: ApplicationReceiptEmailProps) => (
-    <Html>
-        <Head />
-        <Body style={emailStyles.main}>
-            <Container style={emailStyles.container}>
-                <Img
-                    src={logoUrl}
-                    width="100"
-                    height="100"
-                    alt="TIHLDE Logomark"
-                    style={emailStyles.logo}
-                />
-                <Heading style={emailStyles.heading}>
-                    Vi har mottatt søknaden din
-                </Heading>
-                <Text style={emailStyles.paragraph}>
-                    {typeLabel} er sendt til {handlerLabel}.
-                </Text>
-                {details.map((detail) => (
-                    <Text key={detail.label} style={emailStyles.paragraph}>
-                        {detail.label}: <strong>{detail.value}</strong>
-                    </Text>
-                ))}
-                <Button style={emailStyles.button} href={applicationsUrl}>
-                    Se mine søknader
-                </Button>
-                <Text style={emailStyles.paragraph}>
-                    Du får beskjed når søknaden er behandlet.
-                </Text>
-            </Container>
-            <Text style={emailStyles.footer}>Levert av INDEX</Text>
-        </Body>
-    </Html>
+    <EmailLayout
+        preview={`${typeLabel} er sendt til ${handlerLabel}.`}
+        logoUrl={logoUrl}
+    >
+        <Title>Vi har mottatt søknaden din</Title>
+        <Paragraph>
+            {typeLabel} er sendt til {handlerLabel}. Du får beskjed når søknaden
+            er behandlet.
+        </Paragraph>
+        {details.length > 0 && <DetailList rows={details} />}
+        <CtaButton href={applicationsUrl}>Se mine søknader</CtaButton>
+    </EmailLayout>
 );
+
+ApplicationReceiptEmail.PreviewProps = {
+    typeLabel: "Utlegg",
+    handlerLabel: "Finansminister",
+    details: [
+        { label: "Gruppe", value: "Index" },
+        { label: "Beløp", value: "1 249,00 kr" },
+        { label: "Dato", value: "12. november 2026" },
+    ],
+    applicationsUrl: "https://tihlde.org/profil/soknader",
+    logoUrl: "https://tihlde.org/logo512.png",
+} satisfies ApplicationReceiptEmailProps;
 
 export default ApplicationReceiptEmail;

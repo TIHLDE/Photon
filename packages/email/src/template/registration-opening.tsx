@@ -1,15 +1,11 @@
-import {
-    Body,
-    Button,
-    Container,
-    Head,
-    Heading,
-    Html,
-    Img,
-    Text,
-} from "@react-email/components";
 import React from "react";
-import { emailStyles } from "./styles";
+import {
+    CtaButton,
+    EmailLayout,
+    Highlight,
+    Paragraph,
+    Title,
+} from "../components/layout";
 
 export interface RegistrationOpeningEmailProps {
     eventName: string;
@@ -24,38 +20,31 @@ export const RegistrationOpeningEmail = ({
     eventUrl = "https://tihlde.org/arrangementer/eksempel",
     registrationStart = "12. august kl. 12:00",
     logoUrl,
-}: RegistrationOpeningEmailProps) => {
-    return (
-        <Html>
-            <Head />
-            <Body style={emailStyles.main}>
-                <Container style={emailStyles.container}>
-                    <Img
-                        src={logoUrl}
-                        width="100"
-                        height="100"
-                        alt="TIHLDE Logomark"
-                        style={emailStyles.logo}
-                    />
-                    <Heading style={emailStyles.heading}>
-                        Påmeldingen åpner snart
-                    </Heading>
-                    <Text style={emailStyles.paragraph}>
-                        Påmeldingen til <strong>{eventName}</strong> åpner{" "}
-                        {registrationStart}.
-                    </Text>
-                    <Button href={eventUrl} style={emailStyles.button}>
-                        Se arrangement
-                    </Button>
-                    <Text style={emailStyles.paragraph}>
-                        Du får denne e-posten fordi du har arrangementet som
-                        favoritt.
-                    </Text>
-                </Container>
-                <Text style={emailStyles.footer}>Levert av INDEX</Text>
-            </Body>
-        </Html>
-    );
-};
+}: RegistrationOpeningEmailProps) => (
+    <EmailLayout
+        preview={`Påmeldingen til ${eventName} åpner ${registrationStart}.`}
+        logoUrl={logoUrl}
+        footerNote="Du får denne e-posten fordi du har arrangementet som favoritt."
+    >
+        <Title>Påmeldingen åpner snart</Title>
+        <Paragraph>
+            Gjør deg klar! Påmeldingen til <strong>{eventName}</strong> åpner
+            snart.
+        </Paragraph>
+        <Highlight
+            label="Påmeldingen åpner"
+            value={registrationStart}
+            size="sm"
+        />
+        <CtaButton href={eventUrl}>Se arrangement</CtaButton>
+    </EmailLayout>
+);
+
+RegistrationOpeningEmail.PreviewProps = {
+    eventName: "Julebord",
+    eventUrl: "https://tihlde.org/arrangementer/1",
+    registrationStart: "12. august kl. 12:00",
+    logoUrl: "https://tihlde.org/logo512.png",
+} satisfies RegistrationOpeningEmailProps;
 
 export default RegistrationOpeningEmail;

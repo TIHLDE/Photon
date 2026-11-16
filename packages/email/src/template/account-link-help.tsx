@@ -1,14 +1,13 @@
-import {
-    Body,
-    Container,
-    Head,
-    Heading,
-    Html,
-    Img,
-    Text,
-} from "@react-email/components";
+import { Link } from "@react-email/components";
 import React from "react";
-import { emailStyles } from "./styles";
+import {
+    Callout,
+    DetailList,
+    EmailLayout,
+    Paragraph,
+    Title,
+} from "../components/layout";
+import { colors } from "../components/theme";
 
 export interface AccountLinkHelpEmailProps {
     /** Name as Feide reports it — authenticated, unlike anything typed in. */
@@ -35,44 +34,49 @@ export const AccountLinkHelpEmail = ({
     note,
     logoUrl,
 }: AccountLinkHelpEmailProps) => {
+    const rows = [
+        { label: "Navn fra Feide", value: feideName },
+        {
+            label: "Svar dem på",
+            value: (
+                <Link
+                    href={`mailto:${contactEmail}`}
+                    style={{ color: colors.brand }}
+                >
+                    {contactEmail}
+                </Link>
+            ),
+        },
+        ...(feideUsername
+            ? [{ label: "NTNU-brukernavn", value: feideUsername }]
+            : []),
+    ];
+
     return (
-        <Html>
-            <Head />
-            <Body style={emailStyles.main}>
-                <Container style={emailStyles.container}>
-                    <Img
-                        src={logoUrl}
-                        width="100"
-                        height="100"
-                        alt="TIHLDE Logomark"
-                        style={emailStyles.logo}
-                    />
-                    <Heading style={emailStyles.heading}>
-                        {feideName} får ikke koblet Feide til den gamle brukeren
-                    </Heading>
-                    <Text style={emailStyles.paragraph}>
-                        Svar dem på: {contactEmail}
-                    </Text>
-                    {feideUsername && (
-                        <Text style={emailStyles.paragraph}>
-                            NTNU-brukernavn: {feideUsername}
-                        </Text>
-                    )}
-                    {note && (
-                        <Text style={emailStyles.paragraph}>
-                            De husker: {note}
-                        </Text>
-                    )}
-                    <Text style={emailStyles.paragraph}>
-                        Finn den gamle brukeren i admin og sett brukernavnet til
-                        NTNU-brukernavnet over. Da kobles kontoene neste gang de
-                        logger inn med Feide.
-                    </Text>
-                </Container>
-                <Text style={emailStyles.footer}>Levert av INDEX</Text>
-            </Body>
-        </Html>
+        <EmailLayout
+            preview={`${feideName} trenger hjelp med å koble Feide til den gamle brukeren.`}
+            logoUrl={logoUrl}
+        >
+            <Title>
+                {feideName} får ikke koblet Feide til den gamle brukeren
+            </Title>
+            <DetailList rows={rows} />
+            {note && <Callout label="De husker">{note}</Callout>}
+            <Paragraph>
+                Finn den gamle brukeren i admin og sett brukernavnet til
+                NTNU-brukernavnet over. Da kobles kontoene neste gang de logger
+                inn med Feide.
+            </Paragraph>
+        </EmailLayout>
     );
 };
+
+AccountLinkHelpEmail.PreviewProps = {
+    feideName: "Ola Nordmann",
+    feideUsername: "olanor",
+    contactEmail: "ola@example.com",
+    note: "Jeg registrerte meg med en gammel Gmail-adresse i 2021.",
+    logoUrl: "https://tihlde.org/logo512.png",
+} satisfies AccountLinkHelpEmailProps;
 
 export default AccountLinkHelpEmail;

@@ -1,14 +1,5 @@
-import {
-    Body,
-    Container,
-    Head,
-    Heading,
-    Html,
-    Img,
-    Text,
-} from "@react-email/components";
 import React from "react";
-import { emailStyles } from "./styles";
+import { Callout, EmailLayout, Paragraph, Title } from "../components/layout";
 
 export interface FormSubmissionDeletedEmailProps {
     formTitle: string;
@@ -20,34 +11,24 @@ export const FormSubmissionDeletedEmail = ({
     formTitle,
     reason,
     logoUrl,
-}: FormSubmissionDeletedEmailProps) => {
-    return (
-        <Html>
-            <Head />
-            <Body style={emailStyles.main}>
-                <Container style={emailStyles.container}>
-                    <Img
-                        src={logoUrl}
-                        width="100"
-                        height="100"
-                        alt="TIHLDE Logomark"
-                        style={emailStyles.logo}
-                    />
-                    <Heading style={emailStyles.heading}>
-                        Ditt svar på spørreskjemaet har blitt slettet
-                    </Heading>
-                    <Text style={emailStyles.paragraph}>
-                        Ditt svar på spørreskjemaet "{formTitle}" har blitt
-                        slettet av en administrator.
-                    </Text>
-                    <Text style={emailStyles.paragraph}>
-                        <strong>Grunnen er:</strong> {reason}
-                    </Text>
-                </Container>
-                <Text style={emailStyles.footer}>Levert av INDEX</Text>
-            </Body>
-        </Html>
-    );
-};
+}: FormSubmissionDeletedEmailProps) => (
+    <EmailLayout
+        preview={`Ditt svar på «${formTitle}» har blitt slettet.`}
+        logoUrl={logoUrl}
+    >
+        <Title>Ditt svar på spørreskjemaet har blitt slettet</Title>
+        <Paragraph>
+            Ditt svar på spørreskjemaet <strong>«{formTitle}»</strong> har blitt
+            slettet av en administrator.
+        </Paragraph>
+        <Callout label="Grunnen er">{reason}</Callout>
+    </EmailLayout>
+);
+
+FormSubmissionDeletedEmail.PreviewProps = {
+    formTitle: "Påmelding til hytteturen",
+    reason: "Svaret var registrert to ganger.",
+    logoUrl: "https://tihlde.org/logo512.png",
+} satisfies FormSubmissionDeletedEmailProps;
 
 export default FormSubmissionDeletedEmail;

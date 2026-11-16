@@ -1,4 +1,4 @@
-import { toPlainText } from "@photon/email";
+import { LOGO_SRC, toPlainText } from "@photon/email";
 import {
     type EmailTemplateName,
     type EmailTemplateOptions,
@@ -37,6 +37,17 @@ export type TemplatedEmail<
     templateName: TName;
     templateProps: EmailTemplateOptions<TName>;
 };
+
+/**
+ * Point the template's logo at the inline attachment instead of the website,
+ * so clients that block remote images (Outlook) still show it. The SMTP
+ * sender attaches the image; see `@photon/email`'s logo module.
+ */
+function withInlineLogo<TName extends EmailTemplateName>(
+    props: EmailTemplateOptions<TName>,
+): EmailTemplateOptions<TName> {
+    return { ...props, logoUrl: LOGO_SRC };
+}
 
 export interface EmailService {
     sendRawEmail(options: SendOptions, content: ContentOptions): Promise<void>;
@@ -91,7 +102,7 @@ export abstract class BaseEmailService implements EmailService {
                     type: "html" as const,
                     html: await renderEmailTemplate(
                         email.templateName,
-                        email.templateProps,
+                        withInlineLogo(email.templateProps),
                     ),
                 },
             })),
@@ -123,7 +134,7 @@ export abstract class BaseEmailService implements EmailService {
     ): Promise<void> {
         const renderedHtml = await renderEmailTemplate(
             templateName,
-            templateProps,
+            withInlineLogo(templateProps),
         );
         await this.sendEmail(options, {
             type: "html",

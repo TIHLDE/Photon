@@ -1,15 +1,11 @@
-import {
-    Body,
-    Container,
-    Head,
-    Heading,
-    Html,
-    Img,
-    Text,
-} from "@react-email/components";
 import React from "react";
 import { formatOsloDate } from "../date";
-import { emailStyles } from "./styles";
+import {
+    DetailList,
+    EmailLayout,
+    Paragraph,
+    Title,
+} from "../components/layout";
 
 export interface ContractSignedEmailProps {
     memberName: string;
@@ -23,41 +19,32 @@ export const ContractSignedEmail = ({
     groupName,
     signedAt,
     logoUrl,
-}: ContractSignedEmailProps) => {
-    const formattedDate = formatOsloDate(signedAt);
+}: ContractSignedEmailProps) => (
+    <EmailLayout
+        preview={`${memberName} har signert frivillighetskontrakten for ${groupName}.`}
+        logoUrl={logoUrl}
+        footerNote={`Du mottar denne e-posten fordi du er registrert som varslingskontakt for ${groupName}.`}
+    >
+        <Title>Frivillighetskontrakt signert</Title>
+        <Paragraph>
+            <strong>{memberName}</strong> har signert frivillighetskontrakten
+            for <strong>{groupName}</strong>.
+        </Paragraph>
+        <DetailList
+            rows={[
+                { label: "Medlem", value: memberName },
+                { label: "Gruppe", value: groupName },
+                { label: "Dato", value: formatOsloDate(signedAt) },
+            ]}
+        />
+    </EmailLayout>
+);
 
-    return (
-        <Html>
-            <Head />
-            <Body style={emailStyles.main}>
-                <Container style={emailStyles.container}>
-                    <Img
-                        src={logoUrl}
-                        width="100"
-                        height="100"
-                        alt="TIHLDE Logomark"
-                        style={emailStyles.logo}
-                    />
-                    <Heading style={emailStyles.heading}>
-                        Frivillighetskontrakt signert
-                    </Heading>
-                    <Text style={emailStyles.paragraph}>
-                        <strong>{memberName}</strong> har signert
-                        frivillighetskontrakten for <strong>{groupName}</strong>
-                        .
-                    </Text>
-                    <Text style={emailStyles.paragraph}>
-                        Dato: {formattedDate}
-                    </Text>
-                    <Text style={emailStyles.paragraph}>
-                        Du mottar denne e-posten fordi du er registrert som
-                        varslingskontakt for {groupName}.
-                    </Text>
-                </Container>
-                <Text style={emailStyles.footer}>Levert av INDEX</Text>
-            </Body>
-        </Html>
-    );
-};
+ContractSignedEmail.PreviewProps = {
+    memberName: "Ola Nordmann",
+    groupName: "Index",
+    signedAt: "2026-08-26T10:00:00.000Z",
+    logoUrl: "https://tihlde.org/logo512.png",
+} satisfies ContractSignedEmailProps;
 
 export default ContractSignedEmail;
