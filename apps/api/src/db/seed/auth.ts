@@ -17,11 +17,11 @@ export default async ({ db, auth }: AppContext) => {
         const user = await auth.api.createUser({
             body: {
                 email: "test@test.com",
-                password: "index123",
+                password: "password",
                 name: "Brotherman Testern",
                 role: "admin",
                 data: {
-                    username: "brotherman",
+                    username: "admin",
                 },
             },
         });
@@ -77,7 +77,7 @@ export default async ({ db, auth }: AppContext) => {
         const member = await auth.api.createUser({
             body: {
                 email: "medlem@test.com",
-                password: "index123",
+                password: "password",
                 name: "Medlem Test",
                 role: "user",
                 data: {
