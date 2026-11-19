@@ -1,9 +1,15 @@
+import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import type z from "zod";
-import { canActOnEvent, strikePermissions } from "~/lib/event/access";
+import {
+    DEFAULT_STATUSES,
+    canActOnEvent,
+    strikePermissions,
+} from "~/lib/event/access";
 import { wasPromotedAfterStart } from "~/lib/event/strikes";
+import { sendNotification } from "~/lib/notification";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { userImageExtra } from "~/lib/user/avatar";
@@ -18,7 +24,7 @@ export const createStrikeRoute = route().post(
         summary: "Create strike",
         operationId: "createStrike",
         description:
-            "Give a user a strike (prikk) connected to an event. Requires 'events:strikes:create', or the right to arrange the event ('events:update' / 'events:manage') — globally or for the group arranging it.",
+            "Give a user a strike (prikk) connected to an event, and notify them. Requires 'events:strikes:create', or the right to arrange the event ('events:update' / 'events:manage') — globally or for the group arranging it. Unless the caller holds 'events:strikes:create' across TIHLDE, the user must have signed up themselves and hold a spot on the event.",
     })
         .schemaResponse({
             statusCode: 201,
@@ -33,7 +39,7 @@ export const createStrikeRoute = route().post(
         .response({
             statusCode: 409,
             description:
-                "The user was promoted from the waitlist after the event started",
+                "The user was promoted from the waitlist after the event started, or has no registration of their own on the event",
         })
         .build(),
     requireAuth,
@@ -46,7 +52,9 @@ export const createStrikeRoute = route().post(
     validator("json", createStrikeSchema),
     async (c) => {
         const body = c.req.valid("json");
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
+        const callerId = c.get("user").id;
 
         const targetUser = await db.query.user.findFirst({
             columns: { id: true, name: true },
@@ -73,8 +81,8 @@ export const createStrikeRoute = route().post(
 
         if (
             !(await canActOnEvent(
-                c.get("ctx"),
-                c.get("user").id,
+                ctx,
+                callerId,
                 body.eventId,
                 strikePermissions("create"),
             ))
@@ -86,7 +94,11 @@ export const createStrikeRoute = route().post(
         }
 
         const registration = await db.query.eventRegistration.findFirst({
-            columns: { promotedFromWaitlistAt: true },
+            columns: {
+                status: true,
+                addedByOrganizer: true,
+                promotedFromWaitlistAt: true,
+            },
             where: { userId: body.userId, eventId: body.eventId },
         });
 
@@ -100,6 +112,21 @@ export const createStrikeRoute = route().post(
             throw new HTTPException(409, {
                 message:
                     "Medlemmet rykket opp fra ventelisten etter at arrangementet startet, og kan ikke få prikk for det.",
+            });
+        }
+
+        const holdsOwnSpot =
+            registration &&
+            !registration.addedByOrganizer &&
+            DEFAULT_STATUSES.some((status) => status === registration.status);
+
+        if (
+            !holdsOwnSpot &&
+            !(await hasPermission(ctx, callerId, "events:strikes:create"))
+        ) {
+            throw new HTTPException(409, {
+                message:
+                    "Medlemmet har ikke plass på dette arrangementet etter egen påmelding, og kan derfor ikke få prikk av arrangøren.",
             });
         }
 
@@ -117,6 +144,28 @@ export const createStrikeRoute = route().post(
             throw new HTTPException(500, {
                 message: "Failed to create strike",
             });
+        }
+
+        try {
+            await sendNotification(
+                {
+                    userId: body.userId,
+                    title:
+                        body.count === 1
+                            ? "Du har fått 1 prikk"
+                            : `Du har fått ${body.count} prikker`,
+                    description: body.reason
+                        ? `${targetEvent.title}: ${body.reason}`
+                        : targetEvent.title,
+                    link: `/profil/${body.userId}/prikker`,
+                },
+                ctx,
+            );
+        } catch (error) {
+            c.get("logger")?.error(
+                { err: error, strikeId: newStrike.id },
+                "Failed to send strike notification",
+            );
         }
 
         return c.json(

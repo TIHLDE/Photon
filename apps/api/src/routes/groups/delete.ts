@@ -3,7 +3,8 @@ import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono-openapi";
 import z from "zod";
-import { isGroupLeader } from "~/lib/group/middleware";
+import { HTTPAppException } from "~/lib/errors";
+import { isArchivableGroup } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -17,29 +18,25 @@ export const deleteRoute = route().delete(
         summary: "Delete a group",
         operationId: "deleteGroup",
         description:
-            "Delete a group by its slug. Requires being the group's leader OR holding 'groups:delete' for all of TIHLDE, and repeating the slug in `confirm`. This action is irreversible and will remove all associated data, including memberships, fines (and their pictures), laws, forms and verv.",
+            "Permanently delete a group by its slug. Requires 'groups:delete' across TIHLDE and repeating the slug in `confirm`; a leader archives the group instead. Hovedstyret and groups whose roster follows Feide cannot be deleted. This action is irreversible and will remove all associated data, including memberships, fines (and their pictures), laws, forms and verv.",
     })
         .response({
             statusCode: 204,
             description: "Group successfully deleted",
         })
         .badRequest({
-            description: "`confirm` does not repeat the group's slug",
+            description:
+                "`confirm` does not repeat the group's slug, or the group cannot be deleted",
         })
         .forbidden({
-            description:
-                "Not a group leader or missing groups:delete permission",
+            description: "Missing groups:delete across TIHLDE",
         })
         .notFound({
             description: "Group with the specified slug does not exist",
         })
         .build(),
     requireAuth,
-    requireAccess({
-        permission: "groups:delete",
-        scope: (c) => `group:${c.req.param("slug")}`,
-        ownership: { param: "slug", check: isGroupLeader },
-    }),
+    requireAccess({ permission: "groups:delete" }),
     validator(
         "query",
         z.object({
@@ -71,6 +68,12 @@ export const deleteRoute = route().delete(
             throw new HTTPException(404, {
                 message: `Group with slug "${slug}" not found`,
             });
+        }
+
+        if (!isArchivableGroup(group)) {
+            throw HTTPAppException.BadRequest(
+                "Denne gruppen kan ikke slettes.",
+            );
         }
 
         // Delete the group and all associated data (cascading handled by DB).

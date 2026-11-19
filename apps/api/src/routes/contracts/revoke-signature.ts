@@ -2,7 +2,6 @@ import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { releaseAssetKeys } from "~/lib/asset/release";
-import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -16,7 +15,7 @@ export const revokeSignatureRoute = route().delete(
         summary: "Revoke a member's contract signature",
         operationId: "revokeContractSignature",
         description:
-            "Removes a member's signature from the active contract. Requires being a group leader or 'contracts:manage' permission.",
+            "Removes a member's signature from the active contract. The signature belongs to the member, not the group, so this requires 'contracts:manage' across TIHLDE.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -28,11 +27,7 @@ export const revokeSignatureRoute = route().delete(
         .unauthorized()
         .build(),
     requireAuth,
-    requireAccess({
-        permission: "contracts:manage",
-        scope: (c) => `group:${c.req.param("groupSlug")}`,
-        ownership: { param: "groupSlug", check: isGroupLeader },
-    }),
+    requireAccess({ permission: "contracts:manage" }),
     async (c) => {
         const groupSlug = c.req.param("groupSlug");
         const userId = c.req.param("userId");

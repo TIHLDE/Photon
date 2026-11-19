@@ -490,7 +490,7 @@ describe("deleting a group releases its fines' pictures", () => {
     integrationTest(
         "the pictures and cached variants are gone, other groups keep theirs",
         async ({ ctx }) => {
-            const { giver, group, key } = await setupFine(ctx, {
+            const { group, key } = await setupFine(ctx, {
                 slug: "fine-group-delete",
             });
             const other = await setupFine(ctx, {
@@ -500,7 +500,9 @@ describe("deleting a group releases its fines' pictures", () => {
             const variantKey = imageVariantKey(key, 320);
             await ctx.bucket.putObject(variantKey, PICTURE, "image/webp");
 
-            const client = await ctx.utils.clientForUser(giver);
+            const admin = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(admin, ["groups:delete"]);
+            const client = await ctx.utils.clientForUser(admin);
             const response = await client.api.groups[":slug"].$delete({
                 param: { slug: group.slug },
                 query: { confirm: group.slug },

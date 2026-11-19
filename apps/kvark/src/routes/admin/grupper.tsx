@@ -885,12 +885,8 @@ function MemberSigningTable({
     signatures: GroupSignatureList;
 }) {
     const revokeSignature = useMutation(revokeSignatureMutation);
-    // Mirrors revoke-signature server-side: `contracts:manage` (global or for
-    // this group) or being the group's leader.
-    const isLeader = useIsGroupLeaderOf(groupSlug);
-    const canRevoke =
-        useScopedPermission("contracts:manage", `group:${groupSlug}`) ||
-        isLeader;
+    // Signaturen er medlemmets, så API-et krever tilgangen globalt.
+    const canRevoke = usePermission("contracts:manage");
 
     if (!signatures.members.length) {
         return <p>Ingen medlemmer i denne gruppen.</p>;
@@ -948,12 +944,7 @@ function MemberRow({
 }) {
     return (
         <TableRow>
-            <TableCell>
-                <div className="flex flex-col gap-0.5">
-                    <span>{member.userName}</span>
-                    <span>{member.userEmail}</span>
-                </div>
-            </TableCell>
+            <TableCell>{member.userName}</TableCell>
             <TableCell>
                 {member.hasSigned ? (
                     <span className="flex items-center gap-1">

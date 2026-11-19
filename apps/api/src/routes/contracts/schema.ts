@@ -113,7 +113,6 @@ export const groupSignatureMemberSchema = Schema(
     z.object({
         userId: z.string(),
         userName: z.string().meta({ description: "User's display name" }),
-        userEmail: z.string().meta({ description: "User's email address" }),
         hasSigned: z.boolean(),
         signedAt: z.string().nullable(),
     }),

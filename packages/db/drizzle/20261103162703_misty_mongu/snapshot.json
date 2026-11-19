@@ -1,0 +1,47 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "0704fb31-1e24-4995-8c57-369576daa629",
+  "prevIds": [
+    "98c17a06-56d7-4b71-a9fd-2a14b8441957"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "event_registration",
+        "added_by_organizer"
+      ],
+      "writes": [
+        "s|col|public.event_registration.added_by_organizer",
+        "n|col|public.event_registration.added_by_organizer",
+        "e|col|public.event_registration.added_by_organizer"
+      ],
+      "reads": [
+        "n|tbl|public.event_registration",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "event_registration",
+        "name": "added_by_organizer",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

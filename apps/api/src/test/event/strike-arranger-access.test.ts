@@ -40,6 +40,12 @@ describe("prikker follow the event's arrangør", () => {
                 organizerGroupSlug: group.slug,
             });
 
+            await ctx.db.insert(schema.eventRegistration).values({
+                eventId: event.id,
+                userId: target.id,
+                status: "no_show",
+            });
+
             const created = await client.api.event.strikes.$post({
                 json: {
                     userId: target.id,
