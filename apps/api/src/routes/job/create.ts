@@ -1,6 +1,6 @@
 import { schema } from "@photon/db";
 import { validator } from "hono-openapi";
-import { promoteAssetUrls } from "~/lib/asset";
+import { assertMayUseAssetUrls, promoteAssetUrls } from "~/lib/asset";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -32,6 +32,8 @@ export const createRoute = route().post(
         const body = c.req.valid("json");
         const userId = c.get("user").id;
         const { db, bucket } = c.get("ctx");
+
+        await assertMayUseAssetUrls(c.get("ctx"), userId, [body.imageUrl]);
 
         const [newJob] = await db
             .insert(schema.jobPost)

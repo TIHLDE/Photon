@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { isJobCreator } from "~/lib/job/middleware";
-import { promoteAssetUrls } from "~/lib/asset";
+import { assertMayUseAssetUrls, promoteAssetUrls } from "~/lib/asset";
 import { releaseReplacedAssetUrls } from "~/lib/asset/release";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -51,6 +51,13 @@ export const updateRoute = route().patch(
                 message: "Job posting not found",
             });
         }
+
+        await assertMayUseAssetUrls(
+            ctx,
+            c.get("user").id,
+            [body.imageUrl],
+            [job.imageUrl],
+        );
 
         // If updating classStart, validate against existing classEnd
         if (body.classStart && !body.classEnd) {

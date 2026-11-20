@@ -3,7 +3,7 @@ import { validatePriorityPools } from "~/lib/event/validate-priority-pools";
 import { type InferInsertModel, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { promoteAssetUrls } from "~/lib/asset";
+import { assertMayUseAssetUrls, promoteAssetUrls } from "~/lib/asset";
 import { canActOnEventsForGroup } from "~/lib/event/access";
 import { resolvePriorityUserIds } from "~/lib/event/priority";
 import { describeRoute } from "~/lib/openapi";
@@ -41,6 +41,8 @@ export const createRoute = route().post(
         const body = c.req.valid("json");
         const userId = c.get("user").id;
         const { db, bucket } = c.get("ctx");
+
+        await assertMayUseAssetUrls(c.get("ctx"), userId, [body.imageUrl]);
 
         let createdEventId: string | undefined;
 

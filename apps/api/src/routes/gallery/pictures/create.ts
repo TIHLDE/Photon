@@ -2,7 +2,7 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { claimPrivateAssetUrls } from "~/lib/asset";
+import { assertMayUseAssetUrls, claimPrivateAssetUrls } from "~/lib/asset";
 import { findAlbumBySlugOrId } from "~/lib/gallery";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -44,6 +44,12 @@ export const createPicturesRoute = route().post(
         if (!album) {
             throw new HTTPException(404, { message: "Fant ikke galleriet" });
         }
+
+        await assertMayUseAssetUrls(
+            ctx,
+            c.get("user").id,
+            pictures.map((p) => p.imageUrl),
+        );
 
         // Without this every picture disappears from the album two days after
         // it was added.

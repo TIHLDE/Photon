@@ -1121,6 +1121,7 @@ describe("groups", () => {
                     {
                         originalFilename: "gruppebilde.png",
                         contentType: "image/png",
+                        uploadedById: user.id,
                     },
                 );
                 const logoKey = await bucket.upload(
@@ -1129,6 +1130,7 @@ describe("groups", () => {
                     {
                         originalFilename: "logo.png",
                         contentType: "image/png",
+                        uploadedById: user.id,
                     },
                 );
 

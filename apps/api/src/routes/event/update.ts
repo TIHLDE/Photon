@@ -3,7 +3,7 @@ import { type InferInsertModel, and, eq } from "drizzle-orm";
 import { validatePriorityPools } from "~/lib/event/validate-priority-pools";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { promoteAssetUrls } from "~/lib/asset";
+import { assertMayUseAssetUrls, promoteAssetUrls } from "~/lib/asset";
 import { releaseReplacedAssetUrls } from "~/lib/asset/release";
 import { promoteFromWaitlist } from "~/lib/event/payment";
 import { describeRoute } from "~/lib/openapi";
@@ -75,6 +75,13 @@ export const updateRoute = route().put(
             const event = existing[0];
 
             previousImageUrl = event.imageUrl;
+
+            await assertMayUseAssetUrls(
+                { db: tx },
+                userId,
+                [body.imageUrl],
+                [event.imageUrl],
+            );
 
             /**
              * Reglene for betalte arrangementer leses på arrangementet slik

@@ -11,11 +11,13 @@ async function storeAsset(
     ctx: IntegrationTestContext,
     key: string,
     visibility: "public" | "private",
+    uploadedById?: string,
 ) {
     await ctx.bucket.upload(key, BYTES, {
         originalFilename: "bilde.webp",
         contentType: "image/webp",
         visibility,
+        uploadedById,
     });
     return `https://photon.tihlde.org/api/assets/${key}`;
 }
@@ -162,9 +164,9 @@ describe("assets that require a session", () => {
         "adding a picture to an album marks its asset as needing a session",
         async ({ ctx }) => {
             const key = "uploads/2026/09/opplastet-galleribilde.webp";
-            const url = await storeAsset(ctx, key, "public");
-
             const user = await ctx.utils.createTestUser();
+            const url = await storeAsset(ctx, key, "public", user.id);
+
             await ctx.utils.giveUserPermissions(user, ["galleries:manage"]);
             const client = await ctx.utils.clientForUser(user);
 

@@ -3,7 +3,7 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { claimPrivateAssetUrls } from "~/lib/asset";
+import { assertMayUseAssetUrls, claimPrivateAssetUrls } from "~/lib/asset";
 import { sendNotification } from "~/lib/notification";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -147,6 +147,8 @@ export const createFineRoute = route().post(
                 });
             }
         }
+
+        await assertMayUseAssetUrls(ctx, user.id, [body.image]);
 
         // Uploaded pictures are staged until a row claims them; without
         // this the cleanup cron deletes the file after two days. Privat fordi

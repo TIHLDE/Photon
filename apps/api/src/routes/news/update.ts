@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { isNewsCreator } from "~/lib/news/middleware";
-import { promoteAssetUrls } from "~/lib/asset";
+import { assertMayUseAssetUrls, promoteAssetUrls } from "~/lib/asset";
 import { releaseReplacedAssetUrls } from "~/lib/asset/release";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -58,6 +58,13 @@ export const updateRoute = route().patch(
                 message: "News article not found",
             });
         }
+
+        await assertMayUseAssetUrls(
+            ctx,
+            c.get("user").id,
+            [body.imageUrl],
+            [newsArticle.imageUrl],
+        );
 
         // Update the news article
         const [updatedNews] = await db

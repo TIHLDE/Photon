@@ -3,7 +3,7 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { promoteAssetUrls } from "~/lib/asset";
+import { assertMayUseAssetUrls, promoteAssetUrls } from "~/lib/asset";
 import { releaseReplacedAssetUrls } from "~/lib/asset/release";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
@@ -62,6 +62,13 @@ export const updateRoute = route().patch(
                 message: `Group with slug "${slug}" not found`,
             });
         }
+
+        await assertMayUseAssetUrls(
+            ctx,
+            user.id,
+            [body.imageUrl, body.logoUrl],
+            [previousGroup.imageUrl, previousGroup.logoUrl],
+        );
 
         // The type decides what the group is: who may lead it, whether it
         // takes join requests, whether Feide keeps its roster and what

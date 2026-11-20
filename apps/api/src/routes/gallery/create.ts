@@ -6,7 +6,7 @@ import {
     generateUniqueAlbumSlug,
     serializeAlbum,
 } from "~/lib/gallery";
-import { claimPrivateAssetUrls } from "~/lib/asset";
+import { assertMayUseAssetUrls, claimPrivateAssetUrls } from "~/lib/asset";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -38,6 +38,8 @@ export const createRoute = route().post(
         const userId = c.get("user").id;
 
         const slug = await generateUniqueAlbumSlug(ctx, body.title);
+
+        await assertMayUseAssetUrls(ctx, userId, [body.imageUrl]);
 
         // The cover is staged until a row claims it; without this the cleanup
         // cron deletes the file after two days.

@@ -1,5 +1,6 @@
 import { type DbRelations, schema } from "@photon/db";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { HTTPAppException } from "~/lib/errors";
 import type { StorageService } from "~/lib/storage";
 import { IMAGE_VARIANT_WIDTHS, imageVariantKey } from "./image";
 
@@ -62,6 +63,84 @@ export function assetKeyFromUrl(url: string): string | null {
     } catch {
         return null;
     }
+}
+
+/**
+ * Whether this caller uploaded the asset. An asset with no recorded uploader
+ * belongs to nobody, so it never matches.
+ */
+export function isAssetUploader(
+    asset: Pick<schema.Asset, "uploadedById">,
+    callerId: string | null | undefined,
+): boolean {
+    return Boolean(callerId) && asset.uploadedById === callerId;
+}
+
+/**
+ * Refuse a client-supplied URL unless the caller uploaded the asset behind it
+ * or the row being saved already holds it.
+ *
+ * Storing a URL is what gives it power: claiming can make a public asset
+ * private, a gallery or avatar row makes a private one readable, and replacing
+ * the row deletes whatever nothing else references — including files an
+ * external app keeps track of in its own database.
+ *
+ * `heldByRow` is what lets a re-save through, and an editor keep a picture
+ * another editor uploaded. Call before the row is written. A missing asset
+ * answers the same as someone else's, so this does not confirm which keys exist.
+ *
+ * Only the plain form is accepted: the read and delete checks match on the
+ * stored value ending in the asset path, so `…/<key>?v=1` would pass here and
+ * then count as no reference at all, and the file would be deleted under it.
+ */
+export async function assertMayUseAssetUrls(
+    { db }: { db: NodePgDatabase<DbRelations> },
+    callerId: string | null | undefined,
+    urls: (string | null | undefined)[],
+    heldByRow: (string | null | undefined)[] = [],
+): Promise<void> {
+    const forbidden = () =>
+        HTTPAppException.Forbidden(
+            "Du kan bare bruke filer du selv har lastet opp.",
+        );
+
+    for (const url of urls) {
+        const key = assetKeyOf(url);
+        if (
+            url &&
+            key &&
+            !url.endsWith(`/api/assets/${key}`) &&
+            !heldByRow.includes(url)
+        ) {
+            throw forbidden();
+        }
+    }
+
+    const held = new Set(heldByRow.map((url) => assetKeyOf(url)));
+    const keys = [
+        ...new Set(
+            urls
+                .map((url) => assetKeyOf(url))
+                .filter((key): key is string => key !== null && !held.has(key)),
+        ),
+    ];
+    if (keys.length === 0) return;
+
+    const assets = await db.query.asset.findMany({
+        where: { key: { in: keys } },
+        columns: { key: true, uploadedById: true },
+    });
+    const usable = new Set(
+        assets
+            .filter((asset) => isAssetUploader(asset, callerId))
+            .map((asset) => asset.key),
+    );
+
+    if (keys.some((key) => !usable.has(key))) throw forbidden();
+}
+
+function assetKeyOf(url: string | null | undefined): string | null {
+    return url ? assetKeyFromUrl(url) : null;
 }
 
 /**
