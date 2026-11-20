@@ -27,7 +27,10 @@ const contactSchema = {
         .min(1)
         .max(200)
         .meta({ description: "Full name of the person submitting" }),
-    contactEmail: z.email().meta({ description: "Contact email address" }),
+    contactEmail: z.email().meta({
+        description:
+            "Where handlers can reach the submitter. The receipt goes to the account's own address.",
+    }),
 };
 
 // ===== INPUT SCHEMAS =====

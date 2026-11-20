@@ -1,5 +1,6 @@
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { clientIp } from "~/lib/client-ip";
 import { env } from "~/lib/env";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -16,10 +17,6 @@ const RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
  */
 function rateLimitKey(ip: string | undefined, email: string) {
     return `account-link-help:${ip ?? `email:${email.toLowerCase()}`}`;
-}
-
-function clientIp(forwardedFor: string | undefined) {
-    return forwardedFor?.split(",")[0]?.trim() || undefined;
 }
 
 export const accountLinkHelpRoute = route().post(
@@ -48,12 +45,10 @@ export const accountLinkHelpRoute = route().post(
         const { cache, email } = c.get("ctx");
         const logger = c.get("logger");
 
-        const key = rateLimitKey(
-            clientIp(c.req.header("x-forwarded-for")),
-            body.contactEmail,
-        );
+        const key = rateLimitKey(clientIp(c), body.contactEmail);
         const attempts = Number(await cache.getString(key)) || 0;
         if (attempts >= RATE_LIMIT_MAX) {
+            logger.warn("Account link help rate limit reached");
             throw new HTTPException(429, {
                 message: "For mange forespørsler. Prøv igjen senere.",
             });
