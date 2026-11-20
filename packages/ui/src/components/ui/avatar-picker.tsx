@@ -51,7 +51,7 @@ export type AvatarPickerHandle = {
  * Bildet vises i samme sirkel som det havner i, så velgeren og resultatet er
  * den samme flaten — og fila kan både klikkes fram og slippes rett på bildet.
  * Velgeren beskjærer ikke; den leverer fila videre, typisk til
- * `AvatarCropper`.
+ * `ImageCropper`.
  */
 export function AvatarPicker({
     controlRef,

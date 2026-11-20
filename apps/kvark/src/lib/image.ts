@@ -22,4 +22,9 @@ export const imageDropzoneLabels = {
     removeLabel: "Fjern bilde",
     compressing: "Optimaliserer bilde …",
     replaceImage: "Klikk for å bytte bilde",
+    cropTitle: "Beskjær bilde",
+    cropConfirm: "Bruk bilde",
+    cropCancel: "Avbryt",
+    cropWorking: "Beskjærer …",
+    cropAdjust: "Juster utsnitt",
 };

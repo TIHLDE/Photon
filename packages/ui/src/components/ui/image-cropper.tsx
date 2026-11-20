@@ -9,14 +9,14 @@ import { Slider } from "#/components/ui/slider";
 import { Spinner } from "#/components/ui/spinner";
 import { cn } from "#/lib/utils";
 
-/** Side of the square the crop is written to, in pixels. */
-const DEFAULT_OUTPUT_SIZE = 512;
-/** How far past «fyller sirkelen» the user may zoom in. */
+/** Widest the crop is written out, in pixels. */
+const DEFAULT_OUTPUT_WIDTH = 1600;
+/** How far past «fyller rammen» the user may zoom in. */
 const MAX_ZOOM = 4;
 /** Pixels one arrow-key press moves the image, in crop-box coordinates. */
 const KEYBOARD_STEP = 12;
 
-export type AvatarCropperLabels = {
+export type ImageCropperLabels = {
     instructions: string;
     zoomLabel: string;
     zoomOut: string;
@@ -27,20 +27,20 @@ export type AvatarCropperLabels = {
     failed: string;
 };
 
-const defaultLabels: AvatarCropperLabels = {
+const defaultLabels: ImageCropperLabels = {
     instructions: "Dra for å flytte bildet, og bruk glidebryteren for å zoome.",
     zoomLabel: "Zoom",
     zoomOut: "Zoom ut",
     zoomIn: "Zoom inn",
     reset: "Tilbakestill",
-    cropRegion: "Beskjæring av profilbilde",
+    cropRegion: "Beskjæring av bilde",
     loading: "Laster bilde …",
     failed: "Fikk ikke åpnet bildet. Prøv en annen fil.",
 };
 
-export type AvatarCropperHandle = {
+export type ImageCropperHandle = {
     /**
-     * The visible circle, rendered to a square WebP file.
+     * The visible frame, rendered to a WebP file.
      *
      * Returns `null` before the image has loaded, so callers can keep their
      * confirm button disabled without duplicating the loading state.
@@ -48,20 +48,24 @@ export type AvatarCropperHandle = {
     getCroppedFile: () => Promise<File | null>;
 };
 
-export interface AvatarCropperProps {
+export interface ImageCropperProps {
     /**
-     * Gir tilgang til {@link AvatarCropperHandle}. Heter ikke `ref`, fordi
+     * Gir tilgang til {@link ImageCropperHandle}. Heter ikke `ref`, fordi
      * JSX-transformen appen bygges med plukker `ref` ut av props før
      * komponenten ser den.
      */
-    controlRef?: React.Ref<AvatarCropperHandle>;
+    controlRef?: React.Ref<ImageCropperHandle>;
     /** Image being cropped. Replacing it resets pan and zoom. */
     file: File;
-    /** Side of the produced square image, in pixels. */
-    outputSize?: number;
+    /** Width divided by height of the crop. */
+    aspect?: number;
+    /** A circle only changes the guide: the file is still a rectangle. */
+    shape?: "rect" | "circle";
+    /** Upper bound on the produced width. Small sources are not upscaled. */
+    outputWidth?: number;
     /** Fires whenever the image finishes loading, or fails to. */
     onReadyChange?: (ready: boolean) => void;
-    labels?: Partial<AvatarCropperLabels>;
+    labels?: Partial<ImageCropperLabels>;
     className?: string;
 }
 
@@ -74,30 +78,33 @@ type Transform = {
 };
 
 /**
- * Circular crop editor: pan by dragging, zoom by slider, wheel or pinch.
+ * Crop editor: pan by dragging, zoom by slider, wheel or pinch.
  *
- * The crop box is a square whose inscribed circle is what the avatar will
- * show, so the image is never allowed to leave the box — clamping the offsets
- * on every interaction is what keeps a transparent wedge from appearing in the
+ * The image is never allowed to leave the crop box — clamping the offsets on
+ * every interaction is what keeps a transparent wedge from appearing in the
  * corner of the finished picture.
  *
  * The result is produced on demand through the ref rather than on every
- * pointer move: encoding a 512×512 WebP per frame would make dragging stutter,
- * and only the crop the user confirms is ever needed.
+ * pointer move: encoding a WebP per frame would make dragging stutter, and
+ * only the crop the user confirms is ever needed.
  */
-export function AvatarCropper({
+export function ImageCropper({
     controlRef,
     file,
-    outputSize = DEFAULT_OUTPUT_SIZE,
+    aspect = 1,
+    shape = "rect",
+    outputWidth = DEFAULT_OUTPUT_WIDTH,
     onReadyChange,
     labels: userLabels,
     className,
-}: AvatarCropperProps) {
+}: ImageCropperProps) {
     const labels = React.useMemo(
         () => ({ ...defaultLabels, ...userLabels }),
         [userLabels],
     );
 
+    const instructionsId = React.useId();
+    const stageRef = React.useRef<HTMLDivElement>(null);
     const boxRef = React.useRef<HTMLDivElement>(null);
     const imageRef = React.useRef<HTMLImageElement | null>(null);
     const pointersRef = React.useRef(
@@ -113,7 +120,7 @@ export function AvatarCropper({
         height: number;
     } | null>(null);
     const [failed, setFailed] = React.useState(false);
-    const [boxSize, setBoxSize] = React.useState(0);
+    const [box, setBox] = React.useState({ width: 0, height: 0 });
     const [transform, setTransform] = React.useState<Transform>({
         scale: 1,
         x: 0,
@@ -130,7 +137,7 @@ export function AvatarCropper({
         return () => URL.revokeObjectURL(url);
     }, [file]);
 
-    // The box is square and fluid, so its size only exists at runtime. Every
+    // The box is fluid, so its size only exists at runtime. Every
     // clamp below is in these coordinates, which is why they have to be
     // remeasured when the dialog resizes.
     React.useEffect(() => {
@@ -138,16 +145,17 @@ export function AvatarCropper({
         if (!element) return;
 
         const observer = new ResizeObserver(([entry]) => {
-            const width = entry?.contentRect.width ?? 0;
-            setBoxSize(width);
+            setBox({
+                width: entry?.contentRect.width ?? 0,
+                height: entry?.contentRect.height ?? 0,
+            });
         });
         observer.observe(element);
-        setBoxSize(element.getBoundingClientRect().width);
 
         return () => observer.disconnect();
     }, []);
 
-    const isReady = natural !== null && boxSize > 0 && !failed;
+    const isReady = natural !== null && box.width > 0 && !failed;
 
     React.useEffect(() => {
         onReadyChange?.(isReady);
@@ -155,13 +163,13 @@ export function AvatarCropper({
 
     /** Smallest scale that still covers the crop box on both axes. */
     const minScale = React.useMemo(() => {
-        if (!natural || boxSize === 0) return 1;
-        return Math.max(boxSize / natural.width, boxSize / natural.height);
-    }, [natural, boxSize]);
+        if (!natural || box.width === 0) return 1;
+        return Math.max(box.width / natural.width, box.height / natural.height);
+    }, [natural, box]);
 
     const clamp = React.useCallback(
         (next: Transform): Transform => {
-            if (!natural || boxSize === 0) return next;
+            if (!natural || box.width === 0) return next;
 
             const scale = clampNumber(
                 next.scale,
@@ -173,22 +181,22 @@ export function AvatarCropper({
 
             return {
                 scale,
-                x: clampNumber(next.x, boxSize - width, 0),
-                y: clampNumber(next.y, boxSize - height, 0),
+                x: clampNumber(next.x, box.width - width, 0),
+                y: clampNumber(next.y, box.height - height, 0),
             };
         },
-        [natural, boxSize, minScale],
+        [natural, box, minScale],
     );
 
     /** Centre the image at the tightest fit — what the crop opens on. */
     const reset = React.useCallback(() => {
-        if (!natural || boxSize === 0) return;
+        if (!natural || box.width === 0) return;
         setTransform({
             scale: minScale,
-            x: (boxSize - natural.width * minScale) / 2,
-            y: (boxSize - natural.height * minScale) / 2,
+            x: (box.width - natural.width * minScale) / 2,
+            y: (box.height - natural.height * minScale) / 2,
         });
-    }, [natural, boxSize, minScale]);
+    }, [natural, box, minScale]);
 
     React.useEffect(() => {
         reset();
@@ -215,9 +223,9 @@ export function AvatarCropper({
 
     const zoomToCentre = React.useCallback(
         (nextScale: number) => {
-            zoomAround(nextScale, boxSize / 2, boxSize / 2);
+            zoomAround(nextScale, box.width / 2, box.height / 2);
         },
-        [zoomAround, boxSize],
+        [zoomAround, box],
     );
 
     function pointerDistance() {
@@ -254,12 +262,12 @@ export function AvatarCropper({
             const distance = pointerDistance();
             if (distance === 0) return;
 
-            const box = boxRef.current?.getBoundingClientRect();
+            const rect = boxRef.current?.getBoundingClientRect();
             const [a, b] = [...pointers.values()];
-            if (!box || !a || !b) return;
+            if (!rect || !a || !b) return;
 
-            const midX = (a.x + b.x) / 2 - box.left;
-            const midY = (a.y + b.y) / 2 - box.top;
+            const midX = (a.x + b.x) / 2 - rect.left;
+            const midY = (a.y + b.y) / 2 - rect.top;
             const ratio = distance / pinchRef.current.distance;
             zoomAround(pinchRef.current.scale * ratio, midX, midY);
             return;
@@ -284,20 +292,21 @@ export function AvatarCropper({
     // listeners makes `preventDefault()` a no-op, so zooming would scroll the
     // dialog at the same time.
     React.useEffect(() => {
-        const element = boxRef.current;
+        const element = stageRef.current;
         if (!element || !isReady) return;
 
         function onWheel(event: WheelEvent) {
             event.preventDefault();
-            const box = element!.getBoundingClientRect();
+            const rect = boxRef.current?.getBoundingClientRect();
+            if (!rect) return;
             setTransform((current) => {
                 const factor = Math.exp(-event.deltaY / 400);
                 const scale = Math.min(
                     Math.max(current.scale * factor, minScale),
                     minScale * MAX_ZOOM,
                 );
-                const focusX = event.clientX - box.left;
-                const focusY = event.clientY - box.top;
+                const focusX = event.clientX - rect.left;
+                const focusY = event.clientY - rect.top;
                 const ratio = scale / current.scale;
                 return clamp({
                     scale,
@@ -348,29 +357,34 @@ export function AvatarCropper({
         () => ({
             async getCroppedFile() {
                 const image = imageRef.current;
-                if (!image || !natural || boxSize === 0 || failed) return null;
-
-                const canvas = document.createElement("canvas");
-                canvas.width = outputSize;
-                canvas.height = outputSize;
-                const context = canvas.getContext("2d");
-                if (!context) return null;
+                if (!image || !natural || box.width === 0 || failed) {
+                    return null;
+                }
 
                 // The crop box maps straight back onto the source: its
                 // top-left corner sits at `-offset / scale` in image pixels,
-                // and it is `boxSize / scale` wide.
-                const sourceSize = boxSize / transform.scale;
+                // and it is `box / scale` wide.
+                const sourceWidth = box.width / transform.scale;
+                const sourceHeight = box.height / transform.scale;
+                const width = Math.round(Math.min(outputWidth, sourceWidth));
+
+                const canvas = document.createElement("canvas");
+                canvas.width = width;
+                canvas.height = Math.round(width / aspect);
+                const context = canvas.getContext("2d");
+                if (!context) return null;
+
                 context.imageSmoothingQuality = "high";
                 context.drawImage(
                     image,
                     -transform.x / transform.scale,
                     -transform.y / transform.scale,
-                    sourceSize,
-                    sourceSize,
+                    sourceWidth,
+                    sourceHeight,
                     0,
                     0,
-                    outputSize,
-                    outputSize,
+                    canvas.width,
+                    canvas.height,
                 );
 
                 const blob = await new Promise<Blob | null>((resolve) =>
@@ -382,15 +396,20 @@ export function AvatarCropper({
                 );
                 if (!blob) return null;
 
+                // Safari cannot encode WebP and hands back a PNG, so the name
+                // and type follow the blob rather than what was asked for.
+                const extension = blob.type.split("/")[1];
+                const baseName = file.name.replace(/\.[^.]+$/, "");
+
                 // A real `File`, not a named `Blob`: schemas that check
                 // `instanceof File` reject the latter, and it uploads as
                 // "blob" with no extension.
-                return new File([blob], "profilbilde.webp", {
-                    type: "image/webp",
+                return new File([blob], `${baseName}.${extension}`, {
+                    type: blob.type,
                 });
             },
         }),
-        [natural, boxSize, transform, outputSize, failed],
+        [natural, box, transform, outputWidth, aspect, file, failed],
     );
 
     const zoom = transform.scale / minScale;
@@ -398,10 +417,10 @@ export function AvatarCropper({
     return (
         <div className={cn("flex flex-col gap-4", className)}>
             <div
-                ref={boxRef}
+                ref={stageRef}
                 role="application"
                 aria-label={labels.cropRegion}
-                aria-describedby="avatar-cropper-instructions"
+                aria-describedby={instructionsId}
                 tabIndex={isReady ? 0 : -1}
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
@@ -409,49 +428,66 @@ export function AvatarCropper({
                 onPointerCancel={handlePointerUp}
                 onKeyDown={handleKeyDown}
                 className={cn(
-                    "relative aspect-square w-full touch-none overflow-hidden rounded-lg bg-muted select-none",
+                    "relative w-full touch-none overflow-hidden rounded-lg bg-muted select-none",
                     "focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+                    // A circle already shows what is cut away in its corners;
+                    // a rectangle needs a margin to show the same.
+                    shape === "rect" && "px-6 py-12",
                     isReady ? "cursor-grab active:cursor-grabbing" : null,
                 )}
             >
-                {objectUrl ? (
-                    <img
-                        ref={imageRef}
-                        src={objectUrl}
-                        alt=""
-                        draggable={false}
-                        onLoad={(event) => {
-                            const target = event.currentTarget;
-                            setNatural({
-                                width: target.naturalWidth,
-                                height: target.naturalHeight,
-                            });
-                            setFailed(false);
-                        }}
-                        onError={() => setFailed(true)}
-                        style={
-                            natural
-                                ? {
-                                      width: natural.width * transform.scale,
-                                      height: natural.height * transform.scale,
-                                      transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-                                  }
-                                : undefined
-                        }
+                <div
+                    ref={boxRef}
+                    className="relative mx-auto w-full"
+                    style={{
+                        aspectRatio: aspect,
+                        maxWidth: `calc(55vh * ${aspect})`,
+                    }}
+                >
+                    {objectUrl ? (
+                        <img
+                            ref={imageRef}
+                            src={objectUrl}
+                            alt=""
+                            draggable={false}
+                            onLoad={(event) => {
+                                const target = event.currentTarget;
+                                setNatural({
+                                    width: target.naturalWidth,
+                                    height: target.naturalHeight,
+                                });
+                                setFailed(false);
+                            }}
+                            onError={() => setFailed(true)}
+                            style={
+                                natural
+                                    ? {
+                                          width:
+                                              natural.width * transform.scale,
+                                          height:
+                                              natural.height * transform.scale,
+                                          transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+                                      }
+                                    : undefined
+                            }
+                            className={cn(
+                                "absolute top-0 left-0 max-w-none origin-top-left",
+                                natural ? "visible" : "invisible",
+                            )}
+                        />
+                    ) : null}
+
+                    {/* The frame is drawn on top rather than by clipping the
+                        image, so the part being cut away stays visible — that
+                        context is what makes the crop easy to judge. */}
+                    <div
+                        aria-hidden
                         className={cn(
-                            "absolute top-0 left-0 max-w-none origin-top-left",
-                            natural ? "visible" : "invisible",
+                            "pointer-events-none absolute inset-0 shadow-[0_0_0_9999px_rgba(0,0,0,0.55)] ring-2 ring-white/70 ring-inset",
+                            shape === "circle" && "rounded-full",
                         )}
                     />
-                ) : null}
-
-                {/* The circle is drawn on top rather than by clipping the
-                    image, so the part being cut away stays visible — that
-                    context is what makes the crop easy to judge. */}
-                <div
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0 rounded-full shadow-[0_0_0_9999px_rgba(0,0,0,0.55)] ring-2 ring-white/70 ring-inset"
-                />
+                </div>
 
                 {!isReady && !failed ? (
                     <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm text-white">
@@ -513,10 +549,7 @@ export function AvatarCropper({
                 </Button>
             </div>
 
-            <p
-                id="avatar-cropper-instructions"
-                className="text-xs text-muted-foreground"
-            >
+            <p id={instructionsId} className="text-xs text-muted-foreground">
                 {labels.instructions}
             </p>
         </div>

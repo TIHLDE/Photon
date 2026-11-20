@@ -25,6 +25,8 @@ export type ImagePresetDefinition = {
      * image at its own proportions.
      */
     aspectClassName: string | null;
+    /** The same ratio as a number, for the cropper. */
+    aspectRatio: number | null;
     /** How the image fills its box on the public site. */
     fit: "cover" | "contain";
     /** Size we ask editors to aim for, in CSS pixels. */
@@ -45,6 +47,7 @@ export const IMAGE_PRESETS = {
         label: "Bredt forsidebilde",
         hint: "Vises i 21:9 på kort og øverst på siden. Alt utenfor rammen blir beskåret.",
         aspectClassName: "aspect-[21/9]",
+        aspectRatio: 21 / 9,
         fit: "cover",
         recommended: { width: 1680, height: 720 },
     },
@@ -53,6 +56,7 @@ export const IMAGE_PRESETS = {
         label: "Forsidebilde 16:9",
         hint: "Vises i 16:9. Alt utenfor rammen blir beskåret.",
         aspectClassName: "aspect-video",
+        aspectRatio: 16 / 9,
         fit: "cover",
         recommended: { width: 1600, height: 900 },
     },
@@ -61,6 +65,7 @@ export const IMAGE_PRESETS = {
         label: "Forsidebilde i høydeformat",
         hint: "Vises i 3:4, som en bladforside. Alt utenfor rammen blir beskåret.",
         aspectClassName: "aspect-[3/4]",
+        aspectRatio: 3 / 4,
         fit: "cover",
         recommended: { width: 1200, height: 1600 },
     },
@@ -69,6 +74,7 @@ export const IMAGE_PRESETS = {
         label: "Kvadratisk bilde",
         hint: "Vises kvadratisk, ofte i en sirkel. Hold motivet midt i bildet.",
         aspectClassName: "aspect-square",
+        aspectRatio: 1,
         fit: "cover",
         recommended: { width: 512, height: 512 },
     },
@@ -77,6 +83,7 @@ export const IMAGE_PRESETS = {
         label: "Bilde",
         hint: "Vises i sitt eget format, uten beskjæring.",
         aspectClassName: null,
+        aspectRatio: null,
         fit: "contain",
         recommended: null,
     },

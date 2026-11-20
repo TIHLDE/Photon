@@ -1,7 +1,7 @@
 import {
-    AvatarCropper,
-    type AvatarCropperHandle,
-} from "@tihlde/ui/ui/avatar-cropper";
+    ImageCropper,
+    type ImageCropperHandle,
+} from "@tihlde/ui/ui/image-cropper";
 import {
     AvatarPicker,
     type AvatarPickerHandle,
@@ -450,7 +450,7 @@ function CropField({
     onCancel: () => void;
     onDone: (file: File) => void;
 }) {
-    const cropperRef = useRef<AvatarCropperHandle>(null);
+    const cropperRef = useRef<ImageCropperHandle>(null);
     const [isReady, setIsReady] = useState(false);
     const [isCropping, setIsCropping] = useState(false);
 
@@ -471,9 +471,11 @@ function CropField({
                 Sirkelen er utsnittet som vises på profilen din.
             </FieldDescription>
             <div className="w-full max-w-sm">
-                <AvatarCropper
+                <ImageCropper
                     controlRef={cropperRef}
                     file={file}
+                    shape="circle"
+                    outputWidth={512}
                     onReadyChange={setIsReady}
                 />
             </div>
